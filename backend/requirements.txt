@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pydantic-settings
+passlib[bcrypt]
+python-multipart
+psycopg2-binary
