@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, desc
 from typing import List
 import random
 import json
@@ -63,7 +63,7 @@ def get_user_results(user_id: int, session: Session = Depends(get_session)):
     results = session.exec(
         select(TestResult)
         .where(TestResult.user_id == user_id)
-        .order_by(TestResult.created_at.desc())
+        .order_by(desc(TestResult.created_at))
     ).all()
     
     return results
