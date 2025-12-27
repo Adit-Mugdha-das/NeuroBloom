@@ -204,25 +204,27 @@
 				Trial {currentTrial + 1} / {totalTrials}
 			</div>
 			
-			<div 
-				class="word-display" 
-				on:click={handleClick}
-				style="cursor: pointer; user-select: none;"
-			>
-				{currentLetter}
+			<div class="attention-area">
+				<div class="letter-box">
+					<div class="previous-letter">Previous: {previousLetter || '–'}</div>
+					<div class="current-letter">{currentLetter}</div>
+				</div>
+				
+				<button 
+					class="click-button" 
+					on:click={handleClick}
+				>
+					CLICK IF X AFTER A
+				</button>
 			</div>
 			
-			<p style="color: #999; margin-top: 30px; font-size: 14px;">
+			<p style="color: #999; margin-top: 20px; font-size: 14px;">
 				{#if previousLetter === 'A'}
-					Previous: {previousLetter} → Click if current is X
+					<strong style="color: #ff9800;">⚠️ Previous was A - Click button if current is X!</strong>
 				{:else}
-					Click only when you see X after A
+					Click the button ONLY when you see X after A
 				{/if}
 			</p>
-			
-			<div style="margin-top: 40px; color: #666; font-size: 13px;">
-				<p>Tip: Stay focused and maintain concentration</p>
-			</div>
 		</div>
 	
 	{:else if stage === 'results'}
@@ -281,3 +283,145 @@
 <svelte:head>
 	<title>Attention Test - NeuroBloom</title>
 </svelte:head>
+
+<style>
+	.test-container {
+		min-height: 100vh;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+	}
+	
+	.test-card {
+		background: white;
+		border-radius: 20px;
+		padding: 3rem;
+		max-width: 800px;
+		width: 100%;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		text-align: center;
+	}
+	
+	.timer {
+		font-size: 1.1rem;
+		color: #667eea;
+		font-weight: 600;
+		margin-bottom: 2rem;
+	}
+	
+	.attention-area {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2rem;
+		margin: 2rem 0;
+	}
+	
+	.letter-box {
+		background: #f8f9fa;
+		border-radius: 16px;
+		padding: 2rem;
+		min-width: 300px;
+		border: 3px solid #e0e0e0;
+	}
+	
+	.previous-letter {
+		font-size: 1rem;
+		color: #999;
+		margin-bottom: 1rem;
+	}
+	
+	.current-letter {
+		font-size: 6rem;
+		font-weight: bold;
+		color: #333;
+		font-family: monospace;
+		margin: 1rem 0;
+	}
+	
+	.click-button {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+		border: none;
+		padding: 1.5rem 3rem;
+		border-radius: 12px;
+		font-size: 1.2rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+	}
+	
+	.click-button:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+	}
+	
+	.click-button:active {
+		transform: translateY(0);
+	}
+	
+	.btn-primary {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 1rem 2.5rem;
+		border-radius: 12px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		margin: 0.5rem;
+	}
+	
+	.btn-primary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+	}
+	
+	.btn-secondary {
+		background: #f5f5f5;
+		color: #666;
+		border: 2px solid #ddd;
+		padding: 1rem 2.5rem;
+		border-radius: 12px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		margin: 0.5rem;
+	}
+	
+	.btn-secondary:hover {
+		background: #ececec;
+		border-color: #ccc;
+	}
+	
+	.score-display {
+		font-size: 4rem;
+		font-weight: bold;
+		color: #4caf50;
+		margin: 2rem 0;
+	}
+	
+	.result-details {
+		text-align: left;
+		max-width: 500px;
+		margin: 2rem auto;
+	}
+	
+	.result-details p {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid #f0f0f0;
+		color: #666;
+	}
+	
+	.result-details strong {
+		color: #333;
+		font-weight: 600;
+	}
+</style>

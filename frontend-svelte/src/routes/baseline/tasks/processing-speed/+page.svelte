@@ -1,7 +1,7 @@
 <script>
-	import { user } from '$lib/stores';
-	import { tasks } from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { tasks } from '$lib/api';
+	import { user } from '$lib/stores';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, simple, choice, results

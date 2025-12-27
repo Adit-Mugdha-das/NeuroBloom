@@ -28,8 +28,7 @@ export const tasks = {
 	},
 	
 	submitResult: async (userId, taskType, score, details) => {
-		const response = await api.post('/tasks/results', {
-			user_id: userId,
+		const response = await api.post(`/tasks/results?user_id=${userId}`, {
 			task_type: taskType,
 			score,
 			details
@@ -38,12 +37,17 @@ export const tasks = {
 	},
 	
 	getUserStats: async (userId) => {
-		const response = await api.get(`/tasks/stats/${userId}`);
+		const response = await api.get(`/tasks/results/${userId}/stats`);
 		return response.data;
 	},
 	
 	getUserResults: async (userId) => {
 		const response = await api.get(`/tasks/results/${userId}`);
+		return response.data;
+	},
+	
+	getBaselineStatus: async (userId) => {
+		const response = await api.get(`/tasks/results/${userId}/baseline-status`);
 		return response.data;
 	}
 };

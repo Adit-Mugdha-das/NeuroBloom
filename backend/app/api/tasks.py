@@ -108,3 +108,38 @@ def get_user_stats(user_id: int, session: Session = Depends(get_session)):
         "tasks_by_type": tasks_by_type,
         "recent_scores": recent_scores
     }
+
+@router.get("/results/{user_id}/baseline-status")
+def get_baseline_status(user_id: int, session: Session = Depends(get_session)):
+    """Get baseline task completion status for a user"""
+    # Define the 6 baseline tasks
+    baseline_tasks = [
+        "working_memory",
+        "attention", 
+        "flexibility",
+        "planning",
+        "processing_speed",
+        "visual_scanning"
+    ]
+    
+    # Get all results for this user
+    results = session.exec(
+        select(TestResult).where(TestResult.user_id == user_id)
+    ).all()
+    
+    # Check which tasks have been completed
+    completed_tasks = set(r.task_type for r in results)
+    
+    status = {}
+    for task in baseline_tasks:
+        status[task] = task in completed_tasks
+    
+    # Calculate overall completion
+    completed_count = sum(1 for task in baseline_tasks if status[task])
+    
+    return {
+        "tasks": status,
+        "completed_count": completed_count,
+        "total_tasks": len(baseline_tasks),
+        "all_completed": completed_count == len(baseline_tasks)
+    }
