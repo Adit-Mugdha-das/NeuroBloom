@@ -64,4 +64,46 @@ export const baseline = {
 	}
 };
 
+export const training = {
+	// Generate personalized training plan from baseline
+	generatePlan: async (userId) => {
+		const response = await api.post(`/training/training-plan/generate/${userId}`);
+		return response.data;
+	},
+	
+	// Get active training plan
+	getPlan: async (userId) => {
+		const response = await api.get(`/training/training-plan/${userId}`);
+		return response.data;
+	},
+	
+	// Get next recommended tasks for training session
+	getNextTasks: async (userId) => {
+		const response = await api.get(`/training/training-plan/${userId}/next-tasks`);
+		return response.data;
+	},
+	
+	// Submit training session results
+	submitSession: async (sessionData) => {
+		const response = await api.post('/training/training-session/submit', null, {
+			params: sessionData
+		});
+		return response.data;
+	},
+	
+	// Get training session history
+	getHistory: async (userId, limit = 50) => {
+		const response = await api.get(`/training/training-session/history/${userId}`, {
+			params: { limit }
+		});
+		return response.data;
+	},
+	
+	// Get performance metrics
+	getMetrics: async (userId) => {
+		const response = await api.get(`/training/training-session/metrics/${userId}`);
+		return response.data;
+	}
+};
+
 export default api;

@@ -4,9 +4,12 @@ from datetime import datetime
 
 class BaselineAssessment(SQLModel, table=True):
     """Store baseline cognitive assessment results"""
+    __tablename__ = "baseline_assessments"
+    
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
     assessment_date: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Domain Scores (0-100)
     working_memory_score: float = Field(default=0.0)

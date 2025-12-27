@@ -88,9 +88,17 @@
 							</p>
 						</div>
 						{#if baselineStatus.all_completed}
-							<a href="/baseline/results" class="btn-baseline">
-								📊 View Baseline Profile
-							</a>
+							<div class="action-buttons">
+								<a href="/baseline/results" class="btn-baseline">
+									View Baseline
+								</a>
+								<a href="/training" class="btn-training">
+									Training Plan
+								</a>
+								<a href="/progress" class="btn-progress">
+									Progress
+								</a>
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -305,6 +313,33 @@
 	.btn-baseline:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+	}
+	
+	.action-buttons {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	
+	.btn-training, .btn-progress {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 1rem 2rem;
+		border-radius: 12px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		text-decoration: none;
+		display: inline-block;
+		transition: all 0.3s;
+		white-space: nowrap;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.btn-training:hover, .btn-progress:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 	}
 	
 	.modules-grid {

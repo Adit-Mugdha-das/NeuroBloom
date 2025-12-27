@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { baseline, tasks } from '$lib/api';
+	import { baseline, tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -8,8 +8,10 @@
 	let loading = true;
 	let baselineData = null;
 	let baselineStatus = null;
+	let trainingPlan = null;
 	let error = null;
 	let calculating = false;
+	let generatingPlan = false;
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -35,6 +37,13 @@
 			// Try to get existing baseline
 			try {
 				baselineData = await baseline.get(currentUser.id);
+				
+				// Check if training plan exists
+				try {
+					trainingPlan = await training.getPlan(currentUser.id);
+				} catch (e) {
+					trainingPlan = null;
+				}
 			} catch (e) {
 				// No baseline yet
 				baselineData = null;
@@ -58,6 +67,22 @@
 			error = err.response?.data?.detail || 'Failed to calculate baseline. Make sure you completed all 6 tasks.';
 		} finally {
 			calculating = false;
+		}
+	}
+	
+	async function generateTrainingPlan() {
+		generatingPlan = true;
+		error = null;
+		
+		try {
+			trainingPlan = await training.generatePlan(currentUser.id);
+			// Redirect to training page
+			goto('/training');
+		} catch (err) {
+			console.error('Error generating training plan:', err);
+			error = err.response?.data?.detail || 'Failed to generate training plan.';
+		} finally {
+			generatingPlan = false;
 		}
 	}
 	
@@ -346,6 +371,24 @@
 				<button class="btn-secondary" on:click={calculateBaseline} style="margin-left: 1rem;">
 					Recalculate Baseline
 				</button>
+				{#if !trainingPlan}
+					<button 
+						class="btn-training" 
+						on:click={generateTrainingPlan}
+						disabled={generatingPlan}
+						style="margin-left: 1rem;"
+					>
+						{generatingPlan ? 'Generating...' : 'Generate Training Plan'}
+					</button>
+				{:else}
+					<button 
+						class="btn-training" 
+						on:click={() => goto('/training')}
+						style="margin-left: 1rem;"
+					>
+						View Training Plan
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -649,5 +692,27 @@
 	
 	.btn-secondary:hover {
 		background: #f0f7ff;
+	}
+	
+	.btn-training {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+		border: none;
+		padding: 1rem 2.5rem;
+		border-radius: 12px;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+	
+	.btn-training:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+	}
+	
+	.btn-training:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 </style>

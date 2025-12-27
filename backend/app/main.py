@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth import router as auth_router
 from app.api.tasks import router as tasks_router
 from app.api.baseline import router as baseline_router
+from app.api.training import router as training_router
 from app.core.config import init_db
 
 app = FastAPI()
@@ -23,6 +24,7 @@ def on_startup():
 app.include_router(auth_router, prefix="/auth")
 app.include_router(tasks_router, prefix="/tasks")
 app.include_router(baseline_router, prefix="/baseline")
+app.include_router(training_router, prefix="/training")
 
 @app.get("/")
 def root():
