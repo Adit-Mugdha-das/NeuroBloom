@@ -12,22 +12,24 @@ export const nodes = [
 	() => import('./nodes/8'),
 	() => import('./nodes/9'),
 	() => import('./nodes/10'),
-	() => import('./nodes/11')
+	() => import('./nodes/11'),
+	() => import('./nodes/12')
 ];
 
 export const server_loads = [];
 
 export const dictionary = {
 		"/": [2],
-		"/baseline/tasks/attention": [3],
-		"/baseline/tasks/flexibility": [4],
-		"/baseline/tasks/planning": [5],
-		"/baseline/tasks/processing-speed": [6],
-		"/baseline/tasks/visual-scanning": [7],
-		"/baseline/tasks/working-memory": [8],
-		"/dashboard": [9],
-		"/login": [10],
-		"/register": [11]
+		"/baseline/results": [3],
+		"/baseline/tasks/attention": [4],
+		"/baseline/tasks/flexibility": [5],
+		"/baseline/tasks/planning": [6],
+		"/baseline/tasks/processing-speed": [7],
+		"/baseline/tasks/visual-scanning": [8],
+		"/baseline/tasks/working-memory": [9],
+		"/dashboard": [10],
+		"/login": [11],
+		"/register": [12]
 	};
 
 export const hooks = {

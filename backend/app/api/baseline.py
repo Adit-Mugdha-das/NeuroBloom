@@ -56,7 +56,7 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         domain_data[task_type].append({
             'score': result.score,
             'details': details,
-            'created_at': result.created_at
+            'created_at': result.created_at.isoformat() if result.created_at else None
         })
     
     # Calculate domain scores

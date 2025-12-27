@@ -1,6 +1,5 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
 	import { tasks } from '$lib/api';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -76,15 +75,24 @@
 			
 			{#if baselineStatus}
 				<div class="baseline-progress">
-					<div class="progress-bar">
-						<div 
-							class="progress-fill" 
-							style="width: {(baselineStatus.completed_count / baselineStatus.total_tasks) * 100}%"
-						></div>
+					<div class="progress-header">
+						<div class="progress-info">
+							<div class="progress-bar">
+								<div 
+									class="progress-fill" 
+									style="width: {(baselineStatus.completed_count / baselineStatus.total_tasks) * 100}%"
+								></div>
+							</div>
+							<p class="progress-text">
+								{baselineStatus.completed_count} of {baselineStatus.total_tasks} baseline tasks completed
+							</p>
+						</div>
+						{#if baselineStatus.all_completed}
+							<a href="/baseline/results" class="btn-baseline">
+								📊 View Baseline Profile
+							</a>
+						{/if}
 					</div>
-					<p class="progress-text">
-						{baselineStatus.completed_count} of {baselineStatus.total_tasks} baseline tasks completed
-					</p>
 				</div>
 			{/if}
 			
@@ -246,6 +254,17 @@
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 	
+	.progress-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 2rem;
+	}
+	
+	.progress-info {
+		flex: 1;
+	}
+	
 	.progress-bar {
 		width: 100%;
 		height: 12px;
@@ -265,7 +284,27 @@
 		margin: 0;
 		color: #666;
 		font-size: 0.9rem;
-		text-align: center;
+	}
+	
+	.btn-baseline {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+		border: none;
+		padding: 1rem 2rem;
+		border-radius: 12px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		text-decoration: none;
+		display: inline-block;
+		transition: all 0.3s;
+		white-space: nowrap;
+		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+	}
+	
+	.btn-baseline:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 	}
 	
 	.modules-grid {
