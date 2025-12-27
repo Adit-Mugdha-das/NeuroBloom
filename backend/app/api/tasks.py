@@ -85,6 +85,7 @@ def get_user_stats(user_id: int, session: Session = Depends(get_session)):
     
     total = len(results)
     avg_score = sum(r.score for r in results) / total
+    best_score = max(r.score for r in results)
     
     tasks_by_type = {}
     for result in results:
@@ -105,6 +106,7 @@ def get_user_stats(user_id: int, session: Session = Depends(get_session)):
     return {
         "total_sessions": total,
         "average_score": round(avg_score, 2),
+        "best_score": round(best_score, 2),
         "tasks_by_type": tasks_by_type,
         "recent_scores": recent_scores
     }
