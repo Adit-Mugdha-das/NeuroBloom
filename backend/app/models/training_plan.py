@@ -37,6 +37,10 @@ class TrainingPlan(SQLModel, table=True):
     total_sessions_completed: int = Field(default=0)
     last_session_date: Optional[datetime] = Field(default=None)
     
+    # Current session tracking
+    current_session_number: int = Field(default=1)
+    current_session_tasks_completed: str = Field(default="[]")  # JSON array of completed task domains
+    
     def get_primary_focus(self):
         """Parse primary focus domains from JSON"""
         return json.loads(self.primary_focus)
@@ -60,3 +64,7 @@ class TrainingPlan(SQLModel, table=True):
     def get_current_difficulty(self):
         """Parse current difficulty from JSON"""
         return json.loads(self.current_difficulty)
+    
+    def get_current_session_tasks_completed(self):
+        """Parse current session completed tasks from JSON"""
+        return json.loads(self.current_session_tasks_completed)

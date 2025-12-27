@@ -1,12 +1,21 @@
 <script>
-	import { user } from '$lib/stores';
-	import { tasks } from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { tasks, training } from '$lib/api';
+	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, test, results
 	let currentTrial = 0;
 	let totalTrials = 40;
+	
+	// Training mode variables
+	let isTrainingMode = false;
+	let trainingPlanId = null;
+	let trainingDifficulty = 1;
+	let sessionComplete = false;
+	let completedTasksCount = 0;
+	let totalTasksCount = 4;
 	
 	// Test data
 	let trials = [];
@@ -32,6 +41,26 @@
 			goto('/login');
 		}
 	});
+	
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		isTrainingMode = urlParams.get('training') === 'true';
+		trainingPlanId = parseInt(urlParams.get('planId')) || null;
+		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		
+		// Adjust difficulty: more trials for higher difficulty
+		if (isTrainingMode && trainingDifficulty > 4) {
+			totalTrials = 40 + (trainingDifficulty - 4) * 10; // 40-100 trials
+		}
+	});
+	
+	function backToDashboard() {
+		if (isTrainingMode) {
+			goto('/training');
+		} else {
+			goto('/dashboard');
+		}
+	}
 	
 	function startTest() {
 		stage = 'test';
@@ -170,21 +199,53 @@
 		try {
 			const rtStd = calculateStd(reactionTimes);
 			
-			await tasks.submitResult(
-				currentUser.id,
-				'flexibility',
-				accuracy,
-				JSON.stringify({
-					total_trials: totalTrials,
-					total_switches: switchTrials,
-					switch_errors: switchErrors,
-					no_switch_errors: noSwitchErrors,
-					perseveration_errors: perseverationErrors,
-					switch_cost_rt: switchCostRT,
-					mean_rt: meanRT,
-					rt_std: rtStd
-				})
-			);
+			console.log('[Flexibility] Saving results:', {
+				isTrainingMode,
+				trainingPlanId,
+				userId: currentUser?.id,
+				accuracy
+			});
+			
+			if (isTrainingMode && trainingPlanId) {
+				// Submit to training session API
+				console.log('[Flexibility] Submitting to training API');
+				
+				const result = await training.submitSession({
+					user_id: currentUser.id,
+					training_plan_id: trainingPlanId,
+					domain: 'flexibility',
+					task_type: 'task_switching',
+					score: accuracy,
+					accuracy: accuracy,
+					average_reaction_time: meanRT,
+					consistency: rtStd > 0 ? Math.max(0, 100 - rtStd / 2) : 100,
+					errors: totalErrors,
+					session_duration: totalTrials / 10 // approximate minutes
+				});
+				
+				sessionComplete = result.session_complete;
+				completedTasksCount = result.completed_tasks;
+				totalTasksCount = result.total_tasks;
+				
+				console.log('[Flexibility] Training session saved:', result);
+			} else {
+				// Submit to regular task result API (baseline mode)
+				await tasks.submitResult(
+					currentUser.id,
+					'flexibility',
+					accuracy,
+					JSON.stringify({
+						total_trials: totalTrials,
+						total_switches: switchTrials,
+						switch_errors: switchErrors,
+						no_switch_errors: noSwitchErrors,
+						perseveration_errors: perseverationErrors,
+						switch_cost_rt: switchCostRT,
+						mean_rt: meanRT,
+						rt_std: rtStd
+					})
+				);
+			}
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}
@@ -195,10 +256,6 @@
 		const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
 		const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
 		return Math.sqrt(variance);
-	}
-	
-	function backToDashboard() {
-		goto('/dashboard');
 	}
 </script>
 
@@ -300,6 +357,23 @@
 		<div class="test-card">
 			<h1>Test Complete!</h1>
 			
+			{#if isTrainingMode}
+				<div class="training-progress-banner">
+					{#if sessionComplete}
+						<div class="session-complete-msg">
+							🎉 Session Complete! You've finished all 4 tasks for this session.
+						</div>
+					{:else}
+						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
+							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+						</div>
+						<div style="font-size: 14px; color: #666;">
+							Continue with the remaining tasks to complete this session
+						</div>
+					{/if}
+				</div>
+			{/if}
+			
 			<div class="score-display">
 				{accuracy.toFixed(1)}%
 			</div>
@@ -361,3 +435,26 @@
 <svelte:head>
 	<title>Cognitive Flexibility Test - NeuroBloom</title>
 </svelte:head>
+<style>
+	.training-progress-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 20px;
+		border-radius: 12px;
+		margin-bottom: 25px;
+		text-align: center;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.session-complete-msg {
+		font-size: 18px;
+		font-weight: 600;
+		animation: celebration 0.5s ease-out;
+	}
+	
+	@keyframes celebration {
+		0% { transform: scale(0.9); opacity: 0; }
+		50% { transform: scale(1.05); }
+		100% { transform: scale(1); opacity: 1; }
+	}
+</style>

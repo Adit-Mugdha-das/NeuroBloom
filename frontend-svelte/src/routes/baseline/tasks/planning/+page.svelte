@@ -1,10 +1,19 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { tasks } from '$lib/api';
+	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, test, results
+	
+	// Training mode variables
+	let isTrainingMode = false;
+	let trainingPlanId = null;
+	let trainingDifficulty = 1;
+	let sessionComplete = false;
+	let completedTasksCount = 0;
+	let totalTasksCount = 4;
 	
 	// Tower of Hanoi state
 	let towers = [[3, 2, 1], [], []]; // 3 disks on first tower
@@ -22,6 +31,33 @@
 			goto('/login');
 		}
 	});
+	
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		isTrainingMode = urlParams.get('training') === 'true';
+		trainingPlanId = parseInt(urlParams.get('planId')) || null;
+		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		
+		// Adjust difficulty: more disks for higher difficulty
+		if (isTrainingMode && trainingDifficulty > 3) {
+			// Keep 3 disks but can increase to 4-5 for very high difficulty
+			if (trainingDifficulty >= 8) {
+				// 5 disks = 31 optimal moves
+				optimalMoves = 31;
+			} else if (trainingDifficulty >= 6) {
+				// 4 disks = 15 optimal moves
+				optimalMoves = 15;
+			}
+		}
+	});
+	
+	function backToDashboard() {
+		if (isTrainingMode) {
+			goto('/training');
+		} else {
+			goto('/dashboard');
+		}
+	}
 	
 	function startTest() {
 		stage = 'test';
@@ -82,19 +118,51 @@
 			const excessMoves = moves - optimalMoves;
 			const efficiency = Math.max(0, 100 - (excessMoves * 10));
 			
-			await tasks.submitResult(
-				currentUser.id,
-				'planning',
-				efficiency,
-				JSON.stringify({
-					moves_taken: moves,
-					optimal_moves: optimalMoves,
-					excess_moves: excessMoves,
-					planning_time_ms: planningTime,
-					total_time_seconds: Math.round(totalTime / 1000),
-					completed: completed
-				})
-			);
+			console.log('[Planning] Saving results:', {
+				isTrainingMode,
+				trainingPlanId,
+				userId: currentUser?.id,
+				efficiency
+			});
+			
+			if (isTrainingMode && trainingPlanId) {
+				// Submit to training session API
+				console.log('[Planning] Submitting to training API');
+				
+				const result = await training.submitSession({
+					user_id: currentUser.id,
+					training_plan_id: trainingPlanId,
+					domain: 'planning',
+					task_type: 'tower_of_hanoi',
+					score: efficiency,
+					accuracy: completed ? 100 : 0,
+					average_reaction_time: planningTime,
+					consistency: Math.max(0, 100 - excessMoves * 5),
+					errors: excessMoves,
+					session_duration: Math.round(totalTime / 60000) // minutes
+				});
+				
+				sessionComplete = result.session_complete;
+				completedTasksCount = result.completed_tasks;
+				totalTasksCount = result.total_tasks;
+				
+				console.log('[Planning] Training session saved:', result);
+			} else {
+				// Submit to regular task result API (baseline mode)
+				await tasks.submitResult(
+					currentUser.id,
+					'planning',
+					efficiency,
+					JSON.stringify({
+						moves_taken: moves,
+						optimal_moves: optimalMoves,
+						excess_moves: excessMoves,
+						planning_time_ms: planningTime,
+						total_time_seconds: Math.round(totalTime / 1000),
+						completed: completed
+					})
+				);
+			}
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}
@@ -107,10 +175,6 @@
 		completed = false;
 		startTime = Date.now();
 		firstMoveTime = 0;
-	}
-	
-	function backToDashboard() {
-		goto('/dashboard');
 	}
 	
 	function getDiskColor(size) {
@@ -224,6 +288,23 @@
 		<div class="test-card">
 			<h1>Test Complete!</h1>
 			
+			{#if isTrainingMode}
+				<div class="training-progress-banner">
+					{#if sessionComplete}
+						<div class="session-complete-msg">
+							🎉 Session Complete! You've finished all 4 tasks for this session.
+						</div>
+					{:else}
+						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
+							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+						</div>
+						<div style="font-size: 14px; color: #666;">
+							Continue with the remaining tasks to complete this session
+						</div>
+					{/if}
+				</div>
+			{/if}
+			
 			<div class="score-display">
 				{Math.max(0, 100 - ((moves - optimalMoves) * 10)).toFixed(0)}%
 			</div>
@@ -279,6 +360,28 @@
 </div>
 
 <style>
+	.training-progress-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 20px;
+		border-radius: 12px;
+		margin-bottom: 25px;
+		text-align: center;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.session-complete-msg {
+		font-size: 18px;
+		font-weight: 600;
+		animation: celebration 0.5s ease-out;
+	}
+	
+	@keyframes celebration {
+		0% { transform: scale(0.9); opacity: 0; }
+		50% { transform: scale(1.05); }
+		100% { transform: scale(1); opacity: 1; }
+	}
+	
 	.tower {
 		transition: all 0.2s;
 	}

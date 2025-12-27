@@ -164,11 +164,13 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
 @router.get("/training-plan/{user_id}/next-tasks")
 def get_next_training_tasks(user_id: int, session: Session = Depends(get_session)):
     """
-    Get recommended tasks for next training session.
+    Get recommended tasks for current training session.
     
-    Returns 4 tasks:
+    Returns 4 tasks with completion status:
     - 2 from primary focus (weakest domains)
     - 2 from secondary focus (middle domains)
+    
+    Session only advances after all 4 tasks are completed.
     """
     
     plan = session.exec(
@@ -184,8 +186,9 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
     secondary = plan.get_secondary_focus()
     tasks = plan.get_recommended_tasks()
     difficulty = plan.get_current_difficulty()
+    completed_tasks = plan.get_current_session_tasks_completed()
     
-    # Build session task list
+    # Build session task list (always the same 4 tasks per session)
     next_tasks = []
     
     # Add 2 primary focus tasks
@@ -195,7 +198,8 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
             "task_type": tasks[domain],
             "difficulty": difficulty[domain],
             "priority": "primary",
-            "focus_reason": "Weakest area - needs most attention"
+            "focus_reason": "Weakest area - needs most attention",
+            "completed": domain in completed_tasks
         })
     
     # Add 2 secondary focus tasks
@@ -205,14 +209,20 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
             "task_type": tasks[domain],
             "difficulty": difficulty[domain],
             "priority": "secondary",
-            "focus_reason": "Moderate area - room for improvement"
+            "focus_reason": "Moderate area - room for improvement",
+            "completed": domain in completed_tasks
         })
+    
+    # Check if session is complete
+    all_completed = len(completed_tasks) >= 4
     
     return {
         "training_plan_id": plan.id,
-        "session_number": plan.total_sessions_completed + 1,
+        "session_number": plan.current_session_number,
         "tasks": next_tasks,
-        "total_tasks": len(next_tasks)
+        "total_tasks": len(next_tasks),
+        "completed_tasks": len(completed_tasks),
+        "session_complete": all_completed
     }
 
 @router.post("/training-session/submit")
@@ -290,13 +300,31 @@ def submit_training_session(
     # Update training plan's current difficulty
     current_difficulty_map[domain] = new_difficulty
     plan.current_difficulty = json.dumps(current_difficulty_map)
-    plan.total_sessions_completed += 1
-    plan.last_session_date = datetime.utcnow()
+    
+    # Mark this task as completed in current session
+    completed_tasks = plan.get_current_session_tasks_completed()
+    if domain not in completed_tasks:
+        completed_tasks.append(domain)
+        plan.current_session_tasks_completed = json.dumps(completed_tasks)
+    
+    # Check if all 4 tasks in session are completed
+    session_complete = len(completed_tasks) >= 4
+    
+    if session_complete:
+        # Session is complete - increment session count and reset
+        plan.total_sessions_completed += 1
+        plan.current_session_number += 1
+        plan.current_session_tasks_completed = "[]"  # Reset for next session
+        plan.last_session_date = datetime.utcnow()
+    
     plan.last_updated = datetime.utcnow()
     
+    # Explicitly mark plan as modified
     session.add(plan)
+    session.flush()  # Flush changes before commit
     session.commit()
     session.refresh(training_session)
+    session.refresh(plan)
     
     return {
         "id": training_session.id,
@@ -306,6 +334,9 @@ def submit_training_session(
         "difficulty_before": current_difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
+        "session_complete": session_complete,
+        "completed_tasks": len(completed_tasks),
+        "total_tasks": 4,
         "created_at": training_session.created_at.isoformat()
     }
 

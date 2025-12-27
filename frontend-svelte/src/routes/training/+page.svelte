@@ -61,8 +61,8 @@
 		return names[domain] || domain;
 	}
 	
-	function getTaskRoute(taskType, domain) {
-		// Map task types to routes
+	function getTaskRoute(taskType, domain, difficulty, planId) {
+		// Map task types to routes with training mode parameters
 		const routes = {
 			n_back: '/baseline/tasks/working-memory',
 			continuous_performance: '/baseline/tasks/attention',
@@ -71,7 +71,10 @@
 			reaction_time: '/baseline/tasks/processing-speed',
 			target_search: '/baseline/tasks/visual-scanning'
 		};
-		return routes[taskType] || '/dashboard';
+		
+		const baseRoute = routes[taskType] || '/dashboard';
+		// Add training mode parameters
+		return `${baseRoute}?training=true&planId=${planId}&difficulty=${difficulty}`;
 	}
 	
 	function getPriorityColor(priority) {
@@ -120,7 +123,16 @@
 						<h1>Personalized Training Plan</h1>
 						<p class="subtitle">Adaptive cognitive training based on your baseline assessment</p>
 					</div>
-					<button class="btn-back" on:click={backToDashboard}>← Back to Dashboard</button>
+					<div class="header-actions">
+						<button class="btn-refresh" on:click={loadTrainingData} disabled={loading}>
+							{#if loading}
+								⏳ Loading...
+							{:else}
+								🔄 Refresh
+							{/if}
+						</button>
+						<button class="btn-back" on:click={backToDashboard}>← Back to Dashboard</button>
+					</div>
 				</div>
 			</div>
 			
@@ -147,14 +159,36 @@
 				</div>
 			{/if}
 			
-			<!-- Next Training Session -->
+			<!-- Current Training Session -->
 			<div class="session-card">
-				<h3>Next Training Session #{nextTasks.session_number}</h3>
-				<p class="session-subtitle">Complete these {nextTasks.total_tasks} tasks to improve your cognitive performance</p>
+				<div class="session-header">
+					<h3>Training Session #{nextTasks.session_number}</h3>
+					<div class="session-progress">
+						<span class="progress-text">{nextTasks.completed_tasks} / {nextTasks.total_tasks} tasks completed</span>
+						<div class="progress-bar-mini">
+							<div class="progress-fill-mini" style="width: {(nextTasks.completed_tasks / nextTasks.total_tasks) * 100}%"></div>
+						</div>
+					</div>
+				</div>
+				
+				{#if nextTasks.session_complete}
+					<div class="session-complete-banner">
+						🎉 Session Complete! All tasks finished. Great job!
+					</div>
+				{:else}
+					<p class="session-subtitle">Complete all {nextTasks.total_tasks} tasks to finish this session</p>
+				{/if}
 				
 				<div class="tasks-grid">
 					{#each nextTasks.tasks as task}
-						<div class="task-card" style="border-left: 4px solid {getPriorityColor(task.priority)}">
+						<div class="task-card {task.completed ? 'completed' : ''}" style="border-left: 4px solid {getPriorityColor(task.priority)}">
+							{#if task.completed}
+								<div class="completed-overlay">
+									<div class="checkmark">✓</div>
+									<span class="completed-label">Completed</span>
+								</div>
+							{/if}
+							
 							<div class="task-header">
 								<h4>{getDomainName(task.domain)}</h4>
 								<span class="priority-badge" style="background: {getPriorityColor(task.priority)}">
@@ -173,9 +207,10 @@
 							
 							<button 
 								class="btn-start-task"
-								on:click={() => goto(getTaskRoute(task.task_type, task.domain))}
+								disabled={task.completed}
+								on:click={() => goto(getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id))}
 							>
-								Start Training
+								{task.completed ? '✓ Completed' : 'Start Training'}
 							</button>
 						</div>
 					{/each}
@@ -280,6 +315,7 @@
 		justify-content: space-between;
 		align-items: center;
 		gap: 2rem;
+		flex-wrap: wrap;
 	}
 	
 	.header-text h1 {
@@ -292,6 +328,36 @@
 		margin: 0;
 		color: #666;
 		font-size: 1rem;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	
+	.btn-refresh {
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.3s;
+		white-space: nowrap;
+	}
+	
+	.btn-refresh:hover:not(:disabled) {
+		background: #667eea;
+		color: white;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+	
+	.btn-refresh:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 	
 	.btn-back {
@@ -350,6 +416,59 @@
 		margin-bottom: 2rem;
 	}
 	
+	.session-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	
+	.session-progress {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.5rem;
+	}
+	
+	.progress-text {
+		color: #667eea;
+		font-weight: 600;
+		font-size: 0.95rem;
+	}
+	
+	.progress-bar-mini {
+		width: 200px;
+		height: 8px;
+		background: #e0e0e0;
+		border-radius: 10px;
+		overflow: hidden;
+	}
+	
+	.progress-fill-mini {
+		height: 100%;
+		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		transition: width 0.3s ease;
+	}
+	
+	.session-complete-banner {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+		padding: 1rem;
+		border-radius: 12px;
+		text-align: center;
+		font-weight: 600;
+		font-size: 1.1rem;
+		margin-bottom: 1.5rem;
+		animation: celebrate 0.5s ease;
+	}
+	
+	@keyframes celebrate {
+		0%, 100% { transform: scale(1); }
+		50% { transform: scale(1.02); }
+	}
+	
 	.tasks-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -360,6 +479,32 @@
 		background: #f8f9fa;
 		border-radius: 12px;
 		padding: 1.5rem;
+		position: relative;
+		transition: all 0.3s ease;
+	}
+	
+	.task-card.completed {
+		opacity: 0.7;
+		background: #e8f5e9;
+	}
+	
+	.completed-overlay {
+		position: absolute;
+		top: 0;
+		right: 0;
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 0 12px 0 12px;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		font-size: 0.9rem;
+	}
+	
+	.checkmark {
+		font-size: 1.2rem;
 	}
 	
 	.task-header {
@@ -419,7 +564,13 @@
 		transition: all 0.3s;
 	}
 	
-	.btn-start-task:hover {
+	.btn-start-task:disabled {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		cursor: not-allowed;
+		opacity: 0.8;
+	}
+	
+	.btn-start-task:not(:disabled):hover {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 	}

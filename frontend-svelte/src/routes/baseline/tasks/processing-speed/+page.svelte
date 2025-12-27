@@ -1,10 +1,19 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { tasks } from '$lib/api';
+	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, simple, choice, results
+	
+	// Training mode tracking
+	let isTrainingMode = false;
+	let trainingPlanId = null;
+	let trainingDifficulty = 1;
+	let sessionComplete = false;
+	let completedTasksCount = 0;
+	let totalTasksCount = 4;
 	
 	// Simple RT test
 	let simpleTrials = 10;
@@ -28,6 +37,19 @@
 		currentUser = value;
 		if (!value) {
 			goto('/login');
+		}
+	});
+	
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		isTrainingMode = urlParams.get('training') === 'true';
+		trainingPlanId = parseInt(urlParams.get('planId')) || null;
+		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		
+		// Adjust test parameters based on difficulty
+		if (isTrainingMode && trainingDifficulty > 5) {
+			simpleTrials = 15;
+			choiceTrials = 20;
 		}
 	});
 	
@@ -138,20 +160,57 @@
 				choiceAccuracyScore
 			);
 			
-			await tasks.submitResult(
-				currentUser.id,
-				'processing_speed',
-				score,
-				JSON.stringify({
-					simple_rt_mean: simpleRTMean,
-					simple_rt_std: simpleRTStd,
-					simple_trials: validSimpleRTs.length,
-					choice_rt_mean: choiceRTMean,
-					choice_rt_std: choiceRTStd,
-					choice_accuracy: choiceAccuracyScore,
-					choice_trials: choiceTrials
-				})
-			);
+			const rawData = {
+				simple_rt_mean: simpleRTMean,
+				simple_rt_std: simpleRTStd,
+				simple_trials: validSimpleRTs.length,
+				choice_rt_mean: choiceRTMean,
+				choice_rt_std: choiceRTStd,
+				choice_accuracy: choiceAccuracyScore,
+				choice_trials: choiceTrials
+			};
+			
+			console.log('[Processing Speed] Saving results:', {
+				isTrainingMode,
+				trainingPlanId,
+				userId: currentUser?.id,
+				score
+			});
+			
+			if (isTrainingMode && trainingPlanId) {
+				// Submit to training session API
+				const avgRT = (simpleRTMean + choiceRTMean) / 2;
+				const consistencyScore = simpleRTStd > 0 ? Math.max(0, 100 - (simpleRTStd / 10)) : 100;
+				
+				console.log('[Processing Speed] Submitting to training API');
+				
+				const result = await training.submitSession({
+					user_id: currentUser.id,
+					training_plan_id: trainingPlanId,
+					domain: 'processing_speed',
+					task_type: 'reaction_time',
+					score: score,
+					accuracy: choiceAccuracyScore * 100,
+					average_reaction_time: avgRT,
+					consistency: consistencyScore,
+					errors: choiceAccuracy.filter(a => !a).length,
+					session_duration: 2
+				});
+				
+				sessionComplete = result.session_complete;
+				completedTasksCount = result.completed_tasks;
+				totalTasksCount = result.total_tasks;
+				
+				console.log('[Processing Speed] Training session saved:', result);
+			} else {
+				// Submit to regular task result API (baseline mode)
+				await tasks.submitResult(
+					currentUser.id,
+					'processing_speed',
+					score,
+					JSON.stringify(rawData)
+				);
+			}
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}
@@ -181,7 +240,11 @@
 	}
 	
 	function backToDashboard() {
-		goto('/dashboard');
+		if (isTrainingMode) {
+			goto('/training');
+		} else {
+			goto('/dashboard');
+		}
 	}
 	
 	// Get final metrics
@@ -303,6 +366,23 @@
 		<div class="test-card">
 			<h1>Test Complete!</h1>
 			
+			{#if isTrainingMode}
+				<div class="training-progress-banner">
+					{#if sessionComplete}
+						<div class="session-complete-msg">
+							🎉 Session Complete! You've finished all 4 tasks for this session.
+						</div>
+					{:else}
+						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
+							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+						</div>
+						<div style="font-size: 14px; color: #666;">
+							Continue with the remaining tasks to complete this session
+						</div>
+					{/if}
+				</div>
+			{/if}
+			
 			<div class="score-display">
 				{finalScore.toFixed(1)}%
 			</div>
@@ -371,3 +451,26 @@
 <svelte:head>
 	<title>Processing Speed Test - NeuroBloom</title>
 </svelte:head>
+<style>
+	.training-progress-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 20px;
+		border-radius: 12px;
+		margin-bottom: 25px;
+		text-align: center;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.session-complete-msg {
+		font-size: 18px;
+		font-weight: 600;
+		animation: celebration 0.5s ease-out;
+	}
+	
+	@keyframes celebration {
+		0% { transform: scale(0.9); opacity: 0; }
+		50% { transform: scale(1.05); }
+		100% { transform: scale(1); opacity: 1; }
+	}
+</style>

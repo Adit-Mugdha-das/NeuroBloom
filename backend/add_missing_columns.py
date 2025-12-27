@@ -56,7 +56,47 @@ def add_missing_columns():
         else:
             print("✅ created_at column already exists")
 
+def add_training_plan_session_tracking():
+    """Add session tracking columns to training_plans table"""
+    
+    with engine.connect() as conn:
+        # Check existing columns in training_plans
+        result = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'training_plans'
+        """))
+        
+        existing_columns = [row[0] for row in result]
+        print(f"Training plans columns: {existing_columns}")
+        
+        # Add current_session_number if missing
+        if 'current_session_number' not in existing_columns:
+            print("Adding current_session_number column...")
+            conn.execute(text("""
+                ALTER TABLE training_plans 
+                ADD COLUMN current_session_number INTEGER DEFAULT 1
+            """))
+            conn.commit()
+            print("✅ Added current_session_number column")
+        else:
+            print("✅ current_session_number column already exists")
+        
+        # Add current_session_tasks_completed if missing
+        if 'current_session_tasks_completed' not in existing_columns:
+            print("Adding current_session_tasks_completed column...")
+            conn.execute(text("""
+                ALTER TABLE training_plans 
+                ADD COLUMN current_session_tasks_completed TEXT DEFAULT '[]'
+            """))
+            conn.commit()
+            print("✅ Added current_session_tasks_completed column")
+        else:
+            print("✅ current_session_tasks_completed column already exists")
+
 if __name__ == "__main__":
     print("🔧 Checking baseline_assessments table schema...")
     add_missing_columns()
-    print("✨ Migration complete!")
+    print("\n🔧 Checking training_plans table schema...")
+    add_training_plan_session_tracking()
+    print("\n✨ Migration complete!")

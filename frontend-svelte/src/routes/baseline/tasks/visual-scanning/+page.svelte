@@ -1,10 +1,19 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { tasks } from '$lib/api';
+	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, test, results
+	
+	// Training mode variables
+	let isTrainingMode = false;
+	let trainingPlanId = null;
+	let trainingDifficulty = 1;
+	let sessionComplete = false;
+	let completedTasksCount = 0;
+	let totalTasksCount = 4;
 	
 	// Test parameters
 	let gridSize = 10; // 10x10 grid
@@ -21,6 +30,27 @@
 			goto('/login');
 		}
 	});
+	
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		isTrainingMode = urlParams.get('training') === 'true';
+		trainingPlanId = parseInt(urlParams.get('planId')) || null;
+		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		
+		// Adjust difficulty: larger grid for higher difficulty
+		if (isTrainingMode && trainingDifficulty > 3) {
+			gridSize = 10 + (trainingDifficulty - 3); // 10-17 grid
+			totalTargets = 5 + Math.floor((trainingDifficulty - 3) / 2); // 5-8 targets
+		}
+	});
+	
+	function backToDashboard() {
+		if (isTrainingMode) {
+			goto('/training');
+		} else {
+			goto('/dashboard');
+		}
+	}
 	
 	function startTest() {
 		stage = 'test';
@@ -81,26 +111,54 @@
 			const accuracy = (foundTargets.length / totalTargets) * 100;
 			const scanEfficiency = (totalTargets / (searchTime / 1000)) * 10; // Targets per 10 seconds
 			
-			await tasks.submitResult(
-				currentUser.id,
-				'visual_scanning',
-				accuracy,
-				JSON.stringify({
-					targets_total: totalTargets,
-					targets_found: foundTargets.length,
-					missed_targets: totalTargets - foundTargets.length,
-					search_time_ms: searchTime,
-					time_per_target: timePerTarget,
-					scan_efficiency: scanEfficiency
-				})
-			);
+			console.log('[Visual Scanning] Saving results:', {
+				isTrainingMode,
+				trainingPlanId,
+				userId: currentUser?.id,
+				accuracy
+			});
+			
+			if (isTrainingMode && trainingPlanId) {
+				// Submit to training session API
+				console.log('[Visual Scanning] Submitting to training API');
+				
+				const result = await training.submitSession({
+					user_id: currentUser.id,
+					training_plan_id: trainingPlanId,
+					domain: 'visual_scanning',
+					task_type: 'target_search',
+					score: accuracy,
+					accuracy: accuracy,
+					average_reaction_time: timePerTarget,
+					consistency: Math.max(0, 100 - (timePerTarget / 100)),
+					errors: totalTargets - foundTargets.length,
+					session_duration: Math.round(searchTime / 60000) // minutes
+				});
+				
+				sessionComplete = result.session_complete;
+				completedTasksCount = result.completed_tasks;
+				totalTasksCount = result.total_tasks;
+				
+				console.log('[Visual Scanning] Training session saved:', result);
+			} else {
+				// Submit to regular task result API (baseline mode)
+				await tasks.submitResult(
+					currentUser.id,
+					'visual_scanning',
+					accuracy,
+					JSON.stringify({
+						targets_total: totalTargets,
+						targets_found: foundTargets.length,
+						missed_targets: totalTargets - foundTargets.length,
+						search_time_ms: searchTime,
+						time_per_target: timePerTarget,
+						scan_efficiency: scanEfficiency
+					})
+				);
+			}
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}
-	}
-	
-	function backToDashboard() {
-		goto('/dashboard');
 	}
 </script>
 
@@ -200,6 +258,23 @@
 		<div class="test-card">
 			<h1>Test Complete!</h1>
 			
+			{#if isTrainingMode}
+				<div class="training-progress-banner">
+					{#if sessionComplete}
+						<div class="session-complete-msg">
+							🎉 Session Complete! You've finished all 4 tasks for this session.
+						</div>
+					{:else}
+						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
+							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+						</div>
+						<div style="font-size: 14px; color: #666;">
+							Continue with the remaining tasks to complete this session
+						</div>
+					{/if}
+				</div>
+			{/if}
+			
 			<div class="score-display">
 				{((foundTargets.length / totalTargets) * 100).toFixed(0)}%
 			</div>
@@ -255,6 +330,28 @@
 </div>
 
 <style>
+	.training-progress-banner {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		padding: 20px;
+		border-radius: 12px;
+		margin-bottom: 25px;
+		text-align: center;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.session-complete-msg {
+		font-size: 18px;
+		font-weight: 600;
+		animation: celebration 0.5s ease-out;
+	}
+	
+	@keyframes celebration {
+		0% { transform: scale(0.9); opacity: 0; }
+		50% { transform: scale(1.05); }
+		100% { transform: scale(1); opacity: 1; }
+	}
+	
 	.grid-cell:hover {
 		transform: scale(1.1);
 		border-color: #667eea;

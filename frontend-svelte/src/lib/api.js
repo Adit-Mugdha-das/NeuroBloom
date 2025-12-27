@@ -86,7 +86,18 @@ export const training = {
 	// Submit training session results
 	submitSession: async (sessionData) => {
 		const response = await api.post('/training/training-session/submit', null, {
-			params: sessionData
+			params: {
+				user_id: sessionData.user_id,
+				training_plan_id: sessionData.training_plan_id,
+				domain: sessionData.domain,
+				task_type: sessionData.task_type,
+				score: sessionData.score,
+				accuracy: sessionData.accuracy,
+				average_reaction_time: sessionData.average_reaction_time,
+				consistency: sessionData.consistency,
+				errors: sessionData.errors,
+				duration: sessionData.session_duration
+			}
 		});
 		return response.data;
 	},
