@@ -9,7 +9,10 @@ export const nodes = [
 	() => import('./nodes/5'),
 	() => import('./nodes/6'),
 	() => import('./nodes/7'),
-	() => import('./nodes/8')
+	() => import('./nodes/8'),
+	() => import('./nodes/9'),
+	() => import('./nodes/10'),
+	() => import('./nodes/11')
 ];
 
 export const server_loads = [];
@@ -18,10 +21,13 @@ export const dictionary = {
 		"/": [2],
 		"/baseline/tasks/attention": [3],
 		"/baseline/tasks/flexibility": [4],
-		"/baseline/tasks/working-memory": [5],
-		"/dashboard": [6],
-		"/login": [7],
-		"/register": [8]
+		"/baseline/tasks/planning": [5],
+		"/baseline/tasks/processing-speed": [6],
+		"/baseline/tasks/visual-scanning": [7],
+		"/baseline/tasks/working-memory": [8],
+		"/dashboard": [9],
+		"/login": [10],
+		"/register": [11]
 	};
 
 export const hooks = {

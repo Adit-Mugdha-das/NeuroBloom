@@ -17,7 +17,7 @@ Transform NeuroBloom from basic brain games into a clinical-grade cognitive asse
 - Frontend: SvelteKit
 - Charts: Chart.js / D3.js
 - Real-time: WebSockets (for live sessions)
-
+i ch
 ---
 
 ## 🗂️ COMPLETE DATABASE SCHEMA

@@ -1,7 +1,7 @@
 <script>
-	import { user, clearUser } from '$lib/stores';
-	import { tasks } from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { tasks } from '$lib/api';
+	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -99,23 +99,29 @@
 					</div>
 				</a>
 				
-				<div class="module-card" style="opacity: 0.6; cursor: not-allowed;">
-					<div class="icon">🎯</div>
-					<h3>Planning</h3>
-					<p>Coming Soon • Tower of Hanoi</p>
-				</div>
+				<a href="/baseline/tasks/planning" style="text-decoration: none;">
+					<div class="module-card">
+						<div class="icon">🎯</div>
+						<h3>Planning</h3>
+						<p>Tower of Hanoi • Strategic problem solving</p>
+					</div>
+				</a>
 				
-				<div class="module-card" style="opacity: 0.6; cursor: not-allowed;">
-					<div class="icon">⚡</div>
-					<h3>Processing Speed</h3>
-					<p>Coming Soon • Reaction time tests</p>
-				</div>
+				<a href="/baseline/tasks/processing-speed" style="text-decoration: none;">
+					<div class="module-card">
+						<div class="icon">⚡</div>
+						<h3>Processing Speed</h3>
+						<p>Reaction Time • Simple & choice responses</p>
+					</div>
+				</a>
 				
-				<div class="module-card" style="opacity: 0.6; cursor: not-allowed;">
-					<div class="icon">🔍</div>
-					<h3>Visual Scanning</h3>
-					<p>Coming Soon • Visual search tasks</p>
-				</div>
+				<a href="/baseline/tasks/visual-scanning" style="text-decoration: none;">
+					<div class="module-card">
+						<div class="icon">🔍</div>
+						<h3>Visual Scanning</h3>
+						<p>Visual Search • Find targets in grid</p>
+					</div>
+				</a>
 			</div>
 		{/if}
 	</div>

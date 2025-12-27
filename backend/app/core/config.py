@@ -13,5 +13,6 @@ def init_db():
     # Import all models here so SQLModel knows about them
     from app.models.user import User
     from app.models.test_result import TestResult
+    from app.models.baseline_assessment import BaselineAssessment
     
     SQLModel.metadata.create_all(engine)

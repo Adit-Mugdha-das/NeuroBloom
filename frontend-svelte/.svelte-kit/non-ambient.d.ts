@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/baseline" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/working-memory" | "/dashboard" | "/login" | "/register";
+		RouteId(): "/" | "/baseline" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/login" | "/register";
 		RouteParams(): {
 			
 		};
@@ -37,12 +37,15 @@ declare module "$app/types" {
 			"/baseline/tasks": Record<string, never>;
 			"/baseline/tasks/attention": Record<string, never>;
 			"/baseline/tasks/flexibility": Record<string, never>;
+			"/baseline/tasks/planning": Record<string, never>;
+			"/baseline/tasks/processing-speed": Record<string, never>;
+			"/baseline/tasks/visual-scanning": Record<string, never>;
 			"/baseline/tasks/working-memory": Record<string, never>;
 			"/dashboard": Record<string, never>;
 			"/login": Record<string, never>;
 			"/register": Record<string, never>
 		};
-		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/login" | "/login/" | "/register" | "/register/";
+		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/login" | "/login/" | "/register" | "/register/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): string & {};
 	}

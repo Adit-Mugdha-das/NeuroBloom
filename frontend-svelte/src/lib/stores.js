@@ -1,5 +1,5 @@
-import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
 
 // Get initial user from localStorage
 const initialUser = browser ? JSON.parse(localStorage.getItem('user') || 'null') : null;

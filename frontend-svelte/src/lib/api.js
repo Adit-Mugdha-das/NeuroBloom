@@ -48,4 +48,16 @@ export const tasks = {
 	}
 };
 
+export const baseline = {
+	calculate: async (userId) => {
+		const response = await api.post(`/baseline/calculate?user_id=${userId}`);
+		return response.data;
+	},
+	
+	get: async (userId) => {
+		const response = await api.get(`/baseline/${userId}`);
+		return response.data;
+	}
+};
+
 export default api;

@@ -1,7 +1,7 @@
 <script>
-	import { auth } from '$lib/api';
-	import { setUser, clearUser } from '$lib/stores';
 	import { goto } from '$app/navigation';
+	import { auth } from '$lib/api';
+	import { clearUser, setUser } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
 	let email = '';
