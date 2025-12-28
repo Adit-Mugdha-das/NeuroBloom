@@ -1,11 +1,11 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
-	import { user } from '$lib/stores';
-	import { onMount } from 'svelte';
-	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
+	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let loading = true;
