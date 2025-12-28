@@ -4,6 +4,8 @@
 	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
 	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
 	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -107,17 +109,20 @@
 
 <div class="container">
 	{#if loading}
-		<div class="loading-card">
-			<p>Loading progress data...</p>
+		<div class="loading-container">
+			<LoadingSkeleton variant="card" count={4} />
+			<LoadingSkeleton variant="default" count={1} />
 		</div>
 	{:else if error}
-		<div class="error-card">
-			<h3>No Training Data</h3>
-			<p>{error}</p>
-			<button class="btn-primary" on:click={() => goto('/training')}>
-				Start Training
-			</button>
-		</div>
+		<EmptyState 
+			icon="📊"
+			title="Start Your Progress Journey"
+			message="Complete your first training session to see detailed analytics, trends, and badges!"
+			actionText="Begin Training"
+			actionLink="/training"
+			tip="Consistent training leads to measurable cognitive improvements"
+			variant="large"
+		/>
 	{:else if metrics}
 		<div class="progress-container">
 			<!-- Header -->
@@ -316,6 +321,13 @@
 </div>
 
 <style>
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		padding: 2rem;
+	}
+	
 	.container {
 		min-height: 100vh;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

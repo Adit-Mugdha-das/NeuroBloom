@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import EmptyState from './EmptyState.svelte';
 	
 	/** @type {any} */
 	export let trendsData = null;
@@ -228,11 +229,15 @@
 		{#if trendsData && trendsData.total_sessions > 0}
 			<canvas bind:this={chartCanvas} width="800" height="300"></canvas>
 		{:else}
-			<div class="empty-state">
-				<div class="empty-icon">📊</div>
-				<p>No training data yet</p>
-				<small>Complete some sessions to see your progress trends</small>
-			</div>
+			<EmptyState 
+				icon="📈"
+				title="Track Your Progress"
+				message="Complete multiple training sessions to unlock your performance trends graph and see how you improve over time!"
+				actionText="Start Training"
+				actionLink="/training"
+				tip="Trends become visible after 3+ training sessions"
+				variant="compact"
+			/>
 		{/if}
 	</div>
 	

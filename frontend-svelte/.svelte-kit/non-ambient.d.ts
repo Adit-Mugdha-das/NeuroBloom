@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/login" | "/progress" | "/register" | "/session-summary" | "/training";
+		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/empty-states-preview" | "/login" | "/progress" | "/register" | "/session-summary" | "/training";
 		RouteParams(): {
 			
 		};
@@ -43,13 +43,14 @@ declare module "$app/types" {
 			"/baseline/tasks/visual-scanning": Record<string, never>;
 			"/baseline/tasks/working-memory": Record<string, never>;
 			"/dashboard": Record<string, never>;
+			"/empty-states-preview": Record<string, never>;
 			"/login": Record<string, never>;
 			"/progress": Record<string, never>;
 			"/register": Record<string, never>;
 			"/session-summary": Record<string, never>;
 			"/training": Record<string, never>
 		};
-		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/";
+		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/empty-states-preview" | "/empty-states-preview/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon.png" | string & {};
 	}

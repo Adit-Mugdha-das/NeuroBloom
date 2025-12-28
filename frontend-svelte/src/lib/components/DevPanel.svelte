@@ -201,6 +201,10 @@
 		}
 	}
 	
+	function previewEmptyStates() {
+		window.location.href = '/empty-states-preview';
+	}
+	
 	function showMessage(msg, type) {
 		message = msg;
 		messageType = type;
@@ -288,6 +292,14 @@
 					<span class="text">
 						<strong>View Weekly Data</strong>
 						<small>Check API response</small>
+					</span>
+				</button>
+				
+				<button class="dev-btn preview" on:click={previewEmptyStates}>
+					<span class="icon">🎨</span>
+					<span class="text">
+						<strong>Preview Phase 6</strong>
+						<small>View all empty states</small>
 					</span>
 				</button>
 				
@@ -521,6 +533,11 @@
 	
 	.dev-btn.info {
 		background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+		color: white;
+	}
+	
+	.dev-btn.preview {
+		background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
 		color: white;
 	}
 	

@@ -1,4 +1,6 @@
 <script>
+	import EmptyState from './EmptyState.svelte';
+	
 	export let badges = [];
 	export let totalBadges = 0;
 	export let earnedCount = 0;
@@ -99,10 +101,16 @@
 	</div>
 	
 	{#if filteredBadges.length === 0}
-		<div class="empty-state">
-			<div class="empty-icon">🎯</div>
-			<p>No badges in this category yet</p>
-			<small>Complete training sessions to unlock badges!</small>
+		<div style="margin: 2rem 0;">
+			<EmptyState 
+				icon="🎯"
+				title={selectedCategory === 'all' ? 'Start Earning Badges!' : 'No Badges in This Category'}
+				message={selectedCategory === 'all' ? 'Complete training sessions to unlock your first achievement badge!' : 'Try other categories or complete more sessions to unlock badges here.'}
+				actionText="Start Training"
+				actionLink="/training"
+				tip="Badges track your progress, consistency, and mastery across all cognitive domains"
+				variant="compact"
+			/>
 		</div>
 	{/if}
 </div>

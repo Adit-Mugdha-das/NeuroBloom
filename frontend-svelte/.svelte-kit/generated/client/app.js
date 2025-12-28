@@ -16,7 +16,8 @@ export const nodes = [
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
 	() => import('./nodes/14'),
-	() => import('./nodes/15')
+	() => import('./nodes/15'),
+	() => import('./nodes/16')
 ];
 
 export const server_loads = [];
@@ -31,11 +32,12 @@ export const dictionary = {
 		"/baseline/tasks/visual-scanning": [8],
 		"/baseline/tasks/working-memory": [9],
 		"/dashboard": [10],
-		"/login": [11],
-		"/progress": [12],
-		"/register": [13],
-		"/session-summary": [14],
-		"/training": [15]
+		"/empty-states-preview": [11],
+		"/login": [12],
+		"/progress": [13],
+		"/register": [14],
+		"/session-summary": [15],
+		"/training": [16]
 	};
 
 export const hooks = {

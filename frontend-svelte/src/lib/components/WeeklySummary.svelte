@@ -1,4 +1,6 @@
 <script>
+	import EmptyState from './EmptyState.svelte';
+	
 	/** @type {any} */
 	export let summaryData = null;
 	
@@ -154,13 +156,15 @@
 		</div>
 	</div>
 {:else}
-	<div class="weekly-summary empty">
-		<div class="empty-state">
-			<div class="empty-icon">📅</div>
-			<p>No activity this week</p>
-			<small>Complete some training sessions to see your weekly summary</small>
-		</div>
-	</div>
+	<EmptyState 
+		icon="📅"
+		title="Build Your Weekly Streak"
+		message="Train for 7 days to unlock your weekly summary with insights and progress tracking!"
+		actionText="Start Training"
+		actionLink="/training"
+		tip="Training multiple days per week shows better cognitive improvements"
+		variant="compact"
+	/>
 {/if}
 
 <style>

@@ -4,6 +4,8 @@
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	
 	let currentUser = null;
 	let loading = true;
@@ -120,14 +122,18 @@
 
 <div class="summary-container">
 	{#if loading}
-		<div class="loading">
-			<p>Loading session summary...</p>
+		<div class="loading-container">
+			<LoadingSkeleton variant="card" count={4} />
 		</div>
 	{:else if error}
-		<div class="error">
-			<p>{error}</p>
-			<button on:click={continueTraining}>Back to Training</button>
-		</div>
+		<EmptyState 
+			icon="🎯"
+			title="No Session Data"
+			message="Complete a training session to see your celebration summary here!"
+			actionText="Start Training"
+			actionLink="/training"
+			tip="Each session includes 4 cognitive tasks designed to challenge your brain"
+		/>
 	{:else if sessionData}
 		<!-- Header -->
 		<div class="header">
@@ -219,31 +225,16 @@
 </div>
 
 <style>
+	.loading-container {
+		padding: 2rem;
+	}
+	
 	.summary-container {
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 2rem;
 		min-height: 100vh;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	}
-	
-	.loading, .error {
-		background: white;
-		border-radius: 20px;
-		padding: 3rem;
-		text-align: center;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-	}
-	
-	.error button {
-		margin-top: 1rem;
-		padding: 0.75rem 2rem;
-		background: #667eea;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: 600;
 	}
 	
 	.header {
@@ -284,7 +275,7 @@
 	
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 		gap: 1.5rem;
 		margin-bottom: 2rem;
 	}
@@ -292,9 +283,9 @@
 	.stat-card {
 		background: white;
 		border-radius: 15px;
-		padding: 2rem;
+		padding: 1.75rem;
 		text-align: center;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
 		transition: transform 0.3s;
 	}
 	
@@ -304,18 +295,19 @@
 	
 	.stat-icon {
 		font-size: 2.5rem;
-		margin-bottom: 1rem;
+		margin-bottom: 0.75rem;
 	}
 	
 	.stat-value {
-		font-size: 2rem;
-		font-weight: bold;
+		font-size: 2.25rem;
+		font-weight: 700;
 		margin-bottom: 0.5rem;
 	}
 	
 	.stat-label {
 		color: #666;
 		font-size: 0.9rem;
+		font-weight: 500;
 	}
 	
 	.breakdown-card {
@@ -329,19 +321,27 @@
 	.breakdown-card h3 {
 		margin: 0 0 1.5rem 0;
 		color: #333;
+		font-size: 1.5rem;
+		font-weight: 700;
 	}
 	
 	.tasks-list {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1rem;
 	}
 	
 	.task-row {
 		padding: 1.5rem;
-		background: #f5f5f5;
+		background: #f8f9fa;
 		border-radius: 12px;
 		border-left: 4px solid #667eea;
+		transition: all 0.3s;
+	}
+	
+	.task-row:hover {
+		background: #f0f2f5;
+		border-left-color: #764ba2;
 	}
 	
 	.task-info {
@@ -359,51 +359,61 @@
 	
 	.task-score {
 		font-size: 1.5rem;
-		font-weight: bold;
+		font-weight: 700;
 	}
 	
 	.task-difficulty {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
 		margin-bottom: 0.5rem;
+		flex-wrap: wrap;
 	}
 	
 	.difficulty-label {
 		color: #666;
 		font-size: 0.9rem;
+		font-weight: 500;
 	}
 	
 	.difficulty-change {
 		color: #333;
 		font-weight: 600;
+		font-size: 0.95rem;
 	}
 	
 	.difficulty-change small {
 		color: #666;
 		margin-left: 0.5rem;
+		font-weight: 400;
 	}
 	
 	.adaptation-reason {
-		margin-top: 0.5rem;
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid #e0e0e0;
 	}
 	
 	.adaptation-reason small {
 		color: #666;
 		font-style: italic;
+		line-height: 1.4;
 	}
 	
 	.next-steps {
 		background: white;
 		border-radius: 20px;
-		padding: 2rem;
+		padding: 2.5rem 2rem;
 		text-align: center;
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		margin-top: 2rem;
 	}
 	
 	.next-steps h3 {
-		margin: 0 0 1.5rem 0;
+		margin: 0 0 2rem 0;
 		color: #333;
+		font-size: 1.5rem;
+		font-weight: 700;
 	}
 	
 	.buttons {
@@ -414,13 +424,15 @@
 	}
 	
 	.btn-primary, .btn-secondary {
-		padding: 1rem 2rem;
+		padding: 1rem 2.5rem;
 		border: none;
-		border-radius: 10px;
+		border-radius: 12px;
 		font-weight: 600;
 		font-size: 1rem;
 		cursor: pointer;
 		transition: all 0.3s;
+		flex: 1;
+		max-width: 250px;
 	}
 	
 	.btn-primary {
@@ -442,6 +454,7 @@
 	
 	.btn-secondary:hover {
 		background: #f5f5f5;
+		transform: translateY(-2px);
 	}
 	
 	.timestamp {
@@ -452,11 +465,55 @@
 	
 	@media (max-width: 768px) {
 		.summary-container {
-			padding: 1rem;
+			padding: 1.5rem;
+		}
+		
+		.header {
+			padding: 2rem 1.5rem;
+		}
+		
+		.celebration {
+			font-size: 3.5rem;
+		}
+		
+		.header h1 {
+			font-size: 2rem;
 		}
 		
 		.stats-grid {
 			grid-template-columns: repeat(2, 1fr);
+			gap: 1rem;
+		}
+		
+		.stat-card {
+			padding: 1.25rem;
+		}
+		
+		.stat-icon {
+			font-size: 2rem;
+		}
+		
+		.stat-value {
+			font-size: 1.75rem;
+		}
+		
+		.breakdown-card {
+			padding: 1.5rem;
+		}
+		
+		.task-row {
+			padding: 1.25rem;
+		}
+		
+		.task-info {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+		
+		.task-difficulty {
+			flex-direction: column;
+			align-items: flex-start;
 		}
 		
 		.buttons {
@@ -465,6 +522,11 @@
 		
 		.btn-primary, .btn-secondary {
 			width: 100%;
+			max-width: none;
+		}
+		
+		.next-steps {
+			padding: 2rem 1.5rem;
 		}
 	}
 </style>
