@@ -106,6 +106,101 @@
 		}
 	}
 	
+	async function generateWeekData() {
+		if (!currentUser) return;
+		loading = true;
+		message = '';
+		
+		try {
+			// Generate 10 sessions spread over 7 days
+			const result = await training.dev.generateSessions(currentUser.id, 10);
+			showMessage(`✅ Generated ${result.sessions_generated} sessions over 7 days!`, 'success');
+			
+			setTimeout(() => window.location.reload(), 1500);
+		} catch (error) {
+			showMessage(`❌ Error: ${error.message}`, 'error');
+		} finally {
+			loading = false;
+		}
+	}
+	
+	async function viewWeeklySummary() {
+		if (!currentUser) return;
+		loading = true;
+		message = '';
+		
+		try {
+			const summary = await training.getWeeklySummary(currentUser.id);
+			
+			// Format the data for display
+			const info = [
+				`📊 ${summary.total_sessions} sessions`,
+				`⭐ ${summary.average_score.toFixed(1)} avg score`,
+				`🎯 ${summary.average_accuracy.toFixed(1)}% accuracy`,
+				`⏱️ ${summary.total_time_minutes} min total`,
+				`🔥 ${summary.current_streak} day streak`
+			].join(' • ');
+			
+			console.log('📈 Weekly Summary Data:', summary);
+			showMessage(`📈 Last 7 Days: ${info}`, 'info');
+		} catch (error) {
+			showMessage(`❌ Error: ${error.message}`, 'error');
+		} finally {
+			loading = false;
+		}
+	}
+	
+	async function testWeeklySummaryPhase() {
+		if (!currentUser) return;
+		loading = true;
+		message = '';
+		
+		try {
+			// Step 1: Generate test data
+			showMessage('⏳ Step 1/3: Generating test sessions...', 'info');
+			const genResult = await training.dev.generateSessions(currentUser.id, 10);
+			
+			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			// Step 2: Fetch weekly summary
+			showMessage('⏳ Step 2/3: Fetching weekly summary...', 'info');
+			const summary = await training.getWeeklySummary(currentUser.id);
+			
+			// Step 3: Validate data
+			showMessage('⏳ Step 3/3: Validating data...', 'info');
+			await new Promise(resolve => setTimeout(resolve, 500));
+			
+			const issues = [];
+			if (summary.total_sessions === 0) issues.push('No sessions found');
+			if (summary.average_score === 0) issues.push('Score is 0');
+			if (!summary.daily_activity || summary.daily_activity.length !== 7) issues.push('Daily activity missing');
+			
+			if (issues.length > 0) {
+				showMessage(`⚠️ Issues found: ${issues.join(', ')}`, 'error');
+				return;
+			}
+			
+			// Success - navigate to session-summary to view
+			showMessage(`✅ Phase 5 Test Passed! ${summary.total_sessions} sessions, ${summary.average_score.toFixed(1)} avg score`, 'success');
+			
+			console.log('✅ Weekly Summary Test Results:', {
+				sessions_generated: genResult.sessions_generated,
+				weekly_summary: summary,
+				validation: 'PASSED'
+			});
+			
+			setTimeout(() => {
+				window.location.href = '/session-summary';
+			}, 2000);
+			
+		} catch (error) {
+			console.error('❌ Phase 5 Test Failed:', error);
+			showMessage(`❌ Test Failed: ${error.message}`, 'error');
+		} finally {
+			loading = false;
+		}
+	}
+	
 	function showMessage(msg, type) {
 		message = msg;
 		messageType = type;
@@ -167,6 +262,32 @@
 					<span class="text">
 						<strong>Check Badges</strong>
 						<small>Award eligible badges</small>
+					</span>
+				</button>
+				
+				<div class="separator">Weekly Summary Testing</div>
+				
+				<button class="dev-btn test" on:click={testWeeklySummaryPhase} disabled={loading}>
+					<span class="icon">🧪</span>
+					<span class="text">
+						<strong>Test Phase 5 ✨</strong>
+						<small>Full test + validation</small>
+					</span>
+				</button>
+				
+				<button class="dev-btn weekly" on:click={generateWeekData} disabled={loading}>
+					<span class="icon">📅</span>
+					<span class="text">
+						<strong>Generate Week Data</strong>
+						<small>10 sessions over 7 days</small>
+					</span>
+				</button>
+				
+				<button class="dev-btn info" on:click={viewWeeklySummary} disabled={loading}>
+					<span class="icon">📈</span>
+					<span class="text">
+						<strong>View Weekly Data</strong>
+						<small>Check API response</small>
 					</span>
 				</button>
 				
@@ -305,6 +426,17 @@
 		gap: 0.75rem;
 	}
 	
+	.separator {
+		margin-top: 0.5rem;
+		padding: 0.5rem 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: #666;
+		border-top: 1px solid #e0e0e0;
+		letter-spacing: 0.5px;
+	}
+	
 	.dev-btn {
 		display: flex;
 		align-items: center;
@@ -368,6 +500,27 @@
 	
 	.dev-btn.badge {
 		background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+		color: white;
+	}
+	
+	.dev-btn.test {
+		background: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+		color: white;
+		font-weight: 600;
+		box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+	}
+	
+	.dev-btn.test:hover:not(:disabled) {
+		box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4);
+	}
+	
+	.dev-btn.weekly {
+		background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+		color: white;
+	}
+	
+	.dev-btn.info {
+		background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
 		color: white;
 	}
 	

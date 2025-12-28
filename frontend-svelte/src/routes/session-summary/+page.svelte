@@ -3,10 +3,12 @@
 	import { training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
+	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
 	
 	let currentUser = null;
 	let loading = true;
 	let sessionData = null;
+	let weeklySummary = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -33,6 +35,9 @@
 			
 			// Get recent session history (last 4 tasks = 1 session)
 			const history = await training.getHistory(currentUser.id, 4);
+			
+			// Load weekly summary
+			weeklySummary = await training.getWeeklySummary(currentUser.id);
 			
 			if (!history || history.length === 0) {
 				error = 'No session data found';
@@ -162,7 +167,7 @@
 		
 		<!-- Task Breakdown -->
 		<div class="breakdown-card">
-			<h3>Performance Breakdown</h3>
+			<h3>This Session's Tasks</h3>
 			<div class="tasks-list">
 				{#each sessionData.taskBreakdown as task}
 					<div class="task-row">
@@ -191,6 +196,11 @@
 				{/each}
 			</div>
 		</div>
+		
+		<!-- Last 7 Days Overview -->
+		{#if weeklySummary}
+			<WeeklySummary summaryData={weeklySummary} />
+		{/if}
 		
 		<!-- Next Steps -->
 		<div class="next-steps">

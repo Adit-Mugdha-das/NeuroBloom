@@ -156,6 +156,12 @@ export const training = {
 		return response.data;
 	},
 	
+	// Get weekly summary
+	getWeeklySummary: async (userId) => {
+		const response = await api.get(`/training/weekly-summary/${userId}`);
+		return response.data;
+	},
+	
 	// DEV TOOLS - Quick testing endpoints
 	dev: {
 		completeSession: async (userId) => {

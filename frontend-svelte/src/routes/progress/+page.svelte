@@ -3,6 +3,7 @@
 	import { training } from '$lib/api';
 	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
 	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
+	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -14,6 +15,7 @@
 	let streakData = null;
 	let badgeData = null;
 	let trendsData = null;
+	let weeklySummary = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -51,6 +53,9 @@
 			
 			// Load trends data (last 30 days)
 			trendsData = await training.getTrends(currentUser.id, 30);
+			
+			// Load weekly summary
+			weeklySummary = await training.getWeeklySummary(currentUser.id);
 		} catch (err) {
 			console.error('Error loading progress data:', err);
 			error = 'No training data found. Start training to see your progress.';
@@ -285,22 +290,27 @@
 							<span class="difficulty-level">Level {difficulty}/10</span>
 						</div>
 					{/each}
-				</div>
 			</div>
-			
-<!-- Performance Trends -->
+		</div>
+		
+		<!-- Weekly Summary -->
+		{#if weeklySummary}
+			<WeeklySummary summaryData={weeklySummary} />
+		{/if}
+		
+		<!-- Performance Trends -->
 		{#if trendsData}
 			<PerformanceTrends trendsData={trendsData} />
 		{/if}
-		
-		<!-- Badges Showcase -->
-			{#if badgeData}
-				<BadgesShowcase 
-					badges={badgeData.all_badges}
-					totalBadges={badgeData.total_badges}
-					earnedCount={badgeData.earned_count}
-				/>
-			{/if}
+	
+	<!-- Badges Showcase -->
+	{#if badgeData}
+		<BadgesShowcase 
+			badges={badgeData.all_badges}
+			totalBadges={badgeData.total_badges}
+			earnedCount={badgeData.earned_count}
+		/>
+	{/if}
 		</div>
 	{/if}
 </div>

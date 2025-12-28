@@ -1133,3 +1133,128 @@ def get_performance_trends(
         "overall_trend": overall_trend,
         "domains": list(trends_by_domain.keys())
     }
+
+# ============================================================================
+# WEEKLY SUMMARY
+# ============================================================================
+
+@router.get("/weekly-summary/{user_id}")
+def get_weekly_summary(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Get weekly summary showing last 7 days of training activity.
+    Includes sessions count, average performance, streak status, and most improved domain.
+    """
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        return {
+            "has_data": False,
+            "message": "No active training plan"
+        }
+    
+    # Get sessions from last 7 days
+    cutoff_date = datetime.utcnow() - timedelta(days=7)
+    
+    weekly_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.training_plan_id == plan.id)
+        .where(TrainingSession.created_at >= cutoff_date)
+        .order_by(col(TrainingSession.created_at))
+    ).all()
+    
+    if not weekly_sessions:
+        return {
+            "has_data": False,
+            "message": "No sessions in the last 7 days"
+        }
+    
+    # Calculate weekly statistics
+    total_sessions = len(weekly_sessions)
+    avg_score = sum(s.score for s in weekly_sessions) / total_sessions
+    avg_accuracy = sum(s.accuracy for s in weekly_sessions) / total_sessions
+    total_time = sum(s.duration for s in weekly_sessions)
+    
+    # Group by domain to find most improved
+    domain_stats = {}
+    for s in weekly_sessions:
+        if s.domain not in domain_stats:
+            domain_stats[s.domain] = {
+                "scores": [],
+                "first_score": s.score,
+                "last_score": s.score
+            }
+        domain_stats[s.domain]["scores"].append(s.score)
+        domain_stats[s.domain]["last_score"] = s.score
+    
+    # Calculate improvement for each domain
+    most_improved = None
+    max_improvement = 0
+    
+    for domain, stats in domain_stats.items():
+        if len(stats["scores"]) >= 2:
+            # Compare first half vs second half of week
+            mid = len(stats["scores"]) // 2
+            first_half_avg = sum(stats["scores"][:mid]) / len(stats["scores"][:mid])
+            second_half_avg = sum(stats["scores"][mid:]) / len(stats["scores"][mid:])
+            improvement = second_half_avg - first_half_avg
+            
+            if improvement > max_improvement:
+                max_improvement = improvement
+                most_improved = {
+                    "domain": domain,
+                    "improvement": improvement,
+                    "sessions": len(stats["scores"])
+                }
+    
+    # Get daily session counts for the week
+    daily_counts = {}
+    for i in range(7):
+        date = (datetime.utcnow() - timedelta(days=6-i)).date()
+        daily_counts[date.isoformat()] = 0
+    
+    for s in weekly_sessions:
+        date_key = s.created_at.date().isoformat()
+        if date_key in daily_counts:
+            daily_counts[date_key] += 1
+    
+    # Count active days (days with at least 1 session)
+    active_days = sum(1 for count in daily_counts.values() if count > 0)
+    
+    # Get previous week data for comparison
+    previous_week_cutoff = datetime.utcnow() - timedelta(days=14)
+    previous_week_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.training_plan_id == plan.id)
+        .where(TrainingSession.created_at >= previous_week_cutoff)
+        .where(TrainingSession.created_at < cutoff_date)
+    ).all()
+    
+    prev_week_avg_score = 0
+    score_change = 0
+    if previous_week_sessions:
+        prev_week_avg_score = sum(s.score for s in previous_week_sessions) / len(previous_week_sessions)
+        score_change = avg_score - prev_week_avg_score
+    
+    return {
+        "has_data": True,
+        "week_start": cutoff_date.date().isoformat(),
+        "week_end": datetime.utcnow().date().isoformat(),
+        "total_sessions": total_sessions,
+        "active_days": active_days,
+        "avg_score": round(avg_score, 1),
+        "avg_accuracy": round(avg_accuracy, 1),
+        "total_time_minutes": round(total_time / 60, 1),
+        "current_streak": plan.current_streak,
+        "most_improved": most_improved,
+        "daily_counts": daily_counts,
+        "score_change_from_last_week": round(score_change, 1),
+        "domains_trained": list(domain_stats.keys())
+    }
