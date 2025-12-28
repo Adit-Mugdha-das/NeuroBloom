@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select, desc
+from sqlmodel import Session, select, desc, col
 import json
 from datetime import datetime, timedelta
 
@@ -1041,4 +1041,95 @@ def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
         "new_badge_details": badge_details,
         "total_earned": len(all_badges),
         "message": f"Checked badges! {len(newly_earned)} new badges earned" if newly_earned else "No new badges earned"
+    }
+
+# ============================================================================
+# PERFORMANCE TRENDS ENDPOINTS
+# ============================================================================
+
+@router.get("/trends/{user_id}")
+def get_performance_trends(
+    user_id: int, 
+    days: int = 30,
+    session: Session = Depends(get_session)
+):
+    """
+    Get performance trends over time for visualizing progress.
+    Returns time-series data for scores, accuracy, and difficulty per domain.
+    """
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get sessions from last N days
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    
+    sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.training_plan_id == plan.id)
+        .where(TrainingSession.created_at >= cutoff_date)
+        .order_by(col(TrainingSession.created_at))
+    ).all()
+    
+    # Group by domain and date
+    trends_by_domain = {}
+    
+    for s in sessions:
+        domain = s.domain
+        date = s.created_at.date().isoformat()
+        
+        if domain not in trends_by_domain:
+            trends_by_domain[domain] = {
+                "domain": domain,
+                "data_points": []
+            }
+        
+        trends_by_domain[domain]["data_points"].append({
+            "date": s.created_at.isoformat(),
+            "score": s.score,
+            "accuracy": s.accuracy,
+            "difficulty": s.difficulty_level,
+            "reaction_time": s.average_reaction_time,
+            "errors": s.errors
+        })
+    
+    # Calculate overall trend (all domains combined)
+    overall_trend = []
+    sessions_by_date = {}
+    
+    for s in sessions:
+        date = s.created_at.date().isoformat()
+        if date not in sessions_by_date:
+            sessions_by_date[date] = {
+                "scores": [],
+                "accuracies": [],
+                "difficulties": []
+            }
+        
+        sessions_by_date[date]["scores"].append(s.score)
+        sessions_by_date[date]["accuracies"].append(s.accuracy)
+        sessions_by_date[date]["difficulties"].append(s.difficulty_level)
+    
+    for date, data in sorted(sessions_by_date.items()):
+        overall_trend.append({
+            "date": date,
+            "avg_score": sum(data["scores"]) / len(data["scores"]),
+            "avg_accuracy": sum(data["accuracies"]) / len(data["accuracies"]),
+            "avg_difficulty": sum(data["difficulties"]) / len(data["difficulties"]),
+            "sessions_count": len(data["scores"])
+        })
+    
+    return {
+        "user_id": user_id,
+        "period_days": days,
+        "total_sessions": len(sessions),
+        "trends_by_domain": trends_by_domain,
+        "overall_trend": overall_trend,
+        "domains": list(trends_by_domain.keys())
     }

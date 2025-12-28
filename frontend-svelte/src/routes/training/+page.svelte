@@ -3,6 +3,7 @@
 	import { training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
+	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	
 	let currentUser = null;
 	let loading = true;
@@ -10,6 +11,7 @@
 	let nextTasks = null;
 	let metrics = null;
 	let error = null;
+	let newlyEarnedBadges = [];
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -102,6 +104,11 @@
 </script>
 
 <div class="container">
+	<!-- Badge Notifications -->
+	{#if newlyEarnedBadges.length > 0}
+		<BadgeNotification badges={newlyEarnedBadges} />
+	{/if}
+	
 	{#if loading}
 		<div class="loading-card">
 			<p>Loading training plan...</p>

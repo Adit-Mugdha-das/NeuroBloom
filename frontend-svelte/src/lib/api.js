@@ -128,6 +128,34 @@ export const training = {
 		return response.data;
 	},
 	
+	// Get user badges
+	getBadges: async (userId) => {
+		const response = await api.get(`/training/badges/${userId}`);
+		return response.data;
+	},
+	
+	// Get all available badges (earned + locked)
+	getAvailableBadges: async (userId) => {
+		const response = await api.get(`/training/badges/available/${userId}`);
+		return response.data;
+	},
+	
+	// Get recent badges
+	getRecentBadges: async (userId, limit = 5) => {
+		const response = await api.get(`/training/badges/recent/${userId}`, {
+			params: { limit }
+		});
+		return response.data;
+	},
+	
+	// Get performance trends
+	getTrends: async (userId, days = 30) => {
+		const response = await api.get(`/training/trends/${userId}`, {
+			params: { days }
+		});
+		return response.data;
+	},
+	
 	// DEV TOOLS - Quick testing endpoints
 	dev: {
 		completeSession: async (userId) => {
@@ -147,6 +175,11 @@ export const training = {
 		
 		clearSessions: async (userId) => {
 			const response = await api.delete(`/training/dev/clear-sessions/${userId}`);
+			return response.data;
+		},
+		
+		checkBadges: async (userId) => {
+			const response = await api.post(`/training/dev/check-badges/${userId}`);
 			return response.data;
 		}
 	}

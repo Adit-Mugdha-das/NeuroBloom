@@ -83,6 +83,29 @@
 		}
 	}
 	
+	async function checkBadges() {
+		if (!currentUser) return;
+		loading = true;
+		message = '';
+		
+		try {
+			const result = await training.dev.checkBadges(currentUser.id);
+			
+			if (result.newly_earned.length > 0) {
+				const badgeNames = result.new_badge_details.map(b => `${b.icon} ${b.name}`).join(', ');
+				showMessage(`🎉 ${result.newly_earned.length} new badges! ${badgeNames}`, 'success');
+			} else {
+				showMessage(`✓ Badge check complete. Total: ${result.total_earned} badges`, 'info');
+			}
+			
+			setTimeout(() => window.location.reload(), 2500);
+		} catch (error) {
+			showMessage(`❌ Error: ${error.message}`, 'error');
+		} finally {
+			loading = false;
+		}
+	}
+	
 	function showMessage(msg, type) {
 		message = msg;
 		messageType = type;
@@ -136,6 +159,14 @@
 					<span class="text">
 						<strong>Set 7-Day Streak</strong>
 						<small>Test streak features</small>
+					</span>
+				</button>
+				
+				<button class="dev-btn badge" on:click={checkBadges} disabled={loading}>
+					<span class="icon">🏆</span>
+					<span class="text">
+						<strong>Check Badges</strong>
+						<small>Award eligible badges</small>
 					</span>
 				</button>
 				
@@ -332,6 +363,11 @@
 	
 	.dev-btn.accent {
 		background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+		color: white;
+	}
+	
+	.dev-btn.badge {
+		background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
 		color: white;
 	}
 	

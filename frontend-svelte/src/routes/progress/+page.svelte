@@ -3,6 +3,8 @@
 	import { training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
+	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
+	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
 	
 	let currentUser = null;
 	let loading = true;
@@ -10,6 +12,8 @@
 	let history = null;
 	let comparison = null;
 	let streakData = null;
+	let badgeData = null;
+	let trendsData = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -41,6 +45,12 @@
 			
 			// Load streak data
 			streakData = await training.getStreak(currentUser.id);
+			
+			// Load badge data
+			badgeData = await training.getAvailableBadges(currentUser.id);
+			
+			// Load trends data (last 30 days)
+			trendsData = await training.getTrends(currentUser.id, 30);
 		} catch (err) {
 			console.error('Error loading progress data:', err);
 			error = 'No training data found. Start training to see your progress.';
@@ -277,6 +287,20 @@
 					{/each}
 				</div>
 			</div>
+			
+<!-- Performance Trends -->
+		{#if trendsData}
+			<PerformanceTrends trendsData={trendsData} />
+		{/if}
+		
+		<!-- Badges Showcase -->
+			{#if badgeData}
+				<BadgesShowcase 
+					badges={badgeData.all_badges}
+					totalBadges={badgeData.total_badges}
+					earnedCount={badgeData.earned_count}
+				/>
+			{/if}
 		</div>
 	{/if}
 </div>
