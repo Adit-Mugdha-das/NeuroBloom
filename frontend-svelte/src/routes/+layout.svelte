@@ -1,6 +1,6 @@
 <script>
-	import '../app.css';
 	import DevPanel from '$lib/components/DevPanel.svelte';
+	import '../app.css';
 </script>
 
 <slot />

@@ -1,10 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
-	import { user } from '$lib/stores';
-	import { onMount } from 'svelte';
 	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
 	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
+	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 	
 	let currentUser = null;
 	let loading = true;

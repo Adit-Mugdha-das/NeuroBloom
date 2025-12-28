@@ -1,9 +1,9 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
+	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
-	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	
 	let currentUser = null;
 	let loading = true;
