@@ -33,6 +33,15 @@
 	let choiceCurrentShape = '';
 	let choiceStartTime = 0;
 	
+	// Results variables
+	let simpleRTMean = 0;
+	let simpleRTStd = 0;
+	let validSimpleRTs = [];
+	let choiceRTMean = 0;
+	let choiceRTStd = 0;
+	let choiceAccuracyScore = 0;
+	let finalScore = 0;
+	
 	user.subscribe(value => {
 		currentUser = value;
 		if (!value) {
@@ -134,32 +143,36 @@
 	}
 	
 	function calculateResults() {
+		// Calculate Simple RT metrics (exclude penalties)
+		validSimpleRTs = simpleRTs.filter(rt => rt < 9000);
+		simpleRTMean = validSimpleRTs.length > 0 
+			? validSimpleRTs.reduce((a, b) => a + b, 0) / validSimpleRTs.length 
+			: 0;
+		simpleRTStd = calculateStd(validSimpleRTs);
+		
+		// Calculate Choice RT metrics
+		choiceRTMean = choiceRTs.length > 0
+			? choiceRTs.reduce((a, b) => a + b, 0) / choiceRTs.length
+			: 0;
+		choiceRTStd = calculateStd(choiceRTs);
+		choiceAccuracyScore = choiceAccuracy.length > 0
+			? choiceAccuracy.filter(a => a).length / choiceAccuracy.length
+			: 0;
+		
+		// Calculate final score
+		finalScore = calculateProcessingSpeedScore(
+			simpleRTMean, 
+			choiceRTMean, 
+			simpleRTStd, 
+			choiceAccuracyScore
+		);
+		
 		stage = 'results';
 		saveResults();
 	}
 	
 	async function saveResults() {
 		try {
-			// Simple RT metrics (exclude penalties)
-			const validSimpleRTs = simpleRTs.filter(rt => rt < 9000);
-			const simpleRTMean = validSimpleRTs.length > 0 
-				? validSimpleRTs.reduce((a, b) => a + b, 0) / validSimpleRTs.length 
-				: 0;
-			const simpleRTStd = calculateStd(validSimpleRTs);
-			
-			// Choice RT metrics
-			const choiceRTMean = choiceRTs.reduce((a, b) => a + b, 0) / choiceRTs.length;
-			const choiceRTStd = calculateStd(choiceRTs);
-			const choiceAccuracyScore = choiceAccuracy.filter(a => a).length / choiceAccuracy.length;
-			
-			// Calculate score
-			const score = calculateProcessingSpeedScore(
-				simpleRTMean, 
-				choiceRTMean, 
-				simpleRTStd, 
-				choiceAccuracyScore
-			);
-			
 			const rawData = {
 				simple_rt_mean: simpleRTMean,
 				simple_rt_std: simpleRTStd,
@@ -174,7 +187,7 @@
 				isTrainingMode,
 				trainingPlanId,
 				userId: currentUser?.id,
-				score
+				score: finalScore
 			});
 			
 			if (isTrainingMode && trainingPlanId) {
@@ -189,7 +202,7 @@
 					training_plan_id: trainingPlanId,
 					domain: 'processing_speed',
 					task_type: 'reaction_time',
-					score: score,
+					score: finalScore,
 					accuracy: choiceAccuracyScore * 100,
 					average_reaction_time: avgRT,
 					consistency: consistencyScore,
@@ -207,7 +220,7 @@
 				await tasks.submitResult(
 					currentUser.id,
 					'processing_speed',
-					score,
+					finalScore,
 					JSON.stringify(rawData)
 				);
 			}
@@ -224,19 +237,70 @@
 	}
 	
 	function calculateProcessingSpeedScore(simpleRT, choiceRT, simpleStd, choiceAcc) {
-		// Simple RT (40 points) - 200ms=100%, 500ms=0%
-		const simpleNormalized = Math.max(0, Math.min(1, (500 - simpleRT) / 300));
-		const simpleScore = simpleNormalized * 40;
+		// Research-based scoring using normative data
+		// Simple RT mean ~220ms, Choice RT mean ~380ms
 		
-		// Choice RT with accuracy (40 points)
-		const choiceNormalized = Math.max(0, Math.min(1, (800 - choiceRT) / 400));
-		const choiceScore = choiceNormalized * 30 + (choiceAcc * 10);
+		// Simple RT Score (40 points) - adjusted to research norms
+		let simpleScore = 0;
+		if (simpleRT <= 190) {
+			// Excellent: 90-100% (36-40 points)
+			simpleScore = 36 + ((190 - simpleRT) / 40) * 4;
+		} else if (simpleRT <= 250) {
+			// Good: 70-90% (28-36 points)
+			simpleScore = 28 + ((250 - simpleRT) / 60) * 8;
+		} else if (simpleRT <= 310) {
+			// Average: 40-70% (16-28 points)
+			simpleScore = 16 + ((310 - simpleRT) / 60) * 12;
+		} else if (simpleRT <= 400) {
+			// Below Average: 10-40% (4-16 points)
+			simpleScore = 4 + ((400 - simpleRT) / 90) * 12;
+		} else {
+			// Poor: 0-10% (0-4 points)
+			simpleScore = Math.max(0, 4 - ((simpleRT - 400) / 100) * 4);
+		}
 		
-		// Consistency (20 points)
-		const consistencyNormalized = Math.max(0, Math.min(1, (150 - simpleStd) / 150));
-		const consistencyScore = consistencyNormalized * 20;
+		// Choice RT Score (30 points for speed) - adjusted to research norms
+		let choiceSpeedScore = 0;
+		if (choiceRT <= 330) {
+			// Excellent: 90-100% (27-30 points)
+			choiceSpeedScore = 27 + ((330 - choiceRT) / 50) * 3;
+		} else if (choiceRT <= 430) {
+			// Good: 70-90% (21-27 points)
+			choiceSpeedScore = 21 + ((430 - choiceRT) / 100) * 6;
+		} else if (choiceRT <= 530) {
+			// Average: 40-70% (12-21 points)
+			choiceSpeedScore = 12 + ((530 - choiceRT) / 100) * 9;
+		} else if (choiceRT <= 650) {
+			// Below Average: 10-40% (3-12 points)
+			choiceSpeedScore = 3 + ((650 - choiceRT) / 120) * 9;
+		} else {
+			// Poor: 0-10% (0-3 points)
+			choiceSpeedScore = Math.max(0, 3 - ((choiceRT - 650) / 150) * 3);
+		}
 		
-		return Math.min(100, simpleScore + choiceScore + consistencyScore);
+		// Choice accuracy (10 points)
+		const choiceAccuracyScore = choiceAcc * 10;
+		
+		// Consistency Score (20 points) - reward low variability
+		let consistencyScore = 0;
+		if (simpleStd <= 30) {
+			// Excellent consistency: 90-100% (18-20 points)
+			consistencyScore = 18 + ((30 - simpleStd) / 30) * 2;
+		} else if (simpleStd <= 50) {
+			// Good consistency: 70-90% (14-18 points)
+			consistencyScore = 14 + ((50 - simpleStd) / 20) * 4;
+		} else if (simpleStd <= 80) {
+			// Average consistency: 40-70% (8-14 points)
+			consistencyScore = 8 + ((80 - simpleStd) / 30) * 6;
+		} else if (simpleStd <= 120) {
+			// Below average: 10-40% (2-8 points)
+			consistencyScore = 2 + ((120 - simpleStd) / 40) * 6;
+		} else {
+			// Poor consistency: 0-10% (0-2 points)
+			consistencyScore = Math.max(0, 2 - ((simpleStd - 120) / 60) * 2);
+		}
+		
+		return Math.min(100, simpleScore + choiceSpeedScore + choiceAccuracyScore + consistencyScore);
 	}
 	
 	function backToDashboard() {
@@ -246,24 +310,6 @@
 			goto('/dashboard');
 		}
 	}
-	
-	// Get final metrics
-	$: validSimpleRTs = simpleRTs.filter(rt => rt < 9000);
-	$: simpleRTMean = validSimpleRTs.length > 0 
-		? validSimpleRTs.reduce((a, b) => a + b, 0) / validSimpleRTs.length 
-		: 0;
-	$: choiceRTMean = choiceRTs.length > 0
-		? choiceRTs.reduce((a, b) => a + b, 0) / choiceRTs.length 
-		: 0;
-	$: choiceAccuracyScore = choiceAccuracy.length > 0
-		? choiceAccuracy.filter(a => a).length / choiceAccuracy.length
-		: 0;
-	$: finalScore = calculateProcessingSpeedScore(
-		simpleRTMean, 
-		choiceRTMean, 
-		calculateStd(validSimpleRTs), 
-		choiceAccuracyScore
-	);
 </script>
 
 <div class="test-container">

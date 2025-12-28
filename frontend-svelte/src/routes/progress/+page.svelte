@@ -8,6 +8,7 @@
 	let loading = true;
 	let metrics = null;
 	let history = null;
+	let comparison = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -33,6 +34,9 @@
 			
 			// Load session history
 			history = await training.getHistory(currentUser.id, 20);
+			
+			// Load baseline vs current comparison
+			comparison = await training.getPerformanceComparison(currentUser.id);
 		} catch (err) {
 			console.error('Error loading progress data:', err);
 			error = 'No training data found. Start training to see your progress.';

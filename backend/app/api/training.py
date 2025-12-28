@@ -48,6 +48,8 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
     if not baseline or baseline.id is None:
         raise HTTPException(status_code=404, detail="No baseline assessment found. Complete baseline first.")
     
+    # Type guard: baseline is confirmed non-null after this point
+    
     # Deactivate any existing active plans
     existing_plans = session.exec(
         select(TrainingPlan)
@@ -316,6 +318,10 @@ def submit_training_session(
         plan.current_session_number += 1
         plan.current_session_tasks_completed = "[]"  # Reset for next session
         plan.last_session_date = datetime.utcnow()
+        
+        # Check if we should rebalance focus areas (every 4 sessions)
+        if plan.total_sessions_completed % 4 == 0:
+            rebalance_focus_areas(plan, session)
     
     plan.last_updated = datetime.utcnow()
     
@@ -453,4 +459,139 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
         "current_difficulty": plan.get_current_difficulty(),
         "recent_sessions": recent_sessions,
         "last_training_date": plan.last_session_date.isoformat() if plan.last_session_date else None
+    }
+
+def rebalance_focus_areas(plan: TrainingPlan, db_session: Session):
+    """
+    Rebalance focus areas based on recent training performance.
+    Called every 4 sessions to update primary/secondary/maintenance focus.
+    """
+    # Get recent training sessions (last 12 sessions = 3 full cycles of 4)
+    recent_sessions = db_session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.training_plan_id == plan.id)
+        .order_by(desc(TrainingSession.created_at))
+        .limit(12)
+    ).all()
+    
+    if not recent_sessions:
+        return  # No sessions yet, keep current focus
+    
+    # Calculate average score per domain from recent sessions
+    domain_scores = {}
+    domain_counts = {}
+    
+    for ts in recent_sessions:
+        if ts.domain not in domain_scores:
+            domain_scores[ts.domain] = 0
+            domain_counts[ts.domain] = 0
+        domain_scores[ts.domain] += ts.score
+        domain_counts[ts.domain] += 1
+    
+    # Calculate averages
+    domain_averages = {
+        domain: domain_scores[domain] / domain_counts[domain]
+        for domain in domain_scores.keys()
+    }
+    
+    # Sort domains by current performance (weakest first)
+    sorted_domains = sorted(domain_averages.items(), key=lambda x: x[1])
+    
+    # Update focus areas based on current performance
+    if len(sorted_domains) >= 6:
+        new_primary = [sorted_domains[0][0], sorted_domains[1][0]]
+        new_secondary = [sorted_domains[2][0], sorted_domains[3][0]]
+        new_maintenance = [sorted_domains[4][0], sorted_domains[5][0]]
+    elif len(sorted_domains) >= 4:
+        new_primary = [sorted_domains[0][0], sorted_domains[1][0]]
+        new_secondary = [sorted_domains[2][0], sorted_domains[3][0]]
+        new_maintenance = []
+    else:
+        return  # Not enough data, keep current focus
+    
+    # Update the plan
+    plan.primary_focus = json.dumps(new_primary)
+    plan.secondary_focus = json.dumps(new_secondary)
+    plan.maintenance = json.dumps(new_maintenance)
+    
+    db_session.add(plan)
+
+@router.get("/training-session/performance-comparison/{user_id}")
+def get_performance_comparison(user_id: int, session: Session = Depends(get_session)):
+    """
+    Compare baseline scores vs current training performance.
+    Shows improvement/decline per domain.
+    """
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get baseline scores
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.id == plan.baseline_assessment_id)
+    ).first()
+    
+    if not baseline:
+        raise HTTPException(status_code=404, detail="Baseline assessment not found")
+    
+    baseline_scores = {
+        "working_memory": baseline.working_memory_score,
+        "attention": baseline.attention_score,
+        "flexibility": baseline.flexibility_score,
+        "planning": baseline.planning_score,
+        "processing_speed": baseline.processing_speed_score,
+        "visual_scanning": baseline.visual_scanning_score
+    }
+    
+    # Get all training sessions
+    all_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.training_plan_id == plan.id)
+        .order_by(desc(TrainingSession.created_at))
+    ).all()
+    
+    # Calculate current average scores per domain
+    domain_scores = {}
+    domain_counts = {}
+    
+    for ts in all_sessions:
+        if ts.domain not in domain_scores:
+            domain_scores[ts.domain] = 0
+            domain_counts[ts.domain] = 0
+        domain_scores[ts.domain] += ts.score
+        domain_counts[ts.domain] += 1
+    
+    current_scores = {
+        domain: domain_scores[domain] / domain_counts[domain]
+        for domain in domain_scores.keys()
+    }
+    
+    # Calculate improvement
+    comparison = {}
+    for domain in baseline_scores.keys():
+        baseline_score = baseline_scores[domain]
+        current_score = current_scores.get(domain, baseline_score)
+        improvement = current_score - baseline_score
+        improvement_pct = (improvement / baseline_score * 100) if baseline_score > 0 else 0
+        
+        comparison[domain] = {
+            "baseline": baseline_score,
+            "current": current_score,
+            "improvement": improvement,
+            "improvement_percentage": improvement_pct,
+            "sessions_completed": domain_counts.get(domain, 0)
+        }
+    
+    return {
+        "user_id": user_id,
+        "total_sessions_completed": plan.total_sessions_completed,
+        "baseline_date": baseline.created_at.isoformat(),
+        "last_training_date": plan.last_session_date.isoformat() if plan.last_session_date else None,
+        "comparison": comparison
     }

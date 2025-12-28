@@ -114,6 +114,12 @@ export const training = {
 	getMetrics: async (userId) => {
 		const response = await api.get(`/training/training-session/metrics/${userId}`);
 		return response.data;
+	},
+	
+	// Get performance comparison (baseline vs current)
+	getPerformanceComparison: async (userId) => {
+		const response = await api.get(`/training/training-session/performance-comparison/${userId}`);
+		return response.data;
 	}
 };
 
