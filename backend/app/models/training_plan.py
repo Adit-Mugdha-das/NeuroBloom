@@ -37,6 +37,13 @@ class TrainingPlan(SQLModel, table=True):
     total_sessions_completed: int = Field(default=0)
     last_session_date: Optional[datetime] = Field(default=None)
     
+    # Streak tracking
+    current_streak: int = Field(default=0)  # Current consecutive days trained
+    longest_streak: int = Field(default=0)  # Personal best streak record
+    total_training_days: int = Field(default=0)  # Total unique days trained
+    streak_freeze_available: bool = Field(default=True)  # One free missed day per week
+    last_streak_reset: Optional[datetime] = Field(default=None)  # When streak was last broken
+    
     # Current session tracking
     current_session_number: int = Field(default=1)
     current_session_tasks_completed: str = Field(default="[]")  # JSON array of completed task domains

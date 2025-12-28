@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, desc
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
@@ -163,6 +163,55 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
         "created_at": plan.created_at.isoformat()
     }
 
+@router.get("/training-plan/{user_id}/streak")
+def get_streak_info(user_id: int, session: Session = Depends(get_session)):
+    """
+    Get streak and consistency statistics.
+    
+    Returns:
+    - current_streak: consecutive days trained
+    - longest_streak: personal best record
+    - total_training_days: lifetime training days
+    - streak_freeze_available: whether freeze is available
+    - days_until_streak_break: how many days until streak is broken
+    - streak_percentage: current/longest as percentage
+    """
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Calculate days until streak breaks
+    if plan.last_session_date:
+        days_since_last = (datetime.utcnow().date() - plan.last_session_date.date()).days
+        if plan.streak_freeze_available:
+            days_until_break = 2 - days_since_last  # 2 days grace with freeze
+        else:
+            days_until_break = 1 - days_since_last  # 1 day without freeze
+        days_until_break = max(0, days_until_break)
+    else:
+        days_until_break = 0
+    
+    # Calculate streak percentage
+    streak_percentage = 0
+    if plan.longest_streak > 0:
+        streak_percentage = (plan.current_streak / plan.longest_streak) * 100
+    
+    return {
+        "current_streak": plan.current_streak,
+        "longest_streak": plan.longest_streak,
+        "total_training_days": plan.total_training_days,
+        "streak_freeze_available": plan.streak_freeze_available,
+        "days_until_streak_break": days_until_break,
+        "streak_percentage": round(streak_percentage, 1),
+        "last_session_date": plan.last_session_date.isoformat() if plan.last_session_date else None,
+        "last_streak_reset": plan.last_streak_reset.isoformat() if plan.last_streak_reset else None
+    }
+
 @router.get("/training-plan/{user_id}/next-tasks")
 def get_next_training_tasks(user_id: int, session: Session = Depends(get_session)):
     """
@@ -253,6 +302,16 @@ def submit_training_session(
     Difficulty is clamped between 1-10.
     """
     
+    print(f"\n╔══════════════════════════════════════════════════════════╗")
+    print(f"║  TRAINING SESSION SUBMISSION RECEIVED                   ║")
+    print(f"╠══════════════════════════════════════════════════════════╣")
+    print(f"  User ID: {user_id}")
+    print(f"  Plan ID: {training_plan_id}")
+    print(f"  Domain: {domain}")
+    print(f"  Score: {score}%")
+    print(f"  Accuracy: {accuracy}%")
+    print(f"╚══════════════════════════════════════════════════════════╝\n")
+    
     # Get training plan
     plan = session.exec(
         select(TrainingPlan).where(TrainingPlan.id == training_plan_id)
@@ -312,12 +371,18 @@ def submit_training_session(
     # Check if all 4 tasks in session are completed
     session_complete = len(completed_tasks) >= 4
     
+    print(f"[DEBUG] Domain: {domain}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
+    
     if session_complete:
+        print(f"[DEBUG] SESSION COMPLETE! Updating streak...")
         # Session is complete - increment session count and reset
         plan.total_sessions_completed += 1
         plan.current_session_number += 1
         plan.current_session_tasks_completed = "[]"  # Reset for next session
-        plan.last_session_date = datetime.utcnow()
+        
+        # Update streak tracking
+        update_streak(plan)
+        print(f"[DEBUG] Streak updated! Current: {plan.current_streak}, Longest: {plan.longest_streak}")
         
         # Check if we should rebalance focus areas (every 4 sessions)
         if plan.total_sessions_completed % 4 == 0:
@@ -461,6 +526,60 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
         "last_training_date": plan.last_session_date.isoformat() if plan.last_session_date else None
     }
 
+def update_streak(plan: TrainingPlan):
+    """
+    Update streak tracking when a session is completed.
+    
+    Logic:
+    - If trained today already: no change
+    - If trained yesterday: increment current_streak
+    - If missed 1 day + freeze available: use freeze, maintain streak
+    - If missed 2+ days or no freeze: reset streak to 1
+    - Update longest_streak if current exceeds it
+    """
+    now = datetime.utcnow()
+    today = now.date()
+    
+    # First session ever
+    if plan.last_session_date is None:
+        plan.current_streak = 1
+        plan.longest_streak = 1
+        plan.total_training_days = 1
+        plan.last_session_date = now
+        return
+    
+    last_session_date = plan.last_session_date.date()
+    days_since_last = (today - last_session_date).days
+    
+    # Already trained today - no streak change
+    if days_since_last == 0:
+        return
+    
+    # Trained yesterday - increment streak
+    if days_since_last == 1:
+        plan.current_streak += 1
+        plan.total_training_days += 1
+        plan.streak_freeze_available = True  # Reset freeze for new week
+        
+    # Missed exactly 1 day - check if freeze available
+    elif days_since_last == 2 and plan.streak_freeze_available:
+        plan.current_streak += 1  # Maintain streak with freeze
+        plan.total_training_days += 1
+        plan.streak_freeze_available = False  # Use up the freeze
+        
+    # Missed 2+ days or no freeze - reset streak
+    else:
+        plan.current_streak = 1
+        plan.total_training_days += 1
+        plan.streak_freeze_available = True
+        plan.last_streak_reset = now
+    
+    # Update longest streak if current is higher
+    if plan.current_streak > plan.longest_streak:
+        plan.longest_streak = plan.current_streak
+    
+    plan.last_session_date = now
+
 def rebalance_focus_areas(plan: TrainingPlan, db_session: Session):
     """
     Rebalance focus areas based on recent training performance.
@@ -594,4 +713,222 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
         "baseline_date": baseline.created_at.isoformat(),
         "last_training_date": plan.last_session_date.isoformat() if plan.last_session_date else None,
         "comparison": comparison
+    }
+
+# ============================================================================
+# DEV/TESTING ENDPOINTS - For quick testing during development
+# ============================================================================
+
+@router.post("/dev/complete-session/{user_id}")
+def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Instantly complete the current session with auto-generated data.
+    Adds all 4 tasks with realistic scores.
+    """
+    import random
+    
+    # Get active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
+    task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
+    
+    completed = plan.get_current_session_tasks_completed()
+    now = datetime.utcnow()
+    
+    tasks_added = 0
+    for i, (domain, task_type) in enumerate(zip(domains, task_types)):
+        if domain not in completed:
+            score = random.uniform(70, 95)
+            accuracy = random.uniform(75, 100)
+            
+            training_session = TrainingSession(
+                user_id=user_id,
+                training_plan_id=plan.id,
+                domain=domain,
+                task_type=task_type,
+                score=score,
+                accuracy=accuracy,
+                average_reaction_time=random.uniform(400, 800),
+                consistency=random.uniform(70, 90),
+                errors=random.randint(0, 5),
+                difficulty_level=5,
+                difficulty_before=5,
+                difficulty_after=5,
+                duration=5,
+                adaptation_reason="Test data",
+                raw_data=json.dumps({}),
+                created_at=now + timedelta(seconds=i * 10),
+                completed=True
+            )
+            
+            session.add(training_session)
+            completed.append(domain)
+            tasks_added += 1
+    
+    # Update plan
+    plan.current_session_tasks_completed = json.dumps(completed)
+    
+    # If session complete, increment counters
+    if len(completed) >= 4:
+        plan.total_sessions_completed += 1
+        plan.current_session_number += 1
+        plan.current_session_tasks_completed = "[]"
+        update_streak(plan)
+    
+    plan.last_updated = datetime.utcnow()
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    
+    return {
+        "success": True,
+        "message": f"Added {tasks_added} tasks",
+        "session_complete": len(completed) >= 4,
+        "total_sessions": plan.total_sessions_completed,
+        "current_streak": plan.current_streak
+    }
+
+@router.post("/dev/generate-sessions/{user_id}")
+def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Generate multiple completed sessions with realistic data.
+    """
+    import random
+    
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
+    task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
+    
+    sessions_created = 0
+    for session_num in range(num_sessions):
+        base_time = datetime.utcnow() - timedelta(days=num_sessions - session_num - 1, hours=random.randint(0, 12))
+        
+        for i, (domain, task_type) in enumerate(zip(domains, task_types)):
+            score = random.uniform(60, 95)
+            accuracy = random.uniform(70, 100)
+            
+            training_session = TrainingSession(
+                user_id=user_id,
+                training_plan_id=plan.id,
+                domain=domain,
+                task_type=task_type,
+                score=score,
+                accuracy=accuracy,
+                average_reaction_time=random.uniform(400, 1200),
+                consistency=random.uniform(60, 95),
+                errors=random.randint(0, 10),
+                difficulty_level=random.randint(3, 8),
+                difficulty_before=5,
+                difficulty_after=5,
+                duration=5,
+                adaptation_reason="Generated test data",
+                raw_data=json.dumps({}),
+                created_at=base_time + timedelta(minutes=i * 3),
+                completed=True
+            )
+            
+            session.add(training_session)
+        
+        sessions_created += 1
+    
+    # Update plan stats
+    plan.total_sessions_completed += num_sessions
+    plan.current_session_tasks_completed = "[]"
+    plan.last_session_date = datetime.utcnow()
+    plan.current_streak = 1
+    plan.total_training_days = max(plan.total_training_days or 0, 1)
+    
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    
+    return {
+        "success": True,
+        "sessions_generated": sessions_created,
+        "total_sessions": plan.total_sessions_completed,
+        "message": f"Generated {sessions_created} sessions with {sessions_created * 4} tasks"
+    }
+
+@router.post("/dev/set-streak/{user_id}")
+def dev_set_streak(user_id: int, days: int, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Set streak to specific number of days.
+    """
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    plan.current_streak = days
+    plan.longest_streak = max(plan.longest_streak or 0, days)
+    plan.total_training_days = max(plan.total_training_days or 0, days)
+    
+    session.add(plan)
+    session.commit()
+    
+    return {
+        "success": True,
+        "current_streak": days,
+        "longest_streak": plan.longest_streak,
+        "message": f"Streak set to {days} days 🔥"
+    }
+
+@router.delete("/dev/clear-sessions/{user_id}")
+def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Clear all training sessions and reset plan.
+    """
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Delete all sessions
+    result = session.exec(
+        select(TrainingSession).where(TrainingSession.training_plan_id == plan.id)
+    ).all()
+    
+    for ts in result:
+        session.delete(ts)
+    
+    # Reset plan
+    plan.total_sessions_completed = 0
+    plan.current_session_tasks_completed = "[]"
+    plan.current_session_number = 1
+    plan.current_streak = 0
+    plan.longest_streak = 0
+    plan.total_training_days = 0
+    plan.last_session_date = None
+    
+    session.add(plan)
+    session.commit()
+    
+    return {
+        "success": True,
+        "sessions_deleted": len(result),
+        "message": "All sessions cleared"
     }

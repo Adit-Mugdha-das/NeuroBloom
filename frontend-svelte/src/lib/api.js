@@ -120,6 +120,35 @@ export const training = {
 	getPerformanceComparison: async (userId) => {
 		const response = await api.get(`/training/training-session/performance-comparison/${userId}`);
 		return response.data;
+	},
+	
+	// Get streak information
+	getStreak: async (userId) => {
+		const response = await api.get(`/training/training-plan/${userId}/streak`);
+		return response.data;
+	},
+	
+	// DEV TOOLS - Quick testing endpoints
+	dev: {
+		completeSession: async (userId) => {
+			const response = await api.post(`/training/dev/complete-session/${userId}`);
+			return response.data;
+		},
+		
+		generateSessions: async (userId, numSessions = 2) => {
+			const response = await api.post(`/training/dev/generate-sessions/${userId}?num_sessions=${numSessions}`);
+			return response.data;
+		},
+		
+		setStreak: async (userId, days) => {
+			const response = await api.post(`/training/dev/set-streak/${userId}?days=${days}`);
+			return response.data;
+		},
+		
+		clearSessions: async (userId) => {
+			const response = await api.delete(`/training/dev/clear-sessions/${userId}`);
+			return response.data;
+		}
 	}
 };
 

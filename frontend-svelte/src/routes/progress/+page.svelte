@@ -9,6 +9,7 @@
 	let metrics = null;
 	let history = null;
 	let comparison = null;
+	let streakData = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -37,6 +38,9 @@
 			
 			// Load baseline vs current comparison
 			comparison = await training.getPerformanceComparison(currentUser.id);
+			
+			// Load streak data
+			streakData = await training.getStreak(currentUser.id);
 		} catch (err) {
 			console.error('Error loading progress data:', err);
 			error = 'No training data found. Start training to see your progress.';
@@ -114,10 +118,25 @@
 			
 			<!-- Overall Stats -->
 			<div class="stats-overview">
-				<div class="stat-card">
-					<div class="stat-icon">🎯</div>
+				<!-- Streak Card -->
+				{#if streakData}
+				<div class="stat-card streak-card">
+					<div class="stat-icon">🔥</div>
+					<div class="stat-value">{streakData.current_streak}</div>
+					<div class="stat-label">Day Streak</div>
+					{#if streakData.current_streak > 0}
+						<div class="streak-details">
+							<small>Best: {streakData.longest_streak} days</small>
+						</div>
+					{/if}
+				</div>
+				{/if}
+				
+				<div class="stat-card clickable-stat" on:click={() => goto('/session-summary')}>
+					<div class="stat-icon">🎉</div>
 					<div class="stat-value">{metrics.total_sessions}</div>
 					<div class="stat-label">Total Sessions</div>
+					<div class="view-summary">View Last Summary →</div>
 				</div>
 				
 				<div class="stat-card">
@@ -363,6 +382,80 @@
 	.stat-label {
 		color: #666;
 		font-size: 0.9rem;
+	}
+	
+	.clickable-stat {
+		cursor: pointer;
+		transition: all 0.3s;
+		position: relative;
+	}
+	
+	.clickable-stat:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+	}
+	
+	.view-summary {
+		margin-top: 0.75rem;
+		color: #667eea;
+		font-size: 0.85rem;
+		font-weight: 600;
+		opacity: 0;
+		transition: opacity 0.3s;
+	}
+	
+	.clickable-stat:hover .view-summary {
+		opacity: 1;
+	}
+	
+	.streak-card {
+		background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.streak-card .stat-icon {
+		font-size: 3.5rem;
+		animation: flameFlicker 2s ease-in-out infinite;
+	}
+	
+	.streak-card .stat-value {
+		color: white;
+		font-size: 2.5rem;
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	}
+	
+	.streak-card .stat-label {
+		color: rgba(255, 255, 255, 0.95);
+		font-weight: 600;
+		font-size: 1rem;
+	}
+	
+	.streak-details {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.3);
+	}
+	
+	.streak-details small {
+		color: rgba(255, 255, 255, 0.9);
+		font-size: 0.85rem;
+		font-weight: 500;
+	}
+	
+	@keyframes flameFlicker {
+		0%, 100% {
+			transform: scale(1) rotate(-2deg);
+		}
+		25% {
+			transform: scale(1.05) rotate(2deg);
+		}
+		50% {
+			transform: scale(1.1) rotate(-1deg);
+		}
+		75% {
+			transform: scale(1.05) rotate(1deg);
+		}
 	}
 	
 	.performance-card, .history-card, .difficulty-overview {

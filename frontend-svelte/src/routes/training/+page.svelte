@@ -172,8 +172,15 @@
 				</div>
 				
 				{#if nextTasks.session_complete}
-					<div class="session-complete-banner">
-						🎉 Session Complete! All tasks finished. Great job!
+					<div class="session-complete-banner" on:click={() => goto(`/session-summary?session=${trainingPlan.total_sessions}`)}>
+						<div class="banner-content">
+							<span class="banner-icon">🎉</span>
+							<div class="banner-text">
+								<strong>Session Complete!</strong>
+								<p>All tasks finished. Click to see your summary!</p>
+							</div>
+							<span class="banner-arrow">→</span>
+						</div>
 					</div>
 				{:else}
 					<p class="session-subtitle">Complete all {nextTasks.total_tasks} tasks to finish this session</p>
@@ -455,18 +462,69 @@
 	.session-complete-banner {
 		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
 		color: white;
-		padding: 1rem;
-		border-radius: 12px;
-		text-align: center;
-		font-weight: 600;
-		font-size: 1.1rem;
+		padding: 1.5rem;
+		border-radius: 15px;
 		margin-bottom: 1.5rem;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
 		animation: celebrate 0.5s ease;
+	}
+	
+	.session-complete-banner:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+	}
+	
+	.banner-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	
+	.banner-icon {
+		font-size: 2.5rem;
+		animation: bounce 1s infinite;
+	}
+	
+	.banner-text {
+		flex: 1;
+		text-align: left;
+	}
+	
+	.banner-text strong {
+		display: block;
+		font-size: 1.2rem;
+		margin-bottom: 0.25rem;
+	}
+	
+	.banner-text p {
+		margin: 0;
+		font-size: 0.95rem;
+		opacity: 0.95;
+		font-weight: normal;
+	}
+	
+	.banner-arrow {
+		font-size: 1.5rem;
+		font-weight: bold;
+		animation: slideRight 1s infinite;
 	}
 	
 	@keyframes celebrate {
 		0%, 100% { transform: scale(1); }
 		50% { transform: scale(1.02); }
+	}
+	
+	@keyframes bounce {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-5px); }
+	}
+	
+	@keyframes slideRight {
+		0%, 100% { transform: translateX(0); }
+		50% { transform: translateX(5px); }
 	}
 	
 	.tasks-grid {
