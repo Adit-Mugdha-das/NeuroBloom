@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
 from app.models.baseline_assessment import BaselineAssessment
+from app.models.badge import UserBadge, BadgeDefinition
+from app.services.badge_service import BadgeService
 from app.core.config import engine
 
 router = APIRouter()
@@ -370,6 +372,7 @@ def submit_training_session(
     
     # Check if all 4 tasks in session are completed
     session_complete = len(completed_tasks) >= 4
+    newly_earned_badges = []
     
     print(f"[DEBUG] Domain: {domain}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
     
@@ -384,6 +387,11 @@ def submit_training_session(
         update_streak(plan)
         print(f"[DEBUG] Streak updated! Current: {plan.current_streak}, Longest: {plan.longest_streak}")
         
+        # Check for new badges
+        newly_earned_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+        if newly_earned_badges:
+            print(f"[DEBUG] New badges earned: {newly_earned_badges}")
+        
         # Check if we should rebalance focus areas (every 4 sessions)
         if plan.total_sessions_completed % 4 == 0:
             rebalance_focus_areas(plan, session)
@@ -397,6 +405,18 @@ def submit_training_session(
     session.refresh(training_session)
     session.refresh(plan)
     
+    # Get badge details for newly earned badges
+    badge_details = []
+    for badge_id in newly_earned_badges:
+        badge_def = BadgeDefinition.get_badge(badge_id)
+        if badge_def:
+            badge_details.append({
+                "id": badge_id,
+                "name": badge_def["name"],
+                "description": badge_def["description"],
+                "icon": badge_def["icon"]
+            })
+    
     return {
         "id": training_session.id,
         "domain": domain,
@@ -408,6 +428,7 @@ def submit_training_session(
         "session_complete": session_complete,
         "completed_tasks": len(completed_tasks),
         "total_tasks": 4,
+        "newly_earned_badges": badge_details,
         "created_at": training_session.created_at.isoformat()
     }
 
@@ -749,6 +770,9 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
             score = random.uniform(70, 95)
             accuracy = random.uniform(75, 100)
             
+            # Type assertion: plan.id cannot be None here since we retrieved the plan
+            assert plan.id is not None
+            
             training_session = TrainingSession(
                 user_id=user_id,
                 training_plan_id=plan.id,
@@ -814,6 +838,9 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
     
     domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
     task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
+    
+    # Type assertion: plan.id cannot be None here since we retrieved the plan
+    assert plan.id is not None
     
     sessions_created = 0
     for session_num in range(num_sessions):
@@ -931,4 +958,87 @@ def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
         "success": True,
         "sessions_deleted": len(result),
         "message": "All sessions cleared"
+    }
+
+# ============================================================================
+# BADGE ENDPOINTS
+# ============================================================================
+
+@router.get("/badges/{user_id}")
+def get_user_badges(user_id: int, session: Session = Depends(get_session)):
+    """
+    Get all badges earned by the user.
+    Returns list of earned badges with details and timestamp.
+    """
+    badges = BadgeService.get_user_badges(session, user_id)
+    
+    return {
+        "total_earned": len(badges),
+        "badges": badges
+    }
+
+@router.get("/badges/available/{user_id}")
+def get_available_badges(user_id: int, session: Session = Depends(get_session)):
+    """
+    Get all available badges with earned/locked status.
+    Useful for displaying badge gallery/showcase.
+    """
+    return BadgeService.get_available_badges(session, user_id)
+
+@router.get("/badges/recent/{user_id}")
+def get_recent_badges(user_id: int, limit: int = 5, session: Session = Depends(get_session)):
+    """
+    Get recently earned badges.
+    """
+    badges = BadgeService.get_user_badges(session, user_id)
+    
+    # Already sorted by earned_at desc
+    recent = badges[:limit]
+    
+    return {
+        "count": len(recent),
+        "badges": recent
+    }
+
+@router.post("/dev/check-badges/{user_id}")
+def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Check what badges would be earned and award them.
+    Returns list of newly earned badges.
+    """
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Check and award badges
+    newly_earned = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    # Get badge details
+    badge_details = []
+    for badge_id in newly_earned:
+        badge_def = BadgeDefinition.get_badge(badge_id)
+        if badge_def:
+            badge_details.append({
+                "id": badge_id,
+                "name": badge_def["name"],
+                "description": badge_def["description"],
+                "icon": badge_def["icon"],
+                "category": badge_def["category"]
+            })
+    
+    # Get all user badges
+    all_badges = BadgeService.get_user_badges(session, user_id)
+    
+    return {
+        "success": True,
+        "newly_earned": newly_earned,
+        "new_badge_details": badge_details,
+        "total_earned": len(all_badges),
+        "message": f"Checked badges! {len(newly_earned)} new badges earned" if newly_earned else "No new badges earned"
     }

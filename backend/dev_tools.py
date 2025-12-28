@@ -64,6 +64,10 @@ def complete_current_session():
             SELECT current_session_tasks_completed FROM training_plans WHERE id = 1
         """)).fetchone()
         
+        if not result:
+            print("❌ Training plan not found")
+            return
+        
         completed = eval(result[0]) if result[0] != '[]' else []
         
         # Add missing tasks
