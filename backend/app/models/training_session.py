@@ -17,6 +17,7 @@ class TrainingSession(SQLModel, table=True):
     # Task information
     domain: str = Field(index=True)  # e.g., "working_memory", "attention"
     task_type: str  # e.g., "n_back", "track_moving", "rule_switch"
+    task_code: Optional[str] = Field(default=None, index=True)  # NEW: specific task variant (e.g., "digit_span", "sdmt")
     
     # Performance metrics
     score: float  # 0-100 performance score

@@ -269,18 +269,18 @@
 			
 			<!-- Current Difficulty Levels -->
 			<div class="difficulty-card">
-				<h3>Current Difficulty Levels</h3>
-				<div class="difficulty-grid">
+				<h3>Current Training Difficulty</h3>
+				<div class="difficulty-bars">
 					{#each Object.entries(trainingPlan.current_difficulty) as [domain, difficulty]}
-						<div class="difficulty-item">
-							<div class="difficulty-name">{getDomainName(domain)}</div>
-							<div class="difficulty-bar">
+						<div class="difficulty-row">
+							<span class="difficulty-name">{getDomainName(domain)}</span>
+							<div class="difficulty-bar-container">
 								<div 
-									class="difficulty-fill" 
+									class="difficulty-bar-fill" 
 									style="width: {(difficulty / 10) * 100}%"
 								></div>
 							</div>
-							<div class="difficulty-level">Level {difficulty}/10</div>
+							<span class="difficulty-level">Level {difficulty}/10</span>
 						</div>
 					{/each}
 				</div>
@@ -736,5 +736,40 @@
 	.btn-primary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+	}
+	
+	.difficulty-bars {
+		display: grid;
+		gap: 1rem;
+	}
+	
+	.difficulty-row {
+		display: grid;
+		grid-template-columns: 200px 1fr 100px;
+		align-items: center;
+		gap: 1rem;
+	}
+	
+	.difficulty-name {
+		font-weight: 600;
+		color: #333;
+	}
+	
+	.difficulty-bar-container {
+		height: 12px;
+		background: #e0e0e0;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+	
+	.difficulty-bar-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%);
+		transition: width 0.5s ease;
+	}
+	
+	.difficulty-level {
+		color: #666;
+		font-size: 0.9rem;
 	}
 </style>

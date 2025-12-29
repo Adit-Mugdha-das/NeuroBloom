@@ -1,4 +1,5 @@
 <script>
+	import { downloadCSV, downloadJSON } from '$lib/utils/chartDownload';
 	import EmptyState from './EmptyState.svelte';
 	
 	/** @type {any} */
@@ -39,15 +40,51 @@
 		if (change < 0) return '📉';
 		return '➡️';
 	}
+	
+	function handleDownloadSummary() {
+		if (!summaryData) return;
+		const filename = `weekly-summary-${new Date().toISOString().split('T')[0]}`;
+		downloadJSON(summaryData, filename);
+	}
+	
+	function handleDownloadCSV() {
+		if (!summaryData) return;
+		
+		// Create CSV data from summary
+		const csvData = [
+			{
+				period: `${new Date(summaryData.week_start).toLocaleDateString()} - ${new Date(summaryData.week_end).toLocaleDateString()}`,
+				total_sessions: summaryData.total_sessions,
+				active_days: summaryData.active_days,
+				avg_score: summaryData.avg_score,
+				avg_accuracy: summaryData.avg_accuracy,
+				total_time_minutes: summaryData.total_time_minutes,
+				current_streak: summaryData.current_streak
+			}
+		];
+		
+		const filename = `weekly-summary-${new Date().toISOString().split('T')[0]}`;
+		downloadCSV(csvData, filename);
+	}
 </script>
 
 {#if summaryData && summaryData.has_data}
 	<div class="weekly-summary">
 		<div class="summary-header">
-			<h3>📅 This Week's Summary</h3>
-			<p class="week-range">
-				{new Date(summaryData.week_start).toLocaleDateString()} - {new Date(summaryData.week_end).toLocaleDateString()}
-			</p>
+			<div class="header-left">
+				<h3>📅 This Week's Summary</h3>
+				<p class="week-range">
+					{new Date(summaryData.week_start).toLocaleDateString()} - {new Date(summaryData.week_end).toLocaleDateString()}
+				</p>
+			</div>
+			<div class="header-actions">
+				<button class="download-btn" on:click={handleDownloadCSV} title="Download summary as CSV">
+					📋 CSV
+				</button>
+				<button class="download-btn" on:click={handleDownloadSummary} title="Download summary as JSON">
+					📊 JSON
+				</button>
+			</div>
 		</div>
 		
 		<div class="summary-grid">
@@ -183,8 +220,17 @@
 	}
 	
 	.summary-header {
-		text-align: center;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	
+	.header-left {
+		flex: 1;
+		min-width: 200px;
 	}
 	
 	.summary-header h3 {
@@ -197,6 +243,38 @@
 		margin: 0;
 		opacity: 0.9;
 		font-size: 0.95rem;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	
+	.download-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.5rem 1rem;
+		background: rgba(255, 255, 255, 0.25);
+		backdrop-filter: blur(10px);
+		color: white;
+		border: 1px solid rgba(255, 255, 255, 0.3);
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+	
+	.download-btn:hover {
+		background: rgba(255, 255, 255, 0.35);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	}
+	
+	.download-btn:active {
+		transform: translateY(0);
 	}
 	
 	.summary-grid {

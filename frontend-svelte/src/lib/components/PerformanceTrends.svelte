@@ -1,4 +1,5 @@
 <script>
+	import { downloadCanvasAsPNG, downloadCSV } from '$lib/utils/chartDownload';
 	import { onMount } from 'svelte';
 	import EmptyState from './EmptyState.svelte';
 	
@@ -190,6 +191,40 @@
 			updateChart();
 		}
 	});
+	
+	function handleDownloadChart() {
+		if (!chartCanvas) return;
+		const filename = `performance-trends-${selectedDomain}-${selectedMetric}-${new Date().toISOString().split('T')[0]}`;
+		downloadCanvasAsPNG(chartCanvas, filename);
+	}
+	
+	function handleDownloadData() {
+		if (!trendsData) return;
+		
+		let data = [];
+		if (selectedDomain === 'all') {
+			data = trendsData.overall_trend.map(point => ({
+				date: point.date,
+				score: point.avg_score,
+				accuracy: point.avg_accuracy,
+				difficulty: point.avg_difficulty
+			}));
+		} else {
+			const domainData = trendsData.trends_by_domain[selectedDomain];
+			if (domainData) {
+				data = domainData.data_points.map(point => ({
+					date: point.date,
+					domain: selectedDomain,
+					score: point.score,
+					accuracy: point.accuracy,
+					difficulty: point.difficulty
+				}));
+			}
+		}
+		
+		const filename = `performance-data-${selectedDomain}-${new Date().toISOString().split('T')[0]}`;
+		downloadCSV(data, filename);
+	}
 </script>
 
 <div class="trends-card">
@@ -197,6 +232,17 @@
 		<div class="header-left">
 			<h3>📈 Performance Trends</h3>
 			<p class="subtitle">Track your progress over time</p>
+		</div>
+		
+		<div class="header-actions">
+			{#if trendsData && trendsData.total_sessions > 0}
+				<button class="download-btn" on:click={handleDownloadChart} title="Download chart as image">
+					📊 Chart
+				</button>
+				<button class="download-btn" on:click={handleDownloadData} title="Download data as CSV">
+					📋 Data
+				</button>
+			{/if}
 		</div>
 		
 		<div class="controls">
@@ -274,6 +320,12 @@
 		align-items: flex-start;
 		margin-bottom: 2rem;
 		gap: 2rem;
+		flex-wrap: wrap;
+	}
+	
+	.header-left {
+		flex: 1;
+		min-width: 200px;
 	}
 	
 	.header-left h3 {
@@ -286,6 +338,37 @@
 		margin: 0;
 		color: #666;
 		font-size: 0.9rem;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	
+	.download-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.5rem 1rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+	}
+	
+	.download-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+	
+	.download-btn:active {
+		transform: translateY(0);
 	}
 	
 	.controls {

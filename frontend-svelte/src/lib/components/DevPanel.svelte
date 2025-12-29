@@ -12,14 +12,14 @@
 		currentUser = value;
 	});
 	
-	async function completeSession() {
+	async function completeSingleSession() {
 		if (!currentUser) return;
 		loading = true;
 		message = '';
 		
 		try {
-			const result = await training.dev.completeSession(currentUser.id);
-			showMessage(`✅ ${result.message}! Session ${result.session_complete ? 'complete' : 'in progress'}`, 'success');
+			const result = await training.dev.completeSingleSession(currentUser.id);
+			showMessage(`✅ ${result.message}! 🔥 ${result.current_streak} day streak`, 'success');
 			
 			// Reload page to show updates
 			setTimeout(() => window.location.reload(), 1500);
@@ -237,19 +237,19 @@
 			{/if}
 			
 			<div class="buttons">
-				<button class="dev-btn primary" on:click={completeSession} disabled={loading}>
-					<span class="icon">✓</span>
+				<button class="dev-btn primary" on:click={completeSingleSession} disabled={loading}>
+					<span class="icon">✅</span>
 					<span class="text">
 						<strong>Complete Session</strong>
-						<small>Finish current 4 tasks</small>
+						<small>Finish 1 session (4 tasks)</small>
 					</span>
 				</button>
 				
-				<button class="dev-btn secondary" on:click={generateSessions} disabled={loading}>
+				<button class="dev-btn primary" on:click={generateSessions} disabled={loading}>
 					<span class="icon">📊</span>
 					<span class="text">
-						<strong>Generate 3 Sessions</strong>
-						<small>Add test data (12 tasks)</small>
+						<strong>Generate Sessions</strong>
+						<small>Add 3 test sessions (12 tasks)</small>
 					</span>
 				</button>
 				
@@ -258,48 +258,6 @@
 					<span class="text">
 						<strong>Set 7-Day Streak</strong>
 						<small>Test streak features</small>
-					</span>
-				</button>
-				
-				<button class="dev-btn badge" on:click={checkBadges} disabled={loading}>
-					<span class="icon">🏆</span>
-					<span class="text">
-						<strong>Check Badges</strong>
-						<small>Award eligible badges</small>
-					</span>
-				</button>
-				
-				<div class="separator">Weekly Summary Testing</div>
-				
-				<button class="dev-btn test" on:click={testWeeklySummaryPhase} disabled={loading}>
-					<span class="icon">🧪</span>
-					<span class="text">
-						<strong>Test Phase 5 ✨</strong>
-						<small>Full test + validation</small>
-					</span>
-				</button>
-				
-				<button class="dev-btn weekly" on:click={generateWeekData} disabled={loading}>
-					<span class="icon">📅</span>
-					<span class="text">
-						<strong>Generate Week Data</strong>
-						<small>10 sessions over 7 days</small>
-					</span>
-				</button>
-				
-				<button class="dev-btn info" on:click={viewWeeklySummary} disabled={loading}>
-					<span class="icon">📈</span>
-					<span class="text">
-						<strong>View Weekly Data</strong>
-						<small>Check API response</small>
-					</span>
-				</button>
-				
-				<button class="dev-btn preview" on:click={previewEmptyStates}>
-					<span class="icon">🎨</span>
-					<span class="text">
-						<strong>Preview Phase 6</strong>
-						<small>View all empty states</small>
 					</span>
 				</button>
 				

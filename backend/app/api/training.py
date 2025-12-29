@@ -741,6 +741,186 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
     }
 
 # ============================================================================
+# TASK-SPECIFIC ENDPOINTS - Individual task implementations
+# ============================================================================
+
+@router.post("/tasks/digit-span/generate/{user_id}")
+def generate_digit_span_session(
+    user_id: int, 
+    difficulty: int = 5,
+    num_trials: int = 8,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Digit Span task session
+    
+    Returns sequence of trials for the user to complete
+    """
+    from app.services.digit_span_task import DigitSpanTask
+    
+    # Validate difficulty
+    if not 1 <= difficulty <= 10:
+        raise HTTPException(status_code=400, detail="Difficulty must be between 1 and 10")
+    
+    # Get user's training plan to verify they exist
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Generate trials
+    trials = DigitSpanTask.generate_session(difficulty, num_trials)
+    
+    return {
+        "task_code": "digit_span",
+        "domain": "working_memory",
+        "difficulty": difficulty,
+        "num_trials": num_trials,
+        "trials": trials,
+        "instructions": {
+            "title": "Digit Span Test",
+            "description": "Remember and repeat sequences of digits",
+            "forward": "Type the digits in the same order you see them",
+            "backward": "Type the digits in REVERSE order",
+            "tips": [
+                "Take your time to remember the sequence",
+                "Use memory strategies that work for you",
+                "Don't worry if you make mistakes - that's how we find the right difficulty"
+            ]
+        }
+    }
+
+@router.post("/tasks/digit-span/submit/{user_id}")
+def submit_digit_span_session(
+    user_id: int,
+    session_data: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit completed Digit Span session and save results
+    
+    Expected session_data:
+    {
+        "difficulty": 5,
+        "trials": [
+            {
+                "sequence": [3, 7, 2, 9],
+                "span_type": "forward",
+                "length": 4,
+                "user_response": [3, 7, 2, 9],
+                "reaction_time": 3500
+            },
+            ...
+        ]
+    }
+    """
+    from app.services.digit_span_task import DigitSpanTask
+    from app.services.badge_service import BadgeService
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan or plan.id is None:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Score each trial
+    trials = session_data.get('trials', [])
+    scored_trials = []
+    
+    for trial in trials:
+        score_result = DigitSpanTask.score_response(
+            trial['sequence'],
+            trial.get('user_response', []),
+            trial['span_type']
+        )
+        
+        scored_trial = {**trial, **score_result}
+        scored_trials.append(scored_trial)
+    
+    # Calculate session metrics
+    metrics = DigitSpanTask.calculate_session_metrics(scored_trials)
+    avg_rt = DigitSpanTask.calculate_average_reaction_time(scored_trials)
+    
+    # Determine difficulty adaptation
+    difficulty = session_data.get('difficulty', 5)
+    accuracy = metrics['accuracy']
+    
+    if accuracy >= 85:
+        new_difficulty = min(difficulty + 1, 10)
+        adaptation_reason = f"Increased difficulty (accuracy {accuracy:.1f}% >= 85%)"
+    elif accuracy < 65:
+        new_difficulty = max(difficulty - 1, 1)
+        adaptation_reason = f"Decreased difficulty (accuracy {accuracy:.1f}% < 65%)"
+    else:
+        new_difficulty = difficulty
+        adaptation_reason = f"Maintained difficulty (accuracy {accuracy:.1f}% in 65-85% range)"
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="working_memory",
+        task_type="digit_span",  # Legacy field
+        task_code="digit_span",  # NEW: Specific task variant
+        score=metrics['score'],
+        accuracy=metrics['accuracy'],
+        average_reaction_time=avg_rt,
+        consistency=metrics['consistency'],
+        errors=metrics['total_trials'] - metrics['correct_count'],
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=sum(t.get('reaction_time', 0) for t in scored_trials) // 1000,  # Convert ms to seconds
+        raw_data=json.dumps({
+            'trials': scored_trials,
+            'metrics': metrics
+        }),
+        adaptation_reason=adaptation_reason,
+        completed=True
+    )
+    
+    session.add(training_session)
+    
+    # Update training plan's current difficulty for working_memory
+    current_difficulty = json.loads(plan.current_difficulty)
+    current_difficulty['working_memory'] = new_difficulty
+    plan.current_difficulty = json.dumps(current_difficulty)
+    plan.last_updated = datetime.utcnow()
+    
+    session.add(plan)
+    session.commit()
+    session.refresh(training_session)
+    session.refresh(plan)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "performance_summary": {
+            "score": metrics['score'],
+            "accuracy": metrics['accuracy'],
+            "longest_span": metrics['longest_span'],
+            "forward_accuracy": metrics['forward_accuracy'],
+            "backward_accuracy": metrics['backward_accuracy']
+        }
+    }
+
+# ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { baseline, tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { downloadCSV, downloadSVGAsPNG } from '$lib/utils/chartDownload';
 	import { onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -120,6 +121,28 @@
 	// Radar chart calculations
 	$: radarPoints = baselineData ? calculateRadarPoints() : '';
 	
+	let radarChartSVG;
+	
+	function handleDownloadChart() {
+		if (!radarChartSVG) return;
+		const filename = `baseline-results-${new Date().toISOString().split('T')[0]}`;
+		downloadSVGAsPNG(radarChartSVG, filename);
+	}
+	
+	function handleDownloadData() {
+		if (!baselineData) return;
+		
+		const csvData = Object.entries(baselineData.scores).map(([domain, score]) => ({
+			domain: getDomainName(domain),
+			score: score.toFixed(1),
+			level: getScoreLabel(score),
+			percentile: baselineData.percentiles?.[domain] || 'N/A'
+		}));
+		
+		const filename = `baseline-data-${new Date().toISOString().split('T')[0]}`;
+		downloadCSV(csvData, filename);
+	}
+	
 	function calculateRadarPoints() {
 		const domains = [
 			'working_memory',
@@ -223,8 +246,18 @@
 			
 			<!-- Radar Chart -->
 			<div class="chart-card">
-				<h3>Cognitive Profile</h3>
-				<svg viewBox="0 0 500 400" class="radar-chart">
+				<div class="chart-header">
+					<h3>Cognitive Profile</h3>
+					<div class="chart-actions">
+						<button class="download-btn-small" on:click={handleDownloadChart} title="Download chart as image">
+							📊 Chart
+						</button>
+						<button class="download-btn-small" on:click={handleDownloadData} title="Download data as CSV">
+							📋 Data
+						</button>
+					</div>
+				</div>
+				<svg bind:this={radarChartSVG} viewBox="0 0 500 400" class="radar-chart">
 					<!-- Background circles -->
 					<circle cx="250" cy="200" r="120" fill="none" stroke="#e0e0e0" stroke-width="1"/>
 					<circle cx="250" cy="200" r="90" fill="none" stroke="#e0e0e0" stroke-width="1"/>
@@ -556,6 +589,53 @@
 		padding: 2rem;
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 		margin-bottom: 2rem;
+	}
+	
+	.chart-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	
+	.chart-header h3 {
+		margin: 0;
+		color: #333;
+		flex: 1;
+		min-width: 150px;
+	}
+	
+	.chart-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+	
+	.download-btn-small {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.4rem 0.8rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+		white-space: nowrap;
+	}
+	
+	.download-btn-small:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+	
+	.download-btn-small:active {
+		transform: translateY(0);
 	}
 	
 	.chart-card h3 {

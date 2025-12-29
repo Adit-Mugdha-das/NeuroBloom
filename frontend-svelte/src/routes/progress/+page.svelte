@@ -1,12 +1,13 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { training } from '$lib/api';
+	import { baseline, training } from '$lib/api';
 	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
 	import WeeklySummary from '$lib/components/WeeklySummary.svelte';
 	import { user } from '$lib/stores';
+	import { downloadCSV } from '$lib/utils/chartDownload';
 	import { onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -18,6 +19,7 @@
 	let badgeData = null;
 	let trendsData = null;
 	let weeklySummary = null;
+	let baselineData = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -46,6 +48,13 @@
 			
 			// Load baseline vs current comparison
 			comparison = await training.getPerformanceComparison(currentUser.id);
+			
+			// Load baseline data for difficulty journey
+			try {
+				baselineData = await baseline.get(currentUser.id);
+			} catch (err) {
+				console.log('No baseline data available');
+			}
 			
 			// Load streak data
 			streakData = await training.getStreak(currentUser.id);
@@ -104,6 +113,46 @@
 	
 	function backToDashboard() {
 		goto('/dashboard');
+	}
+	
+	function handleDownloadJourney() {
+		if (!metrics || !baselineData) return;
+		
+		const journeyData = Object.entries(metrics.metrics_by_domain || {}).map(([domain, domainMetrics]) => {
+			const baselineScore = baselineData.scores?.[domain] || 50;
+			const baselineDifficulty = Math.max(1, Math.floor(baselineScore / 10));
+			const currentDifficulty = metrics.current_difficulty[domain] || baselineDifficulty;
+			
+			return {
+				domain: getDomainName(domain),
+				baseline_difficulty: baselineDifficulty,
+				current_difficulty: currentDifficulty,
+				difficulty_gain: currentDifficulty - baselineDifficulty,
+				total_sessions: domainMetrics.total_sessions,
+				avg_score: domainMetrics.average_score.toFixed(1),
+				trend: domainMetrics.trend
+			};
+		});
+		
+		const filename = `difficulty-journey-${new Date().toISOString().split('T')[0]}`;
+		downloadCSV(journeyData, filename);
+	}
+	
+	function handleDownloadHistory() {
+		if (!history || history.length === 0) return;
+		
+		const historyData = history.map(session => ({
+			date: new Date(session.created_at).toLocaleDateString(),
+			domain: getDomainName(session.domain),
+			score: session.score.toFixed(1),
+			accuracy: session.accuracy.toFixed(1),
+			difficulty_before: session.difficulty_before,
+			difficulty_after: session.difficulty_after,
+			duration_seconds: session.duration
+		}));
+		
+		const filename = `session-history-${new Date().toISOString().split('T')[0]}`;
+		downloadCSV(historyData, filename);
 	}
 </script>
 
@@ -239,7 +288,14 @@
 			
 			<!-- Recent Sessions Timeline -->
 			<div class="history-card">
-				<h3>Recent Training Sessions</h3>
+				<div class="card-header-with-actions">
+					<h3>Recent Training Sessions</h3>
+					{#if history && history.length > 0}
+						<button class="download-btn-small" on:click={handleDownloadHistory} title="Download session history as CSV">
+							📋 Download
+						</button>
+					{/if}
+				</div>
 				{#if history && history.length > 0}
 					<div class="timeline">
 						{#each history as session}
@@ -279,29 +335,87 @@
 				{/if}
 			</div>
 			
-			<!-- Current Difficulty Levels -->
-			<div class="difficulty-overview">
-				<h3>Current Training Difficulty</h3>
-				<div class="difficulty-bars">
-					{#each Object.entries(metrics.current_difficulty) as [domain, difficulty]}
-						<div class="difficulty-row">
-							<span class="difficulty-name">{getDomainName(domain)}</span>
-							<div class="difficulty-bar-container">
-								<div 
-									class="difficulty-bar-fill" 
-									style="width: {(difficulty / 10) * 100}%"
-								></div>
+			<!-- Difficulty Journey Visualization -->
+			{#if baselineData}
+			<div class="difficulty-journey">
+				<div class="journey-header">
+					<div class="journey-header-left">
+						<h3>🎯 Your Difficulty Journey</h3>
+						<p class="journey-subtitle">See how far you've progressed from your baseline</p>
+					</div>
+					<button class="download-btn-small" on:click={handleDownloadJourney} title="Download difficulty journey data as CSV">
+						📋 Download
+					</button>
+				</div>
+				
+				<div class="journey-grid">
+					{#each Object.entries(metrics.metrics_by_domain || {}) as [domain, domainMetrics]}
+						{@const baselineScore = baselineData.scores?.[domain] || 50}
+						{@const baselineDifficulty = Math.max(1, Math.floor(baselineScore / 10))}
+						{@const currentDifficulty = metrics.current_difficulty[domain] || baselineDifficulty}
+						{@const difficultyGain = currentDifficulty - baselineDifficulty}
+						
+						<div class="journey-card">
+							<div class="journey-card-header">
+								<h4>{getDomainName(domain)}</h4>
+								{#if difficultyGain > 0}
+									<span class="journey-badge gain">+{difficultyGain} Levels</span>
+								{:else if difficultyGain < 0}
+									<span class="journey-badge decline">{difficultyGain} Levels</span>
+								{:else}
+									<span class="journey-badge stable">Stable</span>
+								{/if}
 							</div>
-							<span class="difficulty-level">Level {difficulty}/10</span>
+							
+							<div class="journey-track">
+								<div class="track-labels">
+									<span class="track-start">Start</span>
+									<span class="track-end">Now</span>
+								</div>
+								
+								<div class="journey-bar">
+									<div 
+										class="journey-progress" 
+										style="width: {(currentDifficulty / 10) * 100}%"
+									>
+										<span class="progress-marker start" style="left: {(baselineDifficulty / currentDifficulty) * 100}%">
+											<span class="marker-label">L{baselineDifficulty}</span>
+										</span>
+										<span class="progress-marker current">
+											<span class="marker-label">L{currentDifficulty}</span>
+										</span>
+									</div>
+								</div>
+								
+								<div class="journey-scale">
+									{#each Array(10) as _, i}
+										<span class="scale-mark" class:active={i + 1 <= currentDifficulty}>{i + 1}</span>
+									{/each}
+								</div>
+							</div>
+							
+							<div class="journey-stats">
+								<div class="stat-mini">
+									<span class="stat-mini-label">Sessions:</span>
+									<span class="stat-mini-value">{domainMetrics.total_sessions}</span>
+								</div>
+								<div class="stat-mini">
+									<span class="stat-mini-label">Avg Score:</span>
+									<span class="stat-mini-value" style="color: {getScoreColor(domainMetrics.average_score)}">
+										{domainMetrics.average_score.toFixed(1)}
+									</span>
+								</div>
+							</div>
 						</div>
 					{/each}
+				</div>
 			</div>
-		</div>
-		
-		<!-- Weekly Summary -->
-		{#if weeklySummary}
-			<WeeklySummary summaryData={weeklySummary} />
-		{/if}
+			{/if}
+			
+			<!-- Weekly Summary -->
+			{#if weeklySummary}
+				<WeeklySummary summaryData={weeklySummary} />
+			{/if}
 		
 		<!-- Performance Trends -->
 		{#if trendsData}
@@ -502,6 +616,45 @@
 		75% {
 			transform: scale(1.05) rotate(1deg);
 		}
+	}
+	
+	.card-header-with-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	
+	.card-header-with-actions h3 {
+		margin: 0;
+	}
+	
+	.download-btn-small {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.4rem 0.8rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+		white-space: nowrap;
+	}
+	
+	.download-btn-small:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+	
+	.download-btn-small:active {
+		transform: translateY(0);
 	}
 	
 	.performance-card, .history-card, .difficulty-overview {
@@ -730,5 +883,225 @@
 	.btn-primary:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+	}
+	
+	/* Difficulty Journey Styles */
+	.difficulty-journey {
+		background: white;
+		border-radius: 20px;
+		padding: 2rem;
+		margin-bottom: 2rem;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	}
+	
+	.journey-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 2px solid #f0f0f0;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	
+	.journey-header-left {
+		flex: 1;
+		min-width: 250px;
+	}
+	
+	.journey-header h3 {
+		margin: 0 0 0.5rem 0;
+		color: #333;
+		font-size: 1.8rem;
+	}
+	
+	.journey-subtitle {
+		margin: 0;
+		color: #666;
+		font-size: 0.95rem;
+	}
+	
+	.journey-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 1.5rem;
+	}
+	
+	.journey-card {
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		border-radius: 15px;
+		padding: 1.5rem;
+		border: 2px solid #e0e0e0;
+		transition: all 0.3s;
+	}
+	
+	.journey-card:hover {
+		transform: translateY(-5px);
+		border-color: #667eea;
+		box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+	}
+	
+	.journey-card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.25rem;
+	}
+	
+	.journey-card-header h4 {
+		margin: 0;
+		color: #333;
+		font-size: 1.1rem;
+	}
+	
+	.journey-badge {
+		padding: 0.35rem 0.85rem;
+		border-radius: 20px;
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: white;
+	}
+	
+	.journey-badge.gain {
+		background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+		box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+	}
+	
+	.journey-badge.decline {
+		background: linear-gradient(135deg, #f44336 0%, #e57373 100%);
+		box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+	}
+	
+	.journey-badge.stable {
+		background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+		box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+	}
+	
+	.journey-track {
+		margin-bottom: 1rem;
+	}
+	
+	.track-labels {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+		font-size: 0.8rem;
+		color: #666;
+		font-weight: 600;
+	}
+	
+	.journey-bar {
+		position: relative;
+		height: 40px;
+		background: #e0e0e0;
+		border-radius: 20px;
+		overflow: visible;
+		margin-bottom: 0.75rem;
+	}
+	
+	.journey-progress {
+		position: relative;
+		height: 100%;
+		background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%);
+		border-radius: 20px;
+		transition: width 0.8s ease;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+	}
+	
+	.progress-marker {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 14px;
+		height: 14px;
+		background: white;
+		border: 3px solid #333;
+		border-radius: 50%;
+		z-index: 2;
+	}
+	
+	.progress-marker.start {
+		border-color: #666;
+		background: #fff;
+	}
+	
+	.progress-marker.current {
+		right: -7px;
+		border-color: #667eea;
+		background: #667eea;
+		width: 18px;
+		height: 18px;
+		animation: pulse 2s ease-in-out infinite;
+	}
+	
+	@keyframes pulse {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+		50% { box-shadow: 0 0 0 8px rgba(102, 126, 234, 0); }
+	}
+	
+	.marker-label {
+		position: absolute;
+		top: -28px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: #333;
+		color: white;
+		padding: 0.2rem 0.5rem;
+		border-radius: 6px;
+		font-size: 0.7rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+	
+	.progress-marker.current .marker-label {
+		background: #667eea;
+	}
+	
+	.journey-scale {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.25rem;
+	}
+	
+	.scale-mark {
+		flex: 1;
+		text-align: center;
+		font-size: 0.7rem;
+		color: #999;
+		padding: 0.25rem;
+		background: #f8f9fa;
+		border-radius: 4px;
+		font-weight: 600;
+	}
+	
+	.scale-mark.active {
+		background: #667eea;
+		color: white;
+	}
+	
+	.journey-stats {
+		display: flex;
+		justify-content: space-around;
+		padding-top: 1rem;
+		border-top: 1px solid #e0e0e0;
+	}
+	
+	.stat-mini {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+	}
+	
+	.stat-mini-label {
+		font-size: 0.75rem;
+		color: #666;
+	}
+	
+	.stat-mini-value {
+		font-size: 1rem;
+		font-weight: 700;
+		color: #333;
 	}
 </style>

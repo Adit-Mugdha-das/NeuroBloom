@@ -164,6 +164,11 @@ export const training = {
 	
 	// DEV TOOLS - Quick testing endpoints
 	dev: {
+		completeSingleSession: async (userId) => {
+			const response = await api.post(`/training/dev/complete-single-session/${userId}`);
+			return response.data;
+		},
+		
 		completeSession: async (userId) => {
 			const response = await api.post(`/training/dev/complete-session/${userId}`);
 			return response.data;

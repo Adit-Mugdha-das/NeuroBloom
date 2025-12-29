@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { tasks } from '$lib/api';
+	import { tasks, training } from '$lib/api';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -20,10 +20,22 @@
 		}
 		
 		try {
-			stats = await tasks.getUserStats(currentUser.id);
+			// Get training metrics (training sessions)
+			try {
+				stats = await training.getMetrics(currentUser.id);
+			} catch (err) {
+				// If no training data exists, set empty stats
+				console.log('No training data yet');
+				stats = {
+					total_sessions: 0,
+					average_score: 0,
+					best_score: 0
+				};
+			}
+			
 			baselineStatus = await tasks.getBaselineStatus(currentUser.id);
 		} catch (error) {
-			console.error('Error fetching stats:', error);
+			console.error('Error fetching dashboard data:', error);
 		} finally {
 			loading = false;
 		}
@@ -58,16 +70,22 @@
 					<div class="value">{stats?.total_sessions || 0}</div>
 				</div>
 				<div class="stat-card">
-					<h3>Average Score</h3>
-					<div class="value">{stats?.average_score ? stats.average_score.toFixed(1) : 0}%</div>
+					<h3>Active Domains</h3>
+					<div class="value">{stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : 0}</div>
 				</div>
 				<div class="stat-card">
-					<h3>Best Score</h3>
-					<div class="value">{stats?.best_score || 0}%</div>
+					<h3>Last Training</h3>
+					<div class="value last-training">
+						{#if stats?.last_training_date}
+							{new Date(stats.last_training_date).toLocaleDateString()}
+						{:else}
+							Never
+						{/if}
+					</div>
 				</div>
 				<div class="stat-card">
-					<h3>Tasks Completed</h3>
-					<div class="value">{stats?.total_sessions || 0}</div>
+					<h3>Total Tasks</h3>
+					<div class="value">{stats?.total_sessions ? stats.total_sessions * 4 : 0}</div>
 				</div>
 			</div>
 			
@@ -252,6 +270,10 @@
 		font-size: 2rem;
 		font-weight: bold;
 		color: #667eea;
+	}
+	
+	.stat-card .value.last-training {
+		font-size: 1.2rem;
 	}
 	
 	.baseline-progress {
