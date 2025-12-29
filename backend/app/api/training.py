@@ -455,6 +455,10 @@ def get_training_history(
             "score": s.score,
             "accuracy": s.accuracy,
             "difficulty": s.difficulty_level,
+            "difficulty_before": s.difficulty_before,
+            "difficulty_after": s.difficulty_after,
+            "adaptation_reason": s.adaptation_reason,
+            "errors": s.errors,
             "duration": s.duration,
             "created_at": s.created_at.isoformat()
         }
@@ -767,8 +771,19 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
     tasks_added = 0
     for i, (domain, task_type) in enumerate(zip(domains, task_types)):
         if domain not in completed:
-            score = random.uniform(70, 95)
-            accuracy = random.uniform(75, 100)
+            score = random.uniform(65, 95)
+            accuracy = random.uniform(70, 100)
+            
+            # Randomize difficulty levels for variety
+            difficulty_before = random.randint(3, 8)
+            
+            # Calculate difficulty_after based on accuracy (adaptive logic)
+            if accuracy >= 85:
+                difficulty_after = min(difficulty_before + 1, 10)
+            elif accuracy < 65:
+                difficulty_after = max(difficulty_before - 1, 1)
+            else:
+                difficulty_after = difficulty_before
             
             # Type assertion: plan.id cannot be None here since we retrieved the plan
             assert plan.id is not None
@@ -783,11 +798,11 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
                 average_reaction_time=random.uniform(400, 800),
                 consistency=random.uniform(70, 90),
                 errors=random.randint(0, 5),
-                difficulty_level=5,
-                difficulty_before=5,
-                difficulty_after=5,
-                duration=5,
-                adaptation_reason="Test data",
+                difficulty_level=difficulty_after,
+                difficulty_before=difficulty_before,
+                difficulty_after=difficulty_after,
+                duration=random.randint(60, 180),  # 1-3 minutes per task
+                adaptation_reason=f"{'Increased' if difficulty_after > difficulty_before else 'Decreased' if difficulty_after < difficulty_before else 'Maintained'} difficulty (accuracy {accuracy:.1f}%)",
                 raw_data=json.dumps({}),
                 created_at=now + timedelta(seconds=i * 10),
                 completed=True
@@ -797,7 +812,7 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
             completed.append(domain)
             tasks_added += 1
     
-    # Update plan
+    # Save completed tasks
     plan.current_session_tasks_completed = json.dumps(completed)
     
     # If session complete, increment counters
@@ -816,6 +831,86 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
         "success": True,
         "message": f"Added {tasks_added} tasks",
         "session_complete": len(completed) >= 4,
+        "total_sessions": plan.total_sessions_completed,
+        "current_streak": plan.current_streak
+    }
+
+@router.post("/dev/complete-single-session/{user_id}")
+def dev_complete_single_session(user_id: int, session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Complete a single session with realistic, adaptive data.
+    """
+    import random
+    
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
+    task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
+    
+    # Type assertion: plan.id cannot be None here since we retrieved the plan
+    assert plan.id is not None
+    
+    now = datetime.utcnow()
+    
+    for i, (domain, task_type) in enumerate(zip(domains, task_types)):
+        score = random.uniform(65, 95)
+        accuracy = random.uniform(70, 100)
+        
+        # Randomize difficulty levels for variety
+        difficulty_before = random.randint(3, 8)
+        
+        # Calculate difficulty_after based on accuracy (adaptive logic)
+        if accuracy >= 85:
+            difficulty_after = min(difficulty_before + 1, 10)
+        elif accuracy < 65:
+            difficulty_after = max(difficulty_before - 1, 1)
+        else:
+            difficulty_after = difficulty_before
+        
+        training_session = TrainingSession(
+            user_id=user_id,
+            training_plan_id=plan.id,
+            domain=domain,
+            task_type=task_type,
+            score=score,
+            accuracy=accuracy,
+            average_reaction_time=random.uniform(400, 900),
+            consistency=random.uniform(70, 95),
+            errors=random.randint(0, 6),
+            difficulty_level=difficulty_after,
+            difficulty_before=difficulty_before,
+            difficulty_after=difficulty_after,
+            duration=random.randint(60, 180),  # 1-3 minutes per task
+            adaptation_reason=f"{'Increased' if difficulty_after > difficulty_before else 'Decreased' if difficulty_after < difficulty_before else 'Maintained'} difficulty (accuracy {accuracy:.1f}%)",
+            raw_data=json.dumps({}),
+            created_at=now + timedelta(minutes=i * 3),
+            completed=True
+        )
+        
+        session.add(training_session)
+    
+    # Mark session as complete
+    plan.total_sessions_completed += 1
+    plan.current_session_number += 1
+    plan.current_session_tasks_completed = "[]"
+    plan.last_session_date = datetime.utcnow()
+    update_streak(plan)
+    
+    plan.last_updated = datetime.utcnow()
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    
+    return {
+        "success": True,
+        "message": "Session completed with 4 tasks",
         "total_sessions": plan.total_sessions_completed,
         "current_streak": plan.current_streak
     }
@@ -850,6 +945,17 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
             score = random.uniform(60, 95)
             accuracy = random.uniform(70, 100)
             
+            # Randomize difficulty levels for variety
+            difficulty_before = random.randint(3, 8)
+            
+            # Calculate difficulty_after based on accuracy (adaptive logic)
+            if accuracy >= 85:
+                difficulty_after = min(difficulty_before + 1, 10)
+            elif accuracy < 65:
+                difficulty_after = max(difficulty_before - 1, 1)
+            else:
+                difficulty_after = difficulty_before
+            
             training_session = TrainingSession(
                 user_id=user_id,
                 training_plan_id=plan.id,
@@ -860,11 +966,11 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
                 average_reaction_time=random.uniform(400, 1200),
                 consistency=random.uniform(60, 95),
                 errors=random.randint(0, 10),
-                difficulty_level=random.randint(3, 8),
-                difficulty_before=5,
-                difficulty_after=5,
-                duration=5,
-                adaptation_reason="Generated test data",
+                difficulty_level=difficulty_after,
+                difficulty_before=difficulty_before,
+                difficulty_after=difficulty_after,
+                duration=random.randint(60, 180),  # 1-3 minutes per task
+                adaptation_reason=f"{'Increased' if difficulty_after > difficulty_before else 'Decreased' if difficulty_after < difficulty_before else 'Maintained'} difficulty (accuracy {accuracy:.1f}%)",
                 raw_data=json.dumps({}),
                 created_at=base_time + timedelta(minutes=i * 3),
                 completed=True
@@ -874,7 +980,6 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
         
         sessions_created += 1
     
-    # Update plan stats
     plan.total_sessions_completed += num_sessions
     plan.current_session_tasks_completed = "[]"
     plan.last_session_date = datetime.utcnow()
