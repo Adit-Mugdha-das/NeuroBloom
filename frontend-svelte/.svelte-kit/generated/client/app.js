@@ -22,7 +22,8 @@ export const nodes = [
 	() => import('./nodes/18'),
 	() => import('./nodes/19'),
 	() => import('./nodes/20'),
-	() => import('./nodes/21')
+	() => import('./nodes/21'),
+	() => import('./nodes/22')
 ];
 
 export const server_loads = [];
@@ -47,7 +48,8 @@ export const dictionary = {
 		"/training/letter-number-sequencing": [18],
 		"/training/operation-span": [19],
 		"/training/sdmt": [20],
-		"/training/spatial-span": [21]
+		"/training/spatial-span": [21],
+		"/training/trail-making-a": [22]
 	};
 
 export const hooks = {

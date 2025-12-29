@@ -1609,6 +1609,158 @@ def submit_sdmt_task(
 
 
 # ============================================================================
+# Trail Making Test Part A (TMT-A) - Classic Neuropsych Test
+# ============================================================================
+
+@router.post("/tasks/trail-making-a/generate/{user_id}")
+def generate_trail_making_a_task(
+    user_id: int,
+    difficulty: Optional[int] = None,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Trail Making Test Part A trial with circle positions
+    Classic neuropsychological test for psychomotor speed
+    """
+    from app.services.trail_making_a_task import TrailMakingATask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Determine difficulty
+    if difficulty is None:
+        current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+        difficulty = current_diff.get('processing_speed', 5)
+    
+    # Ensure difficulty is an int
+    difficulty_level: int = difficulty if isinstance(difficulty, int) else 5
+    
+    # Generate trial
+    trial = TrailMakingATask.generate_trial(difficulty_level)
+    
+    return {
+        "trial": trial,
+        "difficulty": difficulty_level
+    }
+
+
+@router.post("/tasks/trail-making-a/submit/{user_id}")
+def submit_trail_making_a_task(
+    user_id: int,
+    request: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Trail Making Test Part A results and update difficulty
+    """
+    from app.services.trail_making_a_task import TrailMakingATask
+    
+    difficulty = request.get('difficulty')
+    trial = request.get('trial')
+    completion_time = request.get('completion_time', 0)
+    errors = request.get('errors', [])
+    clicks = request.get('clicks', [])
+    
+    # Validate required fields
+    if difficulty is None or trial is None:
+        raise HTTPException(status_code=400, detail="Missing difficulty or trial data")
+    
+    # Score the trial
+    metrics = TrailMakingATask.score_response(
+        trial=trial,
+        completion_time=completion_time,
+        errors=errors,
+        clicks=clicks
+    )
+    
+    # Determine difficulty adjustment
+    new_difficulty, adaptation_reason = TrailMakingATask.determine_difficulty_adjustment(
+        normalized_time=metrics['normalized_time'],
+        errors=metrics['errors'],
+        difficulty=difficulty
+    )
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Update difficulty
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    current_diff['processing_speed'] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Ensure plan.id is not None
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan has no ID")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="processing_speed",
+        task_type="trail_making_a",
+        task_code="trail_making_a",
+        score=metrics['score'],
+        accuracy=metrics['accuracy'],
+        average_reaction_time=metrics['completion_time'] * 1000,  # Convert to ms
+        consistency=metrics['path_efficiency'],
+        errors=metrics['errors'],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=int(metrics['completion_time']),
+        adaptation_reason=adaptation_reason,
+        raw_data=json.dumps({
+            "completion_time": metrics['completion_time'],
+            "normalized_time": metrics['normalized_time'],
+            "performance_level": metrics['performance_level'],
+            "processing_speed": metrics['processing_speed'],
+            "path_efficiency": metrics['path_efficiency'],
+            "total_clicks": metrics['total_clicks'],
+            "errors": errors,
+            "clicks": clicks
+        })
+    )
+    
+    session.add(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    return {
+        "success": True,
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "performance_summary": {
+            "score": metrics['score'],
+            "completion_time": metrics['completion_time'],
+            "performance_level": metrics['performance_level'],
+            "errors": metrics['errors']
+        }
+    }
+
+
+# ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 
