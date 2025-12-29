@@ -1926,6 +1926,160 @@ def submit_pattern_comparison_session(
 
 
 # ============================================================================
+# INSPECTION TIME TASK - Processing Speed
+# ============================================================================
+
+@router.post("/tasks/inspection-time/generate/{user_id}")
+def generate_inspection_time_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate an Inspection Time task session - pure perceptual speed."""
+    from app.services.inspection_time_task import InspectionTimeTask
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty from plan
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("processing_speed", 3)
+    
+    # Generate session
+    task = InspectionTimeTask()
+    session_data = task.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/inspection-time/submit/{user_id}")
+def submit_inspection_time_session(
+    user_id: int,
+    request_data: dict,
+    session: Session = Depends(get_session)
+):
+    """Submit and score an Inspection Time task session."""
+    from app.services.inspection_time_task import InspectionTimeTask
+    from typing import List, Dict, Any
+    
+    # Extract and validate data from request
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses")
+    
+    if difficulty is None or session_data is None or responses is None:
+        raise HTTPException(status_code=400, detail="difficulty, session_data, and responses are required")
+    
+    if not isinstance(difficulty, int):
+        raise HTTPException(status_code=400, detail="difficulty must be an integer")
+    
+    if not isinstance(responses, list):
+        raise HTTPException(status_code=400, detail="responses must be a list")
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    task = InspectionTimeTask()
+    session_id = session_data.get("session_id")
+    
+    if session_id is None:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    
+    # Restore session data
+    task.session_data[session_id] = {
+        "trials": session_data["trials"],
+        "started_at": datetime.utcnow(),
+        "difficulty": difficulty
+    }
+    
+    # Type-safe casting for responses
+    typed_responses: List[Dict[str, Any]] = responses
+    
+    results = task.score_session(session_id, typed_responses, difficulty)
+    
+    if "error" in results:
+        raise HTTPException(status_code=400, detail=results["error"])
+    
+    metrics = results["metrics"]
+    
+    # Calculate duration safely
+    duration_seconds = int(sum(r["reaction_time"] for r in typed_responses) / 1000)
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="processing_speed",
+        task_type="inspection_time",
+        task_code="IT",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=metrics["average_reaction_time"],
+        consistency=metrics["consistency"],
+        errors=metrics["total_trials"] - metrics["correct_count"],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=results["difficulty_adjustment"],
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "responses": typed_responses,
+            "presentation_time_ms": metrics["presentation_time_ms"],
+            "perceptual_speed_index": metrics["perceptual_speed_index"]
+        }),
+        adaptation_reason=results["adaptation_reason"]
+    )
+    
+    session.add(training_session)
+    
+    # Update training plan difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    current_difficulty["processing_speed"] = results["difficulty_adjustment"]
+    plan.current_difficulty = json.dumps(current_difficulty)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": results["difficulty_adjustment"],
+        "adaptation_reason": results["adaptation_reason"],
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 
