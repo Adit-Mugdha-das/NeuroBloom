@@ -2080,6 +2080,164 @@ def submit_inspection_time_session(
 
 
 # ============================================================================
+# PASAT TASK - Attention (MS Gold Standard)
+# ============================================================================
+
+@router.post("/tasks/pasat/generate/{user_id}")
+def generate_pasat_session(
+    user_id: int,
+    visual_mode: bool = True,
+    session: Session = Depends(get_session)
+):
+    """Generate a PASAT task session - MS gold standard attention test."""
+    from app.services.pasat_task import PASATTask
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty from plan
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("attention", 4)
+    
+    # Generate session
+    task = PASATTask()
+    session_data = task.generate_session(difficulty, visual_mode)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/pasat/submit/{user_id}")
+def submit_pasat_session(
+    user_id: int,
+    request_data: dict,
+    session: Session = Depends(get_session)
+):
+    """Submit and score a PASAT task session."""
+    from app.services.pasat_task import PASATTask
+    from typing import List, Dict, Any
+    
+    # Extract and validate data from request
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses")
+    
+    if difficulty is None or session_data is None or responses is None:
+        raise HTTPException(status_code=400, detail="difficulty, session_data, and responses are required")
+    
+    if not isinstance(difficulty, int):
+        raise HTTPException(status_code=400, detail="difficulty must be an integer")
+    
+    if not isinstance(responses, list):
+        raise HTTPException(status_code=400, detail="responses must be a list")
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    task = PASATTask()
+    session_id = session_data.get("session_id")
+    
+    if session_id is None:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    
+    # Restore session data
+    task.session_data[session_id] = {
+        "digits": session_data["digits"],
+        "correct_answers": session_data["correct_answers"],
+        "started_at": datetime.utcnow(),
+        "difficulty": difficulty,
+        "interval_seconds": session_data["interval_seconds"]
+    }
+    
+    # Type-safe casting for responses
+    typed_responses: List[Dict[str, Any]] = responses
+    
+    results = task.score_session(session_id, typed_responses, difficulty)
+    
+    if "error" in results:
+        raise HTTPException(status_code=400, detail=results["error"])
+    
+    metrics = results["metrics"]
+    
+    # Calculate duration safely
+    duration_seconds = int(session_data["interval_seconds"] * session_data["total_trials"])
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="attention",
+        task_type="pasat",
+        task_code="PASAT",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=metrics["average_reaction_time"],
+        consistency=metrics["consistency"],
+        errors=metrics["total_trials"] - metrics["correct_count"],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=results["difficulty_adjustment"],
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "responses": typed_responses,
+            "interval_seconds": metrics["interval_seconds"],
+            "sustained_attention": metrics["sustained_attention"],
+            "fatigue_effect": metrics["fatigue_effect"]
+        }),
+        adaptation_reason=results["adaptation_reason"]
+    )
+    
+    session.add(training_session)
+    
+    # Update training plan difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    current_difficulty["attention"] = results["difficulty_adjustment"]
+    plan.current_difficulty = json.dumps(current_difficulty)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": results["difficulty_adjustment"],
+        "adaptation_reason": results["adaptation_reason"],
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 
