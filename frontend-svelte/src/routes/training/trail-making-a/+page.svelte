@@ -1,6 +1,6 @@
 <script>
-	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
 	const STATE = {

@@ -1761,6 +1761,171 @@ def submit_trail_making_a_task(
 
 
 # ============================================================================
+# Pattern Comparison Task (Task 2.3 - Processing Speed)
+# ============================================================================
+
+@router.post("/tasks/pattern-comparison/generate/{user_id}")
+def generate_pattern_comparison_session(
+    user_id: int,
+    difficulty: Optional[int] = None,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate a Pattern Comparison (Visual Matching) session.
+    Returns multiple trials with pattern pairs to compare.
+    """
+    from app.services.pattern_comparison_task import PatternComparisonTask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Get difficulty from plan if not provided
+    if difficulty is None:
+        current_difficulty = plan.current_difficulty
+        if isinstance(current_difficulty, str):
+            current_difficulty = json.loads(current_difficulty)
+        difficulty = current_difficulty.get("processing_speed", 5)
+    
+    # Ensure difficulty is valid
+    difficulty_level: int = difficulty if isinstance(difficulty, int) else 5
+    difficulty_level = max(1, min(10, difficulty_level))
+    
+    # Generate session
+    task_service = PatternComparisonTask()
+    session_data = task_service.generate_session(difficulty_level)
+    
+    return {
+        "session": session_data,
+        "difficulty": difficulty_level,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/pattern-comparison/submit/{user_id}")
+def submit_pattern_comparison_session(
+    user_id: int,
+    request_data: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit completed Pattern Comparison session and record results.
+    
+    Expected request_data:
+    - difficulty: int (1-10)
+    - session_data: dict (session info from generate)
+    - responses: list of {trial_index, user_answer, reaction_time}
+    """
+    from app.services.pattern_comparison_task import PatternComparisonTask
+    from app.services.badge_service import BadgeService
+    
+    # Extract data from request
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses", [])
+    
+    # Validate inputs
+    if difficulty is None:
+        raise HTTPException(status_code=400, detail="Difficulty is required")
+    if session_data is None:
+        raise HTTPException(status_code=400, detail="Session data is required")
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Validate plan has an id
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan ID is missing")
+    
+    # Score the session
+    task_service = PatternComparisonTask()
+    
+    # Recreate session in service
+    session_id = session_data.get("session_id")
+    
+    # Validate session_id
+    if session_id is None:
+        raise HTTPException(status_code=400, detail="Session ID is required")
+    
+    task_service.session_data[session_id] = {
+        "trials": session_data.get("trials", []),
+        "difficulty": difficulty
+    }
+    
+    results = task_service.score_session(session_id, responses, difficulty)
+    
+    if "error" in results:
+        raise HTTPException(status_code=400, detail=results["error"])
+    
+    metrics = results["metrics"]
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="processing_speed",
+        task_type="pattern_comparison",
+        task_code="pattern_comparison",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=metrics["average_reaction_time"],
+        consistency=metrics["consistency"],
+        errors=metrics["timeout_count"],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=results["difficulty_adjustment"],
+        duration=int(metrics["total_time"]),
+        raw_data=json.dumps({
+            "responses": responses,
+            "correct_count": metrics["correct_count"],
+            "total_trials": metrics["total_trials"],
+            "processing_speed": metrics["processing_speed"],
+            "timeout_count": metrics["timeout_count"],
+            "performance_level": metrics["performance_level"]
+        }),
+        adaptation_reason=results["adaptation_reason"]
+    )
+    
+    session.add(training_session)
+    
+    # Update training plan difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    current_difficulty["processing_speed"] = results["difficulty_adjustment"]
+    plan.current_difficulty = json.dumps(current_difficulty)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": results["difficulty_adjustment"],
+        "adaptation_reason": results["adaptation_reason"],
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 
