@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/empty-states-preview" | "/login" | "/progress" | "/register" | "/session-summary" | "/training" | "/training/digit-span" | "/training/letter-number-sequencing" | "/training/operation-span" | "/training/spatial-span";
+		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/empty-states-preview" | "/login" | "/progress" | "/register" | "/session-summary" | "/training" | "/training/digit-span" | "/training/letter-number-sequencing" | "/training/operation-span" | "/training/sdmt" | "/training/spatial-span";
 		RouteParams(): {
 			
 		};
@@ -52,9 +52,10 @@ declare module "$app/types" {
 			"/training/digit-span": Record<string, never>;
 			"/training/letter-number-sequencing": Record<string, never>;
 			"/training/operation-span": Record<string, never>;
+			"/training/sdmt": Record<string, never>;
 			"/training/spatial-span": Record<string, never>
 		};
-		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/empty-states-preview" | "/empty-states-preview/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/" | "/training/digit-span" | "/training/digit-span/" | "/training/letter-number-sequencing" | "/training/letter-number-sequencing/" | "/training/operation-span" | "/training/operation-span/" | "/training/spatial-span" | "/training/spatial-span/";
+		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/empty-states-preview" | "/empty-states-preview/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/" | "/training/digit-span" | "/training/digit-span/" | "/training/letter-number-sequencing" | "/training/letter-number-sequencing/" | "/training/operation-span" | "/training/operation-span/" | "/training/sdmt" | "/training/sdmt/" | "/training/spatial-span" | "/training/spatial-span/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon.png" | string & {};
 	}

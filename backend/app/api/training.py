@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, desc, col
 import json
 from datetime import datetime, timedelta
+from typing import Optional
 
 from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
@@ -1454,6 +1455,158 @@ def submit_operation_span_session(
             "dual_task_performance": metrics['dual_task_performance']
         }
     }
+
+
+# ============================================================================
+# SDMT (Symbol Digit Modalities Test) - GOLD STANDARD for MS
+# ============================================================================
+
+@router.post("/tasks/sdmt/generate/{user_id}")
+def generate_sdmt_task(
+    user_id: int,
+    difficulty: Optional[int] = None,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate SDMT trial with symbol-digit mappings
+    ⭐⭐⭐⭐⭐ Most sensitive test for MS cognitive impairment
+    """
+    from app.services.sdmt_task import SDMTTask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Determine difficulty
+    if difficulty is None:
+        current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+        difficulty = current_diff.get('processing_speed', 5)
+    
+    # Ensure difficulty is an int (type narrowing)
+    difficulty_level: int = difficulty if isinstance(difficulty, int) else 5
+    
+    # Generate trial
+    trial = SDMTTask.generate_trial(difficulty_level)
+    
+    return {
+        "trial": trial,
+        "difficulty": difficulty_level
+    }
+
+
+@router.post("/tasks/sdmt/submit/{user_id}")
+def submit_sdmt_task(
+    user_id: int,
+    request: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit SDMT trial results and update difficulty
+    """
+    from app.services.sdmt_task import SDMTTask
+    from app.services.badge_service import BadgeService
+    
+    difficulty = request.get('difficulty')
+    trial = request.get('trial')
+    user_responses = request.get('user_responses', [])
+    response_times = request.get('response_times', [])
+    completed_count = request.get('completed_count', 0)
+    
+    # Validate required fields
+    if difficulty is None or trial is None:
+        raise HTTPException(status_code=400, detail="Missing difficulty or trial data")
+    
+    # Score the trial
+    metrics = SDMTTask.score_response(
+        trial=trial,
+        user_responses=user_responses,
+        response_times=response_times,
+        completed_count=completed_count
+    )
+    
+    # Determine difficulty adjustment
+    new_difficulty, adaptation_reason = SDMTTask.determine_difficulty_adjustment(
+        score=metrics['score'],
+        difficulty=difficulty,
+        target=trial['target_responses']
+    )
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Update difficulty
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    current_diff['processing_speed'] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Ensure plan.id is not None
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan has no ID")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="processing_speed",
+        task_type="sdmt",
+        task_code="sdmt",
+        score=metrics['score'],
+        accuracy=metrics['accuracy'],
+        average_reaction_time=metrics['avg_response_time'],
+        consistency=metrics['consistency'],
+        errors=metrics['incorrect_count'],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=trial['duration_seconds'],
+        adaptation_reason=adaptation_reason,
+        raw_data=json.dumps({
+            "correct_count": metrics['correct_count'],
+            "incorrect_count": metrics['incorrect_count'],
+            "total_attempted": metrics['total_attempted'],
+            "processing_speed": metrics['processing_speed'],
+            "user_responses": user_responses,
+            "response_times": response_times
+        })
+    )
+    
+    session.add(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    return {
+        "success": True,
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "performance_summary": {
+            "score": metrics['score'],
+            "correct_count": metrics['correct_count'],
+            "processing_speed": metrics['processing_speed'],
+            "accuracy": metrics['accuracy']
+        }
+    }
+
 
 # ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
