@@ -920,6 +920,183 @@ def submit_digit_span_session(
         }
     }
 
+@router.post("/tasks/spatial-span/generate/{user_id}")
+def generate_spatial_span_session(
+    user_id: int, 
+    difficulty: int = 5,
+    num_trials: int = 8,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Spatial Span (Corsi Block) task session
+    
+    Returns sequence of trials for the user to complete
+    """
+    from app.services.spatial_span_task import SpatialSpanTask
+    
+    # Validate difficulty
+    if not 1 <= difficulty <= 10:
+        raise HTTPException(status_code=400, detail="Difficulty must be between 1 and 10")
+    
+    # Get user's training plan to verify they exist
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Generate trials
+    trials = SpatialSpanTask.generate_session(difficulty, num_trials)
+    
+    return {
+        "task_code": "spatial_span",
+        "domain": "working_memory",
+        "difficulty": difficulty,
+        "num_trials": num_trials,
+        "trials": trials,
+        "instructions": {
+            "title": "Spatial Span Test (Corsi Blocks)",
+            "description": "Remember the sequence of highlighted blocks",
+            "forward": "Click the blocks in the same order they lit up",
+            "backward": "Click the blocks in REVERSE order",
+            "tips": [
+                "Focus on the spatial pattern, not individual positions",
+                "Use visual imagery to remember the path",
+                "Practice makes perfect - your brain will adapt"
+            ]
+        }
+    }
+
+@router.post("/tasks/spatial-span/submit/{user_id}")
+def submit_spatial_span_session(
+    user_id: int,
+    session_data: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit completed Spatial Span session and save results
+    
+    Expected session_data:
+    {
+        "difficulty": 5,
+        "trials": [
+            {
+                "sequence": [0, 4, 7],
+                "grid_size": 3,
+                "span_type": "forward",
+                "length": 3,
+                "user_response": [0, 4, 7],
+                "reaction_time": 4500
+            },
+            ...
+        ]
+    }
+    """
+    from app.services.spatial_span_task import SpatialSpanTask
+    from app.services.badge_service import BadgeService
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan or plan.id is None:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Score each trial
+    trials = session_data.get('trials', [])
+    scored_trials = []
+    
+    for trial in trials:
+        score_result = SpatialSpanTask.score_response(
+            trial['sequence'],
+            trial.get('user_response', []),
+            trial['span_type']
+        )
+        
+        scored_trial = {**trial, **score_result}
+        scored_trials.append(scored_trial)
+    
+    # Calculate session metrics
+    metrics = SpatialSpanTask.calculate_session_metrics(scored_trials)
+    avg_rt = SpatialSpanTask.calculate_average_reaction_time(scored_trials)
+    
+    # Determine difficulty adaptation
+    difficulty = session_data.get('difficulty', 5)
+    accuracy = metrics['accuracy']
+    
+    if accuracy >= 85:
+        new_difficulty = min(difficulty + 1, 10)
+        adaptation_reason = f"Increased difficulty (accuracy {accuracy:.1f}% >= 85%)"
+    elif accuracy < 65:
+        new_difficulty = max(difficulty - 1, 1)
+        adaptation_reason = f"Decreased difficulty (accuracy {accuracy:.1f}% < 65%)"
+    else:
+        new_difficulty = difficulty
+        adaptation_reason = f"Maintained difficulty (accuracy {accuracy:.1f}% in 65-85% range)"
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="working_memory",
+        task_type="spatial_span",
+        task_code="spatial_span",
+        score=metrics['score'],
+        accuracy=metrics['accuracy'],
+        average_reaction_time=avg_rt,
+        consistency=metrics['consistency'],
+        errors=metrics['total_trials'] - metrics['correct_count'],
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=sum(t.get('reaction_time', 0) for t in scored_trials) // 1000,
+        raw_data=json.dumps({
+            'trials': scored_trials,
+            'metrics': metrics
+        }),
+        adaptation_reason=adaptation_reason,
+        completed=True
+    )
+    
+    session.add(training_session)
+    
+    # Update training plan's current difficulty for working_memory
+    current_difficulty = json.loads(plan.current_difficulty)
+    current_difficulty['working_memory'] = new_difficulty
+    plan.current_difficulty = json.dumps(current_difficulty)
+    plan.last_updated = datetime.utcnow()
+    
+    session.add(plan)
+    session.commit()
+    session.refresh(training_session)
+    session.refresh(plan)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "performance_summary": {
+            "score": metrics['score'],
+            "accuracy": metrics['accuracy'],
+            "longest_span": metrics['longest_span'],
+            "forward_accuracy": metrics['forward_accuracy'],
+            "backward_accuracy": metrics['backward_accuracy']
+        }
+    }
+
 # ============================================================================
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
