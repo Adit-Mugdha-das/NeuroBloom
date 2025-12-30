@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, desc, col
+from pydantic import BaseModel
 import json
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -2216,6 +2217,161 @@ def submit_stroop_session(
     session.add(training_session)
     
     # Update difficulty in training plan (handle JSON string)
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    if current_diff is None:
+        current_diff = {}
+    current_diff["attention"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": results,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
+# GO/NO-GO TASK - Attention (Response Inhibition)
+# ============================================================================
+
+@router.post("/tasks/gonogo/generate/{user_id}")
+def generate_gonogo_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Go/No-Go task session.
+    Tests response inhibition and impulse control.
+    """
+    from app.services.go_nogo_task import GoNoGoTask
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty from plan
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("attention", 4)
+    
+    # Generate session
+    task = GoNoGoTask()
+    session_data = task.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty
+    }
+
+
+class GoNoGoSubmitRequest(BaseModel):
+    difficulty: int
+    session_data: dict
+    responses: List[dict]
+
+
+@router.post("/tasks/gonogo/submit/{user_id}")
+def submit_gonogo_session(
+    user_id: int,
+    request: GoNoGoSubmitRequest,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Go/No-Go session results and calculate inhibition metrics.
+    
+    Key Metrics:
+    - Go trial accuracy & speed (processing)
+    - No-Go accuracy (inhibition)
+    - Commission errors (false alarms)
+    - d-prime (signal detection)
+    """
+    from app.services.go_nogo_task import GoNoGoTask
+    from app.services.badge_service import BadgeService
+    
+    # Extract data from request
+    difficulty = request.difficulty
+    session_data = request.session_data
+    responses = request.responses
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Score the session
+    task = GoNoGoTask()
+    results = task.score_session(session_data, responses)
+    
+    # Determine difficulty adjustment
+    adjustment = task.determine_difficulty_adjustment(results)
+    new_difficulty = max(1, min(10, difficulty + adjustment))
+    
+    # Adaptation reason
+    if adjustment > 0:
+        adaptation_reason = "Excellent inhibitory control - increasing difficulty"
+    elif adjustment < 0:
+        adaptation_reason = "Reducing difficulty for better success rate"
+    else:
+        adaptation_reason = "Performance appropriate for current level"
+    
+    # Calculate duration
+    total_time_ms = (session_data['presentation_time_ms'] + session_data['inter_stimulus_interval_ms']) * session_data['total_trials']
+    duration_seconds = int(total_time_ms / 1000)
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id if plan.id else 0,  # Type safety: plan.id should exist since we fetched from DB
+        domain="attention",
+        task_type="go_nogo",
+        task_code="GONOGO",
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        score=int(results["performance_score"]),
+        accuracy=results["overall_accuracy"],
+        average_reaction_time=results["go_mean_rt"],
+        consistency=results["nogo_accuracy"],  # Using No-Go accuracy as consistency measure
+        errors=results["nogo_commission_errors"],
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "go_accuracy": results["go_accuracy"],
+            "go_mean_rt": results["go_mean_rt"],
+            "nogo_accuracy": results["nogo_accuracy"],
+            "commission_errors": results["nogo_commission_errors"],
+            "d_prime": results["d_prime"],
+            "hit_rate": results["hit_rate"],
+            "false_alarm_rate": results["false_alarm_rate"],
+            "performance_level": results["performance_level"]
+        }),
+        adaptation_reason=adaptation_reason
+    )
+    
+    session.add(training_session)
+    
+    # Update difficulty in training plan
     current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
     if current_diff is None:
         current_diff = {}

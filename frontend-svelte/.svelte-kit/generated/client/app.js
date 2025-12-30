@@ -27,7 +27,8 @@ export const nodes = [
 	() => import('./nodes/23'),
 	() => import('./nodes/24'),
 	() => import('./nodes/25'),
-	() => import('./nodes/26')
+	() => import('./nodes/26'),
+	() => import('./nodes/27')
 ];
 
 export const server_loads = [];
@@ -49,15 +50,16 @@ export const dictionary = {
 		"/session-summary": [15],
 		"/training": [16],
 		"/training/digit-span": [17],
-		"/training/inspection-time": [18],
-		"/training/letter-number-sequencing": [19],
-		"/training/operation-span": [20],
-		"/training/pasat": [21],
-		"/training/pattern-comparison": [22],
-		"/training/sdmt": [23],
-		"/training/spatial-span": [24],
-		"/training/stroop": [25],
-		"/training/trail-making-a": [26]
+		"/training/gonogo": [18],
+		"/training/inspection-time": [19],
+		"/training/letter-number-sequencing": [20],
+		"/training/operation-span": [21],
+		"/training/pasat": [22],
+		"/training/pattern-comparison": [23],
+		"/training/sdmt": [24],
+		"/training/spatial-span": [25],
+		"/training/stroop": [26],
+		"/training/trail-making-a": [27]
 	};
 
 export const hooks = {

@@ -1,9 +1,8 @@
 <script>
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { user } from '$lib/stores';
-	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import { user } from '$lib/stores';
+	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
 
