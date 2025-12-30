@@ -627,14 +627,11 @@
 			</div>
 		</div>
 
-	{:else if phase === 'results'}
 		<!-- Results Screen -->
 		<div class="results-container">
 			<!-- Badge Notifications -->
 			{#if newBadges.length > 0}
-				{#each newBadges as badge}
-					<BadgeNotification {badge} />
-				{/each}
+				<BadgeNotification badges={newBadges} />
 			{/if}
 
 			<div class="results-header">
