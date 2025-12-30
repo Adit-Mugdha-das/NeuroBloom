@@ -27,7 +27,7 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/empty-states-preview" | "/login" | "/progress" | "/register" | "/session-summary" | "/training" | "/training/digit-span" | "/training/gonogo" | "/training/inspection-time" | "/training/letter-number-sequencing" | "/training/operation-span" | "/training/pasat" | "/training/pattern-comparison" | "/training/sdmt" | "/training/spatial-span" | "/training/stroop" | "/training/trail-making-a";
+		RouteId(): "/" | "/baseline" | "/baseline/results" | "/baseline/tasks" | "/baseline/tasks/attention" | "/baseline/tasks/flexibility" | "/baseline/tasks/planning" | "/baseline/tasks/processing-speed" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/working-memory" | "/dashboard" | "/empty-states-preview" | "/login" | "/progress" | "/register" | "/session-summary" | "/training" | "/training/digit-span" | "/training/flanker" | "/training/gonogo" | "/training/inspection-time" | "/training/letter-number-sequencing" | "/training/operation-span" | "/training/pasat" | "/training/pattern-comparison" | "/training/sdmt" | "/training/spatial-span" | "/training/stroop" | "/training/trail-making-a";
 		RouteParams(): {
 			
 		};
@@ -50,6 +50,7 @@ declare module "$app/types" {
 			"/session-summary": Record<string, never>;
 			"/training": Record<string, never>;
 			"/training/digit-span": Record<string, never>;
+			"/training/flanker": Record<string, never>;
 			"/training/gonogo": Record<string, never>;
 			"/training/inspection-time": Record<string, never>;
 			"/training/letter-number-sequencing": Record<string, never>;
@@ -61,7 +62,7 @@ declare module "$app/types" {
 			"/training/stroop": Record<string, never>;
 			"/training/trail-making-a": Record<string, never>
 		};
-		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/empty-states-preview" | "/empty-states-preview/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/" | "/training/digit-span" | "/training/digit-span/" | "/training/gonogo" | "/training/gonogo/" | "/training/inspection-time" | "/training/inspection-time/" | "/training/letter-number-sequencing" | "/training/letter-number-sequencing/" | "/training/operation-span" | "/training/operation-span/" | "/training/pasat" | "/training/pasat/" | "/training/pattern-comparison" | "/training/pattern-comparison/" | "/training/sdmt" | "/training/sdmt/" | "/training/spatial-span" | "/training/spatial-span/" | "/training/stroop" | "/training/stroop/" | "/training/trail-making-a" | "/training/trail-making-a/";
+		Pathname(): "/" | "/baseline" | "/baseline/" | "/baseline/results" | "/baseline/results/" | "/baseline/tasks" | "/baseline/tasks/" | "/baseline/tasks/attention" | "/baseline/tasks/attention/" | "/baseline/tasks/flexibility" | "/baseline/tasks/flexibility/" | "/baseline/tasks/planning" | "/baseline/tasks/planning/" | "/baseline/tasks/processing-speed" | "/baseline/tasks/processing-speed/" | "/baseline/tasks/visual-scanning" | "/baseline/tasks/visual-scanning/" | "/baseline/tasks/working-memory" | "/baseline/tasks/working-memory/" | "/dashboard" | "/dashboard/" | "/empty-states-preview" | "/empty-states-preview/" | "/login" | "/login/" | "/progress" | "/progress/" | "/register" | "/register/" | "/session-summary" | "/session-summary/" | "/training" | "/training/" | "/training/digit-span" | "/training/digit-span/" | "/training/flanker" | "/training/flanker/" | "/training/gonogo" | "/training/gonogo/" | "/training/inspection-time" | "/training/inspection-time/" | "/training/letter-number-sequencing" | "/training/letter-number-sequencing/" | "/training/operation-span" | "/training/operation-span/" | "/training/pasat" | "/training/pasat/" | "/training/pattern-comparison" | "/training/pattern-comparison/" | "/training/sdmt" | "/training/sdmt/" | "/training/spatial-span" | "/training/spatial-span/" | "/training/stroop" | "/training/stroop/" | "/training/trail-making-a" | "/training/trail-making-a/";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/favicon.png" | string & {};
 	}

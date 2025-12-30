@@ -28,6 +28,7 @@
 	let showStimulus = false;
 	let trialTimeout = null;
 	let stimulusTimeout = null;
+	let interStimulusTimeout = null;
 
 	// Help modal
 	let showHelp = false;
@@ -115,6 +116,10 @@
 	}
 
 	function showNextPracticeTrial() {
+		// Clear any existing timers
+		clearTimeout(stimulusTimeout);
+		clearTimeout(interStimulusTimeout);
+		
 		if (currentPractice >= practiceTrials.length) {
 			// Practice complete
 			setTimeout(() => {
@@ -187,6 +192,11 @@
 	}
 
 	function showNextTrial() {
+		// Clear all existing timers to prevent race conditions
+		clearTimeout(stimulusTimeout);
+		clearTimeout(interStimulusTimeout);
+		clearTimeout(trialTimeout);
+		
 		if (currentTrial >= sessionData.trials.length) {
 			completeSession();
 			return;
@@ -196,7 +206,7 @@
 		showStimulus = false;
 
 		// Inter-stimulus interval
-		setTimeout(() => {
+		interStimulusTimeout = setTimeout(() => {
 			showStimulus = true;
 			startTime = Date.now();
 
@@ -206,7 +216,7 @@
 
 				// If no response yet, record as no response after stimulus disappears
 				if (!responded) {
-					setTimeout(() => {
+					trialTimeout = setTimeout(() => {
 						recordResponse(false);
 					}, 200);
 				}
@@ -217,8 +227,12 @@
 	function recordResponse(didRespond) {
 		if (responded) return; // Already responded
 		
-		responded = true;
+		// Clear all timers immediately
 		clearTimeout(stimulusTimeout);
+		clearTimeout(interStimulusTimeout);
+		clearTimeout(trialTimeout);
+		
+		responded = true;
 
 		const reactionTime = didRespond ? Date.now() - startTime : 0;
 		const trial = sessionData.trials[currentTrial];
@@ -231,9 +245,10 @@
 		});
 
 		currentTrial++;
+		showStimulus = false;
 
 		// Brief pause before next trial
-		setTimeout(() => {
+		interStimulusTimeout = setTimeout(() => {
 			showNextTrial();
 		}, 300);
 	}

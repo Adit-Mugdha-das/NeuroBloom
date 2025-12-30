@@ -2395,6 +2395,162 @@ def submit_gonogo_session(
 
 
 # ============================================================================
+# FLANKER TASK - Attention (Selective Attention & Conflict Resolution)
+# ============================================================================
+
+class FlankerSubmitRequest(BaseModel):
+    difficulty: int
+    session_data: dict
+    responses: List[dict]
+
+
+@router.post("/tasks/flanker/generate/{user_id}")
+def generate_flanker_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Flanker task session (Eriksen Flanker Test).
+    Tests selective attention and conflict resolution.
+    """
+    from app.services.flanker_task import FlankerTask
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty from plan
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("attention", 4)
+    
+    # Generate session
+    task = FlankerTask()
+    session_data = task.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty
+    }
+
+
+@router.post("/tasks/flanker/submit/{user_id}")
+def submit_flanker_session(
+    user_id: int,
+    request: FlankerSubmitRequest,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Flanker session results and calculate attention metrics.
+    
+    Key Metrics:
+    - Overall accuracy & RT
+    - Congruent vs Incongruent performance
+    - Flanker/Conflict Effect (Incongruent RT - Congruent RT)
+    - Interference error rate
+    """
+    from app.services.flanker_task import FlankerTask
+    from app.services.badge_service import BadgeService
+    
+    # Extract data from request
+    difficulty = request.difficulty
+    session_data = request.session_data
+    responses = request.responses
+    
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Score the session
+    task = FlankerTask()
+    results = task.score_session(session_data, responses)
+    
+    # Determine difficulty adjustment
+    adjustment = task.determine_difficulty_adjustment(results)
+    new_difficulty = max(1, min(10, difficulty + adjustment))
+    
+    # Adaptation reason
+    if adjustment > 0:
+        adaptation_reason = "Excellent selective attention - increasing difficulty"
+    elif adjustment < 0:
+        adaptation_reason = "Reducing difficulty for better conflict resolution"
+    else:
+        adaptation_reason = "Performance appropriate for current level"
+    
+    # Calculate duration
+    total_time_ms = (session_data['presentation_time_ms'] + session_data['inter_stimulus_interval_ms']) * session_data['total_trials']
+    duration_seconds = int(total_time_ms / 1000)
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id if plan.id else 0,
+        domain="attention",
+        task_type="flanker",
+        task_code="FLANKER",
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        score=int(results["performance_score"]),
+        accuracy=results["overall_accuracy"],
+        average_reaction_time=results["mean_rt"],
+        consistency=results["congruent_accuracy"],  # Congruent trial accuracy as baseline
+        errors=results["total_trials"] - results["total_correct"],
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "overall_accuracy": results["overall_accuracy"],
+            "mean_rt": results["mean_rt"],
+            "congruent_accuracy": results["congruent_accuracy"],
+            "congruent_mean_rt": results["congruent_mean_rt"],
+            "incongruent_accuracy": results["incongruent_accuracy"],
+            "incongruent_mean_rt": results["incongruent_mean_rt"],
+            "conflict_effect_ms": results["conflict_effect_ms"],
+            "interference_error_rate": results["interference_error_rate"],
+            "performance_level": results["performance_level"]
+        }),
+        adaptation_reason=adaptation_reason
+    )
+    
+    session.add(training_session)
+    
+    # Update difficulty in training plan
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    if current_diff is None:
+        current_diff = {}
+    current_diff["attention"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": results,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
 # PASAT TASK - Attention (MS Gold Standard)
 # ============================================================================
 

@@ -52,86 +52,88 @@ class GoNoGoTask:
     }
     
     # Difficulty levels: 10 levels with varying complexity
+    # Designed for MS patients: maintains clinical paradigm while increasing challenge
+    # Key principles: Go trials remain majority (maintain prepotent response), timing realistic for MS
     DIFFICULTY_CONFIG = {
         1: {
             "stimulus_set": "basic",
-            "presentation_time_ms": 2000,
-            "inter_stimulus_interval_ms": 1000,
+            "presentation_time_ms": 2000,  # Very slow - MS-friendly
+            "inter_stimulus_interval_ms": 1200,
             "total_trials": 40,
-            "go_probability": 0.75,
-            "description": "Beginner - Slow pace, clear targets"
+            "go_probability": 0.75,  # Standard 75/25 paradigm
+            "description": "Beginner - Very slow pace, clear targets"
         },
         2: {
             "stimulus_set": "basic",
-            "presentation_time_ms": 1500,
-            "inter_stimulus_interval_ms": 800,
+            "presentation_time_ms": 1800,
+            "inter_stimulus_interval_ms": 1000,
             "total_trials": 50,
             "go_probability": 0.75,
-            "description": "Easy - Comfortable pace"
+            "description": "Easy - Slow pace, comfortable"
         },
         3: {
             "stimulus_set": "basic",
-            "presentation_time_ms": 1200,
-            "inter_stimulus_interval_ms": 600,
+            "presentation_time_ms": 1500,  # Standard clinical timing
+            "inter_stimulus_interval_ms": 900,
             "total_trials": 60,
             "go_probability": 0.75,
-            "description": "Moderate - Standard pace"
+            "description": "Moderate - Standard clinical pace"
         },
         4: {
-            "stimulus_set": "similar",
-            "presentation_time_ms": 1000,
-            "inter_stimulus_interval_ms": 600,
-            "total_trials": 60,
+            "stimulus_set": "basic",
+            "presentation_time_ms": 1300,
+            "inter_stimulus_interval_ms": 800,
+            "total_trials": 70,
             "go_probability": 0.75,
-            "description": "Challenging - Similar stimuli"
+            "description": "Intermediate - Faster responses"
         },
         5: {
-            "stimulus_set": "similar",
-            "presentation_time_ms": 900,
-            "inter_stimulus_interval_ms": 500,
-            "total_trials": 70,
-            "go_probability": 0.70,
-            "description": "Intermediate - More No-Go trials"
+            "stimulus_set": "similar",  # Increase perceptual difficulty
+            "presentation_time_ms": 1200,
+            "inter_stimulus_interval_ms": 700,
+            "total_trials": 80,
+            "go_probability": 0.73,  # Slightly more No-Go trials
+            "description": "Challenging - Similar stimuli, quicker pace"
         },
         6: {
+            "stimulus_set": "similar",
+            "presentation_time_ms": 1000,  # 1 second - standard research timing
+            "inter_stimulus_interval_ms": 600,
+            "total_trials": 90,
+            "go_probability": 0.70,  # 70/30 ratio - harder inhibition
+            "description": "Advanced - Rapid discrimination required"
+        },
+        7: {
+            "stimulus_set": "shapes",  # Different modality
+            "presentation_time_ms": 900,
+            "inter_stimulus_interval_ms": 500,
+            "total_trials": 100,
+            "go_probability": 0.70,
+            "description": "Expert - Shape discrimination, fast pace"
+        },
+        8: {
             "stimulus_set": "shapes",
             "presentation_time_ms": 800,
             "inter_stimulus_interval_ms": 500,
-            "total_trials": 80,
-            "go_probability": 0.70,
-            "description": "Advanced - Quick responses required"
-        },
-        7: {
-            "stimulus_set": "shapes",
-            "presentation_time_ms": 700,
-            "inter_stimulus_interval_ms": 400,
-            "total_trials": 90,
-            "go_probability": 0.65,
-            "description": "Expert - Fast pace"
-        },
-        8: {
-            "stimulus_set": "complex",
-            "presentation_time_ms": 600,
-            "inter_stimulus_interval_ms": 400,
-            "total_trials": 100,
-            "go_probability": 0.65,
-            "description": "Master - Rapid inhibition"
+            "total_trials": 110,
+            "go_probability": 0.68,  # Slightly more No-Go
+            "description": "Master - Very fast responses, high inhibition demand"
         },
         9: {
-            "stimulus_set": "complex",
-            "presentation_time_ms": 500,
-            "inter_stimulus_interval_ms": 300,
-            "total_trials": 110,
-            "go_probability": 0.60,
-            "description": "Elite - Maximum challenge"
+            "stimulus_set": "complex",  # Word stimuli
+            "presentation_time_ms": 750,
+            "inter_stimulus_interval_ms": 450,
+            "total_trials": 120,
+            "go_probability": 0.67,  # 2:1 ratio still maintained
+            "description": "Elite - Word processing, maximum speed"
         },
         10: {
             "stimulus_set": "complex",
-            "presentation_time_ms": 500,
-            "inter_stimulus_interval_ms": 300,
+            "presentation_time_ms": 700,  # 700ms minimum - realistic for MS patients
+            "inter_stimulus_interval_ms": 400,
             "total_trials": 120,
-            "go_probability": 0.55,
-            "description": "Ultimate - Equal Go/No-Go ratio"
+            "go_probability": 0.65,  # Still maintains prepotent response (not 50/50)
+            "description": "Ultimate - Peak challenge, near-research standards"
         }
     }
     
@@ -376,25 +378,41 @@ class GoNoGoTask:
         
         Focus on:
         1. No-Go accuracy (primary measure of inhibition)
-        2. Go trial speed (secondary)
+        2. Go trial speed (secondary, relative to current difficulty)
         3. Overall accuracy
+        
+        MS-Adapted: Considers cognitive slowing common in MS patients
         """
         nogo_accuracy = results['nogo_accuracy']
         go_accuracy = results['go_accuracy']
         go_mean_rt = results['go_mean_rt']
         
-        # Increase difficulty if:
-        # - High No-Go accuracy (≥90%) AND
-        # - High Go accuracy (≥95%) AND
-        # - Fast Go RT (<400ms)
-        if nogo_accuracy >= 90 and go_accuracy >= 95 and go_mean_rt < 400:
+        # Increase difficulty if performing well:
+        # - Excellent No-Go accuracy (≥85%) AND
+        # - High Go accuracy (≥90%) AND
+        # - Reasonable Go RT (<600ms - realistic for MS)
+        if nogo_accuracy >= 85 and go_accuracy >= 90 and go_mean_rt < 600:
             return 1
         
-        # Decrease difficulty if:
-        # - Low No-Go accuracy (<60%) OR
-        # - Low Go accuracy (<70%) OR
-        # - Very slow Go RT (>800ms)
-        elif nogo_accuracy < 60 or go_accuracy < 70 or go_mean_rt > 800:
+        # Strong performance threshold (for faster progression):
+        # - Very high No-Go accuracy (≥92%) AND
+        # - Perfect or near-perfect Go accuracy (≥95%) AND
+        # - Fast RT for MS patients (<500ms)
+        elif nogo_accuracy >= 92 and go_accuracy >= 95 and go_mean_rt < 500:
+            return 1
+        
+        # Decrease difficulty if struggling:
+        # - Poor No-Go accuracy (<65%) OR
+        # - Low Go accuracy (<75%) OR
+        # - Very slow Go RT (>1000ms - indicating cognitive overload)
+        elif nogo_accuracy < 65 or go_accuracy < 75 or go_mean_rt > 1000:
             return -1
+        
+        # Severe difficulty - drop 2 levels:
+        # - Very poor inhibition (<50%) OR
+        # - Missing most Go trials (<60%) OR
+        # - Extremely slow (>1500ms)
+        elif nogo_accuracy < 50 or go_accuracy < 60 or go_mean_rt > 1500:
+            return -2
         
         return 0
