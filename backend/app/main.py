@@ -21,10 +21,10 @@ app.add_middleware(
 def on_startup():
     init_db()
 
-app.include_router(auth_router, prefix="/auth")
-app.include_router(tasks_router, prefix="/tasks")
-app.include_router(baseline_router, prefix="/baseline")
-app.include_router(training_router, prefix="/training")
+app.include_router(auth_router, prefix="/api/auth")
+app.include_router(tasks_router, prefix="/api/tasks")
+app.include_router(baseline_router, prefix="/api/baseline")
+app.include_router(training_router, prefix="/api/training")
 
 @app.get("/")
 def root():

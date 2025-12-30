@@ -3331,3 +3331,374 @@ def get_weekly_summary(
         "score_change_from_last_week": round(score_change, 1),
         "domains_trained": list(domain_stats.keys())
     }
+
+
+# ============================================================================
+# TRAIL MAKING TEST - PART B (Cognitive Flexibility)
+# ============================================================================
+
+from app.services.trail_making_b_task import TrailMakingBTask
+
+@router.post("/tasks/trail-making-b/generate/{user_id}")
+def generate_trail_making_b_session(user_id: int, session: Session = Depends(get_session)):
+    """
+    Generate a Trail Making Test - Part B session.
+    Alternating number-letter sequence task for cognitive flexibility.
+    """
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found for user")
+    
+    # Get current difficulty for flexibility domain from JSON
+    current_difficulty = plan.get_current_difficulty()
+    difficulty = current_difficulty.get("flexibility", 1)
+    
+    # Get user's TMT-A baseline time if available (for B-A calculation)
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_tmt_a_time = None
+    if baseline and baseline.raw_metrics:
+        # Extract TMT-A time from baseline raw_metrics if it exists
+        try:
+            metrics = json.loads(baseline.raw_metrics)
+            baseline_tmt_a_time = metrics.get("trail_making_a_time")
+        except:
+            baseline_tmt_a_time = None
+    
+    # Generate session
+    task_service = TrailMakingBTask()
+    session_data = task_service.generate_session(
+        difficulty=difficulty,
+        user_baseline_time=baseline_tmt_a_time
+    )
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id,
+        "task_type": "trail_making_b"
+    }
+
+
+class TrailMakingBSubmission(BaseModel):
+    difficulty: int
+    session_data: dict
+    user_sequence: List[str]  # IDs of circles clicked in order
+    completion_time_seconds: float
+    errors: List[Dict[str, Any]]  # Error log with details
+    completed: bool
+
+
+@router.post("/tasks/trail-making-b/submit/{user_id}")
+def submit_trail_making_b_session(
+    user_id: int, 
+    submission: TrailMakingBSubmission,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit completed Trail Making Test - Part B session for scoring.
+    """
+    # Get training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    task_service = TrailMakingBTask()
+    result = task_service.score_session(
+        session_data=submission.session_data,
+        user_sequence=submission.user_sequence,
+        completion_time_seconds=submission.completion_time_seconds,
+        errors=submission.errors
+    )
+    
+    metrics = result["metrics"]
+    
+    # Calculate score (0-100 scale)
+    # Higher score = better (faster time + fewer errors)
+    time_score = max(0, 100 - (metrics["completion_time_seconds"] / 3))  # Penalty for time
+    error_penalty = metrics["total_errors"] * 5  # -5 points per error
+    accuracy_bonus = metrics["accuracy"]  # 0-100
+    
+    final_score = max(0, min(100, (time_score + accuracy_bonus) / 2 - error_penalty))
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,  # Add user_id
+        training_plan_id=plan.id,
+        domain="flexibility",
+        task_type="trail_making_b",
+        difficulty_level=submission.difficulty,  # Correct field name
+        difficulty_before=submission.difficulty,
+        difficulty_after=submission.difficulty,  # Will be updated below
+        score=round(final_score, 1),
+        accuracy=metrics["accuracy"],
+        average_reaction_time=int(metrics["completion_time_seconds"] * 1000),
+        consistency=100.0,  # Can be calculated if needed
+        errors=metrics["total_errors"],
+        duration=int(metrics["completion_time_seconds"]),
+        completed=metrics["completed"],
+        raw_data=json.dumps(submission.session_data),
+        created_at=datetime.utcnow()
+    )
+    
+    session.add(training_session)
+    
+    # Update difficulty based on performance
+    new_difficulty = submission.difficulty
+    
+    if metrics["performance_level"] in ["Excellent", "Good"] and metrics["total_errors"] <= 2:
+        new_difficulty = min(10, submission.difficulty + 1)
+    elif metrics["performance_level"] in ["Needs Improvement", "Struggling"]:
+        new_difficulty = max(1, submission.difficulty - 1)
+    
+    # Update the session record with new difficulty
+    training_session.difficulty_after = new_difficulty
+    training_session.adaptation_reason = f"Performance: {metrics['performance_level']}, Errors: {metrics['total_errors']}"
+    
+    # Update current difficulty in JSON
+    current_difficulty = plan.get_current_difficulty()
+    current_difficulty["flexibility"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_difficulty)
+    
+    # Update plan statistics
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "metrics": metrics,
+        "interpretation": result["interpretation"],
+        "clinical_note": result["clinical_note"],
+        "score": round(final_score, 1),
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
+
+# ==================== Wisconsin Card Sorting Test (WCST) ====================
+
+@router.post("/tasks/wcst/generate/{user_id}")
+def generate_wcst_session(user_id: int, session: Session = Depends(get_session)):
+    """
+    Generate Wisconsin Card Sorting Test (WCST) session
+    
+    WCST measures:
+    - Set-shifting and cognitive flexibility
+    - Rule learning and adaptation
+    - Perseverative errors (getting stuck on old rules)
+    - Executive function
+    """
+    from app.services.wcst_task import WCSTTask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    
+    # Get flexibility difficulty from JSON field
+    try:
+        difficulty = plan.get_current_difficulty()["flexibility"]
+    except (KeyError, TypeError):
+        difficulty = 1
+    
+    # Get baseline for context
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_flexibility = None
+    if baseline and baseline.raw_metrics:
+        try:
+            metrics = json.loads(baseline.raw_metrics)
+            baseline_flexibility = metrics.get("flexibility", {}).get("score", 50)
+        except:
+            baseline_flexibility = None
+    
+    # Generate WCST session
+    wcst_task = WCSTTask()
+    session_data = wcst_task.generate_session(difficulty=difficulty)
+    
+    return {
+        "success": True,
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "baseline_flexibility": baseline_flexibility,
+        "instructions": {
+            "title": "Wisconsin Card Sorting Test",
+            "description": "Sort cards by matching them to one of the four piles. The sorting rule (color, shape, or number) will change without warning. Use the feedback to figure out the current rule.",
+            "tips": [
+                "Pay attention to whether your sorts are correct or wrong",
+                "When you get several 'Wrong' feedback in a row, the rule has probably changed",
+                "Try different rules (color, shape, number) to discover the current one",
+                "Don't get stuck on a rule that's no longer working"
+            ]
+        }
+    }
+
+
+class WCSTSubmission(BaseModel):
+    session_data: Dict[str, Any]
+    responses: List[Dict[str, Any]]  # trial_index, selected_pile, response_time
+    total_time: int
+
+
+@router.post("/tasks/wcst/submit/{user_id}")
+def submit_wcst_session(
+    user_id: int,
+    submission: WCSTSubmission,
+    session: Session = Depends(get_session)
+):
+    """
+    Score and save WCST session results
+    
+    Tracks:
+    - Categories achieved
+    - Perseverative errors (stuck on old rule)
+    - Non-perseverative errors
+    - Trials to first category
+    - Set-shifting ability
+    """
+    from app.services.wcst_task import WCSTTask
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Get baseline for context
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_flexibility: Optional[float] = None
+    if baseline and baseline.raw_metrics:
+        try:
+            metrics = json.loads(baseline.raw_metrics)
+            score = metrics.get("flexibility", {}).get("score", 50)
+            baseline_flexibility = float(score) if score is not None else None
+        except:
+            baseline_flexibility = None
+    
+    # Score session
+    wcst_task = WCSTTask()
+    result = wcst_task.score_session(
+        session_data=submission.session_data,
+        responses=submission.responses,
+        baseline_flexibility=baseline_flexibility
+    )
+    
+    # Get current difficulty
+    current_difficulty = submission.session_data["difficulty"]
+    
+    # Adaptive difficulty adjustment
+    # Excellent/Good + low errors → increase
+    # Needs Improvement/Struggling → decrease
+    new_difficulty = current_difficulty
+    
+    if result["performance_category"] in ["Excellent", "Good"] and result["total_errors"] <= 10:
+        new_difficulty = min(10, current_difficulty + 1)
+    elif result["performance_category"] in ["Needs Improvement", "Struggling"]:
+        new_difficulty = max(1, current_difficulty - 1)
+    
+    # Update training plan difficulty
+    current_difficulties = plan.get_current_difficulty()
+    current_difficulties["flexibility"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_difficulties)
+    session.add(plan)
+    session.commit()
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="flexibility",
+        task_type="wcst",
+        difficulty_level=current_difficulty,
+        difficulty_before=current_difficulty,
+        difficulty_after=new_difficulty,
+        score=result["score"],
+        accuracy=result["accuracy"],
+        average_reaction_time=result["average_response_time"],
+        consistency=100 - result["perseverative_error_rate"],  # Inverse of perseveration
+        errors=result["total_errors"],
+        duration=submission.total_time,
+        completed=True,
+        raw_data=json.dumps({
+            "categories_achieved": result["categories_achieved"],
+            "trials_to_first_category": result["trials_to_first_category"],
+            "perseverative_errors": result["perseverative_errors"],
+            "non_perseverative_errors": result["non_perseverative_errors"],
+            "perseverative_error_rate": result["perseverative_error_rate"],
+            "rule_changes": result["rule_changes"],
+            "rule_change_details": result["rule_change_details"],
+            "performance_category": result["performance_category"],
+            "feedback": result["feedback"],
+            "total_trials": result["total_trials"],
+        })
+    )
+    
+    session.add(training_session)
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": result["score"],
+        "accuracy": result["accuracy"],
+        "categories_achieved": result["categories_achieved"],
+        "trials_to_first_category": result["trials_to_first_category"],
+        "perseverative_errors": result["perseverative_errors"],
+        "non_perseverative_errors": result["non_perseverative_errors"],
+        "perseverative_error_rate": result["perseverative_error_rate"],
+        "total_errors": result["total_errors"],
+        "total_trials": result["total_trials"],
+        "average_response_time": result["average_response_time"],
+        "performance_category": result["performance_category"],
+        "feedback": result["feedback"],
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
