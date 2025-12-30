@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, desc, col
 import json
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
@@ -2075,6 +2075,165 @@ def submit_inspection_time_session(
         "difficulty_before": difficulty,
         "difficulty_after": results["difficulty_adjustment"],
         "adaptation_reason": results["adaptation_reason"],
+        "new_badges": new_badges
+    }
+
+
+# ============================================================================
+# STROOP COLOR-WORD TEST - Attention (Classic Inhibitory Control)
+# ============================================================================
+
+@router.post("/tasks/stroop/generate/{user_id}")
+def generate_stroop_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Stroop Color-Word Test session.
+    Three conditions: baseline (color patches), congruent (matching), incongruent (conflicting).
+    """
+    from app.services.stroop_task import StroopTask
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty for attention domain (parse JSON)
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    difficulty = current_diff.get("attention", 1)
+    
+    # Generate session
+    task = StroopTask()
+    session_data = task.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty
+    }
+
+
+@router.post("/tasks/stroop/submit/{user_id}")
+def submit_stroop_session(
+    user_id: int,
+    request_data: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Stroop session results and calculate interference metrics.
+    """
+    from app.services.stroop_task import StroopTask
+    
+    # Validate request data
+    if not isinstance(request_data, dict):
+        raise HTTPException(status_code=400, detail="Request data must be an object")
+    
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses")
+    
+    if not isinstance(difficulty, int):
+        raise HTTPException(status_code=400, detail="difficulty must be an integer")
+    
+    if not isinstance(responses, list):
+        raise HTTPException(status_code=400, detail="responses must be an array")
+    
+    if not isinstance(session_data, dict):
+        raise HTTPException(status_code=400, detail="session_data must be an object")
+    
+    # Get user's active training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    task = StroopTask()
+    typed_responses: List[Dict[str, Any]] = responses
+    results = task.score_session(session_data, typed_responses)
+    
+    # Calculate duration based on total trials and timeouts
+    presentation_time_ms = session_data.get("presentation_time_ms", 2000)
+    response_timeout_ms = session_data.get("response_timeout_ms", 3000)
+    total_trials = session_data.get("total_trials", 30)
+    duration_seconds = int((presentation_time_ms + response_timeout_ms) * total_trials / 1000)
+    
+    # Determine difficulty adjustment
+    adjustment = task.determine_difficulty_adjustment(results)
+    new_difficulty = max(1, min(10, difficulty + adjustment))
+    
+    # Adaptation reason
+    if adjustment > 0:
+        adaptation_reason = f"Excellent interference control (accuracy: {results['overall_accuracy']:.1f}%, interference cost: {results['interference_cost']:.1f}%) - Increasing challenge"
+    elif adjustment < 0:
+        adaptation_reason = f"High interference effect (cost: {results['interference_cost']:.1f}%) - Reducing difficulty for better practice"
+    else:
+        adaptation_reason = f"Maintaining difficulty for consistent practice (performance: {results['performance_level']})"
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="attention",
+        task_type="stroop",
+        task_code="STROOP",
+        score=results["performance_score"],
+        accuracy=results["overall_accuracy"],
+        average_reaction_time=int(results["incongruent_rt"]),  # Use incongruent RT as primary measure
+        consistency=results["consistency"],
+        errors=total_trials - results["correct_trials"],
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "baseline_accuracy": results["baseline_accuracy"],
+            "baseline_rt": results["baseline_rt"],
+            "congruent_accuracy": results["congruent_accuracy"],
+            "congruent_rt": results["congruent_rt"],
+            "incongruent_accuracy": results["incongruent_accuracy"],
+            "incongruent_rt": results["incongruent_rt"],
+            "stroop_effect": results["stroop_effect"],
+            "interference_cost": results["interference_cost"],
+            "facilitation_effect": results["facilitation_effect"],
+            "performance_level": results["performance_level"]
+        }),
+        adaptation_reason=adaptation_reason
+    )
+    
+    session.add(training_session)
+    
+    # Update difficulty in training plan (handle JSON string)
+    current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
+    if current_diff is None:
+        current_diff = {}
+    current_diff["attention"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for new badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "session_id": training_session.id,
+        "metrics": results,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
         "new_badges": new_badges
     }
 

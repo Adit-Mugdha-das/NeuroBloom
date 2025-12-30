@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/trail-making-a/+page.svelte";
+export { default as component } from "../../../../src/routes/training/sdmt/+page.svelte";
