@@ -8,6 +8,7 @@ from datetime import datetime
 from app.models.test_result import TestResult
 from app.schemas.test_result import TestResultCreate, TestResultRead
 from app.core.config import engine
+from app.services.dccs_task import dccs_task_service
 
 router = APIRouter()
 
@@ -145,3 +146,44 @@ def get_baseline_status(user_id: int, session: Session = Depends(get_session)):
         "total_tasks": len(baseline_tasks),
         "all_completed": completed_count == len(baseline_tasks)
     }
+
+
+# DCCS Task endpoints
+@router.post("/dccs/generate")
+def generate_dccs_session(difficulty: int = 1):
+    """
+    Generate a new DCCS session
+    
+    Args:
+        difficulty: Difficulty level 1-10
+        
+    Returns:
+        Complete session configuration with all three phases
+    """
+    try:
+        session_data = dccs_task_service.generate_session(difficulty)
+        return session_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/dccs/score")
+def score_dccs_session(
+    session_data: dict,
+    user_responses: List[dict]
+):
+    """
+    Score a completed DCCS session
+    
+    Args:
+        session_data: Original session configuration
+        user_responses: List of user responses with timing
+        
+    Returns:
+        Detailed scoring including switch costs and perseverative errors
+    """
+    try:
+        results = dccs_task_service.score_session(session_data, user_responses)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -31,7 +31,8 @@ export const nodes = [
 	() => import('./nodes/27'),
 	() => import('./nodes/28'),
 	() => import('./nodes/29'),
-	() => import('./nodes/30')
+	() => import('./nodes/30'),
+	() => import('./nodes/31')
 ];
 
 export const server_loads = [];
@@ -52,20 +53,21 @@ export const dictionary = {
 		"/register": [14],
 		"/session-summary": [15],
 		"/training": [16],
-		"/training/digit-span": [17],
-		"/training/flanker": [18],
-		"/training/gonogo": [19],
-		"/training/inspection-time": [20],
-		"/training/letter-number-sequencing": [21],
-		"/training/operation-span": [22],
-		"/training/pasat": [23],
-		"/training/pattern-comparison": [24],
-		"/training/sdmt": [25],
-		"/training/spatial-span": [26],
-		"/training/stroop": [27],
-		"/training/trail-making-a": [28],
-		"/training/trail-making-b": [29],
-		"/training/wcst": [30]
+		"/training/dccs": [17],
+		"/training/digit-span": [18],
+		"/training/flanker": [19],
+		"/training/gonogo": [20],
+		"/training/inspection-time": [21],
+		"/training/letter-number-sequencing": [22],
+		"/training/operation-span": [23],
+		"/training/pasat": [24],
+		"/training/pattern-comparison": [25],
+		"/training/sdmt": [26],
+		"/training/spatial-span": [27],
+		"/training/stroop": [28],
+		"/training/trail-making-a": [29],
+		"/training/trail-making-b": [30],
+		"/training/wcst": [31]
 	};
 
 export const hooks = {
