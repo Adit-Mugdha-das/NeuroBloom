@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { API_BASE_URL } from '$lib/api.js';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
@@ -25,6 +26,7 @@
 	let planningTimeRemaining = 0;
 	let planningTimer = null;
 	let userSolutions = [];
+	let solutions = []; // Track all problem solutions
 	let showingGoal = true;
 	let results = null;
 	let earnedBadges = [];
@@ -205,13 +207,16 @@
 	function completeProblem() {
 		const timeElapsed = (Date.now() - problemStartTime) / 1000;
 		
-		userSolutions.push({
+		const problemSolution = {
 			problem_number: currentProblem.problem_number,
 			solved: true,
 			moves_used: totalMoves,
 			time_seconds: timeElapsed,
 			move_history: moveHistory
-		});
+		};
+		
+		userSolutions.push(problemSolution);
+		solutions.push(problemSolution);
 		
 		if (currentProblemIndex < sessionData.problems.length - 1) {
 			gamePhase = 'problem_complete';
