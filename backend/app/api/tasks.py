@@ -9,6 +9,7 @@ from app.models.test_result import TestResult
 from app.schemas.test_result import TestResultCreate, TestResultRead
 from app.core.config import engine
 from app.services.dccs_task import dccs_task_service
+from app.services.plus_minus_task import plus_minus_task_service
 
 router = APIRouter()
 
@@ -184,6 +185,47 @@ def score_dccs_session(
     """
     try:
         results = dccs_task_service.score_session(session_data, user_responses)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Plus-Minus Task endpoints
+@router.post("/plus-minus/generate")
+def generate_plus_minus_session(difficulty: int = 1):
+    """
+    Generate a new Plus-Minus session
+    
+    Args:
+        difficulty: Difficulty level 1-10
+        
+    Returns:
+        Complete session configuration with all three blocks
+    """
+    try:
+        session_data = plus_minus_task_service.generate_session(difficulty)
+        return session_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/plus-minus/score")
+def score_plus_minus_session(
+    session_data: dict,
+    user_responses: List[dict]
+):
+    """
+    Score a completed Plus-Minus session
+    
+    Args:
+        session_data: Original session configuration
+        user_responses: List of user responses with timing
+        
+    Returns:
+        Detailed scoring including switching cost
+    """
+    try:
+        results = plus_minus_task_service.score_session(session_data, user_responses)
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

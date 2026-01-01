@@ -32,7 +32,8 @@ export const nodes = [
 	() => import('./nodes/28'),
 	() => import('./nodes/29'),
 	() => import('./nodes/30'),
-	() => import('./nodes/31')
+	() => import('./nodes/31'),
+	() => import('./nodes/32')
 ];
 
 export const server_loads = [];
@@ -62,12 +63,13 @@ export const dictionary = {
 		"/training/operation-span": [23],
 		"/training/pasat": [24],
 		"/training/pattern-comparison": [25],
-		"/training/sdmt": [26],
-		"/training/spatial-span": [27],
-		"/training/stroop": [28],
-		"/training/trail-making-a": [29],
-		"/training/trail-making-b": [30],
-		"/training/wcst": [31]
+		"/training/plus-minus": [26],
+		"/training/sdmt": [27],
+		"/training/spatial-span": [28],
+		"/training/stroop": [29],
+		"/training/trail-making-a": [30],
+		"/training/trail-making-b": [31],
+		"/training/wcst": [32]
 	};
 
 export const hooks = {

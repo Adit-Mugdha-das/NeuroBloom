@@ -9,6 +9,7 @@
 	let error = null;
 	let sessionData = null;
 	let difficulty = 1;
+	let baselineFlexibility = null;
 	let currentPhase = null;
 	let currentPhaseIndex = 0; // 0=phase1, 1=phase2, 2=phase3
 	let currentTrialIndex = 0;
@@ -35,6 +36,30 @@
 		try {
 			loading = true;
 			error = null;
+			
+			// Get user's baseline to determine appropriate difficulty
+			const baselineResponse = await fetch(
+				`http://localhost:8000/api/baseline/${currentUser.id}`
+			);
+			
+			if (baselineResponse.ok) {
+				const baselineData = await baselineResponse.json();
+				baselineFlexibility = baselineData.flexibility;
+				
+				// Set difficulty based on baseline (1-10 scale)
+				if (baselineFlexibility !== null) {
+					if (baselineFlexibility >= 90) difficulty = 9;
+					else if (baselineFlexibility >= 80) difficulty = 8;
+					else if (baselineFlexibility >= 70) difficulty = 7;
+					else if (baselineFlexibility >= 60) difficulty = 6;
+					else if (baselineFlexibility >= 50) difficulty = 5;
+					else if (baselineFlexibility >= 40) difficulty = 4;
+					else if (baselineFlexibility >= 30) difficulty = 3;
+					else if (baselineFlexibility >= 20) difficulty = 2;
+					else difficulty = 1;
+				}
+			}
+			
 			const response = await fetch(
 				`http://localhost:8000/api/tasks/dccs/generate?difficulty=${difficulty}`,
 				{
@@ -44,6 +69,9 @@
 			);
 			if (!response.ok) throw new Error('Failed to load session');
 			sessionData = await response.json();
+			
+			// Update difficulty from session data
+			difficulty = sessionData.difficulty;
 		} catch (err) {
 			error = err.message;
 		} finally {
@@ -269,13 +297,29 @@
 						<li style="margin-bottom: 8px;">Click on the target card that matches the test card</li>
 						<li style="margin-bottom: 8px;">In Phase 3, pay attention to the cue shown before each card</li>
 						<li style="margin-bottom: 8px;">Work as quickly and accurately as possible</li>
-						<li style="margin-bottom: 8px;">Total time: approximately 3-5 minutes</li>
+						<li style="margin-bottom: 8px;">Total trials: {sessionData ? sessionData.total_trials : '40'}</li>
 					</ul>
 				</div>
 
-				<p style="font-size: 14px; color: #888; margin-bottom: 20px;">
-					Current Difficulty: Level {difficulty}
-				</p>
+				<div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+					<p style="font-size: 14px; color: #0c4a6e; margin-bottom: 8px;">
+						<strong>Current Difficulty:</strong> Level {difficulty} / 10
+					</p>
+					<p style="font-size: 13px; color: #0369a1;">
+						{#if difficulty <= 4}
+							Basic: Color & Shape sorting, {sessionData?.config.cue_duration_ms || 1500}ms cues
+						{:else if difficulty <= 7}
+							Intermediate: Added size dimension, {sessionData?.config.cue_duration_ms || 800}ms cues
+						{:else}
+							Advanced: All dimensions, rapid {sessionData?.config.cue_duration_ms || 400}ms cues
+						{/if}
+					</p>
+					{#if baselineFlexibility !== null}
+						<p style="font-size: 12px; color: #0369a1; margin-top: 8px;">
+							Based on your flexibility baseline: {baselineFlexibility.toFixed(0)}/100
+						</p>
+					{/if}
+				</div>
 
 				<button 
 					on:click={startTask} 
