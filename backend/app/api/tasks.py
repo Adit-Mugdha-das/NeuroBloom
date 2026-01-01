@@ -10,6 +10,7 @@ from app.schemas.test_result import TestResultCreate, TestResultRead
 from app.core.config import engine
 from app.services.dccs_task import dccs_task_service
 from app.services.plus_minus_task import plus_minus_task_service
+from app.services.tol_task import tol_task_service
 
 router = APIRouter()
 
@@ -226,6 +227,46 @@ def score_plus_minus_session(
     """
     try:
         results = plus_minus_task_service.score_session(session_data, user_responses)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/tol/generate")
+def generate_tol_session(difficulty: int = 1):
+    """
+    Generate a Tower of London session
+    
+    Args:
+        difficulty: Difficulty level 1-10
+        
+    Returns:
+        Complete session with planning problems
+    """
+    try:
+        session_data = tol_task_service.generate_session(difficulty)
+        return session_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/tol/score")
+def score_tol_session(
+    session_data: dict,
+    user_solutions: List[dict]
+):
+    """
+    Score a completed Tower of London session
+    
+    Args:
+        session_data: Original session configuration
+        user_solutions: List of user solutions with moves and timing
+        
+    Returns:
+        Detailed scoring including planning efficiency
+    """
+    try:
+        results = tol_task_service.score_session(session_data, user_solutions)
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
