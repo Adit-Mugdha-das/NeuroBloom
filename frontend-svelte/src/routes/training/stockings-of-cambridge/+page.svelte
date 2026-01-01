@@ -250,24 +250,33 @@
 
 	async function saveResults() {
 		try {
-			await fetch('/api/test-results', {
+			const response = await fetch(`${API_BASE_URL}/api/tasks/soc/submit/${userId}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({
-					user_id: userId,
-					test_type: 'stockings_of_cambridge',
-					score: results.score,
-					accuracy: results.planning_efficiency * 100,
-					reaction_time: Math.round(results.average_time_per_problem * 1000),
-					difficulty_level: difficulty,
-					raw_data: JSON.stringify({
-						problems_solved: results.problems_solved,
-						perfect_solutions: results.perfect_solutions,
-						planning_efficiency: results.planning_efficiency,
-						problems: results.problems
-					})
+					session_data: {
+						...sessionData,
+						difficulty: difficulty
+					},
+					user_solutions: solutions
 				})
 			});
+
+			if (!response.ok) throw new Error('Failed to save results');
+			
+			const data = await response.json();
+			
+			if (data.new_badges && data.new_badges.length > 0) {
+				earnedBadges = data.new_badges;
+			}
+
+			// Update user store
+			user.update(u => ({
+				...u,
+				planning_difficulty: data.new_difficulty
+			}));
+
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}

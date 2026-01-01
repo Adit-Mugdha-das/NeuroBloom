@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select, desc, col
 from pydantic import BaseModel
 import json
@@ -3702,3 +3702,588 @@ def submit_wcst_session(
         "new_badges": new_badges,
         "session_id": training_session.id
     }
+
+
+# ============================================================================
+# STOCKINGS OF CAMBRIDGE (SOC) - Planning Task
+# ============================================================================
+
+@router.post("/tasks/soc/generate/{user_id}")
+def generate_soc_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a Stockings of Cambridge task session."""
+    from app.services.soc_task import soc_task_service
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("planning", 1)
+    
+    # Generate session
+    session_data = soc_task_service.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/soc/submit/{user_id}")
+def submit_soc_session(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Stockings of Cambridge session."""
+    from app.services.soc_task import soc_task_service
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Get baseline
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_planning: Optional[float] = None
+    if baseline:
+        baseline_planning = baseline.planning_score
+    
+    # Score the session
+    session_data = request_data.get("session_data")
+    user_solutions = request_data.get("user_solutions")
+    
+    if not session_data or not user_solutions:
+        raise HTTPException(status_code=400, detail="Missing session_data or user_solutions")
+    
+    results = soc_task_service.score_session(session_data, user_solutions)
+    
+    difficulty = session_data.get("difficulty", 1)
+    
+    # Adaptive difficulty calculation (before creating session)
+    new_difficulty = difficulty
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="planning",
+        task_type="stockings_of_cambridge",
+        score=results["score"],
+        accuracy=results["planning_efficiency"] * 100,
+        average_reaction_time=int(results.get("average_time_per_problem", 0) * 1000),
+        consistency=0,
+        errors=results["total_problems"] - results["problems_solved"],
+        duration=int(results.get("total_time", 0)),
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps(results)
+    )
+    session.add(training_session)
+    
+    # Adaptive difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    old_difficulty = difficulty
+    new_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+        adaptation_reason = f"Excellent performance! ({results['score']}%)"
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+        adaptation_reason = f"Adjusting for better success ({results['score']}%)"
+    
+    current_diff["planning"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["score"],
+        "problems_solved": results["problems_solved"],
+        "perfect_solutions": results["perfect_solutions"],
+        "planning_efficiency": results["planning_efficiency"],
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
+
+# ============================================================================
+# VERBAL FLUENCY (COWAT) - Planning/Executive Function
+# ============================================================================
+
+@router.post("/tasks/verbal-fluency/generate/{user_id}")
+def generate_verbal_fluency_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a Verbal Fluency (COWAT) task session."""
+    from app.services.verbal_fluency_task import verbal_fluency_task_service
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("planning", 1)
+    
+    # Generate session
+    session_data = verbal_fluency_task_service.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/verbal-fluency/submit/{user_id}")
+def submit_verbal_fluency_session(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Verbal Fluency session."""
+    from app.services.verbal_fluency_task import verbal_fluency_task_service
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Get baseline
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_planning: Optional[float] = None
+    if baseline:
+        baseline_planning = baseline.planning_score
+    
+    # Score the session
+    session_data = request_data.get("session_data")
+    user_responses = request_data.get("user_responses")
+    
+    if not session_data or not user_responses:
+        raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
+    
+    results = verbal_fluency_task_service.score_session(session_data, user_responses)
+    
+    difficulty = session_data.get("difficulty", 1)
+    
+    # Adaptive difficulty calculation (before creating session)
+    new_difficulty = difficulty
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="planning",
+        task_type="verbal_fluency",
+        score=results["score"],
+        accuracy=results["score"],  # Use score as accuracy for verbal tasks
+        average_reaction_time=0,  # Not applicable for verbal fluency
+        consistency=0,
+        errors=results["total_invalid_words"],
+        duration=len(results["letter_results"]) * session_data.get("time_per_letter_seconds", 60),
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps(results)
+    )
+    session.add(training_session)
+    
+    # Adaptive difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    old_difficulty = difficulty
+    new_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+        adaptation_reason = f"Excellent performance! ({results['score']}%)"
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+        adaptation_reason = f"Adjusting for better success ({results['score']}%)"
+    
+    current_diff["planning"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["score"],
+        "total_valid_words": results["total_valid_words"],
+        "avg_words_per_letter": results["avg_words_per_letter"],
+        "performance": results["performance"],
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
+
+# ============================================================================
+# DCCS - Cognitive Flexibility
+# ============================================================================
+
+@router.post("/tasks/dccs/generate/{user_id}")
+def generate_dccs_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a DCCS task session."""
+    from app.services.dccs_task import dccs_task_service
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("flexibility", 1)
+    
+    # Generate session
+    session_data = dccs_task_service.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/dccs/submit/{user_id}")
+def submit_dccs_session(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a DCCS session."""
+    from app.services.dccs_task import dccs_task_service
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    session_data = request_data.get("session_data")
+    user_responses = request_data.get("user_responses")
+    
+    if not session_data or not user_responses:
+        raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
+    
+    results = dccs_task_service.score_session(session_data, user_responses)
+    
+    difficulty = session_data.get("difficulty", 1)
+    
+    # Adaptive difficulty calculation (before creating session)
+    new_difficulty = difficulty
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="flexibility",
+        task_type="dccs",
+        score=results["score"],
+        accuracy=results["overall_accuracy"],
+        average_reaction_time=int(results["average_rt"]),
+        consistency=0,
+        errors=results["total_trials"] - results["correct_responses"],
+        duration=int(results.get("total_time", 0)),
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps(results)
+    )
+    session.add(training_session)
+    
+    # Adaptive difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    new_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+        adaptation_reason = f"Excellent performance! ({results['score']}%)"
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+        adaptation_reason = f"Adjusting for better success ({results['score']}%)"
+    
+    current_diff["flexibility"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["score"],
+        "overall_accuracy": results["overall_accuracy"],
+        "switch_cost_rt": results["switch_cost_rt"],
+        "switch_accuracy": results["switch_accuracy"],
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
+
+# ============================================================================
+# PLUS-MINUS TASK - Cognitive Flexibility
+# ============================================================================
+
+@router.post("/tasks/plus-minus/generate/{user_id}")
+def generate_plus_minus_session(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a Plus-Minus task session."""
+    from app.services.plus_minus_task import plus_minus_task_service
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("flexibility", 1)
+    
+    # Generate session
+    session_data = plus_minus_task_service.generate_session(difficulty)
+    
+    return {
+        "session_data": session_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/plus-minus/submit/{user_id}")
+def submit_plus_minus_session(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Plus-Minus session."""
+    from app.services.plus_minus_task import plus_minus_task_service
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Score the session
+    session_data = request_data.get("session_data")
+    user_responses = request_data.get("user_responses")
+    
+    if not session_data or not user_responses:
+        raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
+    
+    results = plus_minus_task_service.score_session(session_data, user_responses)
+    
+    difficulty = session_data.get("difficulty", 1)
+    
+    # Adaptive difficulty calculation (before creating session)
+    new_difficulty = difficulty
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="flexibility",
+        task_type="plus_minus",
+        score=results["score"],
+        accuracy=results["overall_accuracy"],
+        average_reaction_time=int(results["average_rt"]),
+        consistency=0,
+        errors=results["total_errors"],
+        duration=int(results.get("total_time", 0)),
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps(results)
+    )
+    session.add(training_session)
+    
+    # Adaptive difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    new_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if results["score"] >= 85 and difficulty < 10:
+        new_difficulty = difficulty + 1
+        adaptation_reason = f"Excellent performance! ({results['score']}%)"
+    elif results["score"] < 65 and difficulty > 1:
+        new_difficulty = difficulty - 1
+        adaptation_reason = f"Adjusting for better success ({results['score']}%)"
+    
+    current_diff["flexibility"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["score"],
+        "overall_accuracy": results["overall_accuracy"],
+        "switching_cost": results["switching_cost"],
+        "switch_accuracy": results["switch_accuracy"],
+        "new_difficulty": new_difficulty,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+

@@ -185,17 +185,22 @@
 
 	async function saveResults() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/training/complete`, {
+			const response = await fetch(`${API_BASE_URL}/api/tasks/verbal-fluency/submit/${$user.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify({
-					user_id: $user.id,
-					domain: 'planning',
-					task_type: 'verbal_fluency',
-					score: results.score,
-					difficulty: sessionData.difficulty,
-					performance_data: results
+					session_data: sessionData,
+					user_responses: {
+						letters: sessionData.letters,
+						responses: sessionData.letters.map(letter => {
+							const letterResult = results.letter_results.find(r => r.letter === letter);
+							return {
+								letter: letter,
+								words: letterResult ? letterResult.words : []
+							};
+						})
+					}
 				})
 			});
 
@@ -203,15 +208,14 @@
 			
 			const data = await response.json();
 			
-			if (data.badges_earned && data.badges_earned.length > 0) {
-				earnedBadges = data.badges_earned;
+			if (data.new_badges && data.new_badges.length > 0) {
+				earnedBadges = data.new_badges;
 			}
 
 			// Update user store
 			user.update(u => ({
 				...u,
-				planning_difficulty: data.new_difficulty,
-				total_sessions: data.total_sessions
+				planning_difficulty: data.new_difficulty
 			}));
 
 		} catch (error) {
