@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select, desc
 from typing import List
 import random
@@ -12,6 +12,7 @@ from app.services.dccs_task import dccs_task_service
 from app.services.plus_minus_task import plus_minus_task_service
 from app.services.tol_task import tol_task_service
 from app.services.soc_task import soc_task_service
+from app.services.verbal_fluency_task import verbal_fluency_task_service
 
 router = APIRouter()
 
@@ -309,5 +310,61 @@ def score_soc_session(
     try:
         results = soc_task_service.score_session(session_data, user_solutions)
         return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/verbal-fluency/generate")
+def generate_verbal_fluency_session(
+    request: dict = Body(...)
+):
+    """
+    Generate a Verbal Fluency (COWAT) session
+    
+    Args:
+        difficulty: 1-10 (affects letter difficulty and count)
+        baseline_score: Optional baseline score (not used for this task)
+        
+    Returns:
+        Session data with letters and instructions
+    """
+    try:
+        difficulty = request.get("difficulty", 1)
+        baseline_score = request.get("baseline_score")
+        
+        session_data = verbal_fluency_task_service.generate_session(
+            difficulty=difficulty,
+            baseline_score=baseline_score
+        )
+        return session_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/verbal-fluency/score")
+def score_verbal_fluency_session(
+    request: dict = Body(...)
+):
+    """
+    Score a completed Verbal Fluency session
+    
+    Args:
+        session_data: Original session configuration
+        user_responses: List of letter results with words and timing
+        
+    Returns:
+        Scoring with valid/invalid words and MS comparison
+    """
+    try:
+        session_data = request.get("session_data")
+        user_responses = request.get("user_responses")
+        
+        if not session_data or not user_responses:
+            raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
+        
+        results = verbal_fluency_task_service.score_session(session_data, user_responses)
+        return results
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

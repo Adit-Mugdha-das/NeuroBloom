@@ -1,8 +1,8 @@
 <script>
-	import { onMount } from 'svelte';
-	import { user } from '$lib/stores.js';
 	import { goto } from '$app/navigation';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import { user } from '$lib/stores.js';
+	import { onMount } from 'svelte';
 
 	let userId;
 	let baselineScore = 0;
