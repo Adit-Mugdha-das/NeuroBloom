@@ -5193,3 +5193,176 @@ def submit_mot_response(
         "new_badges": new_badges,
         "session_id": training_session.id
     }
+
+
+# ============================================================================
+# USEFUL FIELD OF VIEW (UFOV) TASK ENDPOINTS
+# ============================================================================
+
+@router.get("/tasks/useful-field-of-view/generate/{user_id}")
+def generate_ufov_trial(user_id: int, session: Session = Depends(get_session)):
+    """
+    Generate a Useful Field of View (UFOV) trial
+    
+    UFOV measures visual processing speed and divided attention
+    Critical for driving safety assessment in MS patients
+    
+    Three subtests:
+    1. Central ID only (processing speed)
+    2. Central + Peripheral (divided attention)
+    3. Central + Peripheral + Distractors (selective attention)
+    """
+    from app.services.useful_field_of_view_task import generate_trial
+    
+    # Get user's training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(col(TrainingPlan.is_active) == True)
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Get current difficulty from training plan (use visual_scanning domain)
+    current_difficulty_map = training_plan.get_current_difficulty()
+    current_difficulty = current_difficulty_map.get("visual_scanning", 1)
+    
+    # Generate trial
+    trial = generate_trial(current_difficulty)
+    
+    return {
+        "trial": trial,
+        "current_difficulty": current_difficulty,
+        "task_type": "useful_field_of_view",
+        "domain": "visual_scanning"
+    }
+
+
+@router.post("/tasks/useful-field-of-view/submit/{user_id}")
+def submit_ufov_response(
+    user_id: int,
+    central_response: str = Body(..., description="User's answer for central target (car or truck)"),
+    peripheral_response: Optional[str] = Body(None, description="User's answer for peripheral position"),
+    trial_data: Dict = Body(..., description="Original trial configuration"),
+    response_time: int = Body(..., description="Time taken to respond (ms)"),
+    session: Session = Depends(get_session)
+):
+    """
+    Submit UFOV response and calculate score
+    """
+    from app.services.useful_field_of_view_task import (
+        score_response,
+        calculate_difficulty_adjustment,
+        get_feedback_message
+    )
+    
+    # Get user's training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(col(TrainingPlan.is_active) == True)
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+    
+    # Score the response
+    results = score_response(trial_data, central_response, peripheral_response)
+    results["response_time"] = response_time
+    
+    # Get current difficulty from JSON
+    current_difficulty_map = training_plan.get_current_difficulty()
+    old_difficulty = current_difficulty_map.get("visual_scanning", 1)
+    
+    # Get recent performance for difficulty adjustment
+    recent_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .where(TrainingSession.domain == "visual_scanning")
+        .where(TrainingSession.task_type == "useful_field_of_view")
+        .order_by(desc(TrainingSession.created_at))
+        .limit(5)
+    ).all()
+    
+    recent_scores = []
+    for s in recent_sessions:
+        raw_data = json.loads(s.raw_data)
+        if "accuracy" in raw_data:
+            recent_scores.append(raw_data)
+    
+    # Calculate difficulty adjustment
+    new_difficulty, adaptation_reason = calculate_difficulty_adjustment(recent_scores, old_difficulty)
+    
+    # Ensure training_plan.id is not None
+    if training_plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan ID is invalid")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=training_plan.id,
+        domain="visual_scanning",
+        task_type="useful_field_of_view",
+        score=results["score"],
+        accuracy=results["accuracy"],
+        average_reaction_time=response_time,
+        consistency=results["accuracy"] * 100,  # Use accuracy as consistency metric
+        errors=0 if results["central_correct"] and results.get("peripheral_correct", True) else 1,
+        duration=trial_data["presentation_time_ms"] // 1000 + 1,  # Convert to seconds
+        difficulty_level=new_difficulty,
+        difficulty_before=old_difficulty,
+        difficulty_after=new_difficulty,
+        completed=True,
+        raw_data=json.dumps({
+            "central_correct": results["central_correct"],
+            "peripheral_correct": results["peripheral_correct"],
+            "performance": results["performance"],
+            "subtest": results["subtest"],
+            "presentation_time_ms": results["presentation_time_ms"],
+            "processing_speed_score": results["processing_speed_score"],
+            "accuracy": results["accuracy"]
+        })
+    )
+    
+    session.add(training_session)
+    session.commit()
+    session.refresh(training_session)
+    
+    # Update difficulty in training plan if changed
+    if new_difficulty != old_difficulty:
+        current_difficulty_map["visual_scanning"] = new_difficulty
+        training_plan.current_difficulty = json.dumps(current_difficulty_map)
+        adaptation_reason = f"Adjusted from level {old_difficulty} to {new_difficulty}: {adaptation_reason}"
+    else:
+        adaptation_reason = f"Maintaining difficulty at level {old_difficulty}"
+    
+    # Update training plan stats
+    training_plan.total_sessions_completed += 1
+    training_plan.last_session_date = datetime.utcnow()
+    session.add(training_plan)
+    session.commit()
+    
+    # Check for badge awards
+    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
+    
+    # Generate feedback message
+    feedback_message = get_feedback_message(results)
+    
+    return {
+        "score": results["score"],
+        "accuracy": results["accuracy"],
+        "central_correct": results["central_correct"],
+        "peripheral_correct": results["peripheral_correct"],
+        "performance": results["performance"],
+        "subtest": results["subtest"],
+        "presentation_time_ms": results["presentation_time_ms"],
+        "processing_speed_score": results["processing_speed_score"],
+        "response_time": response_time,
+        "feedback_message": feedback_message,
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }

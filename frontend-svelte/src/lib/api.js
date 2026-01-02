@@ -196,4 +196,37 @@ export const training = {
 	}
 };
 
+// Visual Search Task API
+export const generateVisualSearchTrial = async (userId) => {
+	const response = await api.get(`/api/training/tasks/visual-search/generate/${userId}`);
+	return response.data;
+};
+
+export const submitVisualSearchResponse = async (userId, data) => {
+	const response = await api.post(`/api/training/tasks/visual-search/submit/${userId}`, data);
+	return response.data;
+};
+
+// Multiple Object Tracking Task API
+export const generateMOTTrial = async (userId) => {
+	const response = await api.get(`/api/training/tasks/multiple-object-tracking/generate/${userId}`);
+	return response.data;
+};
+
+export const submitMOTResponse = async (userId, data) => {
+	const response = await api.post(`/api/training/tasks/multiple-object-tracking/submit/${userId}`, data);
+	return response.data;
+};
+
+export const generateUFOVTrial = async (userId) => {
+	const response = await api.get(`/api/training/tasks/useful-field-of-view/generate/${userId}`);
+	return response.data;
+};
+
+export const submitUFOVResponse = async (userId, data) => {
+	const response = await api.post(`/api/training/tasks/useful-field-of-view/submit/${userId}`, data);
+	return response.data;
+};
+
 export default api;
+
