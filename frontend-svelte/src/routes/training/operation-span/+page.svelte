@@ -69,7 +69,7 @@
 			difficulty = userDifficulty;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/operation-span/generate/${userId}?difficulty=${difficulty}&num_trials=6`,
+				`http://localhost:8000/api/training/tasks/operation-span/generate/${userId}?difficulty=${difficulty}&num_trials=6`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -231,7 +231,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/operation-span/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/operation-span/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

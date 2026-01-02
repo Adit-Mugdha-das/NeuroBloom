@@ -58,7 +58,7 @@
 	async function loadSession() {
 		try {
 			loading = true;
-			const response = await fetch(`${API_BASE_URL}/training/tasks/stroop/generate/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/stroop/generate/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' }
 			});
@@ -241,7 +241,7 @@
 
 	async function completeSession() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/training/tasks/stroop/submit/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/stroop/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

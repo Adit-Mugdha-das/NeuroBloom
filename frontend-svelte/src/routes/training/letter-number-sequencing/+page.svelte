@@ -74,7 +74,7 @@
 
 			// Generate session
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/letter-number-sequencing/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
+				`http://localhost:8000/api/training/tasks/letter-number-sequencing/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -210,7 +210,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/letter-number-sequencing/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/letter-number-sequencing/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

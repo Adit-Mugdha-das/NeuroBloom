@@ -91,6 +91,7 @@ export const training = {
 				training_plan_id: sessionData.training_plan_id,
 				domain: sessionData.domain,
 				task_type: sessionData.task_type,
+				task_code: sessionData.task_code || sessionData.task_type,  // NEW: Support task rotation
 				score: sessionData.score,
 				accuracy: sessionData.accuracy,
 				average_reaction_time: sessionData.average_reaction_time,

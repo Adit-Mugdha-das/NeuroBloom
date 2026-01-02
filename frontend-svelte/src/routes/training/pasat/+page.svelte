@@ -59,7 +59,7 @@
 			loading = true;
 			error = null;
 			
-			const response = await fetch(`${API_BASE_URL}/training/tasks/pasat/generate/${currentUser.id}?visual_mode=true`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/pasat/generate/${currentUser.id}?visual_mode=true`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -235,7 +235,7 @@
 			loading = true;
 			testStarted = false;
 			
-			const response = await fetch(`${API_BASE_URL}/training/tasks/pasat/submit/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/pasat/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

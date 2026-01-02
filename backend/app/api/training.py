@@ -11,6 +11,7 @@ from app.models.training_session import TrainingSession
 from app.models.baseline_assessment import BaselineAssessment
 from app.models.badge import UserBadge, BadgeDefinition
 from app.services.badge_service import BadgeService
+from app.services.task_rotation import TaskRotationService
 from app.core.config import engine
 
 router = APIRouter()
@@ -220,12 +221,13 @@ def get_streak_info(user_id: int, session: Session = Depends(get_session)):
 @router.get("/training-plan/{user_id}/next-tasks")
 def get_next_training_tasks(user_id: int, session: Session = Depends(get_session)):
     """
-    Get recommended tasks for current training session.
+    Get recommended tasks for current training session with smart rotation.
     
     Returns 4 tasks with completion status:
     - 2 from primary focus (weakest domains)
     - 2 from secondary focus (middle domains)
     
+    Uses TaskRotationService to select varied tasks and prevent repetition.
     Session only advances after all 4 tasks are completed.
     """
     
@@ -240,34 +242,51 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
     
     primary = plan.get_primary_focus()
     secondary = plan.get_secondary_focus()
-    tasks = plan.get_recommended_tasks()
     difficulty = plan.get_current_difficulty()
     completed_tasks = plan.get_current_session_tasks_completed()
     
-    # Build session task list (always the same 4 tasks per session)
+    # Initialize task rotation service
+    rotation_service = TaskRotationService(session)
+    
+    # Build session task list with smart rotation
     next_tasks = []
     
-    # Add 2 primary focus tasks
+    # Add 2 primary focus tasks (with smart rotation)
     for domain in primary:
-        next_tasks.append({
-            "domain": domain,
-            "task_type": tasks[domain],
-            "difficulty": difficulty[domain],
-            "priority": "primary",
-            "focus_reason": "Weakest area - needs most attention",
-            "completed": domain in completed_tasks
-        })
+        # Use rotation service to select varied task for this domain
+        selected_task = rotation_service.select_task_for_session(user_id, domain, is_baseline=False)
+        
+        if selected_task:
+            next_tasks.append({
+                "domain": domain,
+                "task_type": selected_task.task_code,  # e.g., 'digit_span', 'sdmt'
+                "task_name": selected_task.task_name,  # e.g., 'Digit Span Test'
+                "task_description": selected_task.description,
+                "difficulty": difficulty.get(domain, 5),
+                "priority": "primary",
+                "focus_reason": "Weakest area - needs most attention",
+                "completed": domain in completed_tasks,
+                "requires_audio": selected_task.requires_audio,
+                "estimated_duration": selected_task.estimated_duration_seconds
+            })
     
-    # Add 2 secondary focus tasks
+    # Add 2 secondary focus tasks (with smart rotation)
     for domain in secondary:
-        next_tasks.append({
-            "domain": domain,
-            "task_type": tasks[domain],
-            "difficulty": difficulty[domain],
-            "priority": "secondary",
-            "focus_reason": "Moderate area - room for improvement",
-            "completed": domain in completed_tasks
-        })
+        selected_task = rotation_service.select_task_for_session(user_id, domain, is_baseline=False)
+        
+        if selected_task:
+            next_tasks.append({
+                "domain": domain,
+                "task_type": selected_task.task_code,
+                "task_name": selected_task.task_name,
+                "task_description": selected_task.description,
+                "difficulty": difficulty.get(domain, 5),
+                "priority": "secondary",
+                "focus_reason": "Moderate area - room for improvement",
+                "completed": domain in completed_tasks,
+                "requires_audio": selected_task.requires_audio,
+                "estimated_duration": selected_task.estimated_duration_seconds
+            })
     
     # Check if session is complete
     all_completed = len(completed_tasks) >= 4
@@ -278,7 +297,8 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
         "tasks": next_tasks,
         "total_tasks": len(next_tasks),
         "completed_tasks": len(completed_tasks),
-        "session_complete": all_completed
+        "session_complete": all_completed,
+        "rotation_info": "Tasks selected using smart rotation to prevent repetition"
     }
 
 @router.post("/training-session/submit")
@@ -287,17 +307,20 @@ def submit_training_session(
     training_plan_id: int,
     domain: str,
     task_type: str,
-    score: float,
-    accuracy: float,
-    average_reaction_time: float,
-    consistency: float,
-    errors: int,
-    duration: int,
+    task_code: Optional[str] = None,  # NEW: Specific task variant (e.g., 'digit_span', 'sdmt')
+    score: float = 0,
+    accuracy: float = 0,
+    average_reaction_time: float = 0,
+    consistency: float = 0,
+    errors: int = 0,
+    duration: int = 0,
     raw_data: dict = {},
     session: Session = Depends(get_session)
 ):
     """
     Submit results from a training session and apply adaptive difficulty.
+    
+    Now supports task_code for tracking specific task variants.
     
     Adaptive Algorithm:
     - If accuracy >= 85% → increase difficulty by 1
@@ -313,6 +336,7 @@ def submit_training_session(
     print(f"  User ID: {user_id}")
     print(f"  Plan ID: {training_plan_id}")
     print(f"  Domain: {domain}")
+    print(f"  Task Code: {task_code or task_type}")
     print(f"  Score: {score}%")
     print(f"  Accuracy: {accuracy}%")
     print(f"╚══════════════════════════════════════════════════════════╝\n")
@@ -329,43 +353,30 @@ def submit_training_session(
     current_difficulty_map = plan.get_current_difficulty()
     current_difficulty = current_difficulty_map.get(domain, 5)
     
-    # Apply adaptive difficulty logic
-    new_difficulty = current_difficulty
-    adaptation_reason = "Maintained difficulty"
+    # Use task_code if provided, otherwise fall back to task_type
+    final_task_code = task_code if task_code else task_type
     
-    if accuracy >= 85:
-        new_difficulty = min(current_difficulty + 1, 10)
-        adaptation_reason = f"Increased difficulty (accuracy {accuracy:.1f}% >= 85%)"
-    elif accuracy < 65:
-        new_difficulty = max(current_difficulty - 1, 1)
-        adaptation_reason = f"Decreased difficulty (accuracy {accuracy:.1f}% < 65%)"
-    else:
-        adaptation_reason = f"Maintained difficulty (accuracy {accuracy:.1f}% in 65-85% range)"
-    
-    # Create training session record
+    # Create training session record (store current difficulty, will update after full session)
     training_session = TrainingSession(
         user_id=user_id,
         training_plan_id=training_plan_id,
         domain=domain,
         task_type=task_type,
+        task_code=final_task_code,  # Store specific task variant
         score=score,
         accuracy=accuracy,
         average_reaction_time=average_reaction_time,
         consistency=consistency,
         errors=errors,
-        difficulty_level=new_difficulty,
+        difficulty_level=current_difficulty,  # Current difficulty for this task
         difficulty_before=current_difficulty,
-        difficulty_after=new_difficulty,
+        difficulty_after=current_difficulty,  # Will be updated after session completes
         duration=duration,
         raw_data=json.dumps(raw_data),
-        adaptation_reason=adaptation_reason
+        adaptation_reason="Task completed - difficulty will be adjusted after full session"
     )
     
     session.add(training_session)
-    
-    # Update training plan's current difficulty
-    current_difficulty_map[domain] = new_difficulty
-    plan.current_difficulty = json.dumps(current_difficulty_map)
     
     # Mark this task as completed in current session
     completed_tasks = plan.get_current_session_tasks_completed()
@@ -380,7 +391,50 @@ def submit_training_session(
     print(f"[DEBUG] Domain: {domain}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
     
     if session_complete:
-        print(f"[DEBUG] SESSION COMPLETE! Updating streak...")
+        print(f"[DEBUG] SESSION COMPLETE! Adjusting difficulty for all domains...")
+        
+        # NOW adjust difficulty for ALL domains based on their performance in this session
+        # Get all tasks from this session
+        session_tasks = session.exec(
+            select(TrainingSession)
+            .where(TrainingSession.user_id == user_id)
+            .where(TrainingSession.training_plan_id == training_plan_id)
+            .order_by(desc(TrainingSession.created_at))
+            .limit(4)  # Get the 4 most recent tasks (this session)
+        ).all()
+        
+        # Apply adaptive difficulty logic for each domain
+        for task in session_tasks:
+            task_domain = task.domain
+            task_accuracy = task.accuracy
+            task_current_diff = current_difficulty_map.get(task_domain, 5)
+            
+            # Determine new difficulty
+            new_difficulty = task_current_diff
+            adaptation_reason = "Maintained difficulty"
+            
+            if task_accuracy >= 85:
+                new_difficulty = min(task_current_diff + 1, 10)
+                adaptation_reason = f"Increased difficulty (accuracy {task_accuracy:.1f}% >= 85%)"
+            elif task_accuracy < 65:
+                new_difficulty = max(task_current_diff - 1, 1)
+                adaptation_reason = f"Decreased difficulty (accuracy {task_accuracy:.1f}% < 65%)"
+            else:
+                adaptation_reason = f"Maintained difficulty (accuracy {task_accuracy:.1f}% in 65-85% range)"
+            
+            # Update difficulty map
+            current_difficulty_map[task_domain] = new_difficulty
+            
+            # Update the task record with new difficulty
+            task.difficulty_after = new_difficulty
+            task.adaptation_reason = adaptation_reason
+            session.add(task)
+            
+            print(f"[DEBUG] {task_domain}: {task_current_diff} -> {new_difficulty} ({adaptation_reason})")
+        
+        # Save updated difficulty map to plan
+        plan.current_difficulty = json.dumps(current_difficulty_map)
+        
         # Session is complete - increment session count and reset
         plan.total_sessions_completed += 1
         plan.current_session_number += 1
@@ -420,17 +474,28 @@ def submit_training_session(
                 "icon": badge_def["icon"]
             })
     
+    # Get final difficulty after session completion (if complete)
+    final_difficulty = current_difficulty
+    final_adaptation_reason = "Task completed - difficulty will be adjusted after full session"
+    
+    if session_complete:
+        # Get updated difficulty from the refreshed plan
+        updated_difficulty_map = plan.get_current_difficulty()
+        final_difficulty = updated_difficulty_map.get(domain, current_difficulty)
+        final_adaptation_reason = training_session.adaptation_reason
+    
     return {
         "id": training_session.id,
         "domain": domain,
         "score": score,
         "accuracy": accuracy,
         "difficulty_before": current_difficulty,
-        "difficulty_after": new_difficulty,
-        "adaptation_reason": adaptation_reason,
+        "difficulty_after": final_difficulty,
+        "adaptation_reason": final_adaptation_reason,
         "session_complete": session_complete,
         "completed_tasks": len(completed_tasks),
         "total_tasks": 4,
+        "current_session_number": plan.current_session_number,
         "newly_earned_badges": badge_details,
         "created_at": training_session.created_at.isoformat()
     }

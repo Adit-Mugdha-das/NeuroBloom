@@ -56,7 +56,7 @@
 			loading = true;
 			error = null;
 			
-			const response = await fetch(`${API_BASE_URL}/training/tasks/inspection-time/generate/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/inspection-time/generate/${currentUser.id}`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -194,7 +194,7 @@
 			loading = true;
 			testStarted = false;
 			
-			const response = await fetch(`${API_BASE_URL}/training/tasks/inspection-time/submit/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/inspection-time/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

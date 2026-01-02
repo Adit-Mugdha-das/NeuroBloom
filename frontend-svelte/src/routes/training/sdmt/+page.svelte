@@ -66,7 +66,7 @@
 			difficulty = userDifficulty;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/sdmt/generate/${userId}?difficulty=${difficulty}`,
+				`http://localhost:8000/api/training/tasks/sdmt/generate/${userId}?difficulty=${difficulty}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -167,7 +167,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/sdmt/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/sdmt/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

@@ -71,7 +71,7 @@
 
 			// Generate session
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/spatial-span/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
+				`http://localhost:8000/api/training/tasks/spatial-span/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -203,7 +203,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/training/tasks/spatial-span/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/spatial-span/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

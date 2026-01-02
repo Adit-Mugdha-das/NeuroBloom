@@ -51,7 +51,7 @@
 	async function loadSession() {
 		try {
 			loading = true;
-			const response = await fetch(`${API_BASE_URL}/training/tasks/trail-making-b/generate/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/trail-making-b/generate/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' }
 			});
@@ -383,7 +383,7 @@
 		completionTime = (Date.now() - startTime) / 1000; // Convert to seconds
 
 		try {
-			const response = await fetch(`${API_BASE_URL}/training/tasks/trail-making-b/submit/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/trail-making-b/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

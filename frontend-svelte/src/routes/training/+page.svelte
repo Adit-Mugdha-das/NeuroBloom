@@ -64,14 +64,55 @@
 	}
 	
 	function getTaskRoute(taskType, domain, difficulty, planId) {
-		// Map task types to routes with training mode parameters
+		// Map task types to their training routes
 		const routes = {
+			// Working Memory tasks
 			n_back: '/baseline/tasks/working-memory',
-			continuous_performance: '/baseline/tasks/attention',
-			task_switching: '/baseline/tasks/flexibility',
-			tower_of_hanoi: '/baseline/tasks/planning',
+			digit_span: '/training/digit-span',
+			spatial_span: '/training/spatial-span',
+			letter_number_sequencing: '/training/letter-number-sequencing',
+			operation_span: '/training/operation-span',
+			
+			// Processing Speed tasks
+			simple_reaction: '/baseline/tasks/processing-speed',
 			reaction_time: '/baseline/tasks/processing-speed',
-			target_search: '/baseline/tasks/visual-scanning'
+			sdmt: '/training/sdmt',
+			trails_a: '/training/trail-making-a',
+			trail_making_a: '/training/trail-making-a',
+			pattern_comparison: '/training/pattern-comparison',
+			inspection_time: '/training/inspection-time',
+			
+			// Attention tasks
+			continuous_performance: '/baseline/tasks/attention',
+			cpt: '/baseline/tasks/attention',
+			pasat: '/training/pasat',
+			stroop: '/training/stroop',
+			go_nogo: '/training/go-nogo',
+			flanker: '/training/flanker',
+			
+			// Flexibility tasks
+			task_switching: '/baseline/tasks/flexibility',
+			trails_b: '/training/trail-making-b',
+			trail_making_b: '/training/trail-making-b',
+			wcst: '/training/wcst',
+			dccs: '/training/dccs',
+			plus_minus: '/training/plus-minus',
+			
+			// Planning tasks
+			tower_of_hanoi: '/baseline/tasks/planning',
+			tower_of_london: '/baseline/tasks/planning',
+			stockings_cambridge: '/training/stockings-of-cambridge',
+			verbal_fluency: '/training/verbal-fluency',
+			category_fluency: '/training/category-fluency',
+			twenty_questions: '/training/twenty-questions',
+			
+			// Visual Scanning tasks
+			target_search: '/baseline/tasks/visual-scanning',
+			visual_search: '/baseline/tasks/visual-scanning',
+			cancellation: '/training/cancellation-test',
+			feature_conjunction: '/training/visual-search',
+			mot: '/training/multiple-object-tracking',
+			ufov: '/training/useful-field-of-view'
 		};
 		
 		const baseRoute = routes[taskType] || '/dashboard';

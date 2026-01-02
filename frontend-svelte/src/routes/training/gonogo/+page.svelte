@@ -49,7 +49,7 @@
 	async function loadSession() {
 		try {
 			loading = true;
-			const response = await fetch(`${API_BASE_URL}/training/tasks/gonogo/generate/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/gonogo/generate/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' }
 			});
@@ -268,7 +268,7 @@
 
 	async function completeSession() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/training/tasks/gonogo/submit/${currentUser.id}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/gonogo/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

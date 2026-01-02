@@ -89,7 +89,7 @@
 
 			// Generate session
 			const res = await fetch(
-				`http://localhost:8000/training/tasks/digit-span/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
+				`http://localhost:8000/api/training/tasks/digit-span/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -208,7 +208,7 @@
 			const userId = userData.id;
 
 			const res = await fetch(
-				`http://localhost:8000/training/tasks/digit-span/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/digit-span/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
