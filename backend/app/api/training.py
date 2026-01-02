@@ -5009,3 +5009,187 @@ def submit_visual_search_response(
         "new_badges": new_badges,
         "session_id": training_session.id
     }
+
+
+@router.get("/tasks/multiple-object-tracking/generate/{user_id}")
+def generate_mot_trial(user_id: int, session: Session = Depends(get_session)):
+    """
+    Generate Multiple Object Tracking (MOT) trial.
+    Based on Pylyshyn & Storm (2006) - Dynamic visual attention.
+    
+    Track 2-5 moving objects among identical distractors.
+    Measures sustained visual attention relevant for driving safety.
+    """
+    from app.services.multiple_object_tracking_task import MultipleObjectTrackingTask
+    
+    # Get user's training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found for user")
+    
+    # Get current difficulty for visual_scanning domain
+    current_difficulty_map = training_plan.get_current_difficulty()
+    difficulty = current_difficulty_map.get("visual_scanning", 3)
+    
+    # Generate trial
+    trial_data = MultipleObjectTrackingTask.generate_trial(difficulty)
+    
+    return {
+        "trial_data": trial_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/multiple-object-tracking/submit/{user_id}")
+def submit_mot_response(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Multiple Object Tracking response and get scoring with difficulty adaptation.
+    Tracks dynamic visual attention performance and awards badges.
+    """
+    from app.services.multiple_object_tracking_task import MultipleObjectTrackingTask
+    
+    # Extract request data
+    trial_data = request_data.get("trial_data", {})
+    user_response = request_data.get("user_response", {})
+    
+    if not trial_data:
+        raise HTTPException(status_code=400, detail="Trial data is required")
+    
+    if not user_response:
+        raise HTTPException(status_code=400, detail="User response is required")
+    
+    # Score the response
+    results = MultipleObjectTrackingTask.score_response(trial_data, user_response)
+    
+    # Get training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    
+    # Get current difficulty from JSON
+    current_difficulty_map = training_plan.get_current_difficulty()
+    old_difficulty = current_difficulty_map.get("visual_scanning", 3)
+    
+    # Get recent session scores for adaptation
+    recent_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .where(TrainingSession.domain == "visual_scanning")
+        .where(TrainingSession.task_type == "multiple_object_tracking")
+        .order_by(desc(TrainingSession.created_at))
+        .limit(5)
+    ).all()
+    
+    recent_scores = [s.score for s in recent_sessions]
+    
+    # Calculate difficulty adjustment
+    new_difficulty = MultipleObjectTrackingTask.calculate_difficulty_adjustment(
+        recent_scores,
+        old_difficulty,
+        results["accuracy"],
+        results["precision"]
+    )
+    
+    # Ensure training_plan.id is not None
+    if training_plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan ID is invalid")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=training_plan.id,
+        domain="visual_scanning",
+        task_type="multiple_object_tracking",
+        score=results["score"],
+        accuracy=results["accuracy"],
+        average_reaction_time=int(results["response_time"] * 1000),  # Convert to ms
+        consistency=results["tracking_efficiency"] * 100,
+        errors=results["false_positives"] + results["false_negatives"],
+        duration=trial_data["tracking_duration"],
+        difficulty_level=new_difficulty,
+        difficulty_before=old_difficulty,
+        difficulty_after=new_difficulty,
+        completed=True,
+        raw_data=json.dumps({
+            "num_objects": results["num_objects"],
+            "targets_found": results["targets_found"],
+            "targets_missed": results["targets_missed"],
+            "false_positives": results["false_positives"],
+            "precision": results["precision"],
+            "recall": results["recall"],
+            "f1_score": results["f1_score"],
+            "tracking_efficiency": results["tracking_efficiency"],
+            "performance": results["performance"],
+            "tracking_duration": results["tracking_duration"]
+        })
+    )
+    
+    session.add(training_session)
+    session.commit()
+    session.refresh(training_session)
+    
+    # Update difficulty in training plan if changed
+    if new_difficulty != old_difficulty:
+        current_difficulty_map["visual_scanning"] = new_difficulty
+        training_plan.current_difficulty = json.dumps(current_difficulty_map)
+        session.add(training_plan)
+        session.commit()
+    
+    # Adaptation feedback
+    adjustment = new_difficulty - old_difficulty
+    if adjustment > 0:
+        adaptation_reason = f"Excellent tracking! Increasing difficulty from {old_difficulty} to {new_difficulty}"
+    elif adjustment < 0:
+        adaptation_reason = f"Adjusting difficulty from {old_difficulty} to {new_difficulty} to optimize training"
+    else:
+        adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
+    
+    # Update training plan stats
+    training_plan.total_sessions_completed += 1
+    training_plan.last_session_date = datetime.utcnow()
+    session.add(training_plan)
+    session.commit()
+    
+    # Check for badge awards
+    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
+    
+    # Generate feedback message
+    feedback_message = MultipleObjectTrackingTask.get_feedback_message(results)
+    
+    return {
+        "score": results["score"],
+        "accuracy": results["accuracy"],
+        "precision": results["precision"],
+        "recall": results["recall"],
+        "f1_score": results["f1_score"],
+        "targets_found": results["targets_found"],
+        "targets_missed": results["targets_missed"],
+        "false_positives": results["false_positives"],
+        "total_targets": results["total_targets"],
+        "tracking_efficiency": results["tracking_efficiency"],
+        "performance": results["performance"],
+        "response_time": results["response_time"],
+        "num_objects": results["num_objects"],
+        "tracking_duration": results["tracking_duration"],
+        "feedback_message": feedback_message,
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
