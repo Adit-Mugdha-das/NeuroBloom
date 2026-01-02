@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -11,6 +12,7 @@
 	let isTrainingMode = false;
 	let trainingPlanId = null;
 	let trainingDifficulty = 1;
+	let taskId = null;
 	let sessionComplete = false;
 	let completedTasksCount = 0;
 	let totalTasksCount = 4;
@@ -54,6 +56,7 @@
 		isTrainingMode = urlParams.get('training') === 'true';
 		trainingPlanId = parseInt(urlParams.get('planId')) || null;
 		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		// Adjust test parameters based on difficulty
 		if (isTrainingMode && trainingDifficulty > 5) {
@@ -207,7 +210,8 @@
 					average_reaction_time: avgRT,
 					consistency: consistencyScore,
 					errors: choiceAccuracy.filter(a => !a).length,
-					session_duration: 2
+					session_duration: 2,
+					task_id: taskId
 				});
 				
 				sessionComplete = result.session_complete;

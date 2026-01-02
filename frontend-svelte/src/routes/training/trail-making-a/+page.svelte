@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -14,6 +15,7 @@
 	let state = STATE.LOADING;
 	let difficulty = 5;
 	let trial = null;
+	let taskId = null;
 	
 	// Canvas and drawing
 	let canvas;
@@ -276,6 +278,7 @@
 
 	async function submitResults() {
 		state = STATE.LOADING;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -291,7 +294,8 @@
 						trial: trial,
 						completion_time: completionTime,
 						errors: errors,
-						clicks: clicks
+						clicks: clicks,
+						task_id: taskId
 					})
 				}
 			);

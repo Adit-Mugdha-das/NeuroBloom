@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -16,6 +17,7 @@
 	let showResults = false;
 	let metrics = null;
 	let newBadges = [];
+	let taskId = null;
 
 	// Practice state
 	let practiceTrials = [];
@@ -241,13 +243,15 @@
 
 	async function completeSession() {
 		try {
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/stroop/submit/${currentUser.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					difficulty,
 					session_data: sessionData,
-					responses
+					responses,
+					task_id: taskId
 				})
 			});
 

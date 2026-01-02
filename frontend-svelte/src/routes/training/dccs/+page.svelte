@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -21,6 +22,7 @@
 	let results = null;
 	let newBadges = [];
 	let currentUser = null;
+	let taskId = null;
 
 	const COLORS = {
 		red: '#EF4444',
@@ -165,50 +167,42 @@
 			loading = true;
 			error = null;
 			const totalTime = Date.now() - startTime;
+			taskId = $page.url.searchParams.get('taskId');
 			
-			// Score the session
-			const scoreResponse = await fetch(
-				'http://localhost:8000/api/tasks/dccs/score',
+			console.log('[DCCS] Submitting session:', {
+				userId: currentUser?.id,
+				taskId,
+				responsesCount: responses.length
+			});
+			
+			// Submit to training endpoint
+			const submitResponse = await fetch(
+				`http://localhost:8000/api/training/tasks/dccs/submit/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						session_data: sessionData,
-						user_responses: responses
+						user_responses: responses,
+						task_id: taskId
 					})
 				}
 			);
 			
-			if (!scoreResponse.ok) throw new Error('Failed to score session');
-			const scoreData = await scoreResponse.json();
+			if (!submitResponse.ok) {
+				const errorText = await submitResponse.text();
+				console.error('[DCCS] Submit failed:', errorText);
+				throw new Error(`Failed to submit result: ${submitResponse.status} ${errorText}`);
+			}
 			
-			// Submit result to database
-			const submitResponse = await fetch(
-				`http://localhost:8000/api/tasks/results?user_id=${currentUser.id}`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						task_type: 'dccs',
-						score: scoreData.score,
-						details: JSON.stringify({
-							difficulty: difficulty,
-							accuracy: scoreData.accuracy,
-							mean_rt: scoreData.mean_rt,
-							switch_cost: scoreData.switch_cost,
-							perseverative_errors: scoreData.perseverative_errors,
-							phases: scoreData.phases
-						})
-					})
-				}
-			);
-			
-			if (!submitResponse.ok) throw new Error('Failed to submit result');
-			
-			results = scoreData;
+			const submitData = await submitResponse.json();
+			console.log('[DCCS] Submit successful:', submitData);
+			results = submitData;
+			newBadges = submitData.newly_earned_badges || [];
 			phase = 'results';
 		} catch (err) {
-			error = err.message;
+			console.error('[DCCS] Submit error:', err);
+			error = err.message || 'Network error - please check if the backend server is running';
 		} finally {
 			loading = false;
 		}
@@ -314,7 +308,7 @@
 							Advanced: All dimensions, rapid {sessionData?.config.cue_duration_ms || 400}ms cues
 						{/if}
 					</p>
-					{#if baselineFlexibility !== null}
+					{#if baselineFlexibility !== null && baselineFlexibility !== undefined}
 						<p style="font-size: 12px; color: #0369a1; margin-top: 8px;">
 							Based on your flexibility baseline: {baselineFlexibility.toFixed(0)}/100
 						</p>

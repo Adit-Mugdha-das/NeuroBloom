@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -25,6 +26,7 @@
 	let startTime = 0;
 	let showHelp = false;
 	let sessionResults = null;
+	let taskId = null;
 
 	// Available numbers and letters for input
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -209,6 +211,7 @@
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/letter-number-sequencing/submit/${userId}`,
 				{
@@ -216,7 +219,8 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						difficulty: difficulty,
-						trials: trials
+						trials: trials,
+						task_id: taskId
 					})
 				}
 			);

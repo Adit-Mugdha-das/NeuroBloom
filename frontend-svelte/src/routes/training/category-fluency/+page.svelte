@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
@@ -10,6 +11,7 @@
 	let timeRemaining = 60;
 	let timer = null;
 	let startTime = null;
+	let taskId = null;
 	
 	let currentInput = '';
 	let submittedWords = [];
@@ -92,6 +94,7 @@
 	async function endTrial() {
 		clearInterval(timer);
 		const timeTaken = (Date.now() - startTime) / 1000;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/category-fluency/submit/${$user.id}`, {
@@ -102,7 +105,8 @@
 					submitted_words: submittedWords,
 					time_taken_seconds: timeTaken,
 					difficulty: trialData.difficulty,
-					category_name: trialData.category_name
+					category_name: trialData.category_name,
+					task_id: taskId
 				})
 			});
 

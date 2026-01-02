@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
@@ -7,6 +8,7 @@
 	let userId;
 	let baselineScore = 0;
 	let difficulty = 1;
+	let taskId = null;
 	
 	let sessionData = null;
 	let currentProblemIndex = 0;
@@ -250,24 +252,27 @@
 
 	async function saveResults() {
 		try {
-			await fetch('/api/test-results', {
+			taskId = $page.url.searchParams.get('taskId');
+			const response = await fetch(`http://localhost:8000/api/training/tasks/soc/submit/${userId}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					user_id: userId,
-					test_type: 'tower_of_london',
-					score: results.score,
-					accuracy: results.planning_efficiency * 100,
-					reaction_time: Math.round(results.average_time_per_problem * 1000),
-					difficulty_level: difficulty,
-					raw_data: JSON.stringify({
-						problems_solved: results.problems_solved,
-						perfect_solutions: results.perfect_solutions,
-						planning_efficiency: results.planning_efficiency,
-						problems: results.problems
-					})
+					session_data: {
+						difficulty: difficulty,
+						problems: sessionData?.problems || []
+					},
+					user_solutions: userSolutions,
+					task_id: taskId
 				})
 			});
+
+			if (!response.ok) throw new Error('Failed to save results');
+			
+			const data = await response.json();
+			
+			if (data.newly_earned_badges && data.newly_earned_badges.length > 0) {
+				earnedBadges = data.newly_earned_badges;
+			}
 		} catch (error) {
 			console.error('Error saving results:', error);
 		}

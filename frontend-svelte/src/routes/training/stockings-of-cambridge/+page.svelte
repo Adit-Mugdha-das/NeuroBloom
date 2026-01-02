@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api.js';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores.js';
@@ -8,6 +9,7 @@
 	let userId;
 	let baselineScore = 0;
 	let difficulty = 1;
+	let taskId = null;
 	
 	let sessionData = null;
 	let currentProblemIndex = 0;
@@ -255,6 +257,7 @@
 
 	async function saveResults() {
 		try {
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/tasks/soc/submit/${userId}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -264,7 +267,8 @@
 						...sessionData,
 						difficulty: difficulty
 					},
-					user_solutions: solutions
+					user_solutions: solutions,
+					task_id: taskId
 				})
 			});
 

@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -27,6 +28,7 @@
 	
 	let showHelp = false;
 	let sessionResults = null;
+	let taskId = null;
 
 	// Symbol display
 	let symbolDigitMapping = {};
@@ -161,6 +163,7 @@
 	async function finishTest() {
 		if (timerInterval) clearInterval(timerInterval);
 		state = STATE.LOADING;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -176,7 +179,8 @@
 						trial: trial,
 						user_responses: userResponses,
 						response_times: responseTimes,
-						completed_count: currentIndex
+						completed_count: currentIndex,
+						task_id: taskId
 					})
 				}
 			);

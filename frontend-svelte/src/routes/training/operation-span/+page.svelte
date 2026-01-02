@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -36,6 +37,7 @@
 	
 	let showHelp = false;
 	let sessionResults = null;
+	let taskId = null;
 
 	// Available letters
 	const LETTERS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -230,6 +232,7 @@
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/operation-span/submit/${userId}`,
 				{
@@ -237,7 +240,8 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						difficulty: difficulty,
-						trials: trials
+						trials: trials,
+						task_id: taskId
 					})
 				}
 			);

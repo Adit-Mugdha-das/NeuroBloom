@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -10,6 +11,7 @@
 	let currentTrialIndex = 0;
 	let currentTrial = null;
 	let responses = [];
+	let taskId = null;
 	
 	// UI states
 	let showInstructions = true;
@@ -193,6 +195,7 @@
 		try {
 			loading = true;
 			testStarted = false;
+			taskId = $page.url.searchParams.get('taskId');
 			
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/inspection-time/submit/${currentUser.id}`, {
 				method: 'POST',
@@ -202,7 +205,8 @@
 				body: JSON.stringify({
 					difficulty: sessionData.difficulty,
 					session_data: sessionData,
-					responses: responses
+					responses: responses,
+					task_id: taskId
 				})
 			});
 			

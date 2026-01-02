@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -25,6 +26,7 @@
 	let results = null;
 	let newBadges = [];
 	let currentUser = null;
+	let taskId = null;
 
 	const COLORS = {
 		red: '#EF4444',
@@ -141,6 +143,7 @@
 			loading = true;
 			error = null;
 			const totalTime = Date.now() - startTime;
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/wcst/submit/${currentUser.id}`,
 				{
@@ -149,7 +152,8 @@
 					body: JSON.stringify({
 						session_data: sessionData,
 						responses: responses,
-						total_time: totalTime
+						total_time: totalTime,
+						task_id: taskId
 					})
 				}
 			);

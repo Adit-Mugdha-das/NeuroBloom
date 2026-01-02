@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -26,6 +27,7 @@
 	let startTime = 0;
 	let showHelp = false;
 	let sessionResults = null;
+	let taskId = null;
 
 	// Timings (in milliseconds) - adaptive based on difficulty
 	function getBlockHighlightTime(diff) {
@@ -41,6 +43,7 @@
 	}
 
 	onMount(async () => {
+		taskId = $page.url.searchParams.get('taskId');
 		await loadSession();
 	});
 
@@ -209,7 +212,8 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						difficulty: difficulty,
-						trials: trials
+						trials: trials,
+						task_id: taskId
 					})
 				}
 			);

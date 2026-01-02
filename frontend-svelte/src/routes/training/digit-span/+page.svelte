@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { onMount } from 'svelte';
@@ -17,6 +18,7 @@
 	let sessionData = null;
 	let currentTrialIndex = 0;
 	let currentTrial = null;
+	let taskId = null; // Track which specific task in session this is
 
 	// Display state
 	let displayedDigits = [];
@@ -35,6 +37,11 @@
 	// UI state
 	let showHelp = false;
 	let currentDifficulty = 5;
+	
+	onMount(() => {
+		// Get taskId from URL params
+		taskId = $page.url.searchParams.get('taskId');
+	});
 
 	// Timing - adjusts based on difficulty
 	function getDisplayTime(difficulty) {
@@ -214,7 +221,8 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						difficulty: sessionData.difficulty,
-						trials: completedTrials
+						trials: completedTrials,
+						task_id: taskId  // Include task_id to track which specific task in session
 					})
 				}
 			);

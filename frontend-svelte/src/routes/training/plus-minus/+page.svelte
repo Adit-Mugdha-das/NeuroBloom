@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -22,6 +23,7 @@
 	let results = null;
 	let newBadges = [];
 	let currentUser = null;
+	let taskId = null;
 
 	// Subscribe to user store
 	user.subscribe((value) => {
@@ -174,47 +176,27 @@
 			loading = true;
 			error = null;
 			const totalTime = Date.now() - startTime;
+			taskId = $page.url.searchParams.get('taskId');
 			
-			// Score the session
-			const scoreResponse = await fetch(
-				'http://localhost:8000/api/tasks/plus-minus/score',
+			// Submit to training endpoint
+			const submitResponse = await fetch(
+				`http://localhost:8000/api/training/tasks/plus-minus/submit/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						session_data: sessionData,
-						user_responses: responses
-					})
-				}
-			);
-			
-			if (!scoreResponse.ok) throw new Error('Failed to score session');
-			const scoreData = await scoreResponse.json();
-			
-			// Submit result to database
-			const submitResponse = await fetch(
-				`http://localhost:8000/api/tasks/results?user_id=${currentUser.id}`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						task_type: 'plus_minus',
-						score: scoreData.score,
-						details: JSON.stringify({
-							difficulty: difficulty,
-							accuracy: scoreData.accuracy,
-							mean_rt: scoreData.mean_rt,
-							switching_cost: scoreData.switching_cost,
-							switching_cost_accuracy: scoreData.switching_cost_accuracy,
-							blocks: scoreData.blocks
-						})
+						user_responses: responses,
+						task_id: taskId
 					})
 				}
 			);
 			
 			if (!submitResponse.ok) throw new Error('Failed to submit result');
 			
-			results = scoreData;
+			const submitData = await submitResponse.json();
+			results = submitData;
+			newBadges = submitData.newly_earned_badges || [];
 			phase = 'results';
 		} catch (err) {
 			error = err.message;
@@ -307,11 +289,6 @@
 							Three digit numbers, minimal cues (fast pace)
 						{/if}
 					</p>
-					{#if baselineFlexibility !== null}
-						<p style="font-size: 12px; color: #0369a1; margin-top: 8px;">
-							Based on your flexibility baseline: {baselineFlexibility.toFixed(0)}/100
-						</p>
-					{/if}
 				</div>
 
 				<button 

@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
@@ -11,6 +12,7 @@
 	let currentLetter = '';
 	let timeRemaining = 60;
 	let timer = null;
+	let taskId = null;
 	
 	let currentInput = '';
 	let submittedWords = [];
@@ -185,12 +187,14 @@
 
 	async function saveResults() {
 		try {
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/tasks/verbal-fluency/submit/${$user.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
 				body: JSON.stringify({
 					session_data: sessionData,
+					task_id: taskId,
 					user_responses: {
 						letters: sessionData.letters,
 						responses: sessionData.letters.map(letter => {

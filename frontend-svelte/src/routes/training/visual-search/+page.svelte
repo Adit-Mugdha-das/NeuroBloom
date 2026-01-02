@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
@@ -16,6 +17,7 @@
 	let timeRemaining = 0;
 	let startTime = null;
 	let timerInterval = null;
+	let taskId = null; // Track which specific task in session this is
 	
 	let userAnswer = null; // true = target present, false = target absent
 	let results = null;
@@ -28,6 +30,10 @@
 			goto('/login');
 			return;
 		}
+		
+		// Get taskId from URL params
+		taskId = $page.url.searchParams.get('taskId');
+		
 		await loadTrial();
 	});
 
@@ -114,7 +120,8 @@
 						user_response: {
 							target_found: userAnswer,
 							reaction_time: reactionTime
-						}
+						},
+						task_id: taskId  // Include task_id to track which specific task in session
 					})
 				}
 			);

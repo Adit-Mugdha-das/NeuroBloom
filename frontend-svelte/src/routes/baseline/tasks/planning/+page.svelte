@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -11,6 +12,7 @@
 	let isTrainingMode = false;
 	let trainingPlanId = null;
 	let trainingDifficulty = 1;
+	let taskId = null;
 	let sessionComplete = false;
 	let completedTasksCount = 0;
 	let totalTasksCount = 4;
@@ -37,6 +39,7 @@
 		isTrainingMode = urlParams.get('training') === 'true';
 		trainingPlanId = parseInt(urlParams.get('planId')) || null;
 		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		// Adjust difficulty: more disks for higher difficulty
 		if (isTrainingMode && trainingDifficulty > 3) {
@@ -139,7 +142,8 @@
 					average_reaction_time: planningTime,
 					consistency: Math.max(0, 100 - excessMoves * 5),
 					errors: excessMoves,
-					session_duration: Math.round(totalTime / 60000) // minutes
+					session_duration: Math.round(totalTime / 60000), // minutes
+					task_id: taskId
 				});
 				
 				sessionComplete = result.session_complete;

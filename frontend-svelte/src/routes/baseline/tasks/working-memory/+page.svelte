@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -14,6 +15,7 @@
 	let isTrainingMode = false;
 	let trainingPlanId = null;
 	let trainingDifficulty = 1;
+	let taskId = null;
 	let sessionComplete = false;
 	let completedTasksCount = 0;
 	let totalTasksCount = 4;
@@ -44,6 +46,7 @@
 		isTrainingMode = urlParams.get('training') === 'true';
 		trainingPlanId = parseInt(urlParams.get('planId')) || null;
 		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		if (isTrainingMode && trainingDifficulty > 1) {
 			nBackLevel = Math.min(Math.floor(trainingDifficulty / 3) + 1, 3);
@@ -159,7 +162,8 @@
 					consistency: consistencyScore,
 					errors: misses + falseAlarms,
 					session_duration: Math.floor((totalTrials * 2000) / 60),
-					raw_data: rawData
+					raw_data: rawData,
+					task_id: taskId
 				});
 				
 				// Update session status

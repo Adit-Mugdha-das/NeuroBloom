@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -21,6 +22,7 @@
 	let trialStartTime = 0;
 	let sessionResults = null;
 	let countdown = 3;
+	let taskId = null;
 	
 	let showHelp = false;
 
@@ -121,20 +123,22 @@
 
 	async function completeSession() {
 		state = STATE.LOADING;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/pattern-comparison/submit/${userId}`,
+				`http://localhost:8000/api/tasks/pattern-comparison/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						difficulty: difficulty,
 						session_data: sessionData,
-						responses: responses
+						responses: responses,
+						task_id: taskId
 					})
 				}
 			);

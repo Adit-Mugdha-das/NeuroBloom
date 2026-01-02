@@ -250,6 +250,7 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
     
     # Build session task list with smart rotation
     next_tasks = []
+    task_index = 0
     
     # Add 2 primary focus tasks (with smart rotation)
     for domain in primary:
@@ -257,36 +258,44 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
         selected_task = rotation_service.select_task_for_session(user_id, domain, is_baseline=False)
         
         if selected_task:
+            # Create unique task identifier: domain_taskindex
+            task_id = f"{domain}_{task_index}"
             next_tasks.append({
                 "domain": domain,
+                "task_id": task_id,  # Unique identifier for this specific task slot
                 "task_type": selected_task.task_code,  # e.g., 'digit_span', 'sdmt'
                 "task_name": selected_task.task_name,  # e.g., 'Digit Span Test'
                 "task_description": selected_task.description,
                 "difficulty": difficulty.get(domain, 5),
                 "priority": "primary",
                 "focus_reason": "Weakest area - needs most attention",
-                "completed": domain in completed_tasks,
+                "completed": task_id in completed_tasks,
                 "requires_audio": selected_task.requires_audio,
                 "estimated_duration": selected_task.estimated_duration_seconds
             })
+            task_index += 1
     
     # Add 2 secondary focus tasks (with smart rotation)
     for domain in secondary:
         selected_task = rotation_service.select_task_for_session(user_id, domain, is_baseline=False)
         
         if selected_task:
+            # Create unique task identifier: domain_taskindex
+            task_id = f"{domain}_{task_index}"
             next_tasks.append({
                 "domain": domain,
+                "task_id": task_id,  # Unique identifier for this specific task slot
                 "task_type": selected_task.task_code,
                 "task_name": selected_task.task_name,
                 "task_description": selected_task.description,
                 "difficulty": difficulty.get(domain, 5),
                 "priority": "secondary",
                 "focus_reason": "Moderate area - room for improvement",
-                "completed": domain in completed_tasks,
+                "completed": task_id in completed_tasks,
                 "requires_audio": selected_task.requires_audio,
                 "estimated_duration": selected_task.estimated_duration_seconds
             })
+            task_index += 1
     
     # Check if session is complete
     all_completed = len(completed_tasks) >= 4
@@ -308,6 +317,7 @@ def submit_training_session(
     domain: str,
     task_type: str,
     task_code: Optional[str] = None,  # NEW: Specific task variant (e.g., 'digit_span', 'sdmt')
+    task_id: Optional[str] = None,  # NEW: Unique task identifier (e.g., 'working_memory_0')
     score: float = 0,
     accuracy: float = 0,
     average_reaction_time: float = 0,
@@ -379,16 +389,19 @@ def submit_training_session(
     session.add(training_session)
     
     # Mark this task as completed in current session
+    # Use task_id if provided (new system), otherwise use domain (backward compatibility)
     completed_tasks = plan.get_current_session_tasks_completed()
-    if domain not in completed_tasks:
-        completed_tasks.append(domain)
+    task_identifier = task_id if task_id else domain
+    if task_identifier not in completed_tasks:
+        completed_tasks.append(task_identifier)
         plan.current_session_tasks_completed = json.dumps(completed_tasks)
+        session.add(plan)  # Mark plan as modified immediately
     
     # Check if all 4 tasks in session are completed
     session_complete = len(completed_tasks) >= 4
     newly_earned_badges = []
     
-    print(f"[DEBUG] Domain: {domain}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
+    print(f"[DEBUG] Task completed: {task_identifier}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
     
     if session_complete:
         print(f"[DEBUG] SESSION COMPLETE! Adjusting difficulty for all domains...")
@@ -435,10 +448,10 @@ def submit_training_session(
         # Save updated difficulty map to plan
         plan.current_difficulty = json.dumps(current_difficulty_map)
         
-        # Session is complete - increment session count and reset
+        # Session is complete - increment total sessions completed and reset current session
         plan.total_sessions_completed += 1
-        plan.current_session_number += 1
         plan.current_session_tasks_completed = "[]"  # Reset for next session
+        # Note: current_session_number stays the same - it represents which session you're on (e.g., always "1" for ongoing training)
         
         # Update streak tracking
         update_streak(plan)
@@ -809,12 +822,69 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
     }
 
 # ============================================================================
+# HELPER FUNCTION FOR SESSION TRACKING
+# ============================================================================
+
+def track_session_completion(
+    training_plan: TrainingPlan,
+    domain: str,
+    session: Session,
+    user_id: int,
+    task_id: Optional[str] = None
+) -> dict:
+    """
+    Helper function to track session completion across all tasks.
+    Returns session completion info to be included in task response.
+    
+    Args:
+        training_plan: The user's training plan
+        domain: The cognitive domain just completed
+        session: Database session
+        user_id: User ID for badge checking
+        task_id: Unique identifier for this specific task instance (e.g., "processing_speed_0")
+        
+    Returns:
+        dict with session_complete, completed_tasks, total_tasks
+    """
+    # Mark this task as completed in current session
+    # If task_id provided, use it for tracking (supports multiple tasks from same domain)
+    # Otherwise fall back to domain tracking (backward compatibility)
+    completed_tasks = training_plan.get_current_session_tasks_completed()
+    task_identifier = task_id if task_id else domain
+    completed_tasks.append(task_identifier)
+    training_plan.current_session_tasks_completed = json.dumps(completed_tasks)
+    session.add(training_plan)  # Mark plan as modified
+    
+    # Check if all 4 tasks in session are completed
+    session_complete = len(completed_tasks) >= 4
+    newly_earned_badges = []
+    
+    if session_complete:
+        # Session is complete - increment total sessions completed and reset
+        training_plan.total_sessions_completed += 1
+        training_plan.current_session_tasks_completed = "[]"  # Reset for next session
+        training_plan.last_session_date = datetime.utcnow()
+        
+        # Update streak tracking
+        update_streak(training_plan)
+        
+        # Check for badge awards
+        newly_earned_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
+    
+    return {
+        "session_complete": session_complete,
+        "completed_tasks": len(completed_tasks),
+        "total_tasks": 4,
+        "newly_earned_badges": newly_earned_badges
+    }
+
+# ============================================================================
 # TASK-SPECIFIC ENDPOINTS - Individual task implementations
 # ============================================================================
 
 @router.post("/tasks/digit-span/generate/{user_id}")
 def generate_digit_span_session(
-    user_id: int, 
+    user_id: int,
     difficulty: int = 5,
     num_trials: int = 8,
     session: Session = Depends(get_session)
@@ -899,6 +969,11 @@ def submit_digit_span_session(
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
     
+    # Extract task_id for session tracking
+    task_id = session_data.get("task_id")
+    print(f"[DIGIT SPAN DEBUG] Received task_id: {task_id}")
+    print(f"[DIGIT SPAN DEBUG] Full session_data keys: {session_data.keys()}")
+    
     # Score each trial
     trials = session_data.get('trials', [])
     scored_trials = []
@@ -968,8 +1043,8 @@ def submit_digit_span_session(
     session.refresh(training_session)
     session.refresh(plan)
     
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -978,7 +1053,10 @@ def submit_digit_span_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "accuracy": metrics['accuracy'],
@@ -1076,6 +1154,9 @@ def submit_spatial_span_session(
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
     
+    # Extract task_id for session tracking
+    task_id = session_data.get("task_id")
+    
     # Score each trial
     trials = session_data.get('trials', [])
     scored_trials = []
@@ -1145,8 +1226,8 @@ def submit_spatial_span_session(
     session.refresh(training_session)
     session.refresh(plan)
     
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -1155,7 +1236,10 @@ def submit_spatial_span_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "accuracy": metrics['accuracy'],
@@ -1253,6 +1337,9 @@ def submit_letter_number_sequencing_session(
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
     
+    # Extract task_id for session tracking
+    task_id = session_data.get("task_id")
+    
     # Score each trial
     trials = session_data.get('trials', [])
     scored_trials = []
@@ -1323,8 +1410,8 @@ def submit_letter_number_sequencing_session(
     session.refresh(training_session)
     session.refresh(plan)
     
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -1333,7 +1420,10 @@ def submit_letter_number_sequencing_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "accuracy": metrics['accuracy'],
@@ -1433,6 +1523,9 @@ def submit_operation_span_session(
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
     
+    # Extract task_id for session tracking
+    task_id = session_data.get("task_id")
+    
     # Score each trial
     trials = session_data.get('trials', [])
     scored_trials = []
@@ -1503,8 +1596,8 @@ def submit_operation_span_session(
     session.refresh(training_session)
     session.refresh(plan)
     
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -1513,7 +1606,10 @@ def submit_operation_span_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "accuracy": metrics['accuracy'],
@@ -1584,6 +1680,7 @@ def submit_sdmt_task(
     user_responses = request.get('user_responses', [])
     response_times = request.get('response_times', [])
     completed_count = request.get('completed_count', 0)
+    task_id = request.get('task_id')  # Extract task_id for session tracking
     
     # Validate required fields
     if difficulty is None or trial is None:
@@ -1652,8 +1749,8 @@ def submit_sdmt_task(
     
     session.add(training_session)
     
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "processing_speed", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
@@ -1665,7 +1762,10 @@ def submit_sdmt_task(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "correct_count": metrics['correct_count'],
@@ -1734,6 +1834,7 @@ def submit_trail_making_a_task(
     completion_time = request.get('completion_time', 0)
     errors = request.get('errors', [])
     clicks = request.get('clicks', [])
+    task_id = request.get('task_id')  # Extract task_id for session tracking
     
     # Validate required fields
     if difficulty is None or trial is None:
@@ -1804,8 +1905,8 @@ def submit_trail_making_a_task(
     
     session.add(training_session)
     
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "processing_speed", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
@@ -1817,7 +1918,10 @@ def submit_trail_making_a_task(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "performance_summary": {
             "score": metrics['score'],
             "completion_time": metrics['completion_time'],
@@ -1896,6 +2000,7 @@ def submit_pattern_comparison_session(
     difficulty = request_data.get("difficulty")
     session_data = request_data.get("session_data")
     responses = request_data.get("responses", [])
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     # Validate inputs
     if difficulty is None:
@@ -1976,11 +2081,11 @@ def submit_pattern_comparison_session(
     current_difficulty["processing_speed"] = results["difficulty_adjustment"]
     plan.current_difficulty = json.dumps(current_difficulty)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "processing_speed", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -1988,7 +2093,10 @@ def submit_pattern_comparison_session(
         "difficulty_before": difficulty,
         "difficulty_after": results["difficulty_adjustment"],
         "adaptation_reason": results["adaptation_reason"],
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -2046,6 +2154,7 @@ def submit_inspection_time_session(
     difficulty = request_data.get("difficulty")
     session_data = request_data.get("session_data")
     responses = request_data.get("responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if difficulty is None or session_data is None or responses is None:
         raise HTTPException(status_code=400, detail="difficulty, session_data, and responses are required")
@@ -2130,11 +2239,11 @@ def submit_inspection_time_session(
     current_difficulty["processing_speed"] = results["difficulty_adjustment"]
     plan.current_difficulty = json.dumps(current_difficulty)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "processing_speed", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -2142,7 +2251,10 @@ def submit_inspection_time_session(
         "difficulty_before": difficulty,
         "difficulty_after": results["difficulty_adjustment"],
         "adaptation_reason": results["adaptation_reason"],
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -2203,6 +2315,7 @@ def submit_stroop_session(
     difficulty = request_data.get("difficulty")
     session_data = request_data.get("session_data")
     responses = request_data.get("responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not isinstance(difficulty, int):
         raise HTTPException(status_code=400, detail="difficulty must be an integer")
@@ -2289,11 +2402,11 @@ def submit_stroop_session(
     current_diff["attention"] = new_difficulty
     plan.current_difficulty = json.dumps(current_diff)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "attention", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -2301,7 +2414,10 @@ def submit_stroop_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -2375,6 +2491,8 @@ def submit_gonogo_session(
     difficulty = request.difficulty
     session_data = request.session_data
     responses = request.responses
+    task_id = getattr(request, "task_id", None)  # Extract task_id for session tracking
+    
     
     # Get training plan
     plan = session.exec(
@@ -2444,11 +2562,11 @@ def submit_gonogo_session(
     current_diff["attention"] = new_difficulty
     plan.current_difficulty = json.dumps(current_diff)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "attention", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -2456,7 +2574,10 @@ def submit_gonogo_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -2530,6 +2651,8 @@ def submit_flanker_session(
     difficulty = request.difficulty
     session_data = request.session_data
     responses = request.responses
+    task_id = getattr(request, "task_id", None)  # Extract task_id for session tracking
+    
     
     # Get training plan
     plan = session.exec(
@@ -2600,11 +2723,11 @@ def submit_flanker_session(
     current_diff["attention"] = new_difficulty
     plan.current_difficulty = json.dumps(current_diff)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "attention", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -2612,7 +2735,10 @@ def submit_flanker_session(
         "difficulty_before": difficulty,
         "difficulty_after": new_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -2671,6 +2797,7 @@ def submit_pasat_session(
     difficulty = request_data.get("difficulty")
     session_data = request_data.get("session_data")
     responses = request_data.get("responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if difficulty is None or session_data is None or responses is None:
         raise HTTPException(status_code=400, detail="difficulty, session_data, and responses are required")
@@ -2758,11 +2885,11 @@ def submit_pasat_session(
     current_difficulty["attention"] = results["difficulty_adjustment"]
     plan.current_difficulty = json.dumps(current_difficulty)
     
+    # Track session completion
+    session_info = track_session_completion(plan, "attention", session, user_id, task_id)
+    
     session.commit()
     session.refresh(training_session)
-    
-    # Check for new badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "session_id": training_session.id,
@@ -2770,7 +2897,10 @@ def submit_pasat_session(
         "difficulty_before": difficulty,
         "difficulty_after": results["difficulty_adjustment"],
         "adaptation_reason": results["adaptation_reason"],
-        "new_badges": new_badges
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -3484,6 +3614,12 @@ def submit_trail_making_b_session(
     
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+    # Extract task_id for session tracking
+    task_id = submission.session_data.get("task_id")
+    
+    
+    # Extract task_id for session tracking
+    task_id = submission.session_data.get("task_id")
     
     # Score the session
     task_service = TrailMakingBTask()
@@ -3544,13 +3680,12 @@ def submit_trail_making_b_session(
     plan.current_difficulty = json.dumps(current_difficulty)
     
     # Update plan statistics
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
     
-    session.commit()
+    # Track session completion
+    session_info = track_session_completion(plan, "flexibility", session, user_id, task_id)
     
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    session.commit()
     
     return {
         "success": True,
@@ -3559,7 +3694,10 @@ def submit_trail_making_b_session(
         "clinical_note": result["clinical_note"],
         "score": round(final_score, 1),
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -3668,6 +3806,12 @@ def submit_wcst_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+    # Extract task_id for session tracking
+    task_id = submission.session_data.get("task_id")
+    
+    
+    # Extract task_id for session tracking
+    task_id = submission.session_data.get("task_id")
     
     # Get baseline for context
     baseline = session.exec(
@@ -3747,8 +3891,8 @@ def submit_wcst_session(
     session.commit()
     session.refresh(training_session)
     
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    # Track session completion
+    session_info = track_session_completion(plan, "flexibility", session, user_id, task_id)
     
     return {
         "success": True,
@@ -3765,7 +3909,10 @@ def submit_wcst_session(
         "performance_category": result["performance_category"],
         "feedback": result["feedback"],
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -3842,6 +3989,9 @@ def submit_soc_session(
     if baseline:
         baseline_planning = baseline.planning_score
     
+    # Extract task_id for session tracking
+    task_id = request_data.get("task_id")
+    
     # Score the session
     session_data = request_data.get("session_data")
     user_solutions = request_data.get("user_solutions")
@@ -3901,14 +4051,13 @@ def submit_soc_session(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "planning", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
-    
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "success": True,
@@ -3917,7 +4066,10 @@ def submit_soc_session(
         "perfect_solutions": results["perfect_solutions"],
         "planning_efficiency": results["planning_efficiency"],
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -3997,6 +4149,7 @@ def submit_verbal_fluency_session(
     # Score the session
     session_data = request_data.get("session_data")
     user_responses = request_data.get("user_responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not session_data or not user_responses:
         raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
@@ -4053,14 +4206,13 @@ def submit_verbal_fluency_session(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "planning", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
-    
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "success": True,
@@ -4069,7 +4221,10 @@ def submit_verbal_fluency_session(
         "avg_words_per_letter": results["avg_words_per_letter"],
         "performance": results["performance"],
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4138,6 +4293,7 @@ def submit_dccs_session(
     # Score the session
     session_data = request_data.get("session_data")
     user_responses = request_data.get("user_responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not session_data or not user_responses:
         raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
@@ -4160,10 +4316,10 @@ def submit_dccs_session(
         domain="flexibility",
         task_type="dccs",
         score=results["score"],
-        accuracy=results["overall_accuracy"],
-        average_reaction_time=int(results["average_rt"]),
+        accuracy=results["accuracy"],
+        average_reaction_time=int(results["mean_rt"]),
         consistency=0,
-        errors=results["total_trials"] - results["correct_responses"],
+        errors=results["total_trials"] - results["correct_trials"],
         duration=int(results.get("total_time", 0)),
         difficulty_level=new_difficulty,
         difficulty_before=difficulty,
@@ -4193,23 +4349,27 @@ def submit_dccs_session(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "flexibility", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
     
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
-    
     return {
         "success": True,
         "score": results["score"],
-        "overall_accuracy": results["overall_accuracy"],
-        "switch_cost_rt": results["switch_cost_rt"],
-        "switch_accuracy": results["switch_accuracy"],
+        "accuracy": results["accuracy"],
+        "overall_accuracy": results["accuracy"],
+        "switch_cost_rt": results["switch_cost"],
+        "switch_accuracy": results["phases"].get("phase3", {}).get("accuracy", 0.0) if "phase3" in results["phases"] else 0.0,
+        "phases": results["phases"],
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "newly_earned_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4278,6 +4438,7 @@ def submit_plus_minus_session(
     # Score the session
     session_data = request_data.get("session_data")
     user_responses = request_data.get("user_responses")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not session_data or not user_responses:
         raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
@@ -4333,14 +4494,13 @@ def submit_plus_minus_session(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "flexibility", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
-    
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "success": True,
@@ -4349,7 +4509,10 @@ def submit_plus_minus_session(
         "switching_cost": results["switching_cost"],
         "switch_accuracy": results["switch_accuracy"],
         "new_difficulty": new_difficulty,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4431,6 +4594,7 @@ def submit_category_fluency_trial(
     time_taken_seconds = request_data.get("time_taken_seconds", 60)
     difficulty = request_data.get("difficulty", 1)
     category_name = request_data.get("category_name", "Unknown")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not isinstance(submitted_words, list):
         raise HTTPException(status_code=400, detail="submitted_words must be a list")
@@ -4495,14 +4659,13 @@ def submit_category_fluency_trial(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "planning", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
-    
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "success": True,
@@ -4516,7 +4679,10 @@ def submit_category_fluency_trial(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4632,6 +4798,7 @@ def submit_twenty_questions_game(
     questions_history = request_data.get("questions_history", [])
     target_object_name = request_data.get("target_object_name", "Unknown")
     user_guess = request_data.get("user_guess", "")
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     # Score the game
     results = TwentyQuestionsTask.score_game(
@@ -4675,8 +4842,12 @@ def submit_twenty_questions_game(
     )
     session.add(training_session)
     
+    # Extract task_id for session tracking
+    task_id = request_data.get("task_id")
+    
     # Update training plan difficulty
     current_diff = plan.current_difficulty
+    
     if isinstance(current_diff, str):
         current_diff = json.loads(current_diff)
     else:
@@ -4697,14 +4868,13 @@ def submit_twenty_questions_game(
     plan.current_difficulty = json.dumps(current_diff)
     
     # Update plan stats
-    plan.total_sessions_completed += 1
     plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(plan, "planning", session, user_id, task_id)
     
     session.commit()
     session.refresh(training_session)
-    
-    # Check for badges
-    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
     
     return {
         "success": True,
@@ -4721,7 +4891,10 @@ def submit_twenty_questions_game(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4786,6 +4959,7 @@ def submit_cancellation_test(
     completion_time = request_data.get("completion_time", 0)
     time_limit = request_data.get("time_limit", 120)
     difficulty = request_data.get("difficulty", 5)
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not marked_positions:
         raise HTTPException(status_code=400, detail="Marked positions are required")
@@ -4871,13 +5045,13 @@ def submit_cancellation_test(
         adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
     
     # Update training plan stats
-    training_plan.total_sessions_completed += 1
     training_plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
+    
     session.add(training_plan)
     session.commit()
-    
-    # Check for badge awards
-    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
     
     return {
         "score": results["score"],
@@ -4894,7 +5068,10 @@ def submit_cancellation_test(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -4949,6 +5126,7 @@ def submit_visual_search_response(
     # Extract request data
     trial_data = request_data.get("trial_data", {})
     user_response = request_data.get("user_response", {})
+    task_id = request_data.get("task_id")  # Get task identifier for session tracking
     
     if not trial_data:
         raise HTTPException(status_code=400, detail="Trial data is required")
@@ -5027,15 +5205,17 @@ def submit_visual_search_response(
     )
     
     session.add(training_session)
+    
+    # Track session completion using helper function with task_id
+    session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
+    
+    # Update difficulty in training plan
+    current_difficulty_map["visual_scanning"] = new_difficulty
+    training_plan.current_difficulty = json.dumps(current_difficulty_map)
+    
+    session.add(training_plan)
     session.commit()
     session.refresh(training_session)
-    
-    # Update difficulty in training plan if changed
-    if new_difficulty != old_difficulty:
-        current_difficulty_map["visual_scanning"] = new_difficulty
-        training_plan.current_difficulty = json.dumps(current_difficulty_map)
-        session.add(training_plan)
-        session.commit()
     
     # Adaptation feedback
     adjustment = new_difficulty - old_difficulty
@@ -5045,15 +5225,6 @@ def submit_visual_search_response(
         adaptation_reason = f"Adjusting difficulty from {old_difficulty} to {new_difficulty} to optimize training"
     else:
         adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
-    
-    # Update training plan stats
-    training_plan.total_sessions_completed += 1
-    training_plan.last_session_date = datetime.utcnow()
-    session.add(training_plan)
-    session.commit()
-    
-    # Check for badge awards
-    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
     
     return {
         "score": results["score"],
@@ -5071,8 +5242,11 @@ def submit_visual_search_response(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
-        "session_id": training_session.id
+        "new_badges": session_info["newly_earned_badges"],
+        "session_id": training_session.id,
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
     }
 
 
@@ -5126,6 +5300,7 @@ def submit_mot_response(
     # Extract request data
     trial_data = request_data.get("trial_data", {})
     user_response = request_data.get("user_response", {})
+    task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not trial_data:
         raise HTTPException(status_code=400, detail="Trial data is required")
@@ -5225,13 +5400,13 @@ def submit_mot_response(
         adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
     
     # Update training plan stats
-    training_plan.total_sessions_completed += 1
     training_plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
+    
     session.add(training_plan)
     session.commit()
-    
-    # Check for badge awards
-    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
     
     # Generate feedback message
     feedback_message = MultipleObjectTrackingTask.get_feedback_message(results)
@@ -5255,7 +5430,10 @@ def submit_mot_response(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }
 
@@ -5321,6 +5499,9 @@ def submit_ufov_response(
         calculate_difficulty_adjustment,
         get_feedback_message
     )
+    
+    # Extract task_id for session tracking (from trial_data)
+    task_id = trial_data.get("task_id")
     
     # Get user's training plan
     training_plan = session.exec(
@@ -5403,13 +5584,13 @@ def submit_ufov_response(
         adaptation_reason = f"Maintaining difficulty at level {old_difficulty}"
     
     # Update training plan stats
-    training_plan.total_sessions_completed += 1
     training_plan.last_session_date = datetime.utcnow()
+    
+    # Track session completion
+    session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
+    
     session.add(training_plan)
     session.commit()
-    
-    # Check for badge awards
-    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
     
     # Generate feedback message
     feedback_message = get_feedback_message(results)
@@ -5428,6 +5609,9 @@ def submit_ufov_response(
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
-        "new_badges": new_badges,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
         "session_id": training_session.id
     }

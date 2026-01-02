@@ -1,10 +1,12 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { generateUFOVTrial, submitUFOVResponse } from '$lib/api.js';
 	import { onDestroy, onMount } from 'svelte';
 	
 	// User ID from localStorage
 	let userId = null;
+	let taskId = null;
 	
 	// Game state
 	let gamePhase = 'intro'; // intro, ready, stimulus, response, results
@@ -113,13 +115,15 @@
 	async function submitResponse() {
 		responseTime = Date.now() - responseStartTime;
 		loading = true;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const data = await submitUFOVResponse(userId, {
 				central_response: centralResponse,
 				peripheral_response: peripheralResponse,
 				trial_data: trialData,
-				response_time: responseTime
+				response_time: responseTime,
+				task_id: taskId
 			});
 			
 			results = data;

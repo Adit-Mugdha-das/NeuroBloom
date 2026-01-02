@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
@@ -13,6 +14,7 @@
 	let startTime = null;
 	let timeRemaining = 0;
 	let timerInterval = null;
+	let taskId = null;
 	
 	let results = null;
 	let earnedBadges = [];
@@ -91,6 +93,7 @@
 
 	async function submitResults() {
 		const completionTime = (Date.now() - startTime) / 1000;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/cancellation-test/submit/${$user.id}`, {
@@ -102,7 +105,8 @@
 					target_positions: trialData.target_positions,
 					completion_time: completionTime,
 					time_limit: trialData.time_limit,
-					difficulty: trialData.difficulty
+					difficulty: trialData.difficulty,
+					task_id: taskId
 				})
 			});
 

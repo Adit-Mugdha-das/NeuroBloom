@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -13,6 +14,7 @@
 	let phase = 'intro'; // intro, instructions, practice, test, results
 	let metrics = null;
 	let newBadges = [];
+	let taskId = null;
 
 	// Canvas state
 	let canvas;
@@ -381,6 +383,7 @@
 	async function completeSession() {
 		completed = true;
 		completionTime = (Date.now() - startTime) / 1000; // Convert to seconds
+		taskId = $page.url.searchParams.get('taskId');
 
 		try {
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/trail-making-b/submit/${currentUser.id}`, {
@@ -392,7 +395,8 @@
 					user_sequence: userSequence,
 					completion_time_seconds: completionTime,
 					errors: errors,
-					completed: true
+					completed: true,
+					task_id: taskId
 				})
 			});
 

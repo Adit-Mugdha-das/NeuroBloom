@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
@@ -9,6 +10,7 @@
 	let gameData = null;
 	let targetObject = null;
 	let targetAttributes = {};
+	let taskId = null;
 	
 	let questionInput = '';
 	let questionsAsked = 0;
@@ -138,6 +140,7 @@
 
 	async function endGame(correctlyIdentified, userGuess) {
 		try {
+			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/twenty-questions/submit/${$user.id}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -148,7 +151,8 @@
 					difficulty: gameData.difficulty,
 					questions_history: questionsHistory,
 					target_object_name: targetObject,
-					user_guess: userGuess
+					user_guess: userGuess,
+					task_id: taskId
 				})
 			});
 

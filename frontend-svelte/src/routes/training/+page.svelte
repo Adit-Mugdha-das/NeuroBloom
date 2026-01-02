@@ -1,4 +1,5 @@
 <script>
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -17,13 +18,30 @@
 		currentUser = value;
 	});
 	
-	onMount(async () => {
+	onMount(() => {
 		if (!currentUser) {
 			goto('/login');
 			return;
 		}
 		
-		await loadTrainingData();
+		loadTrainingData();
+		
+		// Reload data when page becomes visible (e.g., when returning from a task)
+		if (browser) {
+			const handleVisibilityChange = () => {
+				if (!document.hidden && currentUser) {
+					console.log('Page visible again, reloading training data...');
+					loadTrainingData();
+				}
+			};
+			
+			document.addEventListener('visibilitychange', handleVisibilityChange);
+			
+			// Cleanup
+			return () => {
+				document.removeEventListener('visibilitychange', handleVisibilityChange);
+			};
+		}
 	});
 	
 	async function loadTrainingData() {
@@ -36,6 +54,7 @@
 			
 			// Load next recommended tasks
 			nextTasks = await training.getNextTasks(currentUser.id);
+			console.log('Loaded next tasks:', nextTasks); // Debug: check task data
 			
 			// Load performance metrics
 			try {
@@ -63,7 +82,7 @@
 		return names[domain] || domain;
 	}
 	
-	function getTaskRoute(taskType, domain, difficulty, planId) {
+	function getTaskRoute(taskType, domain, difficulty, planId, taskId) {
 		// Map task types to their training routes
 		const routes = {
 			// Working Memory tasks
@@ -116,8 +135,8 @@
 		};
 		
 		const baseRoute = routes[taskType] || '/dashboard';
-		// Add training mode parameters
-		return `${baseRoute}?training=true&planId=${planId}&difficulty=${difficulty}`;
+		// Add training mode parameters including task_id to track which specific task in the session
+		return `${baseRoute}?training=true&planId=${planId}&difficulty=${difficulty}&taskId=${encodeURIComponent(taskId)}`;
 	}
 	
 	function getPriorityColor(priority) {
@@ -263,7 +282,7 @@
 							<button 
 								class="btn-start-task"
 								disabled={task.completed}
-								on:click={() => goto(getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id))}
+								on:click={() => goto(getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id))}
 							>
 								{task.completed ? '✓ Completed' : 'Start Training'}
 							</button>

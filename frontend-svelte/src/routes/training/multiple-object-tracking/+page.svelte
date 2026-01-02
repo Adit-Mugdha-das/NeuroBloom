@@ -1,11 +1,13 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { generateMOTTrial, submitMOTResponse } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 
 	let currentUser = null;
+	let taskId = null;
 	user.subscribe((value) => {
 		currentUser = value;
 	});
@@ -179,6 +181,7 @@
 
 	async function submitSelection() {
 		const responseTime = (Date.now() - startTime) / 1000;
+		taskId = $page.url.searchParams.get('taskId');
 		
 		const userResponse = {
 			selected_objects: Array.from(selectedObjects),
@@ -188,7 +191,8 @@
 		try {
 			const response = await submitMOTResponse(currentUser.id, {
 				trial_data: trialData,
-				user_response: userResponse
+				user_response: userResponse,
+				task_id: taskId
 			});
 
 			results = response;
