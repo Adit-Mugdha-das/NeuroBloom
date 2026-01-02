@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select, desc, col
 from pydantic import BaseModel
 import json
+import random
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 
@@ -4652,6 +4653,179 @@ def submit_twenty_questions_game(
         "specific_guesses": results["specific_guesses"],
         "feedback": results["feedback"],
         "tips": results["tips"],
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
+
+# ============================================================================
+# CANCELLATION TEST ENDPOINTS
+# ============================================================================
+
+@router.post("/tasks/cancellation-test/generate/{user_id}")
+def generate_cancellation_test(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate a Cancellation Test trial for visual scanning and attention.
+    Adapted to user's current difficulty level.
+    """
+    from app.services.cancellation_test_task import CancellationTestTask
+    
+    # Get user's current difficulty for visual scanning domain
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found. Complete baseline assessment first.")
+    
+    # Get difficulty for visual scanning domain from JSON
+    current_difficulty_map = training_plan.get_current_difficulty()
+    difficulty = current_difficulty_map.get("visual_scanning", 5)
+    
+    # Randomly choose between letters and symbols
+    use_symbols = random.choice([True, False])
+    
+    # Generate trial
+    trial_data = CancellationTestTask.generate_trial(difficulty, use_symbols)
+    
+    return {
+        "trial_data": trial_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/cancellation-test/submit/{user_id}")
+def submit_cancellation_test(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Cancellation Test response and get scoring with difficulty adaptation.
+    Tracks visual scanning performance and awards badges.
+    """
+    from app.services.cancellation_test_task import CancellationTestTask
+    
+    # Extract request data
+    marked_positions = request_data.get("marked_positions", [])
+    target_positions = request_data.get("target_positions", [])
+    completion_time = request_data.get("completion_time", 0)
+    time_limit = request_data.get("time_limit", 120)
+    difficulty = request_data.get("difficulty", 5)
+    
+    if not marked_positions:
+        raise HTTPException(status_code=400, detail="Marked positions are required")
+    
+    if not target_positions:
+        raise HTTPException(status_code=400, detail="Target positions are required")
+    
+    # Score the response
+    results = CancellationTestTask.score_response(
+        marked_positions,
+        target_positions,
+        completion_time,
+        time_limit,
+        difficulty
+    )
+    
+    # Get training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    
+    # Get current difficulty from JSON
+    current_difficulty_map = training_plan.get_current_difficulty()
+    old_difficulty = current_difficulty_map.get("visual_scanning", 5)
+    
+    # Update difficulty based on performance
+    adjustment = results["difficulty_adjustment"]
+    new_difficulty = max(1, min(10, old_difficulty + adjustment))
+    
+    # Ensure training_plan.id is not None
+    if training_plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan ID is invalid")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=training_plan.id,
+        domain="visual_scanning",
+        task_type="cancellation_test",
+        score=results["score"],
+        accuracy=results["accuracy"],
+        average_reaction_time=int(completion_time * 1000),  # Convert to ms
+        consistency=100 - (results["false_alarms"] / max(1, results["total_targets"]) * 100),
+        errors=results["targets_missed"] + results["false_alarms"],
+        duration=int(completion_time),
+        difficulty_level=new_difficulty,
+        difficulty_before=old_difficulty,
+        difficulty_after=new_difficulty,
+        completed=True,
+        raw_data=json.dumps({
+            "targets_found": results["targets_found"],
+            "targets_missed": results["targets_missed"],
+            "false_alarms": results["false_alarms"],
+            "total_targets": results["total_targets"],
+            "spatial_analysis": results["spatial_analysis"],
+            "completion_time": results["completion_time"],
+            "performance_rating": results["performance_rating"]
+        })
+    )
+    
+    session.add(training_session)
+    session.commit()
+    session.refresh(training_session)
+    
+    # Update difficulty in training plan if changed
+    if new_difficulty != old_difficulty:
+        current_difficulty_map["visual_scanning"] = new_difficulty
+        training_plan.current_difficulty = json.dumps(current_difficulty_map)
+        session.add(training_plan)
+        session.commit()
+    
+    # Adaptation feedback
+    if adjustment > 0:
+        adaptation_reason = f"Great visual scanning! Increasing difficulty from {old_difficulty} to {new_difficulty}"
+    elif adjustment < 0:
+        adaptation_reason = f"Adjusting difficulty from {old_difficulty} to {new_difficulty} to optimize training"
+    else:
+        adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
+    
+    # Update training plan stats
+    training_plan.total_sessions_completed += 1
+    training_plan.last_session_date = datetime.utcnow()
+    session.add(training_plan)
+    session.commit()
+    
+    # Check for badge awards
+    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
+    
+    return {
+        "score": results["score"],
+        "accuracy": results["accuracy"],
+        "targets_found": results["targets_found"],
+        "targets_missed": results["targets_missed"],
+        "false_alarms": results["false_alarms"],
+        "total_targets": results["total_targets"],
+        "completion_time": results["completion_time"],
+        "time_limit": results["time_limit"],
+        "performance_rating": results["performance_rating"],
+        "spatial_analysis": results["spatial_analysis"],
+        "feedback": results["feedback"],
         "new_difficulty": new_difficulty,
         "old_difficulty": old_difficulty,
         "adaptation_reason": adaptation_reason,
