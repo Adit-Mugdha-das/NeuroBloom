@@ -4454,3 +4454,208 @@ def submit_category_fluency_trial(
         "session_id": training_session.id
     }
 
+
+# ============================================================================
+# TWENTY QUESTIONS - Planning/Executive Function (Strategic Problem-Solving)
+# ============================================================================
+
+@router.post("/tasks/twenty-questions/generate/{user_id}")
+def generate_twenty_questions_game(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a Twenty Questions game."""
+    from app.services.twenty_questions_task import TwentyQuestionsTask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("planning", 1)
+    
+    # Generate game
+    game_data = TwentyQuestionsTask.generate_game(difficulty)
+    
+    return {
+        "game_data": game_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/twenty-questions/ask/{user_id}")
+def ask_question_twenty_questions(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """
+    Answer a question in the Twenty Questions game.
+    This endpoint allows the user to ask a question and get an answer.
+    """
+    from app.services.twenty_questions_task import TwentyQuestionsTask
+    
+    question = request_data.get("question", "")
+    target_attributes = request_data.get("target_attributes", {})
+    target_object_name = request_data.get("target_object_name", None)
+    
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+    
+    if not target_attributes:
+        raise HTTPException(status_code=400, detail="Target attributes are required")
+    
+    # Get answer from the task service
+    answer_data = TwentyQuestionsTask.answer_question(question, target_attributes, target_object_name)
+    
+    return {
+        "question": question,
+        "answer": answer_data["answer"],
+        "confidence": answer_data["confidence"]
+    }
+
+
+@router.post("/tasks/twenty-questions/submit/{user_id}")
+def submit_twenty_questions_game(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Twenty Questions game."""
+    from app.services.twenty_questions_task import TwentyQuestionsTask
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Get baseline
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_planning: Optional[float] = None
+    if baseline:
+        baseline_planning = baseline.planning_score
+    
+    # Get game data
+    questions_asked = request_data.get("questions_asked", 0)
+    correctly_identified = request_data.get("correctly_identified", False)
+    difficulty = request_data.get("difficulty", 1)
+    questions_history = request_data.get("questions_history", [])
+    target_object_name = request_data.get("target_object_name", "Unknown")
+    user_guess = request_data.get("user_guess", "")
+    
+    # Score the game
+    results = TwentyQuestionsTask.score_game(
+        questions_asked=questions_asked,
+        correctly_identified=correctly_identified,
+        difficulty=difficulty,
+        questions_history=questions_history
+    )
+    
+    # Calculate new difficulty using the task's adaptive algorithm
+    new_difficulty = TwentyQuestionsTask.calculate_difficulty_adjustment(
+        current_difficulty=difficulty,
+        performance=results
+    )
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="planning",
+        task_type="twenty_questions",
+        score=results["normalized_score"],
+        accuracy=results["normalized_score"],  # Use score as accuracy
+        average_reaction_time=0,  # Not applicable for this task
+        consistency=0,
+        errors=questions_asked if not correctly_identified else max(0, questions_asked - 10),
+        duration=questions_asked * 30,  # Estimate 30 seconds per question
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps({
+            "target_object": target_object_name,
+            "user_guess": user_guess,
+            "questions_asked": questions_asked,
+            "correctly_identified": correctly_identified,
+            "strategy_score": results["strategy_score"],
+            "constraint_seeking_questions": results["constraint_seeking_questions"],
+            "specific_guesses": results["specific_guesses"],
+            "questions_history": questions_history
+        })
+    )
+    session.add(training_session)
+    
+    # Update training plan difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    old_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if new_difficulty > old_difficulty:
+        adaptation_reason = f"Excellent efficiency! ({questions_asked} questions)"
+    elif new_difficulty < old_difficulty:
+        if not correctly_identified:
+            adaptation_reason = "Did not identify correctly"
+        else:
+            adaptation_reason = f"Adjusting for better efficiency ({questions_asked} questions)"
+    
+    current_diff["planning"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["normalized_score"],
+        "performance_rating": results["performance_rating"],
+        "questions_asked": questions_asked,
+        "correctly_identified": correctly_identified,
+        "question_efficiency": results["question_efficiency"],
+        "strategy_score": results["strategy_score"],
+        "constraint_seeking_questions": results["constraint_seeking_questions"],
+        "specific_guesses": results["specific_guesses"],
+        "feedback": results["feedback"],
+        "tips": results["tips"],
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
