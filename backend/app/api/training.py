@@ -4833,3 +4833,179 @@ def submit_cancellation_test(
         "session_id": training_session.id
     }
 
+
+@router.get("/tasks/visual-search/generate/{user_id}")
+def generate_visual_search_trial(user_id: int, session: Session = Depends(get_session)):
+    """
+    Generate Visual Search trial (Feature vs. Conjunction Search).
+    Based on Treisman & Gelade (1980) attention theory.
+    
+    Feature search: Target differs by single feature (fast, parallel)
+    Conjunction search: Target requires multiple features (slow, serial)
+    """
+    from app.services.visual_search_task import VisualSearchTask
+    
+    # Get user's training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found for user")
+    
+    # Get current difficulty for visual_scanning domain
+    current_difficulty_map = training_plan.get_current_difficulty()
+    difficulty = current_difficulty_map.get("visual_scanning", 5)
+    
+    # Generate trial
+    trial_data = VisualSearchTask.generate_trial(difficulty)
+    
+    return {
+        "trial_data": trial_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/visual-search/submit/{user_id}")
+def submit_visual_search_response(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """
+    Submit Visual Search response and get scoring with difficulty adaptation.
+    Tracks visual attention performance and awards badges.
+    """
+    from app.services.visual_search_task import VisualSearchTask
+    
+    # Extract request data
+    trial_data = request_data.get("trial_data", {})
+    user_response = request_data.get("user_response", {})
+    
+    if not trial_data:
+        raise HTTPException(status_code=400, detail="Trial data is required")
+    
+    if not user_response:
+        raise HTTPException(status_code=400, detail="User response is required")
+    
+    # Score the response
+    results = VisualSearchTask.score_response(trial_data, user_response)
+    
+    # Get training plan
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    
+    # Get current difficulty from JSON
+    current_difficulty_map = training_plan.get_current_difficulty()
+    old_difficulty = current_difficulty_map.get("visual_scanning", 5)
+    
+    # Get recent session scores for adaptation
+    recent_sessions = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .where(TrainingSession.domain == "visual_scanning")
+        .where(TrainingSession.task_type == "visual_search")
+        .order_by(desc(TrainingSession.created_at))
+        .limit(5)
+    ).all()
+    
+    recent_scores = [s.score for s in recent_sessions]
+    
+    # Calculate difficulty adjustment
+    new_difficulty = VisualSearchTask.calculate_difficulty_adjustment(
+        recent_scores,
+        old_difficulty,
+        results["accuracy"],
+        results["reaction_time"],
+        trial_data["time_limit"]
+    )
+    
+    # Ensure training_plan.id is not None
+    if training_plan.id is None:
+        raise HTTPException(status_code=500, detail="Training plan ID is invalid")
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=training_plan.id,
+        domain="visual_scanning",
+        task_type="visual_search",
+        score=results["score"],
+        accuracy=results["accuracy"],
+        average_reaction_time=int(results["reaction_time"] * 1000),  # Convert to ms
+        consistency=results["accuracy"] * 100,  # Consistency based on accuracy
+        errors=0 if results["correct"] else 1,
+        duration=int(results["reaction_time"]),
+        difficulty_level=new_difficulty,
+        difficulty_before=old_difficulty,
+        difficulty_after=new_difficulty,
+        completed=True,
+        raw_data=json.dumps({
+            "search_type": results["search_type"],
+            "set_size": results["set_size"],
+            "target_present": results["target_present"],
+            "user_answer": results["user_answer"],
+            "response_type": results["response_type"],
+            "search_efficiency": results["search_efficiency"],
+            "search_slope_ms": results["search_slope_ms"],
+            "performance": results["performance"]
+        })
+    )
+    
+    session.add(training_session)
+    session.commit()
+    session.refresh(training_session)
+    
+    # Update difficulty in training plan if changed
+    if new_difficulty != old_difficulty:
+        current_difficulty_map["visual_scanning"] = new_difficulty
+        training_plan.current_difficulty = json.dumps(current_difficulty_map)
+        session.add(training_plan)
+        session.commit()
+    
+    # Adaptation feedback
+    adjustment = new_difficulty - old_difficulty
+    if adjustment > 0:
+        adaptation_reason = f"Excellent visual attention! Increasing difficulty from {old_difficulty} to {new_difficulty}"
+    elif adjustment < 0:
+        adaptation_reason = f"Adjusting difficulty from {old_difficulty} to {new_difficulty} to optimize training"
+    else:
+        adaptation_reason = f"Maintaining difficulty at {old_difficulty}"
+    
+    # Update training plan stats
+    training_plan.total_sessions_completed += 1
+    training_plan.last_session_date = datetime.utcnow()
+    session.add(training_plan)
+    session.commit()
+    
+    # Check for badge awards
+    new_badges = BadgeService.check_and_award_badges(session, user_id, training_plan)
+    
+    return {
+        "score": results["score"],
+        "accuracy": results["accuracy"],
+        "correct": results["correct"],
+        "reaction_time": results["reaction_time"],
+        "search_efficiency": results["search_efficiency"],
+        "search_slope_ms": results["search_slope_ms"],
+        "performance": results["performance"],
+        "response_type": results["response_type"],
+        "search_type": results["search_type"],
+        "set_size": results["set_size"],
+        "target_present": results["target_present"],
+        "user_answer": results["user_answer"],
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
