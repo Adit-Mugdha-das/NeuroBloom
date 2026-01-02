@@ -13,6 +13,7 @@ from app.services.plus_minus_task import plus_minus_task_service
 from app.services.tol_task import tol_task_service
 from app.services.soc_task import soc_task_service
 from app.services.verbal_fluency_task import verbal_fluency_task_service
+from app.services.category_fluency_task import CategoryFluencyTask
 
 router = APIRouter()
 
@@ -363,6 +364,63 @@ def score_verbal_fluency_session(
             raise HTTPException(status_code=400, detail="Missing session_data or user_responses")
         
         results = verbal_fluency_task_service.score_session(session_data, user_responses)
+        return results
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/category-fluency/generate")
+def generate_category_fluency_trial(
+    request: dict = Body(...)
+):
+    """
+    Generate a Category Fluency (Semantic Fluency) trial
+    
+    Args:
+        difficulty: 1-10 (affects category difficulty)
+        
+    Returns:
+        Trial data with category and instructions
+    """
+    try:
+        difficulty = request.get("difficulty", 1)
+        
+        trial_data = CategoryFluencyTask.generate_trial(difficulty=difficulty)
+        return trial_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/category-fluency/score")
+def score_category_fluency_trial(
+    request: dict = Body(...)
+):
+    """
+    Score a completed Category Fluency trial
+    
+    Args:
+        submitted_words: List of words submitted by the user
+        time_taken_seconds: Time taken to complete (up to 60s)
+        difficulty: Difficulty level used
+        
+    Returns:
+        Scoring with unique count, duplicates, and performance metrics
+    """
+    try:
+        submitted_words = request.get("submitted_words", [])
+        time_taken_seconds = request.get("time_taken_seconds", 60)
+        difficulty = request.get("difficulty", 1)
+        
+        if not isinstance(submitted_words, list):
+            raise HTTPException(status_code=400, detail="submitted_words must be a list")
+        
+        results = CategoryFluencyTask.score_response(
+            submitted_words=submitted_words,
+            time_taken_seconds=time_taken_seconds,
+            difficulty=difficulty
+        )
         return results
     except HTTPException:
         raise

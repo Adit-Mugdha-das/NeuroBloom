@@ -4287,3 +4287,170 @@ def submit_plus_minus_session(
         "session_id": training_session.id
     }
 
+
+# ============================================================================
+# CATEGORY FLUENCY (Semantic Fluency) - Planning/Executive Function
+# ============================================================================
+
+@router.post("/tasks/category-fluency/generate/{user_id}")
+def generate_category_fluency_trial(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a Category Fluency (Semantic Fluency) trial."""
+    from app.services.category_fluency_task import CategoryFluencyTask
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+    
+    # Get current difficulty
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    
+    difficulty = current_difficulty.get("planning", 1)
+    
+    # Generate trial
+    trial_data = CategoryFluencyTask.generate_trial(difficulty)
+    
+    return {
+        "trial_data": trial_data,
+        "difficulty": difficulty,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/category-fluency/submit/{user_id}")
+def submit_category_fluency_trial(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Category Fluency trial."""
+    from app.services.category_fluency_task import CategoryFluencyTask
+    from app.services.badge_service import BadgeService
+    
+    # Get user's training plan
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+    
+    if not plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+    if not plan.id:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+    
+    # Get baseline
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+    
+    baseline_planning: Optional[float] = None
+    if baseline:
+        baseline_planning = baseline.planning_score
+    
+    # Get trial data
+    submitted_words = request_data.get("submitted_words", [])
+    time_taken_seconds = request_data.get("time_taken_seconds", 60)
+    difficulty = request_data.get("difficulty", 1)
+    category_name = request_data.get("category_name", "Unknown")
+    
+    if not isinstance(submitted_words, list):
+        raise HTTPException(status_code=400, detail="submitted_words must be a list")
+    
+    # Score the trial
+    results = CategoryFluencyTask.score_response(
+        submitted_words=submitted_words,
+        time_taken_seconds=time_taken_seconds,
+        difficulty=difficulty
+    )
+    
+    # Calculate new difficulty using the task's adaptive algorithm
+    new_difficulty = CategoryFluencyTask.calculate_difficulty_adjustment(
+        current_difficulty=difficulty,
+        performance=results
+    )
+    
+    # Create training session record
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="planning",
+        task_type="category_fluency",
+        score=results["normalized_score"],
+        accuracy=results["normalized_score"],  # Use score as accuracy for fluency tasks
+        average_reaction_time=0,  # Not applicable for fluency tasks
+        consistency=0,
+        errors=results["invalid_count"] + results["duplicate_count"],
+        duration=int(time_taken_seconds),
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        raw_data=json.dumps({
+            "category": category_name,
+            "unique_count": results["unique_count"],
+            "total_submitted": results["total_submitted"],
+            "duplicate_count": results["duplicate_count"],
+            "invalid_count": results["invalid_count"],
+            "performance_rating": results["performance_rating"],
+            "words_per_second": results["words_per_second"],
+            "unique_words": results["unique_words"]
+        })
+    )
+    session.add(training_session)
+    
+    # Update training plan difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+    else:
+        current_diff = {}
+    
+    old_difficulty = difficulty
+    adaptation_reason = "Maintaining difficulty"
+    
+    if new_difficulty > old_difficulty:
+        adaptation_reason = f"Excellent performance! ({results['unique_count']} unique words)"
+    elif new_difficulty < old_difficulty:
+        adaptation_reason = f"Adjusting for better success ({results['unique_count']} unique words)"
+    
+    current_diff["planning"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_diff)
+    
+    # Update plan stats
+    plan.total_sessions_completed += 1
+    plan.last_session_date = datetime.utcnow()
+    
+    session.commit()
+    session.refresh(training_session)
+    
+    # Check for badges
+    new_badges = BadgeService.check_and_award_badges(session, user_id, plan)
+    
+    return {
+        "success": True,
+        "score": results["normalized_score"],
+        "unique_count": results["unique_count"],
+        "total_submitted": results["total_submitted"],
+        "duplicate_count": results["duplicate_count"],
+        "performance_rating": results["performance_rating"],
+        "words_per_second": results["words_per_second"],
+        "feedback": results["feedback"],
+        "new_difficulty": new_difficulty,
+        "old_difficulty": old_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": new_badges,
+        "session_id": training_session.id
+    }
+
