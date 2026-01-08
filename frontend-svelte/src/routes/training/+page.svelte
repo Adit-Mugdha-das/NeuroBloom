@@ -106,12 +106,7 @@
 			cpt: '/baseline/tasks/attention',
 			pasat: '/training/pasat',
 			stroop: '/training/stroop',
-			go_nogo: '/training/go-nogo',
-			flanker: '/training/flanker',
-			
-			// Flexibility tasks
-			task_switching: '/baseline/tasks/flexibility',
-			trails_b: '/training/trail-making-b',
+		go_nogo: '/training/gonogo',
 			trail_making_b: '/training/trail-making-b',
 			wcst: '/training/wcst',
 			dccs: '/training/dccs',
@@ -127,11 +122,14 @@
 			
 			// Visual Scanning tasks
 			target_search: '/baseline/tasks/visual-scanning',
-			visual_search: '/baseline/tasks/visual-scanning',
+			visual_search: '/training/visual-search',
 			cancellation: '/training/cancellation-test',
+			cancellation_test: '/training/cancellation-test',
 			feature_conjunction: '/training/visual-search',
 			mot: '/training/multiple-object-tracking',
-			ufov: '/training/useful-field-of-view'
+			multiple_object_tracking: '/training/multiple-object-tracking',
+			ufov: '/training/useful-field-of-view',
+			useful_field_of_view: '/training/useful-field-of-view'
 		};
 		
 		const baseRoute = routes[taskType] || '/dashboard';

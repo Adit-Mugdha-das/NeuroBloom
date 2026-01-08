@@ -3621,9 +3621,6 @@ def submit_trail_making_b_session(
     
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
-    # Extract task_id for session tracking
-    task_id = submission.session_data.get("task_id")
-    
     
     # Extract task_id for session tracking
     task_id = submission.session_data.get("task_id")
@@ -3813,9 +3810,6 @@ def submit_wcst_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
-    # Extract task_id for session tracking
-    task_id = submission.session_data.get("task_id")
-    
     
     # Extract task_id for session tracking
     task_id = submission.session_data.get("task_id")
@@ -3862,7 +3856,6 @@ def submit_wcst_session(
     current_difficulties["flexibility"] = new_difficulty
     plan.current_difficulty = json.dumps(current_difficulties)
     session.add(plan)
-    session.commit()
     
     # Create training session record
     training_session = TrainingSession(
@@ -3895,11 +3888,12 @@ def submit_wcst_session(
     )
     
     session.add(training_session)
-    session.commit()
-    session.refresh(training_session)
     
     # Track session completion
     session_info = track_session_completion(plan, "flexibility", session, user_id, task_id)
+    
+    session.commit()
+    session.refresh(training_session)
     
     return {
         "success": True,
@@ -4849,9 +4843,6 @@ def submit_twenty_questions_game(
     )
     session.add(training_session)
     
-    # Extract task_id for session tracking
-    task_id = request_data.get("task_id")
-    
     # Update training plan difficulty
     current_diff = plan.current_difficulty
     
@@ -5033,15 +5024,11 @@ def submit_cancellation_test(
     )
     
     session.add(training_session)
-    session.commit()
-    session.refresh(training_session)
     
     # Update difficulty in training plan if changed
     if new_difficulty != old_difficulty:
         current_difficulty_map["visual_scanning"] = new_difficulty
         training_plan.current_difficulty = json.dumps(current_difficulty_map)
-        session.add(training_plan)
-        session.commit()
     
     # Adaptation feedback
     if adjustment > 0:
@@ -5057,8 +5044,8 @@ def submit_cancellation_test(
     # Track session completion
     session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
     
-    session.add(training_plan)
     session.commit()
+    session.refresh(training_session)
     
     return {
         "score": results["score"],
@@ -5387,15 +5374,11 @@ def submit_mot_response(
     )
     
     session.add(training_session)
-    session.commit()
-    session.refresh(training_session)
     
     # Update difficulty in training plan if changed
     if new_difficulty != old_difficulty:
         current_difficulty_map["visual_scanning"] = new_difficulty
         training_plan.current_difficulty = json.dumps(current_difficulty_map)
-        session.add(training_plan)
-        session.commit()
     
     # Adaptation feedback
     adjustment = new_difficulty - old_difficulty
@@ -5412,8 +5395,8 @@ def submit_mot_response(
     # Track session completion
     session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
     
-    session.add(training_plan)
     session.commit()
+    session.refresh(training_session)
     
     # Generate feedback message
     feedback_message = MultipleObjectTrackingTask.get_feedback_message(results)

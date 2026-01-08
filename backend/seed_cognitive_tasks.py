@@ -427,7 +427,7 @@ def seed_cognitive_tasks():
             "instructions": "Click on the target item as quickly as possible."
         },
         {
-            "task_code": "cancellation",
+            "task_code": "cancellation_test",
             "domain": "visual_scanning",
             "task_name": "Cancellation Test",
             "description": "Cross out all target letters/symbols on page",
@@ -457,7 +457,7 @@ def seed_cognitive_tasks():
             "instructions": "Find the target item. Feature search: target pops out. Conjunction search: requires careful scanning."
         },
         {
-            "task_code": "mot",
+            "task_code": "multiple_object_tracking",
             "domain": "visual_scanning",
             "task_name": "Multiple Object Tracking (MOT)",
             "description": "Track 2-5 moving objects among identical distractors",
@@ -472,7 +472,7 @@ def seed_cognitive_tasks():
             "instructions": "Watch the target objects flash, then track them as they move. Click the tracked objects when movement stops."
         },
         {
-            "task_code": "ufov",
+            "task_code": "useful_field_of_view",
             "domain": "visual_scanning",
             "task_name": "Useful Field of View (UFOV)",
             "description": "Identify central target while detecting peripheral target",
