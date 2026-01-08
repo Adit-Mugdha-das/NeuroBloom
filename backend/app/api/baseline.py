@@ -110,6 +110,7 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
     
     if existing:
         # Update existing baseline
+        from datetime import datetime
         existing.working_memory_score = domain_scores.get('working_memory', 0)
         existing.attention_score = domain_scores.get('attention', 0)
         existing.flexibility_score = domain_scores.get('flexibility', 0)
@@ -118,6 +119,7 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         existing.visual_scanning_score = domain_scores.get('visual_scanning', 0)
         existing.overall_score = overall
         existing.raw_metrics = json.dumps(domain_data)
+        existing.assessment_date = datetime.now()  # Update assessment date
         
         session.add(existing)
         session.commit()

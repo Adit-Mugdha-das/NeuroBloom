@@ -140,8 +140,8 @@
 	
 	function nextTrial() {
 		if (trialsCompleted >= TRIALS_PER_SESSION) {
-			// Session complete
-			goto('/dashboard');
+			// Session complete - return to training page to show updated progress
+			goto('/training');
 		} else {
 			results = null;
 			loadTrial();
@@ -149,7 +149,7 @@
 	}
 	
 	function exitTask() {
-		goto('/dashboard');
+		goto('/training');
 	}
 	
 	// Helper function to get peripheral positions for UI

@@ -10,6 +10,7 @@
 	let baselineData = null;
 	let baselineStatus = null;
 	let trainingPlan = null;
+	let comparisonData = null;
 	let error = null;
 	let calculating = false;
 	let generatingPlan = false;
@@ -42,8 +43,18 @@
 				// Check if training plan exists
 				try {
 					trainingPlan = await training.getPlan(currentUser.id);
+					
+					// If training plan exists, get performance comparison
+					try {
+						comparisonData = await training.getPerformanceComparison(currentUser.id);
+						console.log('Comparison data loaded:', comparisonData);
+					} catch (e) {
+						console.log('No comparison data yet:', e);
+						comparisonData = null;
+					}
 				} catch (e) {
 					trainingPlan = null;
+					comparisonData = null;
 				}
 			} catch (e) {
 				// No baseline yet
@@ -62,10 +73,19 @@
 		error = null;
 		
 		try {
+			console.log('Recalculating baseline for user:', currentUser.id);
 			baselineData = await baseline.calculate(currentUser.id);
+			console.log('Baseline recalculated successfully:', baselineData);
+			
+			// Reload baseline data to ensure we have the latest
+			await loadBaseline();
+			
+			// Show success message
+			alert('Baseline recalculated successfully!');
 		} catch (err) {
 			console.error('Error calculating baseline:', err);
 			error = err.response?.data?.detail || 'Failed to calculate baseline. Make sure you completed all 6 tasks.';
+			alert('Error: ' + error);
 		} finally {
 			calculating = false;
 		}
@@ -118,8 +138,42 @@
 		return 'Needs Improvement';
 	}
 	
+	function getBaselineScores() {
+		if (!baselineData) return null;
+		return {
+			working_memory: baselineData.working_memory_score || 0,
+			attention: baselineData.attention_score || 0,
+			flexibility: baselineData.flexibility_score || 0,
+			planning: baselineData.planning_score || 0,
+			processing_speed: baselineData.processing_speed_score || 0,
+			visual_scanning: baselineData.visual_scanning_score || 0
+		};
+	}
+	
+	function getCurrentScores() {
+		if (!comparisonData?.comparison) return null;
+		return {
+			working_memory: comparisonData.comparison.working_memory?.current || 0,
+			attention: comparisonData.comparison.attention?.current || 0,
+			flexibility: comparisonData.comparison.flexibility?.current || 0,
+			planning: comparisonData.comparison.planning?.current || 0,
+			processing_speed: comparisonData.comparison.processing_speed?.current || 0,
+			visual_scanning: comparisonData.comparison.visual_scanning?.current || 0
+		};
+	}
+	
 	// Radar chart calculations
-	$: radarPoints = baselineData ? calculateRadarPoints() : '';
+	$: radarPoints = baselineData ? calculateRadarPoints(getBaselineScores()) : '';
+	$: currentPoints = comparisonData ? calculateRadarPoints(getCurrentScores()) : '';
+	
+	// Calculate current overall score from comparison data
+	$: currentOverallScore = comparisonData ? calculateOverallScore(getCurrentScores()) : null;
+	
+	function calculateOverallScore(scores) {
+		if (!scores) return null;
+		const values = Object.values(scores);
+		return values.reduce((sum, score) => sum + score, 0) / values.length;
+	}
 	
 	let radarChartSVG;
 	
@@ -132,18 +186,28 @@
 	function handleDownloadData() {
 		if (!baselineData) return;
 		
-		const csvData = Object.entries(baselineData.scores).map(([domain, score]) => ({
+		const scores = {
+			working_memory: baselineData.working_memory_score,
+			attention: baselineData.attention_score,
+			flexibility: baselineData.flexibility_score,
+			planning: baselineData.planning_score,
+			processing_speed: baselineData.processing_speed_score,
+			visual_scanning: baselineData.visual_scanning_score
+		};
+		
+		const csvData = Object.entries(scores).map(([domain, score]) => ({
 			domain: getDomainName(domain),
 			score: score.toFixed(1),
-			level: getScoreLabel(score),
-			percentile: baselineData.percentiles?.[domain] || 'N/A'
+			level: getScoreLabel(score)
 		}));
 		
 		const filename = `baseline-data-${new Date().toISOString().split('T')[0]}`;
 		downloadCSV(csvData, filename);
 	}
 	
-	function calculateRadarPoints() {
+	function calculateRadarPoints(scores) {
+		if (!scores) return '';
+		
 		const domains = [
 			'working_memory',
 			'attention',
@@ -159,7 +223,7 @@
 		const angleStep = (2 * Math.PI) / 6;
 		
 		const points = domains.map((domain, i) => {
-			const score = baselineData[`${domain}_score`] || 0;
+			const score = scores[domain] || 0;
 			const radius = (score / 100) * maxRadius;
 			const angle = i * angleStep - Math.PI / 2; // Start from top
 			
@@ -235,19 +299,51 @@
 			</div>
 			
 			<!-- Overall Score Card -->
-			<div class="score-card overall">
-				<h2>Overall Cognitive Score</h2>
-				<div class="big-score" style="color: {getScoreColor(baselineData.overall_score)}">
-					{baselineData.overall_score.toFixed(1)}
+			{#if comparisonData && currentOverallScore !== null}
+				<!-- Show both baseline and current scores side by side -->
+				<div class="scores-comparison">
+					<div class="score-card half">
+						<h3>Baseline Score</h3>
+						<div class="medium-score" style="color: {getScoreColor(baselineData.overall_score)}">
+							{baselineData.overall_score.toFixed(1)}
+						</div>
+						<div class="score-label-small">{getScoreLabel(baselineData.overall_score)}</div>
+						<p class="date-small">Initial: {new Date(baselineData.assessment_date).toLocaleDateString()}</p>
+					</div>
+					
+					<div class="score-card half current">
+						<h3>Current Score</h3>
+						<div class="medium-score" style="color: {getScoreColor(currentOverallScore)}">
+							{currentOverallScore.toFixed(1)}
+						</div>
+						<div class="score-label-small">{getScoreLabel(currentOverallScore)}</div>
+						<div class="improvement">
+							{#if currentOverallScore > baselineData.overall_score}
+								<span class="improvement-positive">↑ {(currentOverallScore - baselineData.overall_score).toFixed(1)} improvement</span>
+							{:else if currentOverallScore < baselineData.overall_score}
+								<span class="improvement-negative">↓ {(baselineData.overall_score - currentOverallScore).toFixed(1)} decrease</span>
+							{:else}
+								<span class="improvement-neutral">No change</span>
+							{/if}
+						</div>
+					</div>
 				</div>
-				<div class="score-label">{getScoreLabel(baselineData.overall_score)}</div>
-				<p class="date">Assessed on {new Date(baselineData.assessment_date).toLocaleDateString()}</p>
-			</div>
+			{:else}
+				<!-- Show only baseline score -->
+				<div class="score-card overall">
+					<h2>Overall Cognitive Score</h2>
+					<div class="big-score" style="color: {getScoreColor(baselineData.overall_score)}">
+						{baselineData.overall_score.toFixed(1)}
+					</div>
+					<div class="score-label">{getScoreLabel(baselineData.overall_score)}</div>
+					<p class="date">Assessed on {new Date(baselineData.assessment_date).toLocaleDateString()}</p>
+				</div>
+			{/if}
 			
 			<!-- Radar Chart -->
 			<div class="chart-card">
 				<div class="chart-header">
-					<h3>Cognitive Profile</h3>
+					<h3>Cognitive Profile {comparisonData ? '(Baseline vs Current)' : ''}</h3>
 					<div class="chart-actions">
 						<button class="download-btn-small" on:click={handleDownloadChart} title="Download chart as image">
 							📊 Chart
@@ -272,13 +368,24 @@
 					<line x1="250" y1="200" x2="146" y2="260" stroke="#ccc" stroke-width="1"/>
 					<line x1="250" y1="200" x2="146" y2="140" stroke="#ccc" stroke-width="1"/>
 					
-					<!-- Data polygon -->
+					<!-- Baseline polygon (blue dashed) -->
 					<polygon 
 						points={radarPoints} 
-						fill="rgba(102, 126, 234, 0.3)" 
+						fill="rgba(102, 126, 234, 0.2)" 
 						stroke="#667eea" 
 						stroke-width="2"
+						stroke-dasharray={comparisonData ? "5,5" : "0"}
 					/>
+					
+					<!-- Current performance polygon (green solid) - only show if comparison data exists -->
+					{#if comparisonData && currentPoints}
+					<polygon 
+						points={currentPoints} 
+						fill="rgba(76, 175, 80, 0.2)" 
+						stroke="#4caf50" 
+						stroke-width="3"
+					/>
+					{/if}
 					
 					<!-- Labels -->
 					<text x="250" y="60" text-anchor="middle" class="chart-label">Working Memory</text>
@@ -288,6 +395,24 @@
 					<text x="115" y="265" text-anchor="end" class="chart-label">Processing Speed</text>
 					<text x="115" y="145" text-anchor="end" class="chart-label">Visual Scanning</text>
 				</svg>
+				
+				<!-- Legend (only show if comparison data exists) -->
+				{#if comparisonData}
+				<div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; font-size: 0.9rem;">
+					<div style="display: flex; align-items: center; gap: 0.5rem;">
+						<svg width="30" height="3">
+							<line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#667eea" stroke-width="2" stroke-dasharray="5,5"/>
+						</svg>
+						<span>Baseline</span>
+					</div>
+					<div style="display: flex; align-items: center; gap: 0.5rem;">
+						<svg width="30" height="3">
+							<line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#4caf50" stroke-width="3"/>
+						</svg>
+						<span>Current</span>
+					</div>
+				</div>
+				{/if}
 			</div>
 			
 			<!-- Domain Scores -->
@@ -401,8 +526,13 @@
 				<button class="btn-primary" on:click={backToDashboard}>
 					Continue to Dashboard
 				</button>
-				<button class="btn-secondary" on:click={calculateBaseline} style="margin-left: 1rem;">
-					Recalculate Baseline
+				<button 
+					class="btn-secondary" 
+					on:click={calculateBaseline} 
+					disabled={calculating}
+					style="margin-left: 1rem;"
+				>
+					{calculating ? 'Recalculating...' : 'Recalculate Baseline'}
 				</button>
 				{#if !trainingPlan}
 					<button 
@@ -564,6 +694,84 @@
 	.score-card.overall {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
+	}
+	
+	.scores-comparison {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+		margin-bottom: 2rem;
+	}
+	
+	.score-card.half {
+		background: white;
+		border-radius: 20px;
+		padding: 2rem;
+		text-align: center;
+		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		margin-bottom: 0;
+	}
+	
+	.score-card.half h3 {
+		margin: 0 0 1rem 0;
+		color: #666;
+		font-size: 1.2rem;
+		font-weight: 600;
+	}
+	
+	.score-card.half.current {
+		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+		color: white;
+	}
+	
+	.score-card.half.current h3 {
+		color: white;
+		opacity: 0.95;
+	}
+	
+	.medium-score {
+		font-size: 3.5rem;
+		font-weight: bold;
+		margin: 1rem 0;
+	}
+	
+	.score-label-small {
+		font-size: 1.2rem;
+		opacity: 0.9;
+		margin-bottom: 0.5rem;
+	}
+	
+	.date-small {
+		margin-top: 0.5rem;
+		opacity: 0.7;
+		font-size: 0.85rem;
+	}
+	
+	.improvement {
+		margin-top: 0.75rem;
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+	
+	.improvement-positive {
+		color: #fff;
+		opacity: 0.95;
+	}
+	
+	.improvement-negative {
+		color: #fff;
+		opacity: 0.95;
+	}
+	
+	.improvement-neutral {
+		color: #fff;
+		opacity: 0.8;
+	}
+	
+	@media (max-width: 768px) {
+		.scores-comparison {
+			grid-template-columns: 1fr;
+		}
 	}
 	
 	.big-score {

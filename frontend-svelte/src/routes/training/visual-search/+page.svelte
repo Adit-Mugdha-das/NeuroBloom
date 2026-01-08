@@ -184,7 +184,7 @@
 	}
 
 	function goToDashboard() {
-		goto('/dashboard');
+		goto('/training');
 	}
 </script>
 
