@@ -421,72 +421,174 @@
 					<div class="domain-header">
 						<h4>Working Memory</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.working_memory_score)}">
-						{baselineData.working_memory_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.working_memory_score}%; background: {getScoreColor(baselineData.working_memory_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.working_memory_score)}">
+									{baselineData.working_memory_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.working_memory?.current || 0)}">
+									{(comparisonData.comparison.working_memory?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.working_memory_score)}">
+							{baselineData.working_memory_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.working_memory_score}%; background: {getScoreColor(baselineData.working_memory_score)}"></div>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="domain-card">
 					<div class="domain-header">
 						<h4>Attention</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.attention_score)}">
-						{baselineData.attention_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.attention_score}%; background: {getScoreColor(baselineData.attention_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.attention_score)}">
+									{baselineData.attention_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.attention?.current || 0)}">
+									{(comparisonData.comparison.attention?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.attention_score)}">
+							{baselineData.attention_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.attention_score}%; background: {getScoreColor(baselineData.attention_score)}"></div>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="domain-card">
 					<div class="domain-header">
 						<h4>Cognitive Flexibility</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.flexibility_score)}">
-						{baselineData.flexibility_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.flexibility_score}%; background: {getScoreColor(baselineData.flexibility_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.flexibility_score)}">
+									{baselineData.flexibility_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.flexibility?.current || 0)}">
+									{(comparisonData.comparison.flexibility?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.flexibility_score)}">
+							{baselineData.flexibility_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.flexibility_score}%; background: {getScoreColor(baselineData.flexibility_score)}"></div>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="domain-card">
 					<div class="domain-header">
 						<h4>Planning</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.planning_score)}">
-						{baselineData.planning_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.planning_score}%; background: {getScoreColor(baselineData.planning_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.planning_score)}">
+									{baselineData.planning_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.planning?.current || 0)}">
+									{(comparisonData.comparison.planning?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.planning_score)}">
+							{baselineData.planning_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.planning_score}%; background: {getScoreColor(baselineData.planning_score)}"></div>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="domain-card">
 					<div class="domain-header">
 						<h4>Processing Speed</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.processing_speed_score)}">
-						{baselineData.processing_speed_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.processing_speed_score}%; background: {getScoreColor(baselineData.processing_speed_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.processing_speed_score)}">
+									{baselineData.processing_speed_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.processing_speed?.current || 0)}">
+									{(comparisonData.comparison.processing_speed?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.processing_speed_score)}">
+							{baselineData.processing_speed_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.processing_speed_score}%; background: {getScoreColor(baselineData.processing_speed_score)}"></div>
+						</div>
+					{/if}
 				</div>
 				
 				<div class="domain-card">
 					<div class="domain-header">
 						<h4>Visual Scanning</h4>
 					</div>
-					<div class="domain-score" style="color: {getScoreColor(baselineData.visual_scanning_score)}">
-						{baselineData.visual_scanning_score.toFixed(1)}
-					</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width: {baselineData.visual_scanning_score}%; background: {getScoreColor(baselineData.visual_scanning_score)}"></div>
-					</div>
+					{#if comparisonData}
+						<div class="domain-scores-row">
+							<div class="baseline-score">
+								<div class="score-mini" style="color: {getScoreColor(baselineData.visual_scanning_score)}">
+									{baselineData.visual_scanning_score.toFixed(1)}
+								</div>
+								<div class="score-type">Baseline</div>
+							</div>
+							<div class="current-score-mini">
+								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.visual_scanning?.current || 0)}">
+									{(comparisonData.comparison.visual_scanning?.current || 0).toFixed(1)}
+								</div>
+								<div class="score-type">Current</div>
+							</div>
+						</div>
+					{:else}
+						<div class="domain-score" style="color: {getScoreColor(baselineData.visual_scanning_score)}">
+							{baselineData.visual_scanning_score.toFixed(1)}
+						</div>
+						<div class="progress-bar">
+							<div class="progress-fill" style="width: {baselineData.visual_scanning_score}%; background: {getScoreColor(baselineData.visual_scanning_score)}"></div>
+						</div>
+					{/if}
 				</div>
 			</div>
 			
@@ -889,6 +991,33 @@
 		margin: 0;
 		color: #333;
 		font-size: 1.1rem;
+	}
+	
+	.domain-scores-row {
+		display: flex;
+		justify-content: space-around;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+	
+	.baseline-score, .current-score-mini {
+		text-align: center;
+		flex: 1;
+	}
+	
+	.score-mini {
+		font-size: 2rem;
+		font-weight: bold;
+		margin-bottom: 0.25rem;
+	}
+	
+	.score-type {
+		font-size: 0.8rem;
+		color: #666;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-weight: 600;
 	}
 	
 	.domain-score {
