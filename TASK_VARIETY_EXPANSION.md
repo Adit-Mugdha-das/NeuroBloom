@@ -268,7 +268,7 @@ Visual version available (less stressful)
 **Example**: Word "RED" in blue ink → Answer: "Blue"
 
 **MS Research Evidence**:
-- Selective attention measure
+- Selective attention measuretask 3.2 stroop added"
 - Inhibitory control component
 - Sensitive to frontal lobe dysfunction
 - Reference: Parmenter et al., 2007

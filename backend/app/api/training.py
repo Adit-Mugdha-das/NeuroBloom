@@ -851,9 +851,10 @@ def track_session_completion(
     # Otherwise fall back to domain tracking (backward compatibility)
     completed_tasks = training_plan.get_current_session_tasks_completed()
     task_identifier = task_id if task_id else domain
-    completed_tasks.append(task_identifier)
-    training_plan.current_session_tasks_completed = json.dumps(completed_tasks)
-    session.add(training_plan)  # Mark plan as modified
+    if task_identifier not in completed_tasks:
+        completed_tasks.append(task_identifier)
+        training_plan.current_session_tasks_completed = json.dumps(completed_tasks)
+        session.add(training_plan)  # Mark plan as modified
     
     # Check if all 4 tasks in session are completed
     session_complete = len(completed_tasks) >= 4
@@ -1039,12 +1040,14 @@ def submit_digit_span_session(
     plan.last_updated = datetime.utcnow()
     
     session.add(plan)
+    
+    # Track session completion BEFORE commit
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
+    
+    # Now commit all changes including the completion tracking
     session.commit()
     session.refresh(training_session)
     session.refresh(plan)
-    
-    # Track session completion
-    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -1222,12 +1225,14 @@ def submit_spatial_span_session(
     plan.last_updated = datetime.utcnow()
     
     session.add(plan)
+    
+    # Track session completion BEFORE commit
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
+    
+    # Now commit all changes including the completion tracking
     session.commit()
     session.refresh(training_session)
     session.refresh(plan)
-    
-    # Track session completion
-    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
@@ -1592,12 +1597,14 @@ def submit_operation_span_session(
     plan.last_updated = datetime.utcnow()
     
     session.add(plan)
+    
+    # Track session completion BEFORE commit
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
+    
+    # Now commit all changes including the completion tracking
     session.commit()
     session.refresh(training_session)
     session.refresh(plan)
-    
-    # Track session completion
-    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
     
     return {
         "success": True,
