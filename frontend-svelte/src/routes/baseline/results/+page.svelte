@@ -596,31 +596,70 @@
 			<div class="insights-card">
 				<h3>Insights & Recommendations</h3>
 				<div class="insights-content">
-					{#if baselineData.overall_score >= 80}
-						<p><strong>Excellent cognitive performance!</strong> Your scores are above average across all domains.</p>
-					{:else if baselineData.overall_score >= 60}
-						<p><strong>Good cognitive performance.</strong> You have a solid foundation with room for targeted improvement.</p>
+					{#if comparisonData && currentOverallScore !== null}
+						<!-- Show insights based on current performance -->
+						{#if currentOverallScore >= 80}
+							<p><strong>Excellent cognitive performance!</strong> Your scores are above average across all domains.</p>
+							{#if currentOverallScore > baselineData.overall_score}
+								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline! Keep up the great work.</p>
+							{/if}
+						{:else if currentOverallScore >= 60}
+							<p><strong>Good cognitive performance.</strong> You have a solid foundation with room for targeted improvement.</p>
+							{#if currentOverallScore > baselineData.overall_score}
+								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline! Continue your training to reach excellence.</p>
+							{/if}
+						{:else}
+							<p><strong>Keep training!</strong> Regular practice will help improve your cognitive performance.</p>
+							{#if currentOverallScore > baselineData.overall_score}
+								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline. You're making progress!</p>
+							{/if}
+						{/if}
+						
+						<div class="recommendation">
+							<h4>Current Focus Areas:</h4>
+							<ul>
+								{#each Object.entries({
+									working_memory: comparisonData.comparison.working_memory?.current || 0,
+									attention: comparisonData.comparison.attention?.current || 0,
+									flexibility: comparisonData.comparison.flexibility?.current || 0,
+									planning: comparisonData.comparison.planning?.current || 0,
+									processing_speed: comparisonData.comparison.processing_speed?.current || 0,
+									visual_scanning: comparisonData.comparison.visual_scanning?.current || 0
+								}).sort((a, b) => a[1] - b[1]).slice(0, 3) as [domain, score]}
+									{#if score < 70}
+									<li><strong>{getDomainName(domain)}</strong> - Current: {score.toFixed(1)}</li>
+									{/if}
+								{/each}
+							</ul>
+						</div>
 					{:else}
-						<p><strong>Baseline established.</strong> Regular training will help improve your cognitive performance.</p>
+						<!-- Show baseline insights -->
+						{#if baselineData.overall_score >= 80}
+							<p><strong>Excellent cognitive performance!</strong> Your scores are above average across all domains.</p>
+						{:else if baselineData.overall_score >= 60}
+							<p><strong>Good cognitive performance.</strong> You have a solid foundation with room for targeted improvement.</p>
+						{:else}
+							<p><strong>Baseline established.</strong> Regular training will help improve your cognitive performance.</p>
+						{/if}
+						
+						<div class="recommendation">
+							<h4>Focus Areas:</h4>
+							<ul>
+								{#each Object.entries({
+									working_memory: baselineData.working_memory_score,
+									attention: baselineData.attention_score,
+									flexibility: baselineData.flexibility_score,
+									planning: baselineData.planning_score,
+									processing_speed: baselineData.processing_speed_score,
+									visual_scanning: baselineData.visual_scanning_score
+								}).sort((a, b) => a[1] - b[1]).slice(0, 3) as [domain, score]}
+									{#if score < 70}
+									<li><strong>{getDomainName(domain)}</strong> - Score: {score.toFixed(1)}</li>
+									{/if}
+								{/each}
+							</ul>
+						</div>
 					{/if}
-					
-					<div class="recommendation">
-						<h4>Focus Areas:</h4>
-						<ul>
-							{#each Object.entries({
-								working_memory: baselineData.working_memory_score,
-								attention: baselineData.attention_score,
-								flexibility: baselineData.flexibility_score,
-								planning: baselineData.planning_score,
-								processing_speed: baselineData.processing_speed_score,
-								visual_scanning: baselineData.visual_scanning_score
-							}).sort((a, b) => a[1] - b[1]).slice(0, 3) as [domain, score]}
-								{#if score < 70}
-								<li><strong>{getDomainName(domain)}</strong> - Score: {score.toFixed(1)}</li>
-								{/if}
-							{/each}
-						</ul>
-					</div>
 				</div>
 			</div>
 			
