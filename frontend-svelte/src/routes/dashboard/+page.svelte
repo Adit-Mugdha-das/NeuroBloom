@@ -85,7 +85,7 @@
 				</div>
 				<div class="stat-card">
 					<h3>Total Tasks</h3>
-					<div class="value">{stats?.total_sessions ? stats.total_sessions * 4 : 0}</div>
+					<div class="value">{stats?.total_tasks || 0}</div>
 				</div>
 			</div>
 			

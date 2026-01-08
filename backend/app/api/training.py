@@ -625,7 +625,8 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
     ]
     
     return {
-        "total_sessions": len(all_sessions),
+        "total_sessions": plan.total_sessions_completed,  # Use completed sessions count from plan (4 tasks = 1 session)
+        "total_tasks": len(all_sessions),  # Total individual tasks completed
         "metrics_by_domain": metrics_by_domain,
         "current_difficulty": plan.get_current_difficulty(),
         "recent_sessions": recent_sessions,
