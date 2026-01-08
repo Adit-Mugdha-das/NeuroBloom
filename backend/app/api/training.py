@@ -658,15 +658,16 @@ def update_streak(plan: TrainingPlan):
     last_session_date = plan.last_session_date.date()
     days_since_last = (today - last_session_date).days
     
-    # Already trained today - no streak change
+    # Already trained today - update last_session_date but no streak change
     if days_since_last == 0:
+        plan.last_session_date = now  # Update to latest session time
         return
     
     # Trained yesterday - increment streak
     if days_since_last == 1:
         plan.current_streak += 1
         plan.total_training_days += 1
-        plan.streak_freeze_available = True  # Reset freeze for new week
+        # Don't reset freeze - it should only reset weekly or when broken
         
     # Missed exactly 1 day - check if freeze available
     elif days_since_last == 2 and plan.streak_freeze_available:
@@ -678,7 +679,7 @@ def update_streak(plan: TrainingPlan):
     else:
         plan.current_streak = 1
         plan.total_training_days += 1
-        plan.streak_freeze_available = True
+        plan.streak_freeze_available = True  # Get a new freeze when streak breaks
         plan.last_streak_reset = now
     
     # Update longest streak if current is higher
