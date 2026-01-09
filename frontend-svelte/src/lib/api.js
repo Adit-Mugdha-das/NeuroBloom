@@ -73,13 +73,13 @@ export const training = {
 	
 	// Get active training plan
 	getPlan: async (userId) => {
-		const response = await api.get(`/api/training/training-plan/${userId}`);
+		const response = await api.get(`/api/training/training-plan/${userId}?_t=${Date.now()}`);
 		return response.data;
 	},
 	
 	// Get next recommended tasks for training session
 	getNextTasks: async (userId) => {
-		const response = await api.get(`/api/training/training-plan/${userId}/next-tasks`);
+		const response = await api.get(`/api/training/training-plan/${userId}/next-tasks?_t=${Date.now()}`);
 		return response.data;
 	},
 	
@@ -114,13 +114,13 @@ export const training = {
 	
 	// Get performance metrics
 	getMetrics: async (userId) => {
-		const response = await api.get(`/api/training/training-session/metrics/${userId}`);
+		const response = await api.get(`/api/training/training-session/metrics/${userId}?_t=${Date.now()}`);
 		return response.data;
 	},
 	
 	// Get performance comparison (baseline vs current)
 	getPerformanceComparison: async (userId) => {
-		const response = await api.get(`/api/training/training-session/performance-comparison/${userId}`);
+		const response = await api.get(`/api/training/training-session/performance-comparison/${userId}?_t=${Date.now()}`);
 		return response.data;
 	},
 	

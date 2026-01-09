@@ -1,0 +1,942 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+
+% Code listing settings
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\title{\textbf{NeuroBloom\\Cognitive Training Platform}\\System Documentation}
+\author{}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Overview}
+
+\textbf{NeuroBloom} is a comprehensive cognitive training platform designed to assess and improve cognitive abilities across six key domains. The system uses adaptive algorithms to personalize training difficulty and provides detailed performance analytics.
+
+\subsection{Core Features}
+
+\begin{itemize}
+    \item User authentication (Register/Login)
+    \item Baseline cognitive assessment (6 domains)
+    \item Personalized training plan generation
+    \item Adaptive difficulty adjustment
+    \item Performance tracking and visualization
+    \item Badge achievement system
+    \item Daily streak tracking with freeze mechanism
+    \item Real-time progress monitoring
+    \item Baseline vs Current performance comparison
+\end{itemize}
+
+\section{System Architecture}
+
+\subsection{Backend}
+\begin{itemize}
+    \item \textbf{Framework}: FastAPI (Python)
+    \item \textbf{Database}: PostgreSQL
+    \item \textbf{ORM}: SQLModel
+    \item \textbf{Authentication}: Token-based
+\end{itemize}
+
+\subsection{Frontend}
+\begin{itemize}
+    \item \textbf{Framework}: SvelteKit (Svelte 5)
+    \item \textbf{Language}: TypeScript
+    \item \textbf{Styling}: Custom CSS with gradients
+    \item \textbf{API Communication}: Axios
+\end{itemize}
+
+\subsection{Key Models}
+\begin{enumerate}
+    \item \textbf{User} -- Authentication and profile data
+    \item \textbf{BaselineAssessment} -- Initial cognitive profile
+    \item \textbf{TrainingPlan} -- Personalized training configuration
+    \item \textbf{TrainingSession} -- Individual task completion records
+    \item \textbf{CognitiveTask} -- Task definitions and metadata
+    \item \textbf{Badge} -- Achievement tracking
+\end{enumerate}
+
+\section{User Journey}
+
+\subsection{Registration and Login}
+
+\begin{center}
+Register $\rightarrow$ Login $\rightarrow$ Dashboard
+\end{center}
+
+\begin{itemize}
+    \item \textbf{Registration}: Email + Password
+    \item \textbf{Login}: Token-based authentication
+    \item \textbf{Session Management}: Persistent login state
+\end{itemize}
+
+\subsection{Baseline Assessment}
+
+\begin{center}
+Dashboard $\rightarrow$ Complete 6 Tasks $\rightarrow$ Calculate Baseline $\rightarrow$ Training Plan
+\end{center}
+
+\subsubsection{Six Baseline Tasks}
+\begin{enumerate}
+    \item \textbf{Working Memory} -- N-back task
+    \item \textbf{Processing Speed} -- Simple Reaction Time
+    \item \textbf{Attention} -- Flanker task
+    \item \textbf{Cognitive Flexibility} -- Task Switching
+    \item \textbf{Planning} -- Tower of London
+    \item \textbf{Visual Scanning} -- Visual Search
+\end{enumerate}
+
+\subsubsection{Assessment Flow}
+\begin{enumerate}
+    \item User completes all 6 tasks (one per domain)
+    \item System calculates domain scores (0-100)
+    \item Overall cognitive score computed (average of 6 domains)
+    \item Baseline results page displays comprehensive analysis
+    \item Training plan generated based on baseline scores
+\end{enumerate}
+
+\subsection{Training Phase}
+
+\begin{center}
+Training Plan $\rightarrow$ Complete Sessions $\rightarrow$ Track Progress $\rightarrow$ View Analytics
+\end{center}
+
+\subsubsection{Session Structure}
+\begin{itemize}
+    \item Each session = \textbf{4 tasks}
+    \item Tasks selected from different domains
+    \item Task order randomized for variety
+    \item Progress tracked: ``1/4'', ``2/4'', ``3/4'', ``4/4''
+\end{itemize}
+
+\subsection{Progress Monitoring}
+
+\begin{center}
+Dashboard $\rightarrow$ Training Page $\rightarrow$ Progress Page $\rightarrow$ Baseline Results
+\end{center}
+
+\section{Cognitive Domains}
+
+\subsection{Working Memory}
+
+\textbf{Definition:} Ability to hold and manipulate information in mind temporarily.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item N-Back
+    \item Digit Span
+    \item Spatial Span
+    \item Letter-Number Sequencing
+    \item Operation Span
+\end{itemize}
+
+\textbf{Real-world applications:} Remembering phone numbers, following multi-step instructions, mental arithmetic
+
+\subsection{Attention}
+
+\textbf{Definition:} Ability to focus on relevant information while ignoring distractions.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item Flanker Task
+    \item Go/No-Go
+    \item Stroop Test
+\end{itemize}
+
+\textbf{Real-world applications:} Driving in traffic, studying in noisy environments, selective listening
+
+\subsection{Cognitive Flexibility}
+
+\textbf{Definition:} Ability to switch between different tasks or mental sets.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item Task Switching
+    \item DCCS (Dimensional Change Card Sort)
+    \item Plus-Minus Task
+\end{itemize}
+
+\textbf{Real-world applications:} Multitasking, adapting to new situations, problem-solving from different angles
+
+\subsection{Planning}
+
+\textbf{Definition:} Ability to organize steps to achieve a goal.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item Tower of London
+    \item Twenty Questions
+    \item Category Fluency
+\end{itemize}
+
+\textbf{Real-world applications:} Project management, trip planning, organizing daily schedules
+
+\subsection{Processing Speed}
+
+\textbf{Definition:} How quickly you can process and respond to information.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item Simple Reaction Time
+    \item SDMT (Symbol Digit Modalities Test)
+    \item Trail Making Test (Part A)
+    \item Inspection Time
+    \item Pattern Comparison
+\end{itemize}
+
+\textbf{Real-world applications:} Quick decision-making, sports performance, typing speed
+
+\subsection{Visual Scanning}
+
+\textbf{Definition:} Ability to quickly locate specific information in a visual field.
+
+\textbf{Tasks:}
+\begin{itemize}
+    \item Visual Search
+    \item Cancellation Test
+    \item Multiple Object Tracking
+\end{itemize}
+
+\textbf{Real-world applications:} Reading maps, finding items in a cluttered space, visual proofreading
+
+\section{Training System}
+
+\subsection{Focus Area Classification}
+
+Based on baseline scores, domains are categorized into:
+
+\begin{enumerate}
+    \item \textbf{Primary Focus (2 domains)}
+    \begin{itemize}
+        \item Weakest areas
+        \item Highest training priority
+        \item More frequent task selection
+    \end{itemize}
+    
+    \item \textbf{Secondary Focus (2 domains)}
+    \begin{itemize}
+        \item Middle-tier performance
+        \item Moderate training frequency
+        \item Balanced improvement
+    \end{itemize}
+    
+    \item \textbf{Maintenance (2 domains)}
+    \begin{itemize}
+        \item Strongest areas
+        \item Periodic practice
+        \item Prevent skill degradation
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Task Selection Algorithm}
+
+Each training session selects 4 tasks:
+\begin{enumerate}
+    \item Random domain selection (varied each session)
+    \item Task rotation within domain (cycling through available tasks)
+    \item Difficulty level based on current performance
+    \item No duplicate domains in single session
+\end{enumerate}
+
+\section{Adaptive Difficulty Algorithm}
+
+\subsection{How It Works}
+
+After each session (4 tasks complete):
+\begin{enumerate}
+    \item Evaluate performance per domain
+    \item Adjust difficulty based on accuracy
+    \item Update difficulty levels in training plan
+\end{enumerate}
+
+\subsection{Difficulty Levels}
+
+\begin{itemize}
+    \item \textbf{Range}: 1 (easiest) to 10 (hardest)
+    \item \textbf{Starting point}: Based on baseline score
+    \begin{itemize}
+        \item Score < 50: Difficulty 3
+        \item Score 50-70: Difficulty 5
+        \item Score > 70: Difficulty 7
+    \end{itemize}
+\end{itemize}
+
+\subsection{Adjustment Rules}
+
+\begin{lstlisting}[language=Python]
+if accuracy >= 85%:
+    difficulty = min(current + 1, 10)  # Increase (max 10)
+elif accuracy < 65%:
+    difficulty = max(current - 1, 1)   # Decrease (min 1)
+else:
+    difficulty = current               # Maintain
+\end{lstlisting}
+
+\textbf{Logic:}
+\begin{itemize}
+    \item \textbf{High accuracy ($\geq$85\%)} $\rightarrow$ Task too easy $\rightarrow$ Increase difficulty
+    \item \textbf{Low accuracy (<65\%)} $\rightarrow$ Task too hard $\rightarrow$ Decrease difficulty
+    \item \textbf{Medium accuracy (65-85\%)} $\rightarrow$ Optimal challenge $\rightarrow$ Maintain
+\end{itemize}
+
+\subsection{Difficulty Updates}
+
+\begin{itemize}
+    \item Updates happen \textbf{only after full session} (4 tasks complete)
+    \item Each domain adjusted independently
+    \item Changes persist across sessions
+    \item Real-time display on Training page
+\end{itemize}
+
+\section{Session Structure}
+
+\subsection{Session Lifecycle}
+
+\subsubsection{Session Start}
+\begin{itemize}
+    \item 4 tasks assigned (random domains)
+    \item Difficulty set per domain
+    \item Progress: 0/4
+\end{itemize}
+
+\subsubsection{Task Completion}
+\begin{itemize}
+    \item User completes task
+    \item Score calculated
+    \item Progress updated (1/4, 2/4, 3/4)
+    \item Redirects to Training page
+\end{itemize}
+
+\subsubsection{Session Complete (4/4 tasks done)}
+\begin{itemize}
+    \item Difficulty adjustment calculated
+    \item Streak updated
+    \item Badges checked
+    \item Session counter incremented
+    \item New session initialized
+\end{itemize}
+
+\subsection{Key Metrics Per Task}
+
+\begin{itemize}
+    \item \textbf{Score}: Overall performance (0-100)
+    \item \textbf{Accuracy}: Percentage correct responses
+    \item \textbf{Reaction Time}: Average response speed (ms)
+    \item \textbf{Consistency}: Standard deviation of reaction times
+    \item \textbf{Errors}: Number of mistakes
+\end{itemize}
+
+\section{Scoring and Metrics}
+
+\subsection{Score Calculation}
+
+\subsubsection{Baseline Scores}
+\begin{itemize}
+    \item Calculated from 6 baseline tasks
+    \item Domain scores: 0-100 scale
+    \item Overall score: Average of 6 domains
+\end{itemize}
+
+\subsubsection{Training Scores}
+\begin{itemize}
+    \item Each task scored 0-100
+    \item Domain average: Mean of all tasks in that domain
+    \item Overall average: Mean across all domains
+\end{itemize}
+
+\subsection{Score Labels}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Score Range} & \textbf{Label} \\
+\midrule
+$\geq$ 80 & Excellent (Green) \\
+70-79 & Good (Light Green) \\
+60-69 & Average (Orange) \\
+50-59 & Below Average (Light Red) \\
+< 50 & Needs Improvement (Red) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dashboard Metrics}
+
+\begin{enumerate}
+    \item \textbf{Total Sessions}
+    \begin{itemize}
+        \item Count of completed 4-task sessions
+        \item NOT individual task count
+    \end{itemize}
+    
+    \item \textbf{Total Tasks}
+    \begin{itemize}
+        \item Count of individual tasks completed
+        \item 4 tasks = 1 session
+    \end{itemize}
+    
+    \item \textbf{Active Domains}
+    \begin{itemize}
+        \item Number of domains with training history
+        \item Maximum: 6 domains
+    \end{itemize}
+    
+    \item \textbf{Last Training}
+    \begin{itemize}
+        \item Date of most recent session
+    \end{itemize}
+\end{enumerate}
+
+\section{Visualizations and Graphs}
+
+\subsection{Radar Chart (Cognitive Profile)}
+
+\textbf{What it shows:}
+\begin{itemize}
+    \item Hexagonal chart with 6 axes (one per domain)
+    \item Each axis represents one cognitive domain
+    \item Distance from center = performance score
+\end{itemize}
+
+\textbf{Two overlays:}
+\begin{itemize}
+    \item \textbf{Baseline (Blue dashed line)}: Initial assessment scores
+    \item \textbf{Current (Green solid line)}: Current training performance
+\end{itemize}
+
+\textbf{How to read:}
+\begin{itemize}
+    \item Larger area = Better overall performance
+    \item Symmetrical shape = Balanced cognitive profile
+    \item Asymmetrical = Strength/weakness pattern
+    \item Gap between lines = Improvement/decline
+\end{itemize}
+
+\textbf{Purpose:}
+\begin{itemize}
+    \item Quick visual comparison
+    \item Identify strongest/weakest domains
+    \item Track progress over time
+\end{itemize}
+
+\subsection{Domain Score Cards}
+
+\textbf{Display format:}
+\begin{verbatim}
+┌─────────────────────────┐
+│  Working Memory         │
+│                         │
+│  [72.5]     [78.3]     │
+│  Baseline   Current     │
+└─────────────────────────┘
+\end{verbatim}
+
+\textbf{Features:}
+\begin{itemize}
+    \item Side-by-side comparison
+    \item Color-coded by performance level
+    \item Shows both baseline and current scores
+\end{itemize}
+
+\subsection{Progress Bars}
+
+\textbf{Used for:}
+\begin{itemize}
+    \item Baseline task completion (6/6 tasks)
+    \item Session progress (1/4, 2/4, 3/4, 4/4)
+    \item Domain difficulty levels (visual bars)
+\end{itemize}
+
+\textbf{Visual feedback:}
+\begin{itemize}
+    \item Filled portion = Progress percentage
+    \item Color = Performance level
+    \item Animation on updates
+\end{itemize}
+
+\subsection{Difficulty Visualization}
+
+\textbf{Training Page - Current Difficulty:}
+\begin{verbatim}
+Working Memory    [████████░░] Level 8/10
+Attention         [██████░░░░] Level 6/10
+Flexibility       [██░░░░░░░░] Level 2/10
+Planning          [███████░░░] Level 7/10
+Processing Speed  [█████████░] Level 9/10
+Visual Scanning   [████░░░░░░] Level 4/10
+\end{verbatim}
+
+\textbf{Features:}
+\begin{itemize}
+    \item Real-time difficulty display
+    \item Visual bar representation
+    \item Numeric level (1-10)
+\end{itemize}
+
+\subsection{Overall Score Comparison}
+
+\textbf{Two-card layout:}
+
+\textbf{Baseline Score Card:}
+\begin{itemize}
+    \item Initial assessment date
+    \item Overall score (average)
+    \item Performance label
+\end{itemize}
+
+\textbf{Current Score Card:}
+\begin{itemize}
+    \item Latest performance
+    \item Current overall score
+    \item Improvement indicator (e.g., $\uparrow$ 5.2 points)
+\end{itemize}
+
+\section{Gamification Features}
+
+\subsection{Badge System}
+
+\subsubsection{Badge Categories}
+
+\textbf{A. Streak Badges}
+\begin{itemize}
+    \item Getting Started -- 3 day streak
+    \item On Fire -- 7 day streak
+    \item Unstoppable -- 14 day streak
+    \item Legendary -- 30 day streak
+\end{itemize}
+
+\textbf{B. Session Completion Badges}
+\begin{itemize}
+    \item First Steps -- 1 session
+    \item Getting Going -- 5 sessions
+    \item Committed -- 10 sessions
+    \item Dedicated -- 25 sessions
+    \item Expert -- 50 sessions
+    \item Master -- 100 sessions
+\end{itemize}
+
+\textbf{C. Domain Mastery Badges}
+\begin{itemize}
+    \item Working Memory Master
+    \item Attention Master
+    \item Flexibility Master
+    \item Planning Master
+    \item Speed Master
+    \item Visual Scanning Master
+\end{itemize}
+
+\textbf{Earning Criteria:}
+\begin{itemize}
+    \item Average score $\geq$ 80 in domain
+    \item Minimum 10 tasks completed in domain
+\end{itemize}
+
+\textbf{Display:}
+\begin{itemize}
+    \item Notification on earning
+    \item Badge gallery view
+    \item Progress tracking
+\end{itemize}
+
+\subsection{Streak Tracking}
+
+\textbf{Streak System:}
+\begin{itemize}
+    \item Tracks consecutive days trained
+    \item Encourages daily practice
+    \item Includes freeze mechanism
+\end{itemize}
+
+\textbf{How it works:}
+
+\begin{verbatim}
+Day 1: First session → Streak = 1
+Day 2: Train → Streak = 2
+Day 3: Train → Streak = 3
+Day 4: SKIP → Freeze used (if available) → Streak = 3
+Day 6: Train → Streak = 4
+Day 8: SKIP (no freeze) → Streak = 1 (reset)
+\end{verbatim}
+
+\textbf{Streak Freeze:}
+\begin{itemize}
+    \item \textbf{One-time protection} per streak
+    \item Protects against 1 missed day
+    \item Replenishes when streak breaks
+    \item Visual indicator on dashboard
+\end{itemize}
+
+\textbf{Streak Metrics:}
+\begin{itemize}
+    \item \textbf{Current Streak}: Consecutive days
+    \item \textbf{Longest Streak}: Personal best
+    \item \textbf{Total Training Days}: Lifetime count
+\end{itemize}
+
+\section{Performance Tracking}
+
+\subsection{Performance Comparison API}
+
+\textbf{Endpoint:} \texttt{/api/training/training-session/performance-comparison/\{user\_id\}}
+
+\textbf{Returns:}
+\begin{lstlisting}[language=json]
+{
+  "comparison": {
+    "working_memory": {
+      "baseline": 65.5,
+      "current": 72.3,
+      "change": 6.8,
+      "tasks_completed": 12
+    },
+    "attention": { ... },
+    ...
+  }
+}
+\end{lstlisting}
+
+\textbf{Features:}
+\begin{itemize}
+    \item Baseline vs current comparison
+    \item Absolute change calculation
+    \item Task count per domain
+    \item Only includes domains with training data
+\end{itemize}
+
+\subsection{Metrics Dashboard}
+
+\textbf{Endpoint:} \texttt{/api/training/training-session/metrics/\{user\_id\}}
+
+\textbf{Returns:}
+\begin{lstlisting}[language=json]
+{
+  "total_sessions": 5,
+  "total_tasks": 20,
+  "metrics_by_domain": {
+    "working_memory": {
+      "total_sessions": 5,
+      "average_score": 72.3,
+      "average_accuracy": 78.5,
+      "current_difficulty": 6,
+      "improvement": 8.2,
+      "trend": "improving"
+    }
+  },
+  "last_training_date": "2026-01-09T10:30:00"
+}
+\end{lstlisting}
+
+\textbf{Trend Classification:}
+\begin{itemize}
+    \item \textbf{Improving}: Change > +5 points
+    \item \textbf{Stable}: Change between -5 and +5
+    \item \textbf{Declining}: Change < -5 points
+\end{itemize}
+
+\subsection{Session History}
+
+\textbf{Tracking:}
+\begin{itemize}
+    \item Every task completion saved
+    \item Timestamp recorded
+    \item Performance metrics stored
+    \item Difficulty levels logged
+\end{itemize}
+
+\textbf{Data retention:}
+\begin{itemize}
+    \item Unlimited history
+    \item Accessible via API
+    \item Used for trend analysis
+\end{itemize}
+
+\section{Technical Implementation}
+
+\subsection{Cache Busting}
+
+\textbf{Problem:} Browser caching stale training data
+
+\textbf{Solution:} Timestamp query parameters
+\begin{lstlisting}[language=JavaScript]
+getPlan: async (userId) => {
+  const response = await api.get(
+    `/api/training/training-plan/${userId}?_t=${Date.now()}`
+  );
+  return response.data;
+}
+\end{lstlisting}
+
+\textbf{Applied to:}
+\begin{itemize}
+    \item Training plan retrieval
+    \item Metrics fetching
+    \item Performance comparison
+    \item Next tasks recommendation
+\end{itemize}
+
+\subsection{Session Completion Tracking}
+
+\textbf{Implementation:}
+\begin{lstlisting}[language=Python]
+completed_tasks = plan.get_current_session_tasks_completed()
+task_identifier = task_id if task_id else domain
+if task_identifier not in completed_tasks:
+    completed_tasks.append(task_identifier)
+    plan.current_session_tasks_completed = json.dumps(
+        completed_tasks
+    )
+
+session_complete = len(completed_tasks) >= 4
+
+if session_complete:
+    # Adjust difficulties
+    # Update streak
+    # Check badges
+    # Reset session
+    plan.total_sessions_completed += 1
+    plan.current_session_tasks_completed = "[]"
+\end{lstlisting}
+
+\subsection{Difficulty Persistence}
+
+\textbf{Storage:}
+\begin{lstlisting}[language=Python]
+# JSON format in database
+current_difficulty = {
+    "working_memory": 6,
+    "attention": 5,
+    "flexibility": 3,
+    "planning": 7,
+    "processing_speed": 8,
+    "visual_scanning": 4
+}
+\end{lstlisting}
+
+\textbf{Updates:}
+\begin{itemize}
+    \item Only after full session (4 tasks)
+    \item Per-domain independent adjustment
+    \item Persisted to database
+    \item Retrieved for next session
+\end{itemize}
+
+\subsection{Baseline Recalculation}
+
+\textbf{Feature:} Allow users to retake baseline assessment
+
+\textbf{Implementation:}
+\begin{enumerate}
+    \item User clicks ``Recalculate Baseline''
+    \item System fetches latest 6 baseline tasks
+    \item Recalculates domain scores
+    \item Updates \texttt{assessment\_date} timestamp
+    \item Refreshes training plan if needed
+\end{enumerate}
+
+\textbf{Use cases:}
+\begin{itemize}
+    \item User improved and wants new baseline
+    \item Initial assessment on bad day
+    \item Progress milestone check
+\end{itemize}
+
+\section{Data Flow Diagrams}
+
+\subsection{Task Completion Flow}
+
+\begin{verbatim}
+User completes task
+    ↓
+Submit results to backend
+    ↓
+Calculate score, accuracy, metrics
+    ↓
+Create TrainingSession record
+    ↓
+Add task_id to completed tasks array
+    ↓
+Check if session complete (4/4)
+    ↓
+YES → Adjust difficulties, update streak, check badges
+    ↓
+Redirect to Training page
+    ↓
+Page reloads fresh data (cache-busted)
+    ↓
+Display updated progress & difficulty
+\end{verbatim}
+
+\subsection{Streak Update Flow}
+
+\begin{verbatim}
+Session completes
+    ↓
+Get last_session_date from plan
+    ↓
+Calculate days_since_last
+    ↓
+If 0 days → Update timestamp, no streak change
+If 1 day → Increment streak
+If 2 days + freeze available → Use freeze, maintain streak
+If 2+ days OR no freeze → Reset streak to 1
+    ↓
+Update longest_streak if current > longest
+    ↓
+Set last_session_date to now
+\end{verbatim}
+
+\section{Key Features Summary}
+
+\subsection{Authentication System}
+\begin{itemize}
+    \item Secure registration and login
+    \item Token-based sessions
+    \item Persistent user state
+\end{itemize}
+
+\subsection{Baseline Assessment}
+\begin{itemize}
+    \item 6 domain evaluation
+    \item Comprehensive scoring
+    \item Visual results presentation
+    \item Recalculation capability
+\end{itemize}
+
+\subsection{Adaptive Training}
+\begin{itemize}
+    \item Personalized task selection
+    \item Dynamic difficulty adjustment
+    \item Session-based structure
+    \item Progress tracking
+\end{itemize}
+
+\subsection{Performance Analytics}
+\begin{itemize}
+    \item Baseline vs current comparison
+    \item Radar chart visualization
+    \item Domain-specific metrics
+    \item Trend analysis
+\end{itemize}
+
+\subsection{Gamification}
+\begin{itemize}
+    \item Badge achievement system
+    \item Streak tracking with freeze
+    \item Progress milestones
+    \item Motivational feedback
+\end{itemize}
+
+\subsection{User Experience}
+\begin{itemize}
+    \item Real-time progress updates
+    \item Visual feedback
+    \item Intuitive navigation
+    \item Responsive design
+\end{itemize}
+
+\section{Future Enhancements (Potential)}
+
+\subsection{Advanced Analytics}
+\begin{itemize}
+    \item Weekly/Monthly progress reports
+    \item Performance prediction
+    \item Personalized insights
+    \item Export data functionality
+\end{itemize}
+
+\subsection{Enhanced Gamification}
+\begin{itemize}
+    \item Leaderboards
+    \item Social features
+    \item Custom challenges
+    \item Reward tiers
+\end{itemize}
+
+\subsection{New Task Types}
+\begin{itemize}
+    \item Additional cognitive domains
+    \item Task variations
+    \item Custom difficulty curves
+    \item Specialized training modules
+\end{itemize}
+
+\subsection{Mobile Experience}
+\begin{itemize}
+    \item Native mobile app
+    \item Offline mode
+    \item Push notifications
+    \item Mobile-optimized tasks
+\end{itemize}
+
+\subsection{AI Integration}
+\begin{itemize}
+    \item Personalized recommendations
+    \item Adaptive pacing
+    \item Predictive difficulty
+    \item Smart scheduling
+\end{itemize}
+
+\section{System Status}
+
+\textbf{Current Version:} 1.0  
+\textbf{Status:} Production Ready
+
+\subsection{Core Features Implemented}
+\begin{itemize}
+    \item User authentication
+    \item Baseline assessment (6 domains)
+    \item Training plan generation
+    \item Adaptive difficulty system
+    \item Session tracking (4-task sessions)
+    \item Streak tracking with freeze
+    \item Badge system
+    \item Performance comparison
+    \item Visual analytics
+    \item Cache-busting for fresh data
+    \item Real-time progress updates
+    \item Difficulty visualization
+\end{itemize}
+
+\subsection{Bug Fixes Applied}
+\begin{itemize}
+    \item Task completion tracking (commit order)
+    \item Session counting (4 tasks = 1 session)
+    \item Baseline recalculation date update
+    \item Dashboard metric accuracy
+    \item Streak freeze logic
+    \item Cache invalidation
+\end{itemize}
+
+\section{Conclusion}
+
+NeuroBloom provides a comprehensive, scientifically-informed cognitive training platform with:
+
+\begin{itemize}
+    \item \textbf{Personalized training} based on individual baselines
+    \item \textbf{Adaptive difficulty} that grows with user performance
+    \item \textbf{Rich analytics} to track improvement
+    \item \textbf{Gamification} to maintain engagement
+    \item \textbf{Robust tracking} of sessions and streaks
+\end{itemize}
+
+The system successfully combines cognitive science principles with modern web development to create an engaging, effective training experience.
+
+\end{document}
