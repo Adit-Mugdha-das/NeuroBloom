@@ -5,3 +5,4 @@ from app.models.user import User
 from app.models.doctor import Doctor
 from app.models.patient_assignment import PatientAssignment
 from app.models.doctor_intervention import DoctorIntervention
+from app.models.assignment_request import AssignmentRequest

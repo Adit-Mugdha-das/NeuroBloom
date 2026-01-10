@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class TestResult(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -8,4 +8,4 @@ class TestResult(SQLModel, table=True):
     task_type: str  # "memory", "attention", "speed", "executive"
     score: float  # percentage or points
     details: Optional[str] = None  # JSON string with additional data
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
