@@ -13,6 +13,7 @@ from app.models.assignment_request import AssignmentRequest, RequestStatus
 from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate
 from app.core.config import engine
 import statistics
+import json
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
 
@@ -238,9 +239,9 @@ def get_patient_overview(
             },
             "domain_performance": domain_stats,
             "focus_areas": {
-                "primary": training_plan.primary_focus if training_plan else [],
-                "secondary": training_plan.secondary_focus if training_plan else [],
-                "maintenance": training_plan.maintenance if training_plan else []
+                "primary": json.loads(training_plan.primary_focus) if training_plan and training_plan.primary_focus else [],
+                "secondary": json.loads(training_plan.secondary_focus) if training_plan and training_plan.secondary_focus else [],
+                "maintenance": json.loads(training_plan.maintenance) if training_plan and training_plan.maintenance else []
             }
         }
     
