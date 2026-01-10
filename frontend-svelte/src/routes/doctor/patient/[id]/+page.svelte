@@ -41,13 +41,13 @@
 		try {
 			// Load overview
 			const overviewResponse = await api.get(
-				`/doctor/${userData.id}/patient/${patientId}/overview`
+				`/api/doctor/${userData.id}/patient/${patientId}/overview`
 			);
 			patientData = overviewResponse.data;
 			
 			// Load sessions
 			const sessionsResponse = await api.get(
-				`/doctor/${userData.id}/patient/${patientId}/sessions?limit=20`
+				`/api/doctor/${userData.id}/patient/${patientId}/sessions?limit=20`
 			);
 			sessions = sessionsResponse.data.sessions;
 			

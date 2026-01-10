@@ -109,14 +109,24 @@
 		return new Date(lastActivity) > sevenDaysAgo;
 	}
 	
+	function handleLogout() {
+		user.set(null);
+		goto('/login');
+	}
+	
 	$: activePatients = patients.filter(p => isRecentlyActive(p.last_activity));
 	$: patientsWithBaseline = patients.filter(p => p.baseline_completed);
 </script>
 
 <div class="doctor-dashboard">
 	<header>
-		<h1>👨‍⚕️ Doctor Dashboard</h1>
-		<p>Welcome, Dr. {userData?.fullName || userData?.email}</p>
+		<div class="header-content">
+			<div>
+				<h1>👨‍⚕️ Doctor Dashboard</h1>
+				<p>Welcome, Dr. {userData?.fullName || userData?.email}</p>
+			</div>
+			<button class="btn-logout" on:click={handleLogout}>Logout</button>
+		</div>
 	</header>
 	
 	{#if loading}
@@ -260,6 +270,27 @@
 	
 	header {
 		margin-bottom: 2rem;
+	}
+	
+	.header-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	.btn-logout {
+		background: #dc3545;
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: background 0.3s;
+	}
+	
+	.btn-logout:hover {
+		background: #c82333;
 	}
 	
 	h1 {
