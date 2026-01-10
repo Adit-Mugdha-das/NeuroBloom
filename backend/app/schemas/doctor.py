@@ -42,3 +42,28 @@ class DoctorInterventionCreate(BaseModel):
     intervention_type: str  # "training_plan_adjustment", "note", "recommendation"
     description: str
     intervention_data: Optional[str] = None
+
+class MessageCreate(BaseModel):
+    """Schema for creating a message"""
+    recipient_id: int
+    recipient_type: str  # "doctor" or "patient"
+    subject: Optional[str] = None
+    message: str
+    parent_message_id: Optional[int] = None
+
+class MessageRead(BaseModel):
+    """Schema for reading a message"""
+    id: int
+    sender_id: int
+    sender_type: str
+    recipient_id: int
+    recipient_type: str
+    subject: Optional[str]
+    message: str
+    parent_message_id: Optional[int]
+    is_read: bool
+    read_at: Optional[datetime]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
