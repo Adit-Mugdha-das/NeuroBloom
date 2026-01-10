@@ -17,6 +17,7 @@ class PatientAssignment(SQLModel, table=True):
     assigned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     assigned_by: Optional[int] = Field(default=None)  # Admin who made assignment
     is_active: bool = Field(default=True)
+    unassigned_at: Optional[datetime] = Field(default=None)  # When assignment was ended
     
     # Clinical context
     diagnosis: Optional[str] = Field(default=None)  # "RRMS", "PPMS", etc.

@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from typing import Optional
+from typing import Optional, ClassVar
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -11,6 +11,8 @@ class RequestStatus(str, Enum):
 
 class AssignmentRequest(SQLModel, table=True):
     """Patient requests for doctor assignment"""
+    
+    __tablename__: ClassVar[str] = "assignment_requests"
     
     id: Optional[int] = Field(default=None, primary_key=True)
     patient_id: int = Field(foreign_key="user.id", index=True)

@@ -59,7 +59,7 @@ def get_doctor_patients(doctor_id: int, session: Session = Depends(get_session))
             patients_data.append({
                 "patient_id": patient.id,
                 "email": patient.email,
-                "full_name": patient.full_name or "N/A",
+                "full_name": patient.full_name if patient.full_name else patient.email,
                 "diagnosis": assignment.diagnosis,
                 "assigned_at": assignment.assigned_at,
                 "last_activity": latest_session.created_at if latest_session else None,
@@ -674,4 +674,46 @@ def get_patient_requests(patient_id: int, session: Session = Depends(get_session
     
     except Exception as e:
         print(f"ERROR in get_patient_requests: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========== PATIENT ASSIGNMENT MANAGEMENT ==========
+@router.post("/{doctor_id}/unassign/{patient_id}")
+def unassign_patient(
+    doctor_id: int,
+    patient_id: int,
+    session: Session = Depends(get_session)
+):
+    """Unassign a patient from this doctor"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Find active assignment
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=404, detail="No active assignment found")
+        
+        # Deactivate assignment
+        assignment.is_active = False
+        assignment.unassigned_at = datetime.now(timezone.utc)
+        session.add(assignment)
+        session.commit()
+        
+        return {
+            "message": "Patient unassigned successfully",
+            "assignment_id": assignment.id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in unassign_patient: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { tasks, training } from '$lib/api';
+	import DoctorWidget from '$lib/components/DoctorWidget.svelte';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -53,6 +54,7 @@
 		<div class="header-right">
 			{#if currentUser}
 				<span class="user-email">{currentUser.email}</span>
+				<button class="btn-settings" on:click={() => goto('/settings')}>⚙️ Settings</button>
 			{/if}
 			<button class="btn-logout" on:click={handleLogout}>Logout</button>
 		</div>
@@ -64,6 +66,11 @@
 		{#if loading}
 			<p>Loading...</p>
 		{:else}
+			<!-- Doctor Widget -->
+			{#if currentUser}
+				<DoctorWidget userId={currentUser.id} />
+			{/if}
+			
 			<div class="stats-grid">
 				<div class="stat-card">
 					<h3>Total Sessions</h3>
@@ -237,6 +244,21 @@
 	
 	.btn-logout:hover {
 		background: #c82333;
+	}
+	
+	.btn-settings {
+		background: #667eea;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 5px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: background 0.3s;
+	}
+	
+	.btn-settings:hover {
+		background: #5568d3;
 	}
 	
 	.container {

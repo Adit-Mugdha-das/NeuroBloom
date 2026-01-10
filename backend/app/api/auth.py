@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
+from typing import Optional
 from app.models.user import User
 from app.models.doctor import Doctor
 from app.schemas.user import UserCreate, UserLogin, UserRead
@@ -140,4 +141,91 @@ def login_doctor(doctor: DoctorLogin, session: Session = Depends(get_session)):
     except Exception as e:
         print(f"ERROR in login_doctor: {e}")
         print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========== PATIENT PROFILE & CONSENT ==========
+@router.patch("/patient/{patient_id}/consent")
+def update_patient_consent(
+    patient_id: int,
+    consent: bool,
+    session: Session = Depends(get_session)
+):
+    """Update patient's consent to share data with healthcare providers"""
+    try:
+        patient = session.get(User, patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient.consent_to_share = consent
+        session.add(patient)
+        session.commit()
+        session.refresh(patient)
+        
+        return {
+            "message": "Consent updated successfully",
+            "consent_to_share": patient.consent_to_share
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_patient_consent: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/patient/{patient_id}/profile")
+def get_patient_profile(patient_id: int, session: Session = Depends(get_session)):
+    """Get patient profile information"""
+    try:
+        patient = session.get(User, patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        return {
+            "id": patient.id,
+            "email": patient.email,
+            "full_name": patient.full_name,
+            "date_of_birth": patient.date_of_birth,
+            "diagnosis": patient.diagnosis,
+            "consent_to_share": patient.consent_to_share
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_profile: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/patient/{patient_id}/profile")
+def update_patient_profile(
+    patient_id: int,
+    full_name: Optional[str] = None,
+    date_of_birth: Optional[str] = None,
+    diagnosis: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    """Update patient profile information"""
+    try:
+        patient = session.get(User, patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        if full_name is not None:
+            patient.full_name = full_name
+        if date_of_birth is not None:
+            patient.date_of_birth = date_of_birth
+        if diagnosis is not None:
+            patient.diagnosis = diagnosis
+        
+        session.add(patient)
+        session.commit()
+        session.refresh(patient)
+        
+        return {
+            "message": "Profile updated successfully",
+            "full_name": patient.full_name,
+            "date_of_birth": patient.date_of_birth,
+            "diagnosis": patient.diagnosis
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_patient_profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))
