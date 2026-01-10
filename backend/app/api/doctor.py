@@ -300,6 +300,206 @@ def get_patient_sessions(
         print(f"ERROR in get_patient_sessions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/{doctor_id}/patient/{patient_id}/progress-monitoring")
+def get_progress_monitoring(
+    doctor_id: int,
+    patient_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get comprehensive progress monitoring data with trends and comparisons"""
+    try:
+        # Verify access
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+        
+        # Get baseline assessment
+        baseline = session.exec(
+            select(BaselineAssessment)
+            .where(BaselineAssessment.user_id == patient_id)
+        ).first()
+        
+        # Get all training sessions
+        all_sessions = session.exec(
+            select(TrainingSession)
+            .where(TrainingSession.user_id == patient_id)
+            .order_by(col(TrainingSession.created_at))
+        ).all()
+        
+        if not all_sessions:
+            return {
+                "baseline_comparison": {},
+                "trends": {},
+                "adherence": {"status": "no_data"},
+                "domain_improvements": {},
+                "concerning_areas": []
+            }
+        
+        # Calculate time periods
+        now = datetime.utcnow()
+        thirty_days_ago = now - timedelta(days=30)
+        fourteen_days_ago = now - timedelta(days=14)
+        seven_days_ago = now - timedelta(days=7)
+        
+        # Sessions by time period
+        sessions_30d = [s for s in all_sessions if s.created_at >= thirty_days_ago]
+        sessions_14d = [s for s in all_sessions if s.created_at >= fourteen_days_ago]
+        sessions_7d = [s for s in all_sessions if s.created_at >= seven_days_ago]
+        
+        # 1. BASELINE vs CURRENT COMPARISON
+        baseline_comparison = {}
+        if baseline:
+            domains = ["working_memory", "attention", "flexibility", "planning", "processing_speed", "visual_scanning"]
+            for domain in domains:
+                baseline_score = getattr(baseline, f"{domain}_score", None)
+                if baseline_score:
+                    domain_sessions = [s for s in sessions_30d if s.domain == domain]
+                    if domain_sessions:
+                        current_avg = statistics.mean([s.score for s in domain_sessions])
+                        improvement = current_avg - baseline_score
+                        improvement_pct = (improvement / baseline_score) * 100 if baseline_score > 0 else 0
+                        
+                        baseline_comparison[domain] = {
+                            "baseline_score": round(baseline_score, 1),
+                            "current_score": round(current_avg, 1),
+                            "improvement": round(improvement, 1),
+                            "improvement_percentage": round(improvement_pct, 1),
+                            "session_count": len(domain_sessions),
+                            "status": "improving" if improvement > 0 else "declining" if improvement < -2 else "stable"
+                        }
+        
+        # 2. TREND ANALYSIS (comparing recent periods)
+        trends = {}
+        domains = ["working_memory", "attention", "flexibility", "planning", "processing_speed", "visual_scanning"]
+        for domain in domains:
+            domain_sessions_14d = [s for s in sessions_14d if s.domain == domain]
+            domain_sessions_7d = [s for s in sessions_7d if s.domain == domain]
+            
+            if domain_sessions_14d and domain_sessions_7d:
+                # Compare last 7 days vs previous 7 days
+                prev_7d_sessions = [s for s in domain_sessions_14d if s not in domain_sessions_7d]
+                
+                if prev_7d_sessions:
+                    recent_avg = statistics.mean([s.score for s in domain_sessions_7d])
+                    previous_avg = statistics.mean([s.score for s in prev_7d_sessions])
+                    trend_direction = recent_avg - previous_avg
+                    
+                    trends[domain] = {
+                        "recent_avg": round(recent_avg, 1),
+                        "previous_avg": round(previous_avg, 1),
+                        "change": round(trend_direction, 1),
+                        "direction": "upward" if trend_direction > 1 else "downward" if trend_direction < -1 else "stable",
+                        "is_concerning": trend_direction < -3  # Decline of more than 3 points
+                    }
+        
+        # 3. ADHERENCE TRACKING
+        # Expected sessions per week based on assignment date
+        weeks_since_assignment = (now - assignment.assigned_at).days / 7
+        expected_sessions = max(1, int(weeks_since_assignment * 3))  # Expect ~3 sessions per week
+        
+        adherence_rate = (len(all_sessions) / expected_sessions) * 100 if expected_sessions > 0 else 0
+        
+        # Calculate session frequency
+        if len(all_sessions) >= 2:
+            session_dates = sorted([s.created_at for s in all_sessions])
+            intervals = [(session_dates[i+1] - session_dates[i]).days for i in range(len(session_dates)-1)]
+            avg_days_between = statistics.mean(intervals) if intervals else 0
+        else:
+            avg_days_between = 0
+        
+        adherence = {
+            "total_sessions": len(all_sessions),
+            "expected_sessions": expected_sessions,
+            "adherence_rate": round(adherence_rate, 1),
+            "sessions_last_7_days": len(sessions_7d),
+            "sessions_last_14_days": len(sessions_14d),
+            "sessions_last_30_days": len(sessions_30d),
+            "avg_days_between_sessions": round(avg_days_between, 1),
+            "status": "excellent" if adherence_rate >= 80 else "good" if adherence_rate >= 60 else "needs_improvement" if adherence_rate >= 40 else "concerning"
+        }
+        
+        # 4. DOMAIN-SPECIFIC IMPROVEMENTS
+        domain_improvements = {}
+        for domain in domains:
+            domain_sessions = [s for s in all_sessions if s.domain == domain]
+            if len(domain_sessions) >= 5:
+                # Split into first half and second half
+                mid_point = len(domain_sessions) // 2
+                first_half = domain_sessions[:mid_point]
+                second_half = domain_sessions[mid_point:]
+                
+                first_avg = statistics.mean([s.score for s in first_half])
+                second_avg = statistics.mean([s.score for s in second_half])
+                improvement = second_avg - first_avg
+                
+                # Get recent performance trend (last 10 sessions)
+                recent_domain = domain_sessions[-10:] if len(domain_sessions) >= 10 else domain_sessions
+                recent_scores = [s.score for s in recent_domain]
+                
+                domain_improvements[domain] = {
+                    "early_avg": round(first_avg, 1),
+                    "recent_avg": round(second_avg, 1),
+                    "overall_improvement": round(improvement, 1),
+                    "total_sessions": len(domain_sessions),
+                    "recent_scores": [round(s, 1) for s in recent_scores[-5:]],  # Last 5 scores
+                    "trending": "up" if improvement > 1 else "down" if improvement < -1 else "stable"
+                }
+        
+        # 5. CONCERNING AREAS (automatic identification)
+        concerning_areas = []
+        
+        # Check for declining trends
+        for domain, trend_data in trends.items():
+            if trend_data.get("is_concerning", False):
+                concerning_areas.append({
+                    "domain": domain,
+                    "issue": "declining_performance",
+                    "severity": "high" if trend_data["change"] < -5 else "medium",
+                    "details": f"Score decreased by {abs(trend_data['change'])} points in last 7 days"
+                })
+        
+        # Check for poor adherence
+        if adherence["status"] in ["needs_improvement", "concerning"]:
+            concerning_areas.append({
+                "domain": "adherence",
+                "issue": "low_engagement",
+                "severity": "high" if adherence["status"] == "concerning" else "medium",
+                "details": f"Only {adherence['sessions_last_30_days']} sessions in last 30 days"
+            })
+        
+        # Check for domains with no recent activity
+        for domain in domains:
+            domain_recent = [s for s in sessions_30d if s.domain == domain]
+            if len(domain_recent) == 0:
+                concerning_areas.append({
+                    "domain": domain,
+                    "issue": "no_recent_activity",
+                    "severity": "low",
+                    "details": "No sessions in this domain in the last 30 days"
+                })
+        
+        return {
+            "baseline_comparison": baseline_comparison,
+            "trends": trends,
+            "adherence": adherence,
+            "domain_improvements": domain_improvements,
+            "concerning_areas": concerning_areas
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_progress_monitoring: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ========== CLINICAL INTERVENTIONS ==========
 @router.post("/{doctor_id}/patient/{patient_id}/intervention")
 def add_intervention(

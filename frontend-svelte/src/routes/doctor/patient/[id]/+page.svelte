@@ -9,6 +9,7 @@
 	let patientData = null;
 	let sessions = [];
 	let interventions = [];
+	let progressData = null;
 	let loading = true;
 	let error = '';
 	let userData;
@@ -65,6 +66,12 @@
 				`/api/doctor/${userData.id}/patient/${patientId}/interventions`
 			);
 			interventions = interventionsResponse.data.interventions;
+			
+			// Load progress monitoring data
+			const progressResponse = await api.get(
+				`/api/doctor/${userData.id}/patient/${patientId}/progress-monitoring`
+			);
+			progressData = progressResponse.data;
 			
 		} catch (err) {
 			error = 'Failed to load patient data';
@@ -302,6 +309,176 @@
 						{/each}
 					{/if}
 				</div>
+			</div>
+		{/if}
+		
+		<!-- Progress Monitoring Section -->
+		{#if progressData}
+			<div class="section progress-monitoring">
+				<h2>📊 Progress Monitoring</h2>
+				
+				<!-- Concerning Areas Alert -->
+				{#if progressData.concerning_areas && progressData.concerning_areas.length > 0}
+					<div class="alert-box warning">
+						<h3>⚠️ Areas Requiring Attention</h3>
+						<div class="concerning-list">
+							{#each progressData.concerning_areas as concern}
+								<div class="concern-item severity-{concern.severity}">
+									<div class="concern-header">
+										<span class="concern-domain">{concern.domain.replace('_', ' ')}</span>
+										<span class="concern-severity">{concern.severity}</span>
+									</div>
+									<div class="concern-issue">{concern.issue.replace('_', ' ')}</div>
+									<div class="concern-details">{concern.details}</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+				
+				<!-- Adherence Tracking -->
+				<div class="monitoring-card">
+					<h3>📅 Training Adherence</h3>
+					<div class="adherence-summary">
+						<div class="adherence-status status-{progressData.adherence.status}">
+							<div class="status-label">{progressData.adherence.status.replace('_', ' ').toUpperCase()}</div>
+							<div class="adherence-rate">{progressData.adherence.adherence_rate}%</div>
+						</div>
+						<div class="adherence-stats">
+							<div class="stat-item">
+								<span class="stat-label">Total Sessions:</span>
+								<span class="stat-value">{progressData.adherence.total_sessions}</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Expected:</span>
+								<span class="stat-value">{progressData.adherence.expected_sessions}</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Last 7 days:</span>
+								<span class="stat-value">{progressData.adherence.sessions_last_7_days}</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Last 30 days:</span>
+								<span class="stat-value">{progressData.adherence.sessions_last_30_days}</span>
+							</div>
+							<div class="stat-item">
+								<span class="stat-label">Avg Days Between:</span>
+								<span class="stat-value">{progressData.adherence.avg_days_between_sessions} days</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Baseline vs Current Comparison -->
+				{#if Object.keys(progressData.baseline_comparison).length > 0}
+					<div class="monitoring-card">
+						<h3>📈 Baseline vs Current Performance</h3>
+						<div class="comparison-grid">
+							{#each Object.entries(progressData.baseline_comparison) as [domain, comparison]}
+								<div class="comparison-card status-{comparison.status}">
+									<h4>{domain.replace('_', ' ')}</h4>
+									<div class="comparison-values">
+										<div class="baseline">
+											<span class="label">Baseline</span>
+											<span class="value">{comparison.baseline_score}</span>
+										</div>
+										<div class="arrow">→</div>
+										<div class="current">
+											<span class="label">Current</span>
+											<span class="value">{comparison.current_score}</span>
+										</div>
+									</div>
+									<div class="improvement-indicator {comparison.improvement >= 0 ? 'positive' : 'negative'}">
+										{#if comparison.improvement >= 0}
+											↑ +{comparison.improvement}
+										{:else}
+											↓ {comparison.improvement}
+										{/if}
+										({comparison.improvement_percentage >= 0 ? '+' : ''}{comparison.improvement_percentage}%)
+									</div>
+									<div class="session-count">{comparison.session_count} sessions</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+				
+				<!-- Trend Analysis -->
+				{#if Object.keys(progressData.trends).length > 0}
+					<div class="monitoring-card">
+						<h3>📉 Recent Trends (Last 7 days vs Previous 7 days)</h3>
+						<div class="trends-grid">
+							{#each Object.entries(progressData.trends) as [domain, trend]}
+								<div class="trend-card direction-{trend.direction}">
+									<h4>{domain.replace('_', ' ')}</h4>
+									<div class="trend-comparison">
+										<div class="trend-value">
+											<span class="label">Previous</span>
+											<span class="value">{trend.previous_avg}</span>
+										</div>
+										<div class="trend-arrow">
+											{#if trend.direction === 'upward'}
+												<span class="arrow up">↗</span>
+											{:else if trend.direction === 'downward'}
+												<span class="arrow down">↘</span>
+											{:else}
+												<span class="arrow stable">→</span>
+											{/if}
+										</div>
+										<div class="trend-value">
+											<span class="label">Recent</span>
+											<span class="value">{trend.recent_avg}</span>
+										</div>
+									</div>
+									<div class="trend-change {trend.change >= 0 ? 'positive' : 'negative'}">
+										{trend.change >= 0 ? '+' : ''}{trend.change} points
+									</div>
+									{#if trend.is_concerning}
+										<div class="trend-warning">⚠️ Concerning decline</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+				
+				<!-- Domain-Specific Improvements -->
+				{#if Object.keys(progressData.domain_improvements).length > 0}
+					<div class="monitoring-card">
+						<h3>🎯 Domain-Specific Improvements</h3>
+						<div class="improvements-grid">
+							{#each Object.entries(progressData.domain_improvements) as [domain, improvement]}
+								<div class="improvement-card trending-{improvement.trending}">
+									<h4>{domain.replace('_', ' ')}</h4>
+									<div class="improvement-summary">
+										<div class="avg-comparison">
+											<div>
+												<span class="label">Early Average:</span>
+												<span class="value">{improvement.early_avg}</span>
+											</div>
+											<div>
+												<span class="label">Recent Average:</span>
+												<span class="value">{improvement.recent_avg}</span>
+											</div>
+										</div>
+										<div class="overall-change {improvement.overall_improvement >= 0 ? 'positive' : 'negative'}">
+											Overall: {improvement.overall_improvement >= 0 ? '+' : ''}{improvement.overall_improvement}
+										</div>
+									</div>
+									<div class="recent-scores">
+										<span class="label">Last 5 scores:</span>
+										<div class="scores-list">
+											{#each improvement.recent_scores as score}
+												<span class="score-badge">{score}</span>
+											{/each}
+										</div>
+									</div>
+									<div class="session-total">{improvement.total_sessions} total sessions</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 		{/if}
 		
@@ -704,6 +881,482 @@
 		background: #fee;
 		border-radius: 8px;
 	}
+
+	/* Progress Monitoring Styles */
+	.progress-monitoring {
+		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		padding: 2rem;
+		border-radius: 12px;
+		margin: 2rem 0;
+	}
+
+	.progress-monitoring h2 {
+		margin-bottom: 1.5rem;
+		color: #333;
+	}
+
+	.alert-box {
+		background: white;
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin-bottom: 1.5rem;
+		border-left: 5px solid #f59e0b;
+	}
+
+	.alert-box.warning {
+		border-left-color: #f59e0b;
+		background: #fffbeb;
+	}
+
+	.alert-box h3 {
+		margin-bottom: 1rem;
+		color: #92400e;
+	}
+
+	.concerning-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.concern-item {
+		background: white;
+		padding: 1rem;
+		border-radius: 8px;
+		border-left: 4px solid #f59e0b;
+	}
+
+	.concern-item.severity-high {
+		border-left-color: #dc2626;
+		background: #fef2f2;
+	}
+
+	.concern-item.severity-medium {
+		border-left-color: #f59e0b;
+		background: #fffbeb;
+	}
+
+	.concern-item.severity-low {
+		border-left-color: #3b82f6;
+		background: #eff6ff;
+	}
+
+	.concern-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.concern-domain {
+		font-weight: 700;
+		text-transform: capitalize;
+		font-size: 1rem;
+	}
+
+	.concern-severity {
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		background: rgba(0, 0, 0, 0.1);
+	}
+
+	.concern-issue {
+		font-weight: 600;
+		color: #666;
+		margin-bottom: 0.25rem;
+		text-transform: capitalize;
+	}
+
+	.concern-details {
+		color: #888;
+		font-size: 0.9rem;
+	}
+
+	.monitoring-card {
+		background: white;
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin-bottom: 1.5rem;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.monitoring-card h3 {
+		margin-bottom: 1.25rem;
+		color: #333;
+		font-size: 1.25rem;
+	}
+
+	.adherence-summary {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 2rem;
+		align-items: center;
+	}
+
+	.adherence-status {
+		text-align: center;
+		padding: 1.5rem;
+		border-radius: 12px;
+		min-width: 150px;
+	}
+
+	.adherence-status.status-excellent {
+		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+		color: white;
+	}
+
+	.adherence-status.status-good {
+		background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+		color: white;
+	}
+
+	.adherence-status.status-needs_improvement {
+		background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+		color: white;
+	}
+
+	.adherence-status.status-concerning {
+		background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+		color: white;
+	}
+
+	.status-label {
+		font-weight: 700;
+		font-size: 0.9rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.adherence-rate {
+		font-size: 2.5rem;
+		font-weight: 800;
+	}
+
+	.adherence-stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: 1rem;
+	}
+
+	.stat-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.stat-label {
+		font-size: 0.85rem;
+		color: #666;
+	}
+
+	.stat-value {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: #333;
+	}
+
+	.comparison-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1rem;
+	}
+
+	.comparison-card {
+		background: #f9fafb;
+		padding: 1.25rem;
+		border-radius: 10px;
+		border-left: 4px solid #e5e7eb;
+	}
+
+	.comparison-card.status-improving {
+		border-left-color: #10b981;
+		background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+	}
+
+	.comparison-card.status-declining {
+		border-left-color: #ef4444;
+		background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+	}
+
+	.comparison-card.status-stable {
+		border-left-color: #6b7280;
+	}
+
+	.comparison-card h4 {
+		text-transform: capitalize;
+		margin-bottom: 0.75rem;
+		color: #333;
+		font-size: 1rem;
+	}
+
+	.comparison-values {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.comparison-values .baseline,
+	.comparison-values .current {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.comparison-values .label {
+		font-size: 0.75rem;
+		color: #666;
+		margin-bottom: 0.25rem;
+	}
+
+	.comparison-values .value {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #333;
+	}
+
+	.comparison-values .arrow {
+		font-size: 1.5rem;
+		color: #999;
+	}
+
+	.improvement-indicator {
+		font-weight: 700;
+		font-size: 1.1rem;
+		text-align: center;
+		padding: 0.5rem;
+		border-radius: 6px;
+		margin-bottom: 0.5rem;
+	}
+
+	.improvement-indicator.positive {
+		background: #d1fae5;
+		color: #065f46;
+	}
+
+	.improvement-indicator.negative {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.session-count {
+		text-align: center;
+		font-size: 0.85rem;
+		color: #666;
+	}
+
+	.trends-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 1rem;
+	}
+
+	.trend-card {
+		background: #f9fafb;
+		padding: 1.25rem;
+		border-radius: 10px;
+		border-top: 3px solid #e5e7eb;
+	}
+
+	.trend-card.direction-upward {
+		border-top-color: #10b981;
+		background: linear-gradient(180deg, #ecfdf5 0%, #f9fafb 50%);
+	}
+
+	.trend-card.direction-downward {
+		border-top-color: #ef4444;
+		background: linear-gradient(180deg, #fef2f2 0%, #f9fafb 50%);
+	}
+
+	.trend-card.direction-stable {
+		border-top-color: #6b7280;
+	}
+
+	.trend-card h4 {
+		text-transform: capitalize;
+		margin-bottom: 0.75rem;
+		color: #333;
+		font-size: 1rem;
+	}
+
+	.trend-comparison {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.trend-value {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.trend-value .label {
+		font-size: 0.75rem;
+		color: #666;
+		margin-bottom: 0.25rem;
+	}
+
+	.trend-value .value {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: #333;
+	}
+
+	.trend-arrow {
+		font-size: 2rem;
+	}
+
+	.trend-arrow .arrow.up {
+		color: #10b981;
+	}
+
+	.trend-arrow .arrow.down {
+		color: #ef4444;
+	}
+
+	.trend-arrow .arrow.stable {
+		color: #6b7280;
+	}
+
+	.trend-change {
+		text-align: center;
+		font-weight: 600;
+		padding: 0.5rem;
+		border-radius: 6px;
+		margin-bottom: 0.5rem;
+	}
+
+	.trend-change.positive {
+		background: #d1fae5;
+		color: #065f46;
+	}
+
+	.trend-change.negative {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.trend-warning {
+		background: #fef3c7;
+		color: #92400e;
+		text-align: center;
+		padding: 0.5rem;
+		border-radius: 6px;
+		font-weight: 600;
+		font-size: 0.85rem;
+	}
+
+	.improvements-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1rem;
+	}
+
+	.improvement-card {
+		background: #f9fafb;
+		padding: 1.25rem;
+		border-radius: 10px;
+		border: 2px solid #e5e7eb;
+	}
+
+	.improvement-card.trending-up {
+		border-color: #10b981;
+		background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+	}
+
+	.improvement-card.trending-down {
+		border-color: #ef4444;
+		background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+	}
+
+	.improvement-card h4 {
+		text-transform: capitalize;
+		margin-bottom: 0.75rem;
+		color: #333;
+		font-size: 1rem;
+	}
+
+	.improvement-summary {
+		margin-bottom: 1rem;
+	}
+
+	.avg-comparison {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.avg-comparison > div {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.avg-comparison .label {
+		color: #666;
+		font-size: 0.9rem;
+	}
+
+	.avg-comparison .value {
+		font-weight: 700;
+		color: #333;
+	}
+
+	.overall-change {
+		text-align: center;
+		font-weight: 700;
+		font-size: 1.1rem;
+		padding: 0.5rem;
+		border-radius: 6px;
+	}
+
+	.overall-change.positive {
+		background: #d1fae5;
+		color: #065f46;
+	}
+
+	.overall-change.negative {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.recent-scores {
+		margin: 1rem 0 0.5rem 0;
+	}
+
+	.recent-scores .label {
+		display: block;
+		font-size: 0.85rem;
+		color: #666;
+		margin-bottom: 0.5rem;
+	}
+
+	.scores-list {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.score-badge {
+		background: #667eea;
+		color: white;
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+		font-weight: 600;
+		font-size: 0.9rem;
+	}
+
+	.session-total {
+		text-align: center;
+		font-size: 0.85rem;
+		color: #666;
+		margin-top: 0.5rem;
+	}
+
 
 	/* Modal Styles */
 	.modal-overlay {
