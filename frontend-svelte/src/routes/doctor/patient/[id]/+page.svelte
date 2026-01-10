@@ -8,10 +8,19 @@
 	let patientId;
 	let patientData = null;
 	let sessions = [];
+	let interventions = [];
 	let loading = true;
 	let error = '';
 	let userData;
 	let pageData;
+	
+	// Intervention form state
+	let showInterventionModal = false;
+	let interventionType = 'note';
+	let interventionDescription = '';
+	let suggestedTasks = '';
+	let difficultyAdjustments = {};
+	let performanceGoals = '';
 	
 	// Subscribe to stores
 	const unsubscribeUser = user.subscribe(value => {
@@ -51,12 +60,74 @@
 			);
 			sessions = sessionsResponse.data.sessions;
 			
+			// Load interventions
+			const interventionsResponse = await api.get(
+				`/api/doctor/${userData.id}/patient/${patientId}/interventions`
+			);
+			interventions = interventionsResponse.data.interventions;
+			
 		} catch (err) {
 			error = 'Failed to load patient data';
 			console.error(err);
 		} finally {
 			loading = false;
 		}
+	}
+	
+	async function submitIntervention() {
+		try {
+			const data = {};
+			
+			if (interventionType === 'training_adjustment') {
+				if (Object.keys(difficultyAdjustments).length > 0) {
+					data.difficulty_adjustments = difficultyAdjustments;
+				}
+				if (performanceGoals.trim()) {
+					data.performance_goals = performanceGoals.trim();
+				}
+			} else if (interventionType === 'task_recommendation') {
+				data.suggested_tasks = suggestedTasks.split(',').map(t => t.trim()).filter(t => t);
+			}
+			
+			await api.post(
+				`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
+				null,
+				{
+					params: {
+						intervention_type: interventionType,
+						description: interventionDescription,
+						intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
+					}
+				}
+			);
+			
+			alert('Intervention added successfully!');
+			closeInterventionModal();
+			await loadPatientData();
+		} catch (err) {
+			alert('Failed to add intervention: ' + (err.response?.data?.detail || 'Unknown error'));
+		}
+	}
+	
+	function openInterventionModal() {
+		showInterventionModal = true;
+		interventionType = 'note';
+		interventionDescription = '';
+		suggestedTasks = '';
+		difficultyAdjustments = {};
+		performanceGoals = '';
+	}
+	
+	function closeInterventionModal() {
+		showInterventionModal = false;
+	}
+	
+	function adjustDifficulty(domain, change) {
+		if (!difficultyAdjustments[domain]) {
+			difficultyAdjustments[domain] = 1; // default
+		}
+		difficultyAdjustments[domain] = Math.max(1, Math.min(10, difficultyAdjustments[domain] + change));
+		difficultyAdjustments = {...difficultyAdjustments}; // trigger reactivity
 	}
 	
 	function getDomainColor(domain) {
@@ -92,12 +163,54 @@
 			<button on:click={() => goto('/doctor/dashboard')} class="back-btn">
 				← Back to Dashboard
 			</button>
-			<h1>{patientData.patient_info.full_name || patientData.patient_info.email}</h1>
-			<p class="diagnosis">{patientData.patient_info.diagnosis || 'No diagnosis specified'}</p>
-			{#if patientData.patient_info.treatment_goal}
-				<p class="treatment-goal">Goal: {patientData.patient_info.treatment_goal}</p>
-			{/if}
+			<div class="header-content">
+				<div>
+					<h1>{patientData.patient_info.full_name || patientData.patient_info.email}</h1>
+					<p class="diagnosis">{patientData.patient_info.diagnosis || 'No diagnosis specified'}</p>
+					{#if patientData.patient_info.treatment_goal}
+						<p class="treatment-goal">Goal: {patientData.patient_info.treatment_goal}</p>
+					{/if}
+				</div>
+				<button class="btn-intervention" on:click={openInterventionModal}>
+					+ Add Intervention
+				</button>
+			</div>
 		</div>
+		
+		<!-- Interventions Section -->
+		{#if interventions.length > 0}
+			<div class="section">
+				<h2>📋 Recent Interventions & Recommendations</h2>
+				<div class="interventions-list">
+					{#each interventions as intervention}
+						<div class="intervention-card">
+							<div class="intervention-header">
+								<span class="intervention-type-badge type-{intervention.type}">
+									{intervention.type.replace('_', ' ')}
+								</span>
+								<span class="intervention-date">{formatDate(intervention.created_at)}</span>
+							</div>
+							<p class="intervention-desc">{intervention.description}</p>
+							{#if intervention.data}
+								<div class="intervention-data">
+									{#if intervention.data.suggested_tasks}
+										<div><strong>Suggested Tasks:</strong> {intervention.data.suggested_tasks.join(', ')}</div>
+									{/if}
+									{#if intervention.data.difficulty_adjustments}
+										<div><strong>Difficulty Adjustments:</strong> 
+											{JSON.stringify(intervention.data.difficulty_adjustments)}
+										</div>
+									{/if}
+									{#if intervention.data.performance_goals}
+										<div><strong>Goals:</strong> {intervention.data.performance_goals}</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 		
 		<!-- Overview Stats -->
 		<div class="overview-grid">
@@ -264,6 +377,90 @@
 	{/if}
 </div>
 
+<!-- Intervention Modal -->
+{#if showInterventionModal}
+	<div class="modal-overlay" on:click={closeInterventionModal}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>Add Intervention / Recommendation</h2>
+				<button class="close-btn" on:click={closeInterventionModal}>×</button>
+			</div>
+			
+			<div class="modal-body">
+				<div class="form-group">
+					<label>Intervention Type</label>
+					<select bind:value={interventionType}>
+						<option value="note">Clinical Note/Observation</option>
+						<option value="task_recommendation">Task Recommendation</option>
+						<option value="training_adjustment">Training Plan Adjustment</option>
+						<option value="goal_setting">Performance Goal</option>
+						<option value="check_in">Schedule Check-in</option>
+					</select>
+				</div>
+				
+				<div class="form-group">
+					<label>Description / Notes</label>
+					<textarea 
+						bind:value={interventionDescription}
+						placeholder="Enter your observations, recommendations, or notes..."
+						rows="4"
+						required
+					></textarea>
+				</div>
+				
+				{#if interventionType === 'task_recommendation'}
+					<div class="form-group">
+						<label>Suggested Tasks (comma-separated)</label>
+						<input 
+							type="text" 
+							bind:value={suggestedTasks}
+							placeholder="e.g., digit_span, trail_making, stroop"
+						/>
+					</div>
+				{/if}
+				
+				{#if interventionType === 'training_adjustment'}
+					<div class="form-group">
+						<label>Difficulty Adjustments</label>
+						<div class="difficulty-controls">
+							{#each Object.keys(patientData.domain_performance) as domain}
+								<div class="difficulty-row">
+									<span>{domain.replace('_', ' ')}</span>
+									<div class="difficulty-buttons">
+										<button on:click={() => adjustDifficulty(domain, -1)}>-</button>
+										<span>{difficultyAdjustments[domain] || 1}</span>
+										<button on:click={() => adjustDifficulty(domain, 1)}>+</button>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+					
+					<div class="form-group">
+						<label>Performance Goals</label>
+						<textarea 
+							bind:value={performanceGoals}
+							placeholder="Enter specific performance goals..."
+							rows="3"
+						></textarea>
+					</div>
+				{/if}
+			</div>
+			
+			<div class="modal-footer">
+				<button class="btn-cancel" on:click={closeInterventionModal}>Cancel</button>
+				<button 
+					class="btn-submit" 
+					on:click={submitIntervention}
+					disabled={!interventionDescription.trim()}
+				>
+					Add Intervention
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.patient-detail {
 		max-width: 1400px;
@@ -275,6 +472,28 @@
 	
 	.header {
 		margin-bottom: 2rem;
+	}
+	
+	.header-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-top: 1rem;
+	}
+	
+	.btn-intervention {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: transform 0.2s;
+	}
+	
+	.btn-intervention:hover {
+		transform: translateY(-2px);
 	}
 	
 	.back-btn {
@@ -484,5 +703,181 @@
 		color: #c33;
 		background: #fee;
 		border-radius: 8px;
+	}
+
+	/* Modal Styles */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+
+	.modal-content {
+		background: white;
+		border-radius: 12px;
+		max-width: 600px;
+		width: 90%;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.5rem;
+		border-bottom: 2px solid #f0f0f0;
+	}
+
+	.modal-header h2 {
+		margin: 0;
+		color: #667eea;
+		font-size: 1.5rem;
+	}
+
+	.close-btn {
+		background: none;
+		border: none;
+		font-size: 2rem;
+		color: #999;
+		cursor: pointer;
+		line-height: 1;
+		padding: 0;
+		width: 32px;
+		height: 32px;
+	}
+
+	.close-btn:hover {
+		color: #333;
+	}
+
+	.modal-body {
+		padding: 1.5rem;
+	}
+
+	.form-group {
+		margin-bottom: 1.25rem;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: #555;
+	}
+
+	.form-group select,
+	.form-group input,
+	.form-group textarea {
+		width: 100%;
+		padding: 0.75rem;
+		border: 2px solid #e0e0e0;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		font-family: inherit;
+	}
+
+	.form-group select:focus,
+	.form-group input:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #667eea;
+	}
+
+	.difficulty-controls {
+		margin-top: 0.5rem;
+	}
+
+	.difficulty-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5rem;
+		border-bottom: 1px solid #f0f0f0;
+	}
+
+	.difficulty-row span:first-child {
+		text-transform: capitalize;
+		font-weight: 500;
+	}
+
+	.difficulty-buttons {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.difficulty-buttons button {
+		width: 32px;
+		height: 32px;
+		border: 2px solid #667eea;
+		background: white;
+		color: #667eea;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: bold;
+		transition: all 0.2s;
+	}
+
+	.difficulty-buttons button:hover {
+		background: #667eea;
+		color: white;
+	}
+
+	.difficulty-buttons span {
+		min-width: 30px;
+		text-align: center;
+		font-weight: 600;
+	}
+
+	.modal-footer {
+		display: flex;
+		gap: 0.75rem;
+		padding: 1.5rem;
+		border-top: 2px solid #f0f0f0;
+	}
+
+	.btn-cancel,
+	.btn-submit {
+		flex: 1;
+		padding: 0.75rem 1.5rem;
+		border: none;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-cancel {
+		background: #e0e0e0;
+		color: #666;
+	}
+
+	.btn-cancel:hover {
+		background: #d0d0d0;
+	}
+
+	.btn-submit {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+	}
+
+	.btn-submit:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+	}
+
+	.btn-submit:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
 	}
 </style>

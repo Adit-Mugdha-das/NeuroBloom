@@ -343,47 +343,6 @@ def add_intervention(
         print(f"ERROR in add_intervention: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/patient/{patient_id}/interventions")
-def get_patient_interventions(
-    doctor_id: int,
-    patient_id: int,
-    session: Session = Depends(get_session)
-):
-    """Get all interventions for a patient"""
-    try:
-        # Verify access
-        assignment = session.exec(
-            select(PatientAssignment)
-            .where(PatientAssignment.doctor_id == doctor_id)
-            .where(PatientAssignment.patient_id == patient_id)
-            .where(PatientAssignment.is_active == True)
-        ).first()
-        
-        if not assignment:
-            raise HTTPException(status_code=403, detail="No access to this patient")
-        
-        # Get interventions
-        interventions = session.exec(
-            select(DoctorIntervention)
-            .where(DoctorIntervention.patient_id == patient_id)
-            .order_by(col(DoctorIntervention.created_at).desc())
-        ).all()
-        
-        interventions_data = [{
-            "id": i.id,
-            "intervention_type": i.intervention_type,
-            "description": i.description,
-            "created_at": i.created_at
-        } for i in interventions]
-        
-        return {"interventions": interventions_data, "total": len(interventions_data)}
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"ERROR in get_patient_interventions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 # ========== PATIENT ENDPOINTS (for patients to view their doctor) ==========
 @router.get("/patient/{patient_id}/assigned-doctor")
 def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)):
@@ -717,4 +676,173 @@ def unassign_patient(
         raise
     except Exception as e:
         print(f"ERROR in unassign_patient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========== INTERVENTIONS & RECOMMENDATIONS ==========
+@router.post("/{doctor_id}/patient/{patient_id}/intervention")
+def create_intervention(
+    doctor_id: int,
+    patient_id: int,
+    intervention_type: str,
+    description: str,
+    intervention_data: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    """Create a new intervention/recommendation for a patient"""
+    try:
+        # Verify doctor has access to this patient
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+        
+        # Create intervention
+        intervention = DoctorIntervention(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            intervention_type=intervention_type,
+            description=description,
+            intervention_data=intervention_data
+        )
+        
+        session.add(intervention)
+        session.commit()
+        session.refresh(intervention)
+        
+        return {
+            "message": "Intervention created successfully",
+            "intervention": {
+                "id": intervention.id,
+                "type": intervention.intervention_type,
+                "description": intervention.description,
+                "created_at": intervention.created_at
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in create_intervention: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{doctor_id}/patient/{patient_id}/interventions")
+def get_patient_interventions(
+    doctor_id: int,
+    patient_id: int,
+    limit: int = 20,
+    session: Session = Depends(get_session)
+):
+    """Get all interventions for a patient"""
+    try:
+        # Verify doctor has access to this patient
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+        
+        # Get interventions
+        interventions = session.exec(
+            select(DoctorIntervention)
+            .where(DoctorIntervention.patient_id == patient_id)
+            .order_by(col(DoctorIntervention.created_at).desc())
+            .limit(limit)
+        ).all()
+        
+        return {
+            "interventions": [
+                {
+                    "id": i.id,
+                    "type": i.intervention_type,
+                    "description": i.description,
+                    "data": json.loads(i.intervention_data) if i.intervention_data else None,
+                    "created_at": i.created_at
+                }
+                for i in interventions
+            ],
+            "total": len(interventions)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_interventions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{doctor_id}/patient/{patient_id}/training-plan")
+def update_training_plan(
+    doctor_id: int,
+    patient_id: int,
+    difficulty_adjustments: Optional[str] = None,
+    performance_goals: Optional[str] = None,
+    notes: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    """Update patient's training plan (difficulty, goals, etc.)"""
+    try:
+        # Verify doctor has access to this patient
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+        
+        # Get training plan
+        training_plan = session.exec(
+            select(TrainingPlan)
+            .where(TrainingPlan.user_id == patient_id)
+            .where(TrainingPlan.is_active == True)
+        ).first()
+        
+        if not training_plan:
+            raise HTTPException(status_code=404, detail="No active training plan found")
+        
+        # Update difficulty if provided
+        if difficulty_adjustments:
+            current_diff = json.loads(training_plan.current_difficulty) if training_plan.current_difficulty else {}
+            new_adjustments = json.loads(difficulty_adjustments)
+            current_diff.update(new_adjustments)
+            training_plan.current_difficulty = json.dumps(current_diff)
+        
+        training_plan.last_updated = datetime.now(timezone.utc)
+        session.add(training_plan)
+        
+        # Create intervention record
+        intervention_data = {
+            "difficulty_adjustments": json.loads(difficulty_adjustments) if difficulty_adjustments else None,
+            "performance_goals": json.loads(performance_goals) if performance_goals else None
+        }
+        
+        intervention = DoctorIntervention(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            intervention_type="training_plan_adjustment",
+            description=notes or "Training plan updated by doctor",
+            intervention_data=json.dumps(intervention_data)
+        )
+        session.add(intervention)
+        session.commit()
+        
+        return {
+            "message": "Training plan updated successfully",
+            "intervention_id": intervention.id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_training_plan: {e}")
         raise HTTPException(status_code=500, detail=str(e))
