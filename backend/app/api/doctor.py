@@ -15,6 +15,7 @@ from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate
 from app.core.config import engine
 import statistics
 import json
+import traceback
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
 
@@ -549,6 +550,16 @@ def add_intervention(
 def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)):
     """Get the doctor assigned to this patient"""
     try:
+        print(f"DEBUG: Checking assignment for patient_id: {patient_id}")
+        
+        # Get patient info for debugging
+        patient = session.get(User, patient_id)
+        if not patient:
+            print(f"DEBUG: Patient with ID {patient_id} not found!")
+            return {"assigned": False, "doctor": None, "error": "Patient not found"}
+        
+        print(f"DEBUG: Patient found: {patient.email}")
+        
         # Get active assignment
         assignment = session.exec(
             select(PatientAssignment)
@@ -557,12 +568,18 @@ def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)
         ).first()
         
         if not assignment:
+            print(f"DEBUG: No active assignment found for patient {patient_id}")
             return {"assigned": False, "doctor": None}
+        
+        print(f"DEBUG: Assignment found! Doctor ID: {assignment.doctor_id}")
         
         # Get doctor details
         doctor = session.get(Doctor, assignment.doctor_id)
         if not doctor:
+            print(f"DEBUG: Doctor {assignment.doctor_id} not found!")
             return {"assigned": False, "doctor": None}
+        
+        print(f"DEBUG: Doctor found: {doctor.full_name if doctor.full_name else doctor.email}")
         
         return {
             "assigned": True,
@@ -580,6 +597,8 @@ def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)
     
     except Exception as e:
         print(f"ERROR in get_assigned_doctor: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== DOCTOR BROWSING & REQUESTS ==========
@@ -1290,5 +1309,243 @@ def get_conversation(
         raise
     except Exception as e:
         print(f"ERROR in get_conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= PATIENT MESSAGING ENDPOINTS =============
+
+@router.post("/patient/{patient_id}/messages/send")
+def send_patient_message(
+    patient_id: int,
+    message_data: MessageCreate,
+    session: Session = Depends(get_session)
+):
+    """Send a message from patient to their assigned doctor"""
+    try:
+        # Get patient's doctor assignment
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=404, detail="No assigned doctor found")
+        
+        doctor_id = assignment.doctor_id
+        
+        # Create message
+        message = Message(
+            sender_id=patient_id,
+            sender_type="patient",
+            recipient_id=doctor_id,
+            recipient_type="doctor",
+            subject=message_data.subject,
+            message=message_data.message,
+            parent_message_id=message_data.parent_message_id
+        )
+        
+        session.add(message)
+        session.commit()
+        session.refresh(message)
+        
+        return {
+            "id": message.id,
+            "message": "Message sent successfully",
+            "created_at": message.created_at
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in send_patient_message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/patient/{patient_id}/messages")
+def get_patient_messages(
+    patient_id: int,
+    limit: int = 50,
+    session: Session = Depends(get_session)
+):
+    """Get all messages for a patient"""
+    try:
+        # Get patient's messages
+        query = select(Message).where(
+            (Message.sender_id == patient_id) | (Message.recipient_id == patient_id)
+        )
+        
+        query = query.order_by(col(Message.created_at).desc()).limit(limit)
+        
+        messages = session.exec(query).all()
+        
+        # Get sender/recipient details
+        messages_data = []
+        for msg in messages:
+            if msg.sender_type == "doctor":
+                sender = session.get(Doctor, msg.sender_id)
+                sender_name = sender.full_name if sender and sender.full_name else "Unknown"
+            else:
+                sender = session.get(User, msg.sender_id)
+                if sender:
+                    sender_name = sender.full_name or sender.email
+                else:
+                    sender_name = "Unknown"
+            
+            if msg.recipient_type == "doctor":
+                recipient = session.get(Doctor, msg.recipient_id)
+                recipient_name = recipient.full_name if recipient and recipient.full_name else "Unknown"
+            else:
+                recipient = session.get(User, msg.recipient_id)
+                if recipient:
+                    recipient_name = recipient.full_name or recipient.email
+                else:
+                    recipient_name = "Unknown"
+            
+            messages_data.append({
+                "id": msg.id,
+                "sender_id": msg.sender_id,
+                "sender_type": msg.sender_type,
+                "sender_name": sender_name,
+                "recipient_id": msg.recipient_id,
+                "recipient_type": msg.recipient_type,
+                "recipient_name": recipient_name,
+                "subject": msg.subject,
+                "message": msg.message,
+                "parent_message_id": msg.parent_message_id,
+                "is_read": msg.is_read,
+                "read_at": msg.read_at,
+                "created_at": msg.created_at
+            })
+        
+        # Count unread
+        unread_count = session.exec(
+            select(Message)
+            .where(Message.recipient_id == patient_id)
+            .where(Message.is_read == False)
+        ).all()
+        
+        return {
+            "messages": messages_data,
+            "total": len(messages_data),
+            "unread_count": len(unread_count)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_messages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/patient/{patient_id}/messages/{message_id}/mark-read")
+def mark_patient_message_read(
+    patient_id: int,
+    message_id: int,
+    session: Session = Depends(get_session)
+):
+    """Mark a message as read (patient side)"""
+    try:
+        message = session.get(Message, message_id)
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        if message.recipient_id != patient_id or message.recipient_type != "patient":
+            raise HTTPException(status_code=403, detail="Not authorized")
+        
+        message.is_read = True
+        message.read_at = datetime.utcnow()
+        session.add(message)
+        session.commit()
+        
+        return {"message": "Message marked as read"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in mark_patient_message_read: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/patient/{patient_id}/messages/with-doctor")
+def get_patient_conversation_with_doctor(
+    patient_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get conversation between patient and their assigned doctor"""
+    try:
+        print(f"DEBUG: Getting conversation for patient_id={patient_id}")
+        
+        # Get patient's doctor assignment
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        print(f"DEBUG: Assignment found: {assignment is not None}")
+        
+        if not assignment:
+            print("DEBUG: No assignment found, returning has_doctor=False")
+            return {
+                "has_doctor": False,
+                "messages": [],
+                "total": 0
+            }
+        
+        doctor_id = assignment.doctor_id
+        print(f"DEBUG: Doctor ID from assignment: {doctor_id}")
+        
+        # Get all messages
+        messages = session.exec(
+            select(Message)
+            .where(
+                ((Message.sender_id == patient_id) & (Message.sender_type == "patient") & (Message.recipient_id == doctor_id)) |
+                ((Message.sender_id == doctor_id) & (Message.sender_type == "doctor") & (Message.recipient_id == patient_id))
+            )
+            .order_by(col(Message.created_at))
+        ).all()
+        
+        print(f"DEBUG: Found {len(messages)} messages")
+        
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+        
+        # Get names safely
+        doctor_name = doctor.full_name if doctor and doctor.full_name else "Unknown"
+        patient_name = (patient.full_name or patient.email) if patient else "Unknown"
+        
+        print(f"DEBUG: Doctor name: {doctor_name}, Patient name: {patient_name}")
+        
+        messages_data = [{
+            "id": msg.id,
+            "sender_id": msg.sender_id,
+            "sender_type": msg.sender_type,
+            "sender_name": doctor_name if msg.sender_type == "doctor" else patient_name,
+            "subject": msg.subject,
+            "message": msg.message,
+            "parent_message_id": msg.parent_message_id,
+            "is_read": msg.is_read,
+            "read_at": msg.read_at,
+            "created_at": msg.created_at
+        } for msg in messages]
+        
+        result = {
+            "has_doctor": True,
+            "doctor_id": doctor_id,
+            "doctor_name": doctor_name,
+            "patient_name": patient_name,
+            "messages": messages_data,
+            "total": len(messages_data)
+        }
+        
+        print(f"DEBUG: Returning result with has_doctor=True, {len(messages_data)} messages")
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_conversation_with_doctor: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 

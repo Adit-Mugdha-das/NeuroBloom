@@ -125,7 +125,12 @@
 				<h1>👨‍⚕️ Doctor Dashboard</h1>
 				<p>Welcome, Dr. {userData?.fullName || userData?.email}</p>
 			</div>
-			<button class="btn-logout" on:click={handleLogout}>Logout</button>
+			<div class="header-actions">
+				<button class="btn-messages" on:click={() => goto('/doctor/messages')}>
+					💬 Messages
+				</button>
+				<button class="btn-logout" on:click={handleLogout}>Logout</button>
+			</div>
 		</div>
 	</header>
 	
@@ -276,6 +281,27 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	
+	.btn-messages {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: transform 0.2s;
+	}
+	
+	.btn-messages:hover {
+		transform: translateY(-2px);
 	}
 	
 	.btn-logout {

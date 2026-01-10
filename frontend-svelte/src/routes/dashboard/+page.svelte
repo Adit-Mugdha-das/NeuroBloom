@@ -54,6 +54,7 @@
 		<div class="header-right">
 			{#if currentUser}
 				<span class="user-email">{currentUser.email}</span>
+				<button class="btn-messages" on:click={() => goto('/messages')}>💬 Messages</button>
 				<button class="btn-settings" on:click={() => goto('/settings')}>⚙️ Settings</button>
 			{/if}
 			<button class="btn-logout" on:click={handleLogout}>Logout</button>
@@ -229,6 +230,21 @@
 	.user-email {
 		color: #666;
 		font-size: 0.9rem;
+	}
+	
+	.btn-messages {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 0.5rem 1.5rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: transform 0.2s;
+	}
+	
+	.btn-messages:hover {
+		transform: translateY(-2px);
 	}
 	
 	.btn-logout {
