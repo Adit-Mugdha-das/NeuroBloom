@@ -1,11 +1,12 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { auth } from '$lib/api';
+	import api from '$lib/api.js';
 	import { clearUser, setUser } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
 	let email = '';
 	let password = '';
+	let loginType = 'patient'; // 'patient' or 'doctor'
 	let error = '';
 	let loading = false;
 	
@@ -25,18 +26,35 @@
 		loading = true;
 		
 		try {
-			const response = await auth.login(email, password);
+			const endpoint = loginType === 'doctor' 
+				? '/api/auth/doctor/login' 
+				: '/api/auth/login';
 			
-			// Store user data
+			console.log('Attempting login to:', endpoint);
+			console.log('Login type:', loginType);
+			
+			const response = await api.post(endpoint, { email, password });
+			
+			console.log('Login response:', response);
+			
+			// Store user data with role
 			setUser({
-				id: response.id,
-				email: response.email
+				id: response.data.id,
+				email: response.data.email,
+				role: response.data.role || loginType,
+				fullName: response.data.full_name || null
 			});
 			
-			// Redirect to dashboard
-			goto('/dashboard');
+			// Redirect based on role
+			if (loginType === 'doctor') {
+				goto('/doctor/dashboard');
+			} else {
+				goto('/dashboard');
+			}
 		} catch (err) {
-			error = err.response?.data?.detail || 'Login failed. Please try again.';
+			console.error('Login error:', err);
+			console.error('Error response:', err.response);
+			error = err.response?.data?.detail || err.message || 'Login failed. Please try again.';
 		} finally {
 			loading = false;
 		}
@@ -47,6 +65,26 @@
 	<div class="auth-card">
 		<h1>Welcome Back</h1>
 		<p>Login to continue your cognitive training</p>
+		
+		<!-- Login Type Selector -->
+		<div class="login-type-selector">
+			<button 
+				type="button"
+				class="type-btn {loginType === 'patient' ? 'active' : ''}"
+				on:click={() => loginType = 'patient'}
+				disabled={loading}
+			>
+				👤 Patient
+			</button>
+			<button 
+				type="button"
+				class="type-btn {loginType === 'doctor' ? 'active' : ''}"
+				on:click={() => loginType = 'doctor'}
+				disabled={loading}
+			>
+				👨‍⚕️ Doctor
+			</button>
+		</div>
 		
 		{#if error}
 			<div class="error">{error}</div>
@@ -76,7 +114,7 @@
 			</div>
 			
 			<button type="submit" class="btn" disabled={loading}>
-				{loading ? 'Logging in...' : 'Login'}
+				{loading ? 'Logging in...' : `Login as ${loginType === 'doctor' ? 'Doctor' : 'Patient'}`}
 			</button>
 		</form>
 		
@@ -85,3 +123,42 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.login-type-selector {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		background: #f5f5f5;
+		border-radius: 8px;
+		padding: 4px;
+	}
+	
+	.type-btn {
+		flex: 1;
+		padding: 0.75rem;
+		border: none;
+		background: transparent;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 500;
+		font-size: 0.95rem;
+		transition: all 0.3s ease;
+		color: #666;
+	}
+	
+	.type-btn.active {
+		background: white;
+		color: #667eea;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	}
+	
+	.type-btn:hover:not(:disabled):not(.active) {
+		background: rgba(255,255,255,0.5);
+	}
+	
+	.type-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+</style>

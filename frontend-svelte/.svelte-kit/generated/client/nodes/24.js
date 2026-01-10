@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/letter-number-sequencing/+page.svelte";
+export { default as component } from "../../../../src/routes/training/gonogo/+page.svelte";
