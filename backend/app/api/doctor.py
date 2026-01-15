@@ -11,6 +11,7 @@ from app.models.baseline_assessment import BaselineAssessment
 from app.models.doctor_intervention import DoctorIntervention
 from app.models.assignment_request import AssignmentRequest, RequestStatus
 from app.models.message import Message
+from app.models.progress_report import ProgressReport
 from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate, MessageCreate, MessageRead
 from app.core.config import engine
 import statistics
@@ -1546,6 +1547,326 @@ def get_patient_conversation_with_doctor(
         raise
     except Exception as e:
         print(f"ERROR in get_patient_conversation_with_doctor: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== PROGRESS REPORTS ==========
+@router.post("/{doctor_id}/patients/{patient_id}/generate-report")
+def generate_progress_report(
+    doctor_id: int,
+    patient_id: int,
+    period_type: str = "weekly",  # "weekly" or "monthly"
+    session: Session = Depends(get_session)
+):
+    """Generate an auto-generated progress report for a patient"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Verify patient is assigned to this doctor
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="Patient not assigned to this doctor")
+        
+        # Calculate period dates
+        now = datetime.now(timezone.utc)
+        if period_type == "weekly":
+            period_end = now
+            period_start = now - timedelta(days=7)
+        elif period_type == "monthly":
+            period_end = now
+            period_start = now - timedelta(days=30)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid period_type. Must be 'weekly' or 'monthly'")
+        
+        # Get all training sessions in this period
+        sessions_data = session.exec(
+            select(TrainingSession)
+            .where(TrainingSession.user_id == patient_id)
+            .where(TrainingSession.created_at >= period_start)
+            .where(TrainingSession.created_at <= period_end)
+            .where(TrainingSession.completed == True)
+        ).all()
+        
+        # Aggregate data by domain
+        domain_stats = {}
+        task_performance = {}
+        daily_activity = {}
+        
+        for session_record in sessions_data:
+            # Domain statistics
+            domain = session_record.domain
+            if domain not in domain_stats:
+                domain_stats[domain] = {
+                    "sessions_count": 0,
+                    "total_score": 0,
+                    "total_accuracy": 0,
+                    "total_reaction_time": 0,
+                    "scores": [],
+                    "difficulties": []
+                }
+            
+            domain_stats[domain]["sessions_count"] += 1
+            domain_stats[domain]["total_score"] += session_record.score
+            domain_stats[domain]["total_accuracy"] += session_record.accuracy
+            domain_stats[domain]["total_reaction_time"] += session_record.average_reaction_time
+            domain_stats[domain]["scores"].append(session_record.score)
+            domain_stats[domain]["difficulties"].append(session_record.difficulty_level)
+            
+            # Task performance
+            task_key = session_record.task_code or session_record.task_type
+            if task_key not in task_performance:
+                task_performance[task_key] = {
+                    "task_type": session_record.task_type,
+                    "domain": domain,
+                    "sessions": 0,
+                    "avg_score": 0,
+                    "scores": []
+                }
+            
+            task_performance[task_key]["sessions"] += 1
+            task_performance[task_key]["scores"].append(session_record.score)
+            
+            # Daily activity
+            day_key = session_record.created_at.strftime("%Y-%m-%d")
+            if day_key not in daily_activity:
+                daily_activity[day_key] = {
+                    "sessions": 0,
+                    "total_duration": 0,
+                    "avg_score": 0,
+                    "scores": []
+                }
+            
+            daily_activity[day_key]["sessions"] += 1
+            daily_activity[day_key]["total_duration"] += session_record.duration
+            daily_activity[day_key]["scores"].append(session_record.score)
+        
+        # Calculate averages and trends
+        for domain in domain_stats:
+            stats = domain_stats[domain]
+            count = stats["sessions_count"]
+            if count > 0:
+                stats["avg_score"] = round(stats["total_score"] / count, 2)
+                stats["avg_accuracy"] = round(stats["total_accuracy"] / count, 2)
+                stats["avg_reaction_time"] = round(stats["total_reaction_time"] / count, 2)
+                stats["avg_difficulty"] = round(sum(stats["difficulties"]) / count, 2)
+                
+                # Calculate trend (improving/declining)
+                if len(stats["scores"]) >= 2:
+                    first_half = stats["scores"][:len(stats["scores"])//2]
+                    second_half = stats["scores"][len(stats["scores"])//2:]
+                    first_avg = sum(first_half) / len(first_half)
+                    second_avg = sum(second_half) / len(second_half)
+                    stats["trend"] = "improving" if second_avg > first_avg else "declining"
+                    stats["trend_change"] = round(second_avg - first_avg, 2)
+                else:
+                    stats["trend"] = "stable"
+                    stats["trend_change"] = 0
+            
+            # Remove raw arrays to reduce size
+            del stats["scores"]
+            del stats["difficulties"]
+            del stats["total_score"]
+            del stats["total_accuracy"]
+            del stats["total_reaction_time"]
+        
+        # Calculate task averages
+        for task_key in task_performance:
+            task = task_performance[task_key]
+            task["avg_score"] = round(sum(task["scores"]) / len(task["scores"]), 2)
+            del task["scores"]
+        
+        # Calculate daily averages
+        for day in daily_activity:
+            day_data = daily_activity[day]
+            if day_data["scores"]:
+                day_data["avg_score"] = round(sum(day_data["scores"]) / len(day_data["scores"]), 2)
+            del day_data["scores"]
+        
+        # Overall summary
+        total_sessions = len(sessions_data)
+        total_duration = sum(s.duration for s in sessions_data)
+        avg_overall_score = round(sum(s.score for s in sessions_data) / total_sessions, 2) if total_sessions > 0 else 0
+        
+        report_data = {
+            "summary": {
+                "total_sessions": total_sessions,
+                "total_duration_minutes": round(total_duration / 60, 2),
+                "avg_overall_score": avg_overall_score,
+                "active_days": len(daily_activity),
+                "period_days": (period_end - period_start).days
+            },
+            "domain_stats": domain_stats,
+            "task_performance": task_performance,
+            "daily_activity": daily_activity,
+            "period_start": period_start.isoformat(),
+            "period_end": period_end.isoformat()
+        }
+        
+        # Create or update progress report
+        existing_report = session.exec(
+            select(ProgressReport)
+            .where(ProgressReport.patient_id == patient_id)
+            .where(ProgressReport.doctor_id == doctor_id)
+            .where(ProgressReport.period_type == period_type)
+            .where(ProgressReport.period_start == period_start)
+            .where(ProgressReport.period_end == period_end)
+        ).first()
+        
+        if existing_report:
+            existing_report.report_data = json.dumps(report_data)
+            existing_report.updated_at = now
+            session.add(existing_report)
+            session.commit()
+            session.refresh(existing_report)
+            report = existing_report
+        else:
+            new_report = ProgressReport(
+                patient_id=patient_id,
+                doctor_id=doctor_id,
+                period_type=period_type,
+                period_start=period_start,
+                period_end=period_end,
+                report_data=json.dumps(report_data),
+                generated_at=now,
+                updated_at=now
+            )
+            session.add(new_report)
+            session.commit()
+            session.refresh(new_report)
+            report = new_report
+        
+        return {
+            "id": report.id,
+            "patient_id": report.patient_id,
+            "doctor_id": report.doctor_id,
+            "period_type": report.period_type,
+            "period_start": report.period_start.isoformat(),
+            "period_end": report.period_end.isoformat(),
+            "report_data": report_data,
+            "doctor_commentary": report.doctor_commentary,
+            "generated_at": report.generated_at.isoformat(),
+            "updated_at": report.updated_at.isoformat()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in generate_progress_report: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doctor_id}/patients/{patient_id}/reports")
+def get_patient_reports(
+    doctor_id: int,
+    patient_id: int,
+    period_type: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    """Get all progress reports for a patient"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Verify patient is assigned to this doctor
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="Patient not assigned to this doctor")
+        
+        # Build query
+        query = select(ProgressReport).where(
+            ProgressReport.patient_id == patient_id,
+            ProgressReport.doctor_id == doctor_id
+        )
+        
+        if period_type:
+            query = query.where(ProgressReport.period_type == period_type)
+        
+        reports = session.exec(query.order_by(col(ProgressReport.period_start).desc())).all()
+        
+        result = []
+        for report in reports:
+            result.append({
+                "id": report.id,
+                "patient_id": report.patient_id,
+                "doctor_id": report.doctor_id,
+                "period_type": report.period_type,
+                "period_start": report.period_start.isoformat(),
+                "period_end": report.period_end.isoformat(),
+                "report_data": json.loads(report.report_data),
+                "doctor_commentary": report.doctor_commentary,
+                "generated_at": report.generated_at.isoformat(),
+                "updated_at": report.updated_at.isoformat()
+            })
+        
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_reports: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{doctor_id}/reports/{report_id}/commentary")
+def update_report_commentary(
+    doctor_id: int,
+    report_id: int,
+    commentary: str,
+    session: Session = Depends(get_session)
+):
+    """Update doctor commentary on a progress report"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Get report
+        report = session.get(ProgressReport, report_id)
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Verify report belongs to this doctor
+        if report.doctor_id != doctor_id:
+            raise HTTPException(status_code=403, detail="This report does not belong to you")
+        
+        # Update commentary
+        report.doctor_commentary = commentary
+        report.updated_at = datetime.now(timezone.utc)
+        session.add(report)
+        session.commit()
+        session.refresh(report)
+        
+        return {
+            "id": report.id,
+            "doctor_commentary": report.doctor_commentary,
+            "updated_at": report.updated_at.isoformat()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_report_commentary: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -178,9 +178,14 @@
 						<p class="treatment-goal">Goal: {patientData.patient_info.treatment_goal}</p>
 					{/if}
 				</div>
-				<button class="btn-intervention" on:click={openInterventionModal}>
-					+ Add Intervention
-				</button>
+				<div class="header-actions">
+					<button class="btn-reports" on:click={() => goto(`/doctor/patient/${patientId}/reports`)}>
+						📊 Progress Reports
+					</button>
+					<button class="btn-intervention" on:click={openInterventionModal}>
+						+ Add Intervention
+					</button>
+				</div>
 			</div>
 		</div>
 		
@@ -656,6 +661,29 @@
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-top: 1rem;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	
+	.btn-reports {
+		background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		font-size: 1rem;
+	}
+	
+	.btn-reports:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(79, 195, 247, 0.3);
 	}
 	
 	.btn-intervention {

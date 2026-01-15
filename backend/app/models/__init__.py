@@ -7,3 +7,4 @@ from app.models.patient_assignment import PatientAssignment
 from app.models.doctor_intervention import DoctorIntervention
 from app.models.assignment_request import AssignmentRequest
 from app.models.message import Message
+from app.models.progress_report import ProgressReport
