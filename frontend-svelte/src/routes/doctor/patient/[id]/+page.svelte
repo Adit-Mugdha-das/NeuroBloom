@@ -101,54 +101,27 @@
 		try {
 			const data = {};
 			
-			// Handle training adjustment - update training plan AND create intervention
-			if (interventionType === 'training_adjustment') {
-				// Update the training plan
-				const planUpdateParams = {};
-				
-				if (Object.keys(difficultyAdjustments).length > 0) {
-					planUpdateParams.difficulty_adjustments = JSON.stringify(difficultyAdjustments);
-					data.difficulty_adjustments = difficultyAdjustments;
-				}
-				
-				if (performanceGoals.trim()) {
-					planUpdateParams.performance_goals = JSON.stringify(performanceGoals.trim());
-					data.performance_goals = performanceGoals.trim();
-				}
-				
-				planUpdateParams.notes = interventionDescription;
-				
-				// Call training plan update endpoint
-				await api.patch(
-					`/api/doctor/${userData.id}/patient/${patientId}/training-plan`,
-					null,
-					{ params: planUpdateParams }
-				);
-				
-			} else if (interventionType === 'task_recommendation') {
+			if (interventionType === 'task_recommendation') {
 				data.suggested_tasks = suggestedTasks.split(',').map(t => t.trim()).filter(t => t);
 			}
 			
-			// For non-training adjustments, create regular intervention record
-			if (interventionType !== 'training_adjustment') {
-				await api.post(
-					`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
-					null,
-					{
-						params: {
-							intervention_type: interventionType,
-							description: interventionDescription,
-							intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
-						}
+			await api.post(
+				`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
+				null,
+				{
+					params: {
+						intervention_type: interventionType,
+						description: interventionDescription,
+						intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
 					}
-				);
-			}
+				}
+			);
 			
-			alert('Intervention added successfully!');
+			alert('Clinical note added successfully!');
 			closeInterventionModal();
 			await loadPatientData();
 		} catch (err) {
-			alert('Failed to add intervention: ' + (err.response?.data?.detail || 'Unknown error'));
+			alert('Failed to add note: ' + (err.response?.data?.detail || 'Unknown error'));
 		}
 	}
 	
@@ -173,6 +146,11 @@
 			secondaryFocusAreas = [...(patientData.focus_areas.secondary || [])];
 			maintenanceAreas = [...(patientData.focus_areas.maintenance || [])];
 		}
+		// Initialize difficulty adjustments with current values or defaults
+		difficultyAdjustments = {};
+		allDomains.forEach(domain => {
+			difficultyAdjustments[domain.id] = 5; // Default to medium difficulty
+		});
 		focusAreasNotes = '';
 	}
 	
@@ -205,6 +183,7 @@
 	
 	async function submitFocusAreas() {
 		try {
+			// Update focus areas
 			await api.patch(
 				`/api/doctor/${userData.id}/patient/${patientId}/focus-areas`,
 				null,
@@ -213,16 +192,30 @@
 						primary_focus: JSON.stringify(primaryFocusAreas),
 						secondary_focus: JSON.stringify(secondaryFocusAreas),
 						maintenance: JSON.stringify(maintenanceAreas),
-						notes: focusAreasNotes || 'Focus areas customized by doctor'
+						notes: focusAreasNotes || 'Training plan adjusted by doctor'
 					}
 				}
 			);
 			
-			alert('Focus areas updated successfully!');
+			// Update difficulty adjustments if any were changed
+			if (Object.keys(difficultyAdjustments).length > 0) {
+				await api.patch(
+					`/api/doctor/${userData.id}/patient/${patientId}/training-plan`,
+					null,
+					{ 
+						params: {
+							difficulty_adjustments: JSON.stringify(difficultyAdjustments),
+							notes: focusAreasNotes || 'Difficulty levels adjusted by doctor'
+						}
+					}
+				);
+			}
+			
+			alert('Training plan updated successfully!');
 			closeFocusAreasModal();
 			await loadPatientData();
 		} catch (err) {
-			alert('Failed to update focus areas: ' + (err.response?.data?.detail || 'Unknown error'));
+			alert('Failed to update training plan: ' + (err.response?.data?.detail || 'Unknown error'));
 		}
 	}
 	
@@ -279,8 +272,11 @@
 					<button class="btn-reports" on:click={() => goto(`/doctor/patient/${patientId}/reports`)}>
 						📊 Progress Reports
 					</button>
-					<button class="btn-intervention" on:click={openInterventionModal}>
-						+ Add Intervention
+					<button class="btn-note" on:click={openInterventionModal}>
+						📝 Add Clinical Note
+					</button>
+					<button class="btn-training" on:click={openFocusAreasModal}>
+						⚙️ Adjust Training Plan
 					</button>
 				</div>
 			</div>
@@ -586,67 +582,43 @@
 	<div class="modal-overlay" on:click={closeInterventionModal}>
 		<div class="modal-content" on:click|stopPropagation>
 			<div class="modal-header">
-				<h2>Add Intervention / Recommendation</h2>
+				<h2>📝 Add Clinical Note</h2>
 				<button class="close-btn" on:click={closeInterventionModal}>×</button>
 			</div>
 			
 			<div class="modal-body">
+				<p class="modal-description">
+					Record observations, recommendations, or clinical notes about this patient's progress, behavior, or treatment.
+				</p>
+				
 				<div class="form-group">
-					<label>Intervention Type</label>
+					<label>Note Type</label>
 					<select bind:value={interventionType}>
-						<option value="note">Clinical Note/Observation</option>
+						<option value="note">General Observation</option>
 						<option value="task_recommendation">Task Recommendation</option>
-						<option value="training_adjustment">Training Plan Adjustment</option>
 						<option value="goal_setting">Performance Goal</option>
-						<option value="check_in">Schedule Check-in</option>
+						<option value="check_in">Follow-up Scheduled</option>
 					</select>
 				</div>
 				
 				<div class="form-group">
-					<label>Description / Notes</label>
+					<label>Clinical Notes</label>
 					<textarea 
 						bind:value={interventionDescription}
-						placeholder="Enter your observations, recommendations, or notes..."
-						rows="4"
+						placeholder="Example: Patient reports improved concentration during tasks. Recommends continuing current training regimen..."
+						rows="6"
 						required
 					></textarea>
 				</div>
 				
 				{#if interventionType === 'task_recommendation'}
 					<div class="form-group">
-						<label>Suggested Tasks (comma-separated)</label>
+						<label>Recommended Tasks (comma-separated)</label>
 						<input 
 							type="text" 
 							bind:value={suggestedTasks}
 							placeholder="e.g., digit_span, trail_making, stroop"
 						/>
-					</div>
-				{/if}
-				
-				{#if interventionType === 'training_adjustment'}
-					<div class="form-group">
-						<label>Difficulty Adjustments</label>
-						<div class="difficulty-controls">
-							{#each Object.keys(patientData.domain_performance) as domain}
-								<div class="difficulty-row">
-									<span>{domain.replace('_', ' ')}</span>
-									<div class="difficulty-buttons">
-										<button on:click={() => adjustDifficulty(domain, -1)}>-</button>
-										<span>{difficultyAdjustments[domain] || 1}</span>
-										<button on:click={() => adjustDifficulty(domain, 1)}>+</button>
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-					
-					<div class="form-group">
-						<label>Performance Goals</label>
-						<textarea 
-							bind:value={performanceGoals}
-							placeholder="Enter specific performance goals..."
-							rows="3"
-						></textarea>
 					</div>
 				{/if}
 			</div>
@@ -658,7 +630,7 @@
 					on:click={submitIntervention}
 					disabled={!interventionDescription.trim()}
 				>
-					Add Intervention
+					Save Clinical Note
 				</button>
 			</div>
 		</div>
@@ -668,17 +640,19 @@
 <!-- Focus Areas Customization Modal -->
 {#if showFocusAreasModal}
 	<div class="modal-overlay" on:click={closeFocusAreasModal}>
-		<div class="modal-content" on:click|stopPropagation>
+		<div class="modal-content large-modal" on:click|stopPropagation>
 			<div class="modal-header">
-				<h2>🎯 Customize Training Focus Areas</h2>
+				<h2>⚙️ Adjust Training Plan</h2>
 				<button class="close-btn" on:click={closeFocusAreasModal}>×</button>
 			</div>
 			
 			<div class="modal-body">
 				<p class="modal-description">
-					Organize cognitive domains by priority to customize the patient's training plan. 
-					Each domain can only be in one category.
+					Customize which cognitive domains the patient should focus on and adjust task difficulty levels.
 				</p>
+				
+				<h3 class="section-heading">🎯 Focus Areas - Training Priority</h3>
+				<p class="section-subheading">Organize domains by priority. Higher priority domains will appear more frequently in training sessions.</p>
 				
 				<div class="focus-customization">
 					<!-- Primary Focus -->
@@ -733,11 +707,32 @@
 					</div>
 				</div>
 				
+				<div class="divider"></div>
+				
+				<h3 class="section-heading">⚡ Difficulty Adjustments</h3>
+				<p class="section-subheading">Adjust task difficulty for each cognitive domain (1 = easiest, 10 = hardest).</p>
+				
+				<div class="difficulty-grid">
+					{#each allDomains as domain}
+						<div class="difficulty-control-card">
+							<div class="domain-name">{domain.label}</div>
+							<div class="difficulty-buttons">
+								<button class="diff-btn" on:click={() => adjustDifficulty(domain.id, -1)}>−</button>
+								<span class="difficulty-value">{difficultyAdjustments[domain.id] || 5}</span>
+								<button class="diff-btn" on:click={() => adjustDifficulty(domain.id, 1)}>+</button>
+							</div>
+							<div class="difficulty-label">
+								{difficultyAdjustments[domain.id] <= 3 ? 'Easy' : difficultyAdjustments[domain.id] <= 7 ? 'Medium' : 'Hard'}
+							</div>
+						</div>
+					{/each}
+				</div>
+				
 				<div class="form-group">
-					<label>Notes (Optional)</label>
+					<label>Clinical Reasoning (Optional)</label>
 					<textarea 
 						bind:value={focusAreasNotes}
-						placeholder="Explain the reasoning for these focus area changes..."
+						placeholder="Explain why these training adjustments are being made..."
 						rows="3"
 					></textarea>
 				</div>
@@ -746,7 +741,7 @@
 			<div class="modal-footer">
 				<button class="btn-cancel" on:click={closeFocusAreasModal}>Cancel</button>
 				<button class="btn-submit" on:click={submitFocusAreas}>
-					Update Focus Areas
+					Update Training Plan
 				</button>
 			</div>
 		</div>
@@ -796,19 +791,38 @@
 		box-shadow: 0 8px 20px rgba(79, 195, 247, 0.3);
 	}
 	
-	.btn-intervention {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	.btn-note {
+		background: linear-gradient(135deg, #43a047 0%, #388e3c 100%);
 		color: white;
 		border: none;
 		padding: 0.75rem 1.5rem;
 		border-radius: 8px;
 		font-weight: 600;
 		cursor: pointer;
-		transition: transform 0.2s;
+		transition: all 0.3s;
+		font-size: 1rem;
 	}
 	
-	.btn-intervention:hover {
+	.btn-note:hover {
 		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(67, 160, 71, 0.3);
+	}
+	
+	.btn-training {
+		background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+		color: white;
+		border: none;
+		padding: 0.75rem 1.5rem;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+		font-size: 1rem;
+	}
+	
+	.btn-training:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
 	}
 	
 	.back-btn {
@@ -1830,5 +1844,101 @@
 		font-size: 0.95rem;
 		color: #1565c0;
 		line-height: 1.5;
+	}
+	
+	/* Training Plan Modal Specific */
+	.large-modal {
+		max-width: 900px;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+	
+	.section-heading {
+		color: #333;
+		font-size: 1.2rem;
+		font-weight: 700;
+		margin: 2rem 0 0.5rem 0;
+	}
+	
+	.section-heading:first-of-type {
+		margin-top: 0;
+	}
+	
+	.section-subheading {
+		color: #666;
+		font-size: 0.9rem;
+		margin: 0 0 1.5rem 0;
+		line-height: 1.4;
+	}
+	
+	.divider {
+		height: 2px;
+		background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+		margin: 2rem 0;
+	}
+	
+	.difficulty-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+	
+	.difficulty-control-card {
+		background: #f8f9fa;
+		border: 2px solid #e0e0e0;
+		border-radius: 10px;
+		padding: 1rem;
+		text-align: center;
+	}
+	
+	.domain-name {
+		font-weight: 600;
+		color: #333;
+		margin-bottom: 0.75rem;
+		font-size: 0.95rem;
+	}
+	
+	.difficulty-buttons {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 0.5rem;
+	}
+	
+	.diff-btn {
+		width: 36px;
+		height: 36px;
+		border: 2px solid #667eea;
+		background: white;
+		color: #667eea;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: bold;
+		font-size: 1.2rem;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.diff-btn:hover {
+		background: #667eea;
+		color: white;
+		transform: scale(1.1);
+	}
+	
+	.difficulty-value {
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #667eea;
+		min-width: 40px;
+	}
+	
+	.difficulty-label {
+		color: #666;
+		font-size: 0.85rem;
+		font-weight: 500;
 	}
 </style>
