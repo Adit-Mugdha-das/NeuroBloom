@@ -1577,6 +1577,12 @@ def generate_progress_report(
         if not assignment:
             raise HTTPException(status_code=403, detail="Patient not assigned to this doctor")
         
+        # Get baseline assessment
+        baseline = session.exec(
+            select(BaselineAssessment)
+            .where(BaselineAssessment.user_id == patient_id)
+        ).first()
+        
         # Calculate period dates
         now = datetime.now(timezone.utc)
         if period_type == "weekly":
@@ -1660,6 +1666,18 @@ def generate_progress_report(
                 stats["avg_reaction_time"] = round(stats["total_reaction_time"] / count, 2)
                 stats["avg_difficulty"] = round(sum(stats["difficulties"]) / count, 2)
                 
+                # Add baseline score for comparison
+                stats["baseline_score"] = getattr(baseline, f"{domain}_score", None) if baseline else None
+                
+                # Calculate improvement from baseline
+                if stats["baseline_score"] is not None:
+                    improvement = stats["avg_score"] - stats["baseline_score"]
+                    stats["improvement"] = round(improvement, 2)
+                    stats["improvement_percent"] = round((improvement / stats["baseline_score"]) * 100, 1) if stats["baseline_score"] > 0 else 0
+                else:
+                    stats["improvement"] = None
+                    stats["improvement_percent"] = None
+                
                 # Calculate trend (improving/declining)
                 if len(stats["scores"]) >= 2:
                     first_half = stats["scores"][:len(stats["scores"])//2]
@@ -1697,6 +1715,23 @@ def generate_progress_report(
         total_duration = sum(s.duration for s in sessions_data)
         avg_overall_score = round(sum(s.score for s in sessions_data) / total_sessions, 2) if total_sessions > 0 else 0
         
+        # Add baseline information to report
+        baseline_info = None
+        if baseline:
+            baseline_info = {
+                "completed": True,
+                "date": baseline.assessment_date.isoformat() if baseline.assessment_date else None,
+                "overall_score": baseline.overall_score,
+                "domain_scores": {
+                    "working_memory": baseline.working_memory_score,
+                    "attention": baseline.attention_score,
+                    "flexibility": baseline.flexibility_score,
+                    "planning": baseline.planning_score,
+                    "processing_speed": baseline.processing_speed_score,
+                    "visual_scanning": baseline.visual_scanning_score
+                }
+            }
+        
         report_data = {
             "summary": {
                 "total_sessions": total_sessions,
@@ -1705,6 +1740,7 @@ def generate_progress_report(
                 "active_days": len(daily_activity),
                 "period_days": (period_end - period_start).days
             },
+            "baseline": baseline_info,
             "domain_stats": domain_stats,
             "task_performance": task_performance,
             "daily_activity": daily_activity,

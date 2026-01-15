@@ -189,6 +189,16 @@
 			</div>
 		</div>
 		
+		<!-- Quick Info Box -->
+		<div class="info-box">
+			<div class="info-icon">ℹ️</div>
+			<div class="info-content">
+				<strong>Patient Overview:</strong> This page shows a quick snapshot of the patient's current status and recent activity. 
+				For detailed analytics, baseline comparisons, and comprehensive reports, click the 
+				<strong style="color: #4fc3f7;">📊 Progress Reports</strong> button above.
+			</div>
+		</div>
+		
 		<!-- Interventions Section -->
 		{#if interventions.length > 0}
 			<div class="section">
@@ -293,30 +303,6 @@
 			</div>
 		</div>
 		
-		<!-- Baseline Information -->
-		{#if patientData.baseline.completed}
-			<div class="section">
-				<h2>Baseline Assessment</h2>
-				<p class="section-subtitle">Completed on {formatShortDate(patientData.baseline.date)}</p>
-				<div class="baseline-grid">
-					<div class="baseline-card">
-						<div class="baseline-label">Overall Cognitive Score</div>
-						<div class="baseline-value">{patientData.baseline.overall_score?.toFixed(1) || 'N/A'}</div>
-					</div>
-					{#if patientData.baseline.domain_scores}
-						{#each Object.entries(patientData.baseline.domain_scores) as [domain, score]}
-							{#if score !== null}
-								<div class="baseline-card">
-									<div class="baseline-label">{domain.replace('_', ' ')}</div>
-									<div class="baseline-value">{score.toFixed(1)}</div>
-								</div>
-							{/if}
-						{/each}
-					{/if}
-				</div>
-			</div>
-		{/if}
-		
 		<!-- Progress Monitoring Section -->
 		{#if progressData}
 			<div class="section progress-monitoring">
@@ -373,40 +359,6 @@
 						</div>
 					</div>
 				</div>
-				
-				<!-- Baseline vs Current Comparison -->
-				{#if Object.keys(progressData.baseline_comparison).length > 0}
-					<div class="monitoring-card">
-						<h3>📈 Baseline vs Current Performance</h3>
-						<div class="comparison-grid">
-							{#each Object.entries(progressData.baseline_comparison) as [domain, comparison]}
-								<div class="comparison-card status-{comparison.status}">
-									<h4>{domain.replace('_', ' ')}</h4>
-									<div class="comparison-values">
-										<div class="baseline">
-											<span class="label">Baseline</span>
-											<span class="value">{comparison.baseline_score}</span>
-										</div>
-										<div class="arrow">→</div>
-										<div class="current">
-											<span class="label">Current</span>
-											<span class="value">{comparison.current_score}</span>
-										</div>
-									</div>
-									<div class="improvement-indicator {comparison.improvement >= 0 ? 'positive' : 'negative'}">
-										{#if comparison.improvement >= 0}
-											↑ +{comparison.improvement}
-										{:else}
-											↓ {comparison.improvement}
-										{/if}
-										({comparison.improvement_percentage >= 0 ? '+' : ''}{comparison.improvement_percentage}%)
-									</div>
-									<div class="session-count">{comparison.session_count} sessions</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
 				
 				<!-- Trend Analysis -->
 				{#if Object.keys(progressData.trends).length > 0}
@@ -486,36 +438,6 @@
 				{/if}
 			</div>
 		{/if}
-		
-		<!-- Domain Performance -->
-		<div class="section">
-			<h2>Domain Performance</h2>
-			<div class="domains-grid">
-				{#each Object.entries(patientData.domain_performance) as [domain, stats]}
-					<div class="domain-card" style="border-left: 4px solid {getDomainColor(domain)}">
-						<h4>{domain.replace('_', ' ')}</h4>
-						<div class="domain-stats">
-							<div>
-								<span>Baseline:</span>
-								<strong>{stats.baseline_score?.toFixed(1) || 'N/A'}</strong>
-							</div>
-							<div>
-								<span>Current Avg:</span>
-								<strong>{stats.avg_score.toFixed(1)}</strong>
-							</div>
-							<div>
-								<span>Accuracy:</span>
-								<strong>{stats.avg_accuracy.toFixed(1)}%</strong>
-							</div>
-							<div>
-								<span>Sessions:</span>
-								<strong>{stats.count}</strong>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
 		
 		<!-- Recent Sessions -->
 		<div class="section">
@@ -732,6 +654,28 @@
 		color: #667eea;
 		font-style: italic;
 		font-size: 0.95rem;
+	}
+	
+	.info-box {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		background: linear-gradient(135deg, rgba(79, 195, 247, 0.1), rgba(33, 150, 243, 0.05));
+		border: 1px solid rgba(79, 195, 247, 0.3);
+		border-radius: 12px;
+		padding: 1rem 1.5rem;
+		margin-bottom: 2rem;
+	}
+	
+	.info-icon {
+		font-size: 1.5rem;
+		flex-shrink: 0;
+	}
+	
+	.info-content {
+		color: #333;
+		font-size: 0.95rem;
+		line-height: 1.5;
 	}
 	
 	.overview-grid {

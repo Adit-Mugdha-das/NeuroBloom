@@ -28,6 +28,7 @@
 	let trendsChart = null;
 	let dailyActivityChart = null;
 	let taskPerformanceChart = null;
+	let baselineComparisonChart = null;
 	
 	// Subscribe to stores
 	const unsubscribeUser = user.subscribe(value => {
@@ -65,6 +66,7 @@
 		if (trendsChart) trendsChart.destroy();
 		if (dailyActivityChart) dailyActivityChart.destroy();
 		if (taskPerformanceChart) taskPerformanceChart.destroy();
+		if (baselineComparisonChart) baselineComparisonChart.destroy();
 	}
 	
 	async function loadReports() {
@@ -162,6 +164,11 @@
 		// Domain Performance Radar Chart
 		renderDomainChart(data.domain_stats);
 		
+		// Baseline Comparison Chart (if baseline exists)
+		if (data.baseline && data.baseline.completed) {
+			renderBaselineComparisonChart(data.domain_stats, data.baseline);
+		}
+		
 		// Daily Activity Chart
 		renderDailyActivityChart(data.daily_activity);
 		
@@ -236,6 +243,94 @@
 					legend: {
 						labels: {
 							color: '#fff'
+						}
+					}
+				}
+			}
+		});
+	}
+	
+	function renderBaselineComparisonChart(domainStats, baseline) {
+		const canvas = document.getElementById('baselineComparisonChart');
+		if (!canvas) return;
+		
+		const ctx = /** @type {HTMLCanvasElement} */ (canvas).getContext('2d');
+		const domains = Object.keys(domainStats);
+		const baselineScores = domains.map(d => baseline.domain_scores[d] || 0);
+		const currentScores = domains.map(d => domainStats[d].avg_score || 0);
+		
+		baselineComparisonChart = new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: domains.map(d => formatDomainName(d)),
+				datasets: [
+					{
+						label: 'Baseline',
+						data: baselineScores,
+						backgroundColor: 'rgba(156, 39, 176, 0.6)',
+						borderColor: 'rgba(156, 39, 176, 1)',
+						borderWidth: 1
+					},
+					{
+						label: 'Current',
+						data: currentScores,
+						backgroundColor: 'rgba(79, 195, 247, 0.6)',
+						borderColor: 'rgba(79, 195, 247, 1)',
+						borderWidth: 1
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				scales: {
+					y: {
+						beginAtZero: true,
+						max: 100,
+						ticks: {
+							color: '#fff'
+						},
+						grid: {
+							color: 'rgba(255, 255, 255, 0.1)'
+						},
+						title: {
+							display: true,
+							text: 'Score',
+							color: '#fff'
+						}
+					},
+					x: {
+						ticks: {
+							color: '#fff'
+						},
+						grid: {
+							color: 'rgba(255, 255, 255, 0.1)'
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						labels: {
+							color: '#fff'
+						}
+					},
+					tooltip: {
+						backgroundColor: 'rgba(0, 0, 0, 0.8)',
+						titleColor: '#fff',
+						bodyColor: '#fff',
+						callbacks: {
+							afterBody: function(context) {
+								const domainIndex = context[0].dataIndex;
+								const domain = domains[domainIndex];
+								const stats = domainStats[domain];
+								if (stats.improvement !== null) {
+									return [
+										'',
+										`Change: ${stats.improvement > 0 ? '+' : ''}${stats.improvement.toFixed(1)} (${stats.improvement_percent > 0 ? '+' : ''}${stats.improvement_percent.toFixed(1)}%)`
+									];
+								}
+								return [];
+							}
 						}
 					}
 				}
@@ -613,6 +708,62 @@
 						</div>
 					</div>
 
+					<!-- Baseline Comparison (if baseline exists) -->
+					{#if selectedReport.report_data.baseline && selectedReport.report_data.baseline.completed}
+						<div class="baseline-section">
+							<h3>📊 Baseline vs Current Performance</h3>
+							<p class="section-subtitle">
+								Baseline completed on {formatDate(selectedReport.report_data.baseline.date)}
+							</p>
+							
+							<!-- Baseline Comparison Chart -->
+							<div class="chart-container">
+								<div class="chart-wrapper">
+									<canvas id="baselineComparisonChart"></canvas>
+								</div>
+							</div>
+							
+							<!-- Improvement Metrics Grid -->
+							<div class="improvement-grid">
+								{#each Object.entries(selectedReport.report_data.domain_stats) as [domain, stats]}
+									{#if stats.baseline_score !== null && stats.baseline_score !== undefined}
+										<div class="improvement-card">
+											<div class="improvement-header">
+												<h4>{formatDomainName(domain)}</h4>
+											</div>
+											<div class="improvement-details">
+												<div class="score-comparison">
+													<div class="score-item">
+														<span class="score-label">Baseline</span>
+														<span class="score-value baseline">{(stats.baseline_score || 0).toFixed(1)}%</span>
+													</div>
+													<div class="arrow-icon">→</div>
+													<div class="score-item">
+														<span class="score-label">Current</span>
+														<span class="score-value current">{(stats.avg_score || 0).toFixed(1)}%</span>
+													</div>
+												</div>
+												{#if stats.improvement !== null && stats.improvement !== undefined && stats.improvement_percent !== null && stats.improvement_percent !== undefined}
+													<div class="improvement-indicator {stats.improvement >= 0 ? 'positive' : 'negative'}">
+														<span class="improvement-icon">
+															{stats.improvement >= 0 ? '📈' : '📉'}
+														</span>
+														<span class="improvement-value">
+															{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} points
+														</span>
+														<span class="improvement-percent">
+															({stats.improvement_percent > 0 ? '+' : ''}{stats.improvement_percent.toFixed(1)}%)
+														</span>
+													</div>
+												{/if}
+											</div>
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+					{/if}
+
 					<!-- Domain Details -->
 					<div class="domain-details">
 						<h3>Domain Statistics</h3>
@@ -646,6 +797,14 @@
 											<span class="stat-label">Difficulty:</span>
 											<span class="stat-value">{stats.avg_difficulty.toFixed(1)}/10</span>
 										</div>
+										{#if stats.baseline_score !== null && stats.baseline_score !== undefined && stats.improvement !== null && stats.improvement !== undefined && stats.improvement_percent !== null && stats.improvement_percent !== undefined}
+											<div class="stat baseline-stat">
+												<span class="stat-label">vs Baseline:</span>
+												<span class="stat-value {stats.improvement >= 0 ? 'positive' : 'negative'}">
+													{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} ({stats.improvement_percent > 0 ? '+' : ''}{stats.improvement_percent.toFixed(1)}%)
+												</span>
+											</div>
+										{/if}
 									</div>
 								</div>
 							{/each}
@@ -1074,6 +1233,14 @@
 		font-weight: 600;
 	}
 
+	.stat-value.positive {
+		color: #81c784;
+	}
+
+	.stat-value.negative {
+		color: #e57373;
+	}
+
 	.commentary-section {
 		background: rgba(0, 0, 0, 0.2);
 		border-radius: 12px;
@@ -1160,6 +1327,142 @@
 
 	.empty-report p {
 		opacity: 0.7;
+	}
+
+	/* Baseline Comparison Styles */
+	.baseline-section {
+		background: rgba(0, 0, 0, 0.2);
+		border-radius: 12px;
+		padding: 1.5rem;
+		margin-bottom: 2rem;
+		border: 1px solid rgba(156, 39, 176, 0.3);
+	}
+
+	.baseline-section h3 {
+		margin-top: 0;
+		margin-bottom: 0.5rem;
+	}
+
+	.section-subtitle {
+		opacity: 0.7;
+		font-size: 0.9rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.improvement-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+
+	.improvement-card {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 8px;
+		padding: 1rem;
+		transition: all 0.3s;
+	}
+
+	.improvement-card:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(79, 195, 247, 0.2);
+	}
+
+	.improvement-header h4 {
+		margin: 0 0 1rem 0;
+		font-size: 1rem;
+	}
+
+	.improvement-details {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.score-comparison {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.score-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		flex: 1;
+	}
+
+	.score-label {
+		font-size: 0.8rem;
+		opacity: 0.7;
+		margin-bottom: 0.25rem;
+	}
+
+	.score-value {
+		font-size: 1.2rem;
+		font-weight: 700;
+	}
+
+	.score-value.baseline {
+		color: #ce93d8;
+	}
+
+	.score-value.current {
+		color: #4fc3f7;
+	}
+
+	.arrow-icon {
+		font-size: 1.5rem;
+		opacity: 0.5;
+	}
+
+	.improvement-indicator {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.5rem;
+		border-radius: 6px;
+		font-weight: 600;
+	}
+
+	.improvement-indicator.positive {
+		background: rgba(76, 175, 80, 0.2);
+		color: #81c784;
+	}
+
+	.improvement-indicator.negative {
+		background: rgba(244, 67, 54, 0.2);
+		color: #e57373;
+	}
+
+	.improvement-icon {
+		font-size: 1.2rem;
+	}
+
+	.improvement-value {
+		font-size: 0.95rem;
+	}
+
+	.improvement-percent {
+		font-size: 0.85rem;
+		opacity: 0.8;
+	}
+
+	.baseline-stat {
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		padding-top: 0.5rem;
+		margin-top: 0.5rem;
+	}
+
+	.stat-value.positive {
+		color: #81c784;
+	}
+
+	.stat-value.negative {
+		color: #e57373;
 	}
 
 	@media (max-width: 1024px) {
