@@ -23,6 +23,22 @@
 	let difficultyAdjustments = {};
 	let performanceGoals = '';
 	
+	// Focus areas customization state
+	let showFocusAreasModal = false;
+	let primaryFocusAreas = [];
+	let secondaryFocusAreas = [];
+	let maintenanceAreas = [];
+	let focusAreasNotes = '';
+	
+	const allDomains = [
+		{ id: 'working_memory', label: 'Working Memory' },
+		{ id: 'attention', label: 'Attention' },
+		{ id: 'flexibility', label: 'Flexibility' },
+		{ id: 'planning', label: 'Planning' },
+		{ id: 'processing_speed', label: 'Processing Speed' },
+		{ id: 'visual_scanning', label: 'Visual Scanning' }
+	];
+	
 	// Subscribe to stores
 	const unsubscribeUser = user.subscribe(value => {
 		userData = value;
@@ -85,28 +101,48 @@
 		try {
 			const data = {};
 			
+			// Handle training adjustment - update training plan AND create intervention
 			if (interventionType === 'training_adjustment') {
+				// Update the training plan
+				const planUpdateParams = {};
+				
 				if (Object.keys(difficultyAdjustments).length > 0) {
+					planUpdateParams.difficulty_adjustments = JSON.stringify(difficultyAdjustments);
 					data.difficulty_adjustments = difficultyAdjustments;
 				}
+				
 				if (performanceGoals.trim()) {
+					planUpdateParams.performance_goals = JSON.stringify(performanceGoals.trim());
 					data.performance_goals = performanceGoals.trim();
 				}
+				
+				planUpdateParams.notes = interventionDescription;
+				
+				// Call training plan update endpoint
+				await api.patch(
+					`/api/doctor/${userData.id}/patient/${patientId}/training-plan`,
+					null,
+					{ params: planUpdateParams }
+				);
+				
 			} else if (interventionType === 'task_recommendation') {
 				data.suggested_tasks = suggestedTasks.split(',').map(t => t.trim()).filter(t => t);
 			}
 			
-			await api.post(
-				`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
-				null,
-				{
-					params: {
-						intervention_type: interventionType,
-						description: interventionDescription,
-						intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
+			// For non-training adjustments, create regular intervention record
+			if (interventionType !== 'training_adjustment') {
+				await api.post(
+					`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
+					null,
+					{
+						params: {
+							intervention_type: interventionType,
+							description: interventionDescription,
+							intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
+						}
 					}
-				}
-			);
+				);
+			}
 			
 			alert('Intervention added successfully!');
 			closeInterventionModal();
@@ -127,6 +163,67 @@
 	
 	function closeInterventionModal() {
 		showInterventionModal = false;
+	}
+	
+	function openFocusAreasModal() {
+		showFocusAreasModal = true;
+		// Initialize with current focus areas
+		if (patientData?.focus_areas) {
+			primaryFocusAreas = [...(patientData.focus_areas.primary || [])];
+			secondaryFocusAreas = [...(patientData.focus_areas.secondary || [])];
+			maintenanceAreas = [...(patientData.focus_areas.maintenance || [])];
+		}
+		focusAreasNotes = '';
+	}
+	
+	function closeFocusAreasModal() {
+		showFocusAreasModal = false;
+	}
+	
+	function toggleDomain(domain, category) {
+		const lists = {
+			primary: primaryFocusAreas,
+			secondary: secondaryFocusAreas,
+			maintenance: maintenanceAreas
+		};
+		
+		// Remove from all categories first
+		primaryFocusAreas = primaryFocusAreas.filter(d => d !== domain);
+		secondaryFocusAreas = secondaryFocusAreas.filter(d => d !== domain);
+		maintenanceAreas = maintenanceAreas.filter(d => d !== domain);
+		
+		// Add to selected category if not already there
+		const list = lists[category];
+		if (!list.includes(domain)) {
+			lists[category].push(domain);
+			// Trigger reactivity
+			primaryFocusAreas = [...primaryFocusAreas];
+			secondaryFocusAreas = [...secondaryFocusAreas];
+			maintenanceAreas = [...maintenanceAreas];
+		}
+	}
+	
+	async function submitFocusAreas() {
+		try {
+			await api.patch(
+				`/api/doctor/${userData.id}/patient/${patientId}/focus-areas`,
+				null,
+				{
+					params: {
+						primary_focus: JSON.stringify(primaryFocusAreas),
+						secondary_focus: JSON.stringify(secondaryFocusAreas),
+						maintenance: JSON.stringify(maintenanceAreas),
+						notes: focusAreasNotes || 'Focus areas customized by doctor'
+					}
+				}
+			);
+			
+			alert('Focus areas updated successfully!');
+			closeFocusAreasModal();
+			await loadPatientData();
+		} catch (err) {
+			alert('Failed to update focus areas: ' + (err.response?.data?.detail || 'Unknown error'));
+		}
 	}
 	
 	function adjustDifficulty(domain, change) {
@@ -303,7 +400,10 @@
 			</div>
 		</div>
 		
-		<!-- Progress Monitoring Section -->
+		<button class="btn-customize-focus" on:click={openFocusAreasModal}>
+			🎯 Customize Focus Areas
+		</button>
+		
 		{#if progressData}
 			<div class="section progress-monitoring">
 				<h2>📊 Progress Monitoring</h2>
@@ -441,44 +541,44 @@
 		
 		<!-- Recent Sessions -->
 		<div class="section">
-			<h2>Recent Training Sessions</h2>
-			<div class="sessions-table">
-				<table>
-					<thead>
+		<h2>Recent Training Sessions</h2>
+		<div class="sessions-table">
+			<table>
+				<thead>
+					<tr>
+						<th>Date</th>
+						<th>Domain</th>
+						<th>Task</th>
+						<th>Difficulty</th>
+						<th>Score</th>
+						<th>Accuracy</th>
+						<th>RT (ms)</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each sessions as session}
 						<tr>
-							<th>Date</th>
-							<th>Domain</th>
-							<th>Task</th>
-							<th>Difficulty</th>
-							<th>Score</th>
-							<th>Accuracy</th>
-							<th>RT (ms)</th>
+							<td>{formatDate(session.completed_at)}</td>
+							<td>
+								<span 
+									class="domain-badge" 
+									style="background: {getDomainColor(session.domain)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;"
+								>
+									{session.domain.replace('_', ' ')}
+								</span>
+							</td>
+							<td>{session.task_code || session.task_type}</td>
+							<td>Level {session.difficulty}</td>
+							<td><strong>{session.score}</strong></td>
+							<td>{session.accuracy}%</td>
+							<td>{session.reaction_time || 'N/A'}</td>
 						</tr>
-					</thead>
-					<tbody>
-						{#each sessions as session}
-							<tr>
-								<td>{formatDate(session.completed_at)}</td>
-								<td>
-									<span 
-										class="domain-badge" 
-										style="background: {getDomainColor(session.domain)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;"
-									>
-										{session.domain.replace('_', ' ')}
-									</span>
-								</td>
-								<td>{session.task_code || session.task_type}</td>
-								<td>Level {session.difficulty}</td>
-								<td><strong>{session.score}</strong></td>
-								<td>{session.accuracy}%</td>
-								<td>{session.reaction_time || 'N/A'}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+					{/each}
+				</tbody>
+			</table>
 		</div>
-	{/if}
+	</div>
+{/if}
 </div>
 
 <!-- Intervention Modal -->
@@ -559,6 +659,94 @@
 					disabled={!interventionDescription.trim()}
 				>
 					Add Intervention
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Focus Areas Customization Modal -->
+{#if showFocusAreasModal}
+	<div class="modal-overlay" on:click={closeFocusAreasModal}>
+		<div class="modal-content" on:click|stopPropagation>
+			<div class="modal-header">
+				<h2>🎯 Customize Training Focus Areas</h2>
+				<button class="close-btn" on:click={closeFocusAreasModal}>×</button>
+			</div>
+			
+			<div class="modal-body">
+				<p class="modal-description">
+					Organize cognitive domains by priority to customize the patient's training plan. 
+					Each domain can only be in one category.
+				</p>
+				
+				<div class="focus-customization">
+					<!-- Primary Focus -->
+					<div class="focus-category">
+						<h3 class="category-title primary-title">🔴 Primary Focus (High Priority)</h3>
+						<p class="category-description">Domains requiring the most attention and training time</p>
+						<div class="domain-selection">
+							{#each allDomains as domain}
+								<button
+									class="domain-btn {primaryFocusAreas.includes(domain.id) ? 'selected primary' : ''}"
+									on:click={() => toggleDomain(domain.id, 'primary')}
+								>
+									{domain.label}
+									{#if primaryFocusAreas.includes(domain.id)}✓{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<!-- Secondary Focus -->
+					<div class="focus-category">
+						<h3 class="category-title secondary-title">🟡 Secondary Focus (Medium Priority)</h3>
+						<p class="category-description">Domains for moderate training and improvement</p>
+						<div class="domain-selection">
+							{#each allDomains as domain}
+								<button
+									class="domain-btn {secondaryFocusAreas.includes(domain.id) ? 'selected secondary' : ''}"
+									on:click={() => toggleDomain(domain.id, 'secondary')}
+								>
+									{domain.label}
+									{#if secondaryFocusAreas.includes(domain.id)}✓{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+					
+					<!-- Maintenance -->
+					<div class="focus-category">
+						<h3 class="category-title maintenance-title">🟢 Maintenance (Low Priority)</h3>
+						<p class="category-description">Domains with good performance, maintain current level</p>
+						<div class="domain-selection">
+							{#each allDomains as domain}
+								<button
+									class="domain-btn {maintenanceAreas.includes(domain.id) ? 'selected maintenance' : ''}"
+									on:click={() => toggleDomain(domain.id, 'maintenance')}
+								>
+									{domain.label}
+									{#if maintenanceAreas.includes(domain.id)}✓{/if}
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<div class="form-group">
+					<label>Notes (Optional)</label>
+					<textarea 
+						bind:value={focusAreasNotes}
+						placeholder="Explain the reasoning for these focus area changes..."
+						rows="3"
+					></textarea>
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<button class="btn-cancel" on:click={closeFocusAreasModal}>Cancel</button>
+				<button class="btn-submit" on:click={submitFocusAreas}>
+					Update Focus Areas
 				</button>
 			</div>
 		</div>
@@ -1504,5 +1692,115 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 		transform: none;
+	}
+
+	/* Focus Areas Customization */
+	.btn-customize-focus {
+		width: 100%;
+		margin-top: 1rem;
+		padding: 0.65rem 1rem;
+		background: linear-gradient(135deg, #4fc3f7, #2196f3);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+
+	.btn-customize-focus:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
+	}
+
+	.focus-customization {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.focus-category {
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 12px;
+		padding: 1rem;
+		border: 2px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.category-title {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.1rem;
+	}
+
+	.primary-title {
+		color: #f44336;
+	}
+
+	.secondary-title {
+		color: #ff9800;
+	}
+
+	.maintenance-title {
+		color: #4caf50;
+	}
+
+	.category-description {
+		margin: 0 0 1rem 0;
+		font-size: 0.9rem;
+		opacity: 0.7;
+	}
+
+	.domain-selection {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.domain-btn {
+		padding: 0.5rem 1rem;
+		border-radius: 20px;
+		border: 2px solid rgba(255, 255, 255, 0.2);
+		background: rgba(255, 255, 255, 0.05);
+		color: white;
+		cursor: pointer;
+		transition: all 0.3s;
+		font-size: 0.9rem;
+	}
+
+	.domain-btn:hover {
+		background: rgba(255, 255, 255, 0.1);
+		transform: translateY(-2px);
+	}
+
+	.domain-btn.selected {
+		font-weight: 600;
+		border-width: 2px;
+	}
+
+	.domain-btn.selected.primary {
+		background: rgba(244, 67, 54, 0.3);
+		border-color: #f44336;
+		color: #fff;
+	}
+
+	.domain-btn.selected.secondary {
+		background: rgba(255, 152, 0, 0.3);
+		border-color: #ff9800;
+		color: #fff;
+	}
+
+	.domain-btn.selected.maintenance {
+		background: rgba(76, 175, 80, 0.3);
+		border-color: #4caf50;
+		color: #fff;
+	}
+
+	.modal-description {
+		background: rgba(79, 195, 247, 0.1);
+		border-left: 4px solid #4fc3f7;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 1.5rem;
+		font-size: 0.95rem;
 	}
 </style>

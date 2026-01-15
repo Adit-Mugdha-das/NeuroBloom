@@ -1068,6 +1068,84 @@ def update_training_plan(
         print(f"ERROR in update_training_plan: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.patch("/{doctor_id}/patient/{patient_id}/focus-areas")
+def update_focus_areas(
+    doctor_id: int,
+    patient_id: int,
+    primary_focus: Optional[str] = None,
+    secondary_focus: Optional[str] = None,
+    maintenance: Optional[str] = None,
+    notes: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    """Update patient's training plan focus areas (cognitive domains priority)"""
+    try:
+        # Verify doctor has access to this patient
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+        
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+        
+        # Get training plan
+        training_plan = session.exec(
+            select(TrainingPlan)
+            .where(TrainingPlan.user_id == patient_id)
+            .where(TrainingPlan.is_active == True)
+        ).first()
+        
+        if not training_plan:
+            raise HTTPException(status_code=404, detail="No active training plan found")
+        
+        # Update focus areas if provided
+        if primary_focus is not None:
+            training_plan.primary_focus = primary_focus
+        if secondary_focus is not None:
+            training_plan.secondary_focus = secondary_focus
+        if maintenance is not None:
+            training_plan.maintenance = maintenance
+        
+        training_plan.last_updated = datetime.now(timezone.utc)
+        session.add(training_plan)
+        
+        # Create intervention record
+        intervention_data = {
+            "primary_focus": json.loads(primary_focus) if primary_focus else None,
+            "secondary_focus": json.loads(secondary_focus) if secondary_focus else None,
+            "maintenance": json.loads(maintenance) if maintenance else None
+        }
+        
+        intervention = DoctorIntervention(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            intervention_type="focus_area_adjustment",
+            description=notes or "Focus areas updated by doctor",
+            intervention_data=json.dumps(intervention_data)
+        )
+        session.add(intervention)
+        session.commit()
+        
+        return {
+            "message": "Focus areas updated successfully",
+            "intervention_id": intervention.id,
+            "focus_areas": {
+                "primary": json.loads(training_plan.primary_focus),
+                "secondary": json.loads(training_plan.secondary_focus),
+                "maintenance": json.loads(training_plan.maintenance)
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_focus_areas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ========== SECURE MESSAGING ==========
 @router.post("/{doctor_id}/messages/send")
 def send_message(
