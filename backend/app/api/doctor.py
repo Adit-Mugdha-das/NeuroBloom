@@ -1984,3 +1984,419 @@ def update_report_commentary(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ========== ANALYTICS DASHBOARD ==========
+@router.get("/{doctor_id}/analytics")
+def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)):
+    """Get comprehensive analytics for all patients assigned to this doctor"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Get all active patient assignments
+        assignments = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.is_active == True)
+        ).all()
+        
+        total_patients = len(assignments)
+        
+        if total_patients == 0:
+            return {
+                "overview": {
+                    "total_patients": 0,
+                    "active_patients": 0,
+                    "baseline_completed": 0,
+                    "baseline_completion_rate": 0
+                },
+                "adherence": {
+                    "overall_adherence_rate": 0,
+                    "adherence_breakdown": {
+                        "excellent": 0,
+                        "good": 0,
+                        "fair": 0,
+                        "poor": 0
+                    }
+                },
+                "success_metrics": {
+                    "avg_improvement": 0,
+                    "patients_improving": 0,
+                    "avg_session_score": 0,
+                    "total_sessions_completed": 0
+                },
+                "high_risk_patients": [],
+                "patient_summary": []
+            }
+        
+        # Calculate metrics for each patient
+        patient_summaries = []
+        adherence_rates = []
+        improvements = []
+        all_scores = []
+        total_sessions = 0
+        active_count = 0
+        baseline_completed_count = 0
+        high_risk_patients = []
+        
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        
+        for assignment in assignments:
+            patient = session.get(User, assignment.patient_id)
+            if not patient:
+                continue
+            
+            # Get baseline
+            baseline = session.exec(
+                select(BaselineAssessment)
+                .where(BaselineAssessment.user_id == patient.id)
+            ).first()
+            
+            if baseline:
+                baseline_completed_count += 1
+            
+            # Get all training sessions
+            all_patient_sessions = session.exec(
+                select(TrainingSession)
+                .where(TrainingSession.user_id == patient.id)
+                .where(TrainingSession.completed == True)
+            ).all()
+            
+            sessions_count = len(all_patient_sessions)
+            total_sessions += sessions_count
+            
+            # Get recent sessions (last 7 days)
+            recent_sessions = session.exec(
+                select(TrainingSession)
+                .where(TrainingSession.user_id == patient.id)
+                .where(TrainingSession.completed == True)
+                .where(TrainingSession.created_at >= seven_days_ago)
+            ).all()
+            
+            # Check if active (session in last 7 days)
+            is_active = len(recent_sessions) > 0
+            if is_active:
+                active_count += 1
+            
+            # Get sessions in last 30 days for adherence
+            sessions_30_days = session.exec(
+                select(TrainingSession)
+                .where(TrainingSession.user_id == patient.id)
+                .where(TrainingSession.completed == True)
+                .where(TrainingSession.created_at >= thirty_days_ago)
+            ).all()
+            
+            # Calculate adherence (expected: 3-5 sessions per week = ~12-20 per month)
+            expected_sessions = 15  # mid-range expectation
+            sessions_30_count = len(sessions_30_days)
+            adherence_rate = min(100, (sessions_30_count / expected_sessions) * 100) if expected_sessions > 0 else 0
+            adherence_rates.append(adherence_rate)
+            
+            # Determine adherence status
+            if adherence_rate >= 80:
+                adherence_status = "excellent"
+            elif adherence_rate >= 60:
+                adherence_status = "good"
+            elif adherence_rate >= 40:
+                adherence_status = "fair"
+            else:
+                adherence_status = "poor"
+            
+            # Calculate average scores
+            if all_patient_sessions:
+                scores = [s.score for s in all_patient_sessions if s.score is not None]
+                all_scores.extend(scores)
+                avg_score = statistics.mean(scores) if scores else 0
+                
+                # Calculate improvement (compare first 5 vs last 5 sessions)
+                if len(scores) >= 10:
+                    early_scores = scores[:5]
+                    recent_scores = scores[-5:]
+                    improvement = statistics.mean(recent_scores) - statistics.mean(early_scores)
+                    improvements.append(improvement)
+                else:
+                    improvement = 0
+            else:
+                avg_score = 0
+                improvement = 0
+            
+            # Get latest session
+            latest_session = session.exec(
+                select(TrainingSession)
+                .where(TrainingSession.user_id == patient.id)
+                .order_by(col(TrainingSession.created_at).desc())
+            ).first()
+            
+            last_activity = latest_session.created_at if latest_session else None
+            
+            # Identify risk factors
+            risk_factors = []
+            risk_level = "low"
+            
+            if adherence_rate < 40:
+                risk_factors.append("Poor adherence")
+                risk_level = "high"
+            elif adherence_rate < 60:
+                risk_factors.append("Fair adherence")
+                risk_level = "medium" if risk_level == "low" else risk_level
+            
+            if not is_active:
+                risk_factors.append("Inactive (no sessions in 7 days)")
+                risk_level = "high"
+            
+            if improvement < -5 and len(all_patient_sessions) >= 10:
+                risk_factors.append("Performance declining")
+                risk_level = "high"
+            
+            if not baseline:
+                risk_factors.append("Baseline not completed")
+                risk_level = "medium" if risk_level == "low" else risk_level
+            
+            # Add to high-risk list if needed
+            if risk_level in ["high", "medium"]:
+                high_risk_patients.append({
+                    "patient_id": patient.id,
+                    "name": patient.full_name or patient.email,
+                    "email": patient.email,
+                    "risk_level": risk_level,
+                    "risk_factors": risk_factors,
+                    "adherence_rate": round(adherence_rate, 1),
+                    "last_activity": last_activity.isoformat() if last_activity else None,
+                    "sessions_30_days": sessions_30_count
+                })
+            
+            patient_summaries.append({
+                "patient_id": patient.id,
+                "name": patient.full_name or patient.email,
+                "email": patient.email,
+                "diagnosis": assignment.diagnosis,
+                "assigned_date": assignment.assigned_at.isoformat(),
+                "is_active": is_active,
+                "baseline_completed": baseline is not None,
+                "total_sessions": sessions_count,
+                "sessions_last_7_days": len(recent_sessions),
+                "sessions_last_30_days": sessions_30_count,
+                "adherence_rate": round(adherence_rate, 1),
+                "adherence_status": adherence_status,
+                "avg_score": round(avg_score, 1) if avg_score else 0,
+                "improvement": round(improvement, 1),
+                "last_activity": last_activity.isoformat() if last_activity else None,
+                "risk_level": risk_level
+            })
+        
+        # Calculate overall metrics
+        overall_adherence = statistics.mean(adherence_rates) if adherence_rates else 0
+        avg_improvement = statistics.mean(improvements) if improvements else 0
+        patients_improving = len([i for i in improvements if i > 0])
+        avg_session_score = statistics.mean(all_scores) if all_scores else 0
+        
+        # Adherence breakdown
+        adherence_breakdown = {
+            "excellent": len([r for r in adherence_rates if r >= 80]),
+            "good": len([r for r in adherence_rates if 60 <= r < 80]),
+            "fair": len([r for r in adherence_rates if 40 <= r < 60]),
+            "poor": len([r for r in adherence_rates if r < 40])
+        }
+        
+        # Sort high-risk patients by risk level
+        high_risk_patients.sort(key=lambda x: (0 if x["risk_level"] == "high" else 1, -x["adherence_rate"]))
+        
+        return {
+            "overview": {
+                "total_patients": total_patients,
+                "active_patients": active_count,
+                "baseline_completed": baseline_completed_count,
+                "baseline_completion_rate": round((baseline_completed_count / total_patients) * 100, 1) if total_patients > 0 else 0
+            },
+            "adherence": {
+                "overall_adherence_rate": round(overall_adherence, 1),
+                "adherence_breakdown": adherence_breakdown
+            },
+            "success_metrics": {
+                "avg_improvement": round(avg_improvement, 1),
+                "patients_improving": patients_improving,
+                "patients_declining": len([i for i in improvements if i < 0]),
+                "avg_session_score": round(avg_session_score, 1),
+                "total_sessions_completed": total_sessions
+            },
+            "high_risk_patients": high_risk_patients[:10],  # Top 10 high-risk
+            "patient_summary": patient_summaries
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_doctor_analytics: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doctor_id}/analytics/domains")
+def get_domain_analytics(doctor_id: int, session: Session = Depends(get_session)):
+    """Get domain-specific performance analytics across all patients"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Get all active patient assignments
+        assignments = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.is_active == True)
+        ).all()
+        
+        patient_ids = [a.patient_id for a in assignments]
+        
+        if not patient_ids:
+            return {"domains": {}}
+        
+        # Get all sessions for these patients
+        sessions_query = select(TrainingSession).where(
+            col(TrainingSession.user_id).in_(patient_ids),
+            TrainingSession.completed == True
+        )
+        all_sessions = session.exec(sessions_query).all()
+        
+        # Group by domain
+        domain_data = {}
+        
+        for train_session in all_sessions:
+            domain = train_session.domain
+            if not domain:
+                continue
+            
+            if domain not in domain_data:
+                domain_data[domain] = {
+                    "scores": [],
+                    "accuracies": [],
+                    "reaction_times": [],
+                    "sessions_count": 0,
+                    "unique_patients": set()
+                }
+            
+            domain_data[domain]["sessions_count"] += 1
+            domain_data[domain]["unique_patients"].add(train_session.user_id)
+            
+            if train_session.score is not None:
+                domain_data[domain]["scores"].append(train_session.score)
+            if train_session.accuracy is not None:
+                domain_data[domain]["accuracies"].append(train_session.accuracy)
+            if train_session.average_reaction_time is not None:
+                domain_data[domain]["reaction_times"].append(train_session.average_reaction_time)
+        
+        # Calculate statistics
+        domain_stats = {}
+        for domain, data in domain_data.items():
+            domain_stats[domain] = {
+                "sessions_count": data["sessions_count"],
+                "patients_count": len(data["unique_patients"]),
+                "avg_score": round(statistics.mean(data["scores"]), 1) if data["scores"] else 0,
+                "avg_accuracy": round(statistics.mean(data["accuracies"]), 1) if data["accuracies"] else 0,
+                "avg_reaction_time": round(statistics.mean(data["reaction_times"]), 0) if data["reaction_times"] else 0,
+                "score_range": {
+                    "min": round(min(data["scores"]), 1) if data["scores"] else 0,
+                    "max": round(max(data["scores"]), 1) if data["scores"] else 0
+                }
+            }
+        
+        return {"domains": domain_stats}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_domain_analytics: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doctor_id}/analytics/trends")
+def get_cohort_trends(doctor_id: int, days: int = 30, session: Session = Depends(get_session)):
+    """Get performance trends over time for the entire patient cohort"""
+    try:
+        # Verify doctor exists
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Get all active patient assignments
+        assignments = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.is_active == True)
+        ).all()
+        
+        patient_ids = [a.patient_id for a in assignments]
+        
+        if not patient_ids:
+            return {"trends": [], "summary": {}}
+        
+        # Get sessions for the specified period
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        
+        sessions_query = select(TrainingSession).where(
+            col(TrainingSession.user_id).in_(patient_ids),
+            TrainingSession.completed == True,
+            TrainingSession.created_at >= start_date
+        ).order_by(col(TrainingSession.created_at))
+        
+        sessions_list = session.exec(sessions_query).all()
+        
+        # Group by week
+        weekly_data = {}
+        
+        for train_session in sessions_list:
+            # Get week number
+            week_start = train_session.created_at - timedelta(days=train_session.created_at.weekday())
+            week_key = week_start.strftime("%Y-%m-%d")
+            
+            if week_key not in weekly_data:
+                weekly_data[week_key] = {
+                    "sessions": 0,
+                    "scores": [],
+                    "active_patients": set()
+                }
+            
+            weekly_data[week_key]["sessions"] += 1
+            weekly_data[week_key]["active_patients"].add(train_session.user_id)
+            if train_session.score is not None:
+                weekly_data[week_key]["scores"].append(train_session.score)
+        
+        # Calculate weekly trends
+        trends = []
+        for week, data in sorted(weekly_data.items()):
+            trends.append({
+                "week_starting": week,
+                "sessions": data["sessions"],
+                "active_patients": len(data["active_patients"]),
+                "avg_score": round(statistics.mean(data["scores"]), 1) if data["scores"] else 0
+            })
+        
+        # Calculate overall summary
+        total_sessions = sum(d["sessions"] for d in weekly_data.values())
+        all_scores = [s for data in weekly_data.values() for s in data["scores"]]
+        
+        summary = {
+            "total_sessions": total_sessions,
+            "avg_sessions_per_week": round(total_sessions / len(weekly_data), 1) if weekly_data else 0,
+            "overall_avg_score": round(statistics.mean(all_scores), 1) if all_scores else 0,
+            "weeks_tracked": len(weekly_data)
+        }
+        
+        return {
+            "trends": trends,
+            "summary": summary,
+            "period_days": days
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_cohort_trends: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
