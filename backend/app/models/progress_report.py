@@ -11,7 +11,7 @@ class ProgressReport(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     patient_id: int = Field(foreign_key="user.id", index=True)
-    doctor_id: int = Field(foreign_key="doctor.id", index=True)
+    doctor_id: int = Field(foreign_key="doctors.id", index=True)
     
     # Report period
     period_type: str = Field(index=True)  # "weekly" or "monthly"

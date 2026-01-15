@@ -485,7 +485,10 @@
 		<div class="header">
 			<div class="header-left">
 				<button class="btn-back" on:click={() => goto(`/doctor/patient/${patientId}`)}>
-					← Back to Patient
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M19 12H5M12 19l-7-7 7-7"/>
+					</svg>
+					<span>Back to Patient</span>
 				</button>
 				<div>
 					<h1>Progress Reports</h1>
@@ -732,17 +735,31 @@
 	}
 
 	.btn-back {
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		color: white;
-		padding: 0.5rem 1rem;
-		border-radius: 8px;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+		border: 2px solid rgba(79, 195, 247, 0.5);
+		color: #4fc3f7;
+		padding: 0.75rem 1.5rem;
+		border-radius: 10px;
 		cursor: pointer;
-		transition: all 0.3s;
+		transition: all 0.3s ease;
+		font-weight: 600;
+		font-size: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+		backdrop-filter: blur(10px);
 	}
 
 	.btn-back:hover {
-		background: rgba(255, 255, 255, 0.2);
+		background: linear-gradient(135deg, rgba(79, 195, 247, 0.3), rgba(33, 150, 243, 0.2));
+		border-color: #4fc3f7;
+		color: #fff;
+		transform: translateX(-4px);
+		box-shadow: 0 6px 20px rgba(79, 195, 247, 0.4);
+	}
+
+	.btn-back:active {
 		transform: translateX(-2px);
 	}
 
