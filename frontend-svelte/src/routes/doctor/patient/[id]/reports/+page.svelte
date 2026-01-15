@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
+	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
 	import { user } from '$lib/stores.js';
 	import { Chart, registerables } from 'chart.js';
 	import { afterUpdate, onMount } from 'svelte';
@@ -20,6 +21,7 @@
 	let generating = false;
 	let editingCommentary = false;
 	let commentaryText = '';
+	let trendsData = null;
 	
 	// Chart references
 	let domainChart = null;
@@ -80,6 +82,14 @@
 				`/api/doctor/${userData.id}/patients/${patientId}/reports`
 			);
 			reports = reportsResponse.data;
+			
+			// Load performance trends data
+			try {
+				const training = (await import('$lib/api.js')).training;
+				trendsData = await training.getTrends(patientId, 30);
+			} catch (err) {
+				console.error('Failed to load trends data:', err);
+			}
 			
 			// Select most recent report by default
 			if (reports.length > 0) {
@@ -641,6 +651,11 @@
 							{/each}
 						</div>
 					</div>
+
+					<!-- Performance Trends -->
+					{#if trendsData}
+						<PerformanceTrends trendsData={trendsData} />
+					{/if}
 
 					<!-- Doctor Commentary -->
 					<div class="commentary-section">
