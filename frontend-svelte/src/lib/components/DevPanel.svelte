@@ -1,16 +1,74 @@
 <script>
 	import { training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { goto } from '$app/navigation';
 	
 	let currentUser = null;
 	let isOpen = false;
+	let isMinimized = false;
 	let loading = false;
 	let message = '';
 	let messageType = 'success'; // success, error, info
+	let showTaskLauncher = false;
+	let selectedDomain = null;
 	
 	user.subscribe(value => {
 		currentUser = value;
 	});
+	
+	const tasksByDomain = {
+		'Working Memory': [
+			{ name: 'N-Back Test', code: 'n_back' },
+			{ name: 'Digit Span', code: 'digit-span' },
+			{ name: 'Spatial Span', code: 'spatial-span' },
+			{ name: 'Letter-Number Sequencing', code: 'letter-number-sequencing' },
+			{ name: 'Operation Span', code: 'operation-span' }
+		],
+		'Processing Speed': [
+			{ name: 'Simple Reaction Time', code: 'simple_reaction' },
+			{ name: 'Choice Reaction Time', code: 'choice_reaction' },
+			{ name: 'SDMT', code: 'sdmt' },
+			{ name: 'PASAT', code: 'pasat' },
+			{ name: 'Inspection Time', code: 'inspection-time' }
+		],
+		'Attention': [
+			{ name: 'CPT (Go/No-Go)', code: 'gonogo' },
+			{ name: 'Flanker Task', code: 'flanker' },
+			{ name: 'Visual Search', code: 'visual-search' },
+			{ name: 'Multiple Object Tracking', code: 'multiple-object-tracking' },
+			{ name: 'Cancellation Test', code: 'cancellation-test' }
+		],
+		'Cognitive Flexibility': [
+			{ name: 'DCCS', code: 'dccs' },
+			{ name: 'Stroop Test', code: 'stroop' },
+			{ name: 'Trail Making A', code: 'trail-making-a' },
+			{ name: 'Trail Making B', code: 'trail-making-b' },
+			{ name: 'Plus-Minus Task', code: 'plus-minus' }
+		],
+		'Executive Planning': [
+			{ name: 'Tower of London', code: 'tower-of-london' },
+			{ name: 'Stockings of Cambridge', code: 'stockings-of-cambridge' },
+			{ name: 'Wisconsin Card Sort', code: 'wcst' },
+			{ name: '20 Questions', code: 'twenty-questions' },
+			{ name: 'Category Fluency', code: 'category-fluency' }
+		],
+		'Visual Scanning': [
+			{ name: 'Pattern Comparison', code: 'pattern-comparison' },
+			{ name: 'Useful Field of View', code: 'useful-field-of-view' },
+			{ name: 'Verbal Fluency', code: 'verbal-fluency' },
+			{ name: 'Visual Search', code: 'visual-search' },
+			{ name: 'Cancellation', code: 'cancellation-test' }
+		]
+	};
+	
+	function launchTask(taskCode) {
+		if (!currentUser) {
+			showMessage('❌ Please log in first', 'error');
+			return;
+		}
+		
+		goto(`/training/${taskCode}?training=true&planId=1&difficulty=2&taskId=${taskCode}_test`);
+	}
 	
 	async function completeSingleSession() {
 		if (!currentUser) return;
@@ -215,6 +273,24 @@
 	
 	function togglePanel() {
 		isOpen = !isOpen;
+		isMinimized = false;
+	}
+	
+	function toggleMinimize() {
+		isMinimized = !isMinimized;
+	}
+	
+	function toggleTaskLauncher() {
+		showTaskLauncher = !showTaskLauncher;
+		selectedDomain = null; // Reset domain when closing
+	}
+	
+	function selectDomain(domain) {
+		selectedDomain = domain;
+	}
+	
+	function backToDomains() {
+		selectedDomain = null;
 	}
 </script>
 
@@ -224,18 +300,68 @@
 	</button>
 	
 	{#if isOpen}
-		<div class="panel-content">
+		<div class="panel-content" class:minimized={isMinimized}>
 			<div class="panel-header">
 				<h3>⚡ Dev Tools</h3>
-				<button class="close-btn" on:click={togglePanel}>×</button>
+				<div class="header-actions">
+					<button class="minimize-btn" on:click={toggleMinimize} title={isMinimized ? 'Expand' : 'Minimize'}>
+						{isMinimized ? '▲' : '▼'}
+					</button>
+					<button class="close-btn" on:click={togglePanel}>×</button>
+				</div>
 			</div>
 			
+			{#if !isMinimized}
 			{#if message}
 				<div class="message {messageType}">
 					{message}
 				</div>
 			{/if}
 			
+			<!-- Game Launcher - Top Priority -->
+			{#if showTaskLauncher}
+			<div class="task-launcher">
+				{#if !selectedDomain}
+					<!-- Domain Selection -->
+					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">Select Domain</h4>
+					<div class="domain-grid">
+						{#each Object.keys(tasksByDomain) as domain}
+							<button 
+								class="domain-btn" 
+								on:click={() => selectDomain(domain)}
+							>
+								{domain}
+							</button>
+						{/each}
+					</div>
+				{:else}
+					<!-- Task Selection -->
+					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+						<button class="back-btn" on:click={backToDomains}>← Back</button>
+						<h4 style="margin: 0; color: #333; flex: 1; font-size: 0.9rem;">{selectedDomain}</h4>
+					</div>
+					<div class="tasks-list">
+						{#each tasksByDomain[selectedDomain] as task}
+							<button 
+								class="task-btn" 
+								on:click={() => launchTask(task.code)}
+								disabled={loading}
+							>
+								{task.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			{/if}
+			
+			<div class="section-divider">
+				<button class="section-toggle" on:click={toggleTaskLauncher}>
+					{showTaskLauncher ? '✕ Close' : '🎮 Go to Game Section'}
+				</button>
+			</div>
+			
+			<!-- Dev Actions -->
 			<div class="buttons">
 				<button class="dev-btn primary" on:click={completeSingleSession} disabled={loading}>
 					<span class="icon">✅</span>
@@ -270,9 +396,46 @@
 				</button>
 			</div>
 			
+			{#if showTaskLauncher}
+			<div class="task-launcher">
+				{#if !selectedDomain}
+					<!-- Domain Selection -->
+					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">Select Domain</h4>
+					<div class="domain-grid">
+						{#each Object.keys(tasksByDomain) as domain}
+							<button 
+								class="domain-btn" 
+								on:click={() => selectDomain(domain)}
+							>
+								{domain}
+							</button>
+						{/each}
+					</div>
+				{:else}
+					<!-- Task Selection -->
+					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+						<button class="back-btn" on:click={backToDomains}>← Back</button>
+						<h4 style="margin: 0; color: #333; flex: 1; font-size: 0.9rem;">{selectedDomain}</h4>
+					</div>
+					<div class="tasks-list">
+						{#each tasksByDomain[selectedDomain] as task}
+							<button 
+								class="task-btn" 
+								on:click={() => launchTask(task.code)}
+								disabled={loading}
+							>
+								{task.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			{/if}
+			
 			<div class="info">
 				<small>💡 Quick test tools for development</small>
 			</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -317,7 +480,9 @@
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 		padding: 1.5rem;
 		min-width: 320px;
-		max-width: 400px;
+		max-width: 380px;
+		max-height: 85vh;
+		overflow-y: auto;
 		animation: slideIn 0.3s ease;
 	}
 	
@@ -345,6 +510,65 @@
 		margin: 0;
 		color: #333;
 		font-size: 1.2rem;
+	}
+	
+	.header-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	
+	.minimize-btn {
+		background: none;
+		border: none;
+		font-size: 1.2rem;
+		color: #999;
+		cursor: pointer;
+		line-height: 1;
+		padding: 0;
+		width: 25px;
+		height: 25px;
+		transition: color 0.2s;
+	}
+	
+	.minimize-btn:hover {
+		color: #667eea;
+	}
+	
+	.panel-content.minimized {
+		padding: 1rem 1.5rem;
+	}
+	
+	.panel-content.minimized .buttons,
+	.panel-content.minimized .message,
+	.panel-content.minimized .info,
+	.panel-content.minimized .task-launcher,
+	.panel-content.minimized .section-divider {
+		display: none;
+	}
+	
+	.section-divider {
+		margin: 1rem 0;
+		text-align: center;
+	}
+	
+	.section-toggle {
+		width: 100%;
+		padding: 0.75rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		transition: all 0.2s;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+	}
+	
+	.section-toggle:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 	}
 	
 	.close-btn {
@@ -514,6 +738,168 @@
 	.info small {
 		color: #666;
 		font-size: 0.85rem;
+	}
+	
+	.task-launcher {
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: #f8f9fa;
+		border-radius: 8px;
+	}
+	
+	.domain-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.4rem;
+	}
+	
+	.domain-btn {
+		padding: 0.6rem 0.5rem;
+		background: white;
+		border: 2px solid #e0e0e0;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: #333;
+		transition: all 0.2s;
+		text-align: center;
+		line-height: 1.2;
+	}
+	
+	.domain-btn:hover {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border-color: #667eea;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	}
+	
+	.back-btn {
+		padding: 0.4rem 0.8rem;
+		background: white;
+		border: 1px solid #e0e0e0;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		color: #667eea;
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+	
+	.back-btn:hover {
+		background: #667eea;
+		color: white;
+		border-color: #667eea;
+	}
+	
+	.tasks-list {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.4rem;
+	}
+	
+	.task-btn {
+		padding: 0.5rem;
+		background: white;
+		border: 1px solid #e0e0e0;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: #333;
+		transition: all 0.2s;
+		text-align: center;
+		line-height: 1.3;
+	}
+	
+	.domain-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e0e0e0;
+	}
+	
+	.domain-tab {
+		padding: 0.4rem 0.8rem;
+		background: white;
+		border: 1px solid #e0e0e0;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: #666;
+		transition: all 0.2s;
+		white-space: nowrap;
+	}
+	
+	.domain-tab:hover {
+		border-color: #667eea;
+		color: #667eea;
+	}
+	
+	.domain-tab.active {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border-color: #667eea;
+	}
+	
+	.tasks-list::-webkit-scrollbar {
+		width: 6px;
+	}
+	
+	.tasks-list::-webkit-scrollbar-track {
+		background: #f1f1f1;
+		border-radius: 3px;
+	}
+	
+	.tasks-list::-webkit-scrollbar-thumb {
+		background: #667eea;
+		border-radius: 3px;
+	}
+	
+	.tasks-list::-webkit-scrollbar-thumb:hover {
+		background: #764ba2;
+	}
+	
+	.domain-section {
+		margin-bottom: 1rem;
+	}
+	
+	.domain-section:last-child {
+		margin-bottom: 0;
+	}
+	
+	.domain-section h5 {
+		margin: 0 0 0.5rem 0;
+		color: #667eea;
+		font-size: 0.9rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	
+	.task-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.5rem;
+	}
+	
+	/* Removed duplicate - task-btn styles are above */
+	
+	.task-btn:hover:not(:disabled) {
+		background: #667eea;
+		color: white;
+		border-color: #667eea;
+		transform: translateY(-2px);
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+	}
+	
+	.task-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 	
 	@media (max-width: 480px) {
