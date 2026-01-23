@@ -124,6 +124,15 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         session.add(existing)
         session.commit()
         session.refresh(existing)
+        
+        # AUTO-GENERATE TRAINING PLAN after baseline update
+        try:
+            from app.api.training import generate_training_plan
+            generate_training_plan(user_id, session)
+        except Exception as e:
+            # Log but don't fail baseline update if training plan fails
+            print(f"Warning: Could not auto-generate training plan: {e}")
+        
         return existing
     else:
         # Create new baseline
@@ -143,6 +152,15 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         session.add(baseline)
         session.commit()
         session.refresh(baseline)
+        
+        # AUTO-GENERATE TRAINING PLAN after baseline creation
+        try:
+            from app.api.training import generate_training_plan
+            generate_training_plan(user_id, session)
+        except Exception as e:
+            # Log but don't fail baseline creation if training plan fails
+            print(f"Warning: Could not auto-generate training plan: {e}")
+        
         return baseline
 
 
