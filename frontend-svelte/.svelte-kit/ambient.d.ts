@@ -29,8 +29,6 @@ declare module '$env/static/private' {
 	export const ALLUSERSPROFILE: string;
 	export const APPDATA: string;
 	export const BUNDLED_DEBUGPY_PATH: string;
-	export const ChocolateyInstall: string;
-	export const ChocolateyLastPathUpdate: string;
 	export const CHROME_CRASHPAD_PIPE_NAME: string;
 	export const COLOR: string;
 	export const COLORTERM: string;
@@ -47,15 +45,11 @@ declare module '$env/static/private' {
 	export const HOMEDRIVE: string;
 	export const HOMEPATH: string;
 	export const INIT_CWD: string;
-	export const JAVA_HOME: string;
-	export const JAVA_TOOL_OPTIONS: string;
 	export const LANG: string;
 	export const LOCALAPPDATA: string;
 	export const LOGONSERVER: string;
 	export const NODE: string;
 	export const NODE_ENV: string;
-	export const NODE_EXE: string;
-	export const NPM_CLI_JS: string;
 	export const npm_command: string;
 	export const npm_config_cache: string;
 	export const npm_config_globalconfig: string;
@@ -75,10 +69,9 @@ declare module '$env/static/private' {
 	export const npm_package_json: string;
 	export const npm_package_name: string;
 	export const npm_package_version: string;
-	export const NPM_PREFIX_JS: string;
-	export const NPM_PREFIX_NPM_CLI_JS: string;
 	export const NUMBER_OF_PROCESSORS: string;
 	export const OneDrive: string;
+	export const OneDriveConsumer: string;
 	export const OS: string;
 	export const Path: string;
 	export const PATHEXT: string;
@@ -96,6 +89,7 @@ declare module '$env/static/private' {
 	export const PYTHONSTARTUP: string;
 	export const PYTHON_BASIC_REPL: string;
 	export const SESSIONNAME: string;
+	export const SynaProgDir: string;
 	export const SystemDrive: string;
 	export const SystemRoot: string;
 	export const TEMP: string;
@@ -106,17 +100,14 @@ declare module '$env/static/private' {
 	export const USERDOMAIN_ROAMINGPROFILE: string;
 	export const USERNAME: string;
 	export const USERPROFILE: string;
-	export const VIRTUAL_ENV: string;
-	export const VIRTUAL_ENV_PROMPT: string;
 	export const VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 	export const VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
 	export const VSCODE_GIT_ASKPASS_NODE: string;
 	export const VSCODE_GIT_IPC_HANDLE: string;
-	export const VSCODE_NONCE: string;
+	export const VSCODE_INJECTION: string;
+	export const VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 	export const windir: string;
-	export const _OLD_VIRTUAL_PATH: string;
-	export const _OLD_VIRTUAL_PROMPT: string;
 }
 
 /**
@@ -149,8 +140,6 @@ declare module '$env/dynamic/private' {
 		ALLUSERSPROFILE: string;
 		APPDATA: string;
 		BUNDLED_DEBUGPY_PATH: string;
-		ChocolateyInstall: string;
-		ChocolateyLastPathUpdate: string;
 		CHROME_CRASHPAD_PIPE_NAME: string;
 		COLOR: string;
 		COLORTERM: string;
@@ -167,15 +156,11 @@ declare module '$env/dynamic/private' {
 		HOMEDRIVE: string;
 		HOMEPATH: string;
 		INIT_CWD: string;
-		JAVA_HOME: string;
-		JAVA_TOOL_OPTIONS: string;
 		LANG: string;
 		LOCALAPPDATA: string;
 		LOGONSERVER: string;
 		NODE: string;
 		NODE_ENV: string;
-		NODE_EXE: string;
-		NPM_CLI_JS: string;
 		npm_command: string;
 		npm_config_cache: string;
 		npm_config_globalconfig: string;
@@ -195,10 +180,9 @@ declare module '$env/dynamic/private' {
 		npm_package_json: string;
 		npm_package_name: string;
 		npm_package_version: string;
-		NPM_PREFIX_JS: string;
-		NPM_PREFIX_NPM_CLI_JS: string;
 		NUMBER_OF_PROCESSORS: string;
 		OneDrive: string;
+		OneDriveConsumer: string;
 		OS: string;
 		Path: string;
 		PATHEXT: string;
@@ -216,6 +200,7 @@ declare module '$env/dynamic/private' {
 		PYTHONSTARTUP: string;
 		PYTHON_BASIC_REPL: string;
 		SESSIONNAME: string;
+		SynaProgDir: string;
 		SystemDrive: string;
 		SystemRoot: string;
 		TEMP: string;
@@ -226,17 +211,14 @@ declare module '$env/dynamic/private' {
 		USERDOMAIN_ROAMINGPROFILE: string;
 		USERNAME: string;
 		USERPROFILE: string;
-		VIRTUAL_ENV: string;
-		VIRTUAL_ENV_PROMPT: string;
 		VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 		VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
 		VSCODE_GIT_ASKPASS_NODE: string;
 		VSCODE_GIT_IPC_HANDLE: string;
-		VSCODE_NONCE: string;
+		VSCODE_INJECTION: string;
+		VSCODE_PYTHON_AUTOACTIVATE_GUARD: string;
 		windir: string;
-		_OLD_VIRTUAL_PATH: string;
-		_OLD_VIRTUAL_PROMPT: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
 	}

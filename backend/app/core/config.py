@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
+      DATABASE_URL: str = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
 
 settings = Settings()
 

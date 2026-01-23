@@ -430,76 +430,84 @@
 						{results.score}
 					</p>
 					<p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 10px;">
-						Accuracy: {(results.accuracy * 100).toFixed(1)}%
+					Accuracy: {((results.accuracy || 0) * 100).toFixed(1)}%
 					</p>
 				</div>
 
 				<!-- Phase Results -->
-				<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-					<div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
-						<h3 style="font-size: 16px; font-weight: 600; color: #1e40af; margin-bottom: 10px;">
-							Phase 1: Pre-Switch
-						</h3>
-						<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-							Accuracy: {(results.phases.phase1.accuracy * 100).toFixed(1)}%
-						</p>
-						<p style="font-size: 14px; color: #555;">
-							Avg RT: {results.phases.phase1.mean_rt.toFixed(0)}ms
-						</p>
-					</div>
-
-					<div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
-						<h3 style="font-size: 16px; font-weight: 600; color: #065f46; margin-bottom: 10px;">
-							Phase 2: Post-Switch
-						</h3>
-						<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-							Accuracy: {(results.phases.phase2.accuracy * 100).toFixed(1)}%
-						</p>
-						<p style="font-size: 14px; color: #555;">
-							Avg RT: {results.phases.phase2.mean_rt.toFixed(0)}ms
-						</p>
-					</div>
-
-					<div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-						<h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 10px;">
-							Phase 3: Mixed
-						</h3>
-						<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-							Accuracy: {(results.phases.phase3.accuracy * 100).toFixed(1)}%
-						</p>
-						<p style="font-size: 14px; color: #555;">
-							Avg RT: {results.phases.phase3.mean_rt.toFixed(0)}ms
-						</p>
-					</div>
+			{#if results.phases}
+			<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+				{#if results.phases.phase1}
+				<div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+					<h3 style="font-size: 16px; font-weight: 600; color: #1e40af; margin-bottom: 10px;">
+						Phase 1: Pre-Switch
+					</h3>
+					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
+						Accuracy: {((results.phases.phase1.accuracy || 0) * 100).toFixed(1)}%
+					</p>
+					<p style="font-size: 14px; color: #555;">
+						Avg RT: {(results.phases.phase1.mean_rt || 0).toFixed(0)}ms
+					</p>
 				</div>
+				{/if}
+{#if results.phases.phase2}
+				<div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
+					<h3 style="font-size: 16px; font-weight: 600; color: #065f46; margin-bottom: 10px;">
+						Phase 2: Post-Switch
+					</h3>
+					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
+						Accuracy: {((results.phases.phase2.accuracy || 0) * 100).toFixed(1)}%
+					</p>
+					<p style="font-size: 14px; color: #555;">
+						Avg RT: {(results.phases.phase2.mean_rt || 0).toFixed(0)}ms
+					</p>
+				</div>
+				{/if}
+
+{#if results.phases.phase3}
+				<div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+					<h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 10px;">
+						Phase 3: Mixed
+					</h3>
+					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
+						Accuracy: {((results.phases.phase3.accuracy || 0) * 100).toFixed(1)}%
+					</p>
+					<p style="font-size: 14px; color: #555;">
+						Avg RT: {(results.phases.phase3.mean_rt || 0).toFixed(0)}ms
+					</p>
+				</div>
+				{/if}
+			</div>
+			{/if}
 
 				<!-- Key Metrics -->
-				<div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-					<h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">
-						Key Metrics
-					</h3>
-					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-						<div>
-							<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Switch Cost</p>
-							<p style="font-size: 20px; font-weight: 600; color: #667eea;">
-								{results.switch_cost >= 0 ? '+' : ''}{results.switch_cost.toFixed(0)}ms
-							</p>
-							<p style="font-size: 12px; color: #888;">
-								Time penalty for switching rules
-							</p>
-						</div>
-						<div>
-							<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Perseverative Errors</p>
-							<p style="font-size: 20px; font-weight: 600; color: #f59e0b;">
-								{results.perseverative_errors}
-							</p>
-							<p style="font-size: 12px; color: #888;">
-								Times you used the old rule
-							</p>
-						</div>
+			{#if results.switch_cost !== undefined}
+			<div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+				<h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">
+					Key Metrics
+				</h3>
+				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+					<div>
+						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Switch Cost</p>
+						<p style="font-size: 20px; font-weight: 600; color: #667eea;">
+							{results.switch_cost >= 0 ? '+' : ''}{(results.switch_cost || 0).toFixed(0)}ms
+						</p>
+						<p style="font-size: 12px; color: #888;">
+							Time penalty for switching rules
+						</p>
+					</div>
+					<div>
+						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Perseverative Errors</p>
+						<p style="font-size: 20px; font-weight: 600; color: #f59e0b;">
+							{results.perseverative_errors || 0}
+						</p>
+						<p style="font-size: 12px; color: #888;">
+							Times you used the old rule
+						</p>
 					</div>
 				</div>
-
+			</div>
+			{/if}
 				<!-- Actions -->
 				<div style="display: flex; gap: 15px;">
 					<button 
