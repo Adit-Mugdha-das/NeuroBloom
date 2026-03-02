@@ -454,15 +454,15 @@
 		<div class="results-panel">
 			<div class="results-header">
 				<h2>📊 Inspection Time Results</h2>
-				<div class="performance-badge {results.metrics.performance_level.toLowerCase().replace(' ', '-')}">
-					{results.metrics.performance_level}
+				<div class="performance-badge {(results?.metrics?.performance_level || 'good').toLowerCase().replace(' ', '-')}">
+					{results?.metrics?.performance_level || 'Good'}
 				</div>
 			</div>
 
 			<div class="metrics-grid">
 				<div class="metric-card primary">
 					<div class="metric-icon">🎯</div>
-					<div class="metric-value">{results.metrics.accuracy}%</div>
+					<div class="metric-value">{results?.metrics?.accuracy || 0}%</div>
 					<div class="metric-label">Accuracy</div>
 					<div class="metric-detail">{results.metrics.correct_count}/{results.metrics.total_trials} correct</div>
 				</div>

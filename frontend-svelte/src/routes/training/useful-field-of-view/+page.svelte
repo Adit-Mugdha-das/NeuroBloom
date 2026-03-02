@@ -51,7 +51,6 @@
 	});
 	
 	async function startTask() {
-		gamePhase = 'ready';
 		await loadTrial();
 	}
 	
@@ -60,26 +59,33 @@
 		error = null;
 		
 		try {
+			console.log('📊 UFOV - Loading trial for user:', userId);
 			const data = await generateUFOVTrial(userId);
+			console.log('📊 UFOV - Received data:', data);
+
 			trialData = data.trial;
 			difficulty = data.current_difficulty;
 			currentTrial = data;
 			
+			console.log('📊 UFOV - Difficulty:', difficulty, 'Trial data:', trialData);
+
 			// Reset response
 			centralResponse = null;
 			peripheralResponse = null;
 			
 			// Show fixation, then stimulus
 			gamePhase = 'ready';
+			loading = false; // Set loading to false so the ready phase shows
+
 			setTimeout(() => {
 				showStimulusPhase();
 			}, 1500);
 			
 		} catch (err) {
-			console.error('Error loading trial:', err);
+			console.error('❌ UFOV - Error loading trial:', err);
 			error = 'Failed to load trial. Please try again.';
-		} finally {
 			loading = false;
+			gamePhase = 'intro'; // Go back to intro on error
 		}
 	}
 	

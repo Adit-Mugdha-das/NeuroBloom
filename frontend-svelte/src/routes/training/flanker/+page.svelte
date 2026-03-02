@@ -635,6 +635,7 @@
 			</div>
 		</div>
 
+	{:else if phase === 'results'}
 		<!-- Results Screen -->
 		<div class="results-container">
 			<!-- Badge Notifications -->
@@ -645,7 +646,7 @@
 			<div class="results-header">
 				<h2>Flanker Task Complete!</h2>
 				<div class="performance-badge {performanceBadgeColor}">
-					{metrics.performance_level}
+					{metrics?.performance_level || 'Good'}
 				</div>
 			</div>
 
