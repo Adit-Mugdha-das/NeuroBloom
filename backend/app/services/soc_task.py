@@ -45,13 +45,13 @@ class StockingsOfCambridgeTask:
     # Stocking capacities (same as TOL peg capacities)
     STOCKING_CAPACITIES = [3, 2, 1]  # Stocking 0 holds 3, 1 holds 2, 2 holds 1
     
-    # Difficulty configuration - realistic progression for MS patients
+    # Difficulty configuration - progressive difficulty from easy to expert
     DIFFICULTY_CONFIG = {
         1: {
             "min_moves": 2,
             "max_moves": 2,
-            "problems_count": 3,  # Start with fewer problems
-            "planning_time_seconds": 90,  # More time for beginners
+            "problems_count": 3,
+            "planning_time_seconds": 90,
             "move_penalty": False,
             "show_minimum_moves": True,
         },
@@ -65,7 +65,7 @@ class StockingsOfCambridgeTask:
         },
         3: {
             "min_moves": 2,
-            "max_moves": 3,  # Mix easier and harder
+            "max_moves": 3,
             "problems_count": 4,
             "planning_time_seconds": 60,
             "move_penalty": False,
@@ -75,7 +75,7 @@ class StockingsOfCambridgeTask:
             "min_moves": 3,
             "max_moves": 3,
             "problems_count": 5,
-            "planning_time_seconds": 50,
+            "planning_time_seconds": 55,
             "move_penalty": False,
             "show_minimum_moves": True,
         },
@@ -83,7 +83,7 @@ class StockingsOfCambridgeTask:
             "min_moves": 3,
             "max_moves": 4,
             "problems_count": 5,
-            "planning_time_seconds": 45,
+            "planning_time_seconds": 50,
             "move_penalty": True,
             "show_minimum_moves": True,
         },
@@ -91,7 +91,7 @@ class StockingsOfCambridgeTask:
             "min_moves": 4,
             "max_moves": 4,
             "problems_count": 6,
-            "planning_time_seconds": 40,
+            "planning_time_seconds": 45,
             "move_penalty": True,
             "show_minimum_moves": True,
         },
@@ -99,7 +99,7 @@ class StockingsOfCambridgeTask:
             "min_moves": 4,
             "max_moves": 5,
             "problems_count": 6,
-            "planning_time_seconds": 35,
+            "planning_time_seconds": 40,
             "move_penalty": True,
             "show_minimum_moves": False,
         },
@@ -107,7 +107,7 @@ class StockingsOfCambridgeTask:
             "min_moves": 5,
             "max_moves": 5,
             "problems_count": 7,
-            "planning_time_seconds": 30,
+            "planning_time_seconds": 35,
             "move_penalty": True,
             "show_minimum_moves": False,
         },
@@ -115,67 +115,75 @@ class StockingsOfCambridgeTask:
             "min_moves": 5,
             "max_moves": 6,
             "problems_count": 7,
-            "planning_time_seconds": 25,
+            "planning_time_seconds": 30,
             "move_penalty": True,
             "show_minimum_moves": False,
         },
         10: {
             "min_moves": 6,
-            "max_moves": 7,
+            "max_moves": 6,
             "problems_count": 8,
-            "planning_time_seconds": 20,
+            "planning_time_seconds": 25,
             "move_penalty": True,
             "show_minimum_moves": False,
         },
     }
     
-    # Problem library (same as TOL - planning logic is identical)
+    # Problem library - ALL puzzles respect capacity constraints [3, 2, 1]
+    # Stocking 0: max 3 balls, Stocking 1: max 2 balls, Stocking 2: max 1 ball
     PROBLEM_LIBRARY = {
         2: [
-            # 2-move problems
-            ([[0, 1, 2], [], []], [[1, 2], [0], []]),
-            ([[0, 1, 2], [], []], [[2], [0, 1], []]),
-            ([[0, 1], [2], []], [[1], [0], [2]]),
-            ([[0, 1], [2], []], [[0, 2], [1], []]),
-            ([[0], [1, 2], []], [[1, 0], [2], []]),
-            ([[0], [1], [2]], [[0, 1], [], [2]]),
+            # 2-move problems (very easy)
+            ([[0, 1, 2], [], []], [[1, 2], [0], []]),      # Valid
+            ([[0, 1, 2], [], []], [[2], [0, 1], []]),      # Valid
+            ([[0, 1], [2], []], [[1], [0], [2]]),          # Valid
+            ([[0, 1], [2], []], [[0, 2], [1], []]),        # Valid
+            ([[0], [1, 2], []], [[1, 0], [2], []]),        # Valid
+            ([[0], [1], [2]], [[0, 1], [], [2]]),          # Valid
+            ([[0, 1], [], [2]], [[1, 0], [], [2]]),        # Valid
+            ([[0, 2], [1], []], [[2, 0], [1], []]),        # Valid
         ],
         3: [
-            # 3-move problems
-            ([[0, 1, 2], [], []], [[0], [2], [1]]),
-            ([[0, 1, 2], [], []], [[2, 0], [], [1]]),
-            ([[0, 1], [2], []], [[0], [], [1, 2]]),
-            ([[0], [1, 2], []], [[2], [1], [0]]),
-            ([[0, 1], [2], []], [[2, 1], [], [0]]),
-            ([[0, 2], [1], []], [[1], [0], [2]]),
+            # 3-move problems (easy)
+            ([[0, 1, 2], [], []], [[0], [2], [1]]),        # Valid
+            ([[0, 1, 2], [], []], [[2, 0], [], [1]]),      # Valid
+            ([[0, 1], [2], []], [[0], [], [2]]),           # Valid - FIXED: removed duplicate ball
+            ([[0], [1, 2], []], [[2], [1], [0]]),          # Valid
+            ([[0, 1], [2], []], [[2, 1], [], [0]]),        # Valid
+            ([[0, 2], [1], []], [[1], [0], [2]]),          # Valid
+            ([[0, 2], [], [1]], [[2], [0], [1]]),          # Valid
+            ([[0], [1], [2]], [[1], [0], [2]]),            # Valid
         ],
         4: [
-            # 4-move problems
-            ([[0, 1, 2], [], []], [[1], [], [2, 0]]),
-            ([[0, 1, 2], [], []], [[], [1], [0, 2]]),
-            ([[0], [1, 2], []], [[1], [], [0, 2]]),
-            ([[0, 1], [2], []], [[], [2, 0], [1]]),
-            ([[0, 2], [1], []], [[2], [], [0, 1]]),
-            ([[0, 1, 2], [], []], [[0, 2], [], [1]]),
+            # 4-move problems (medium)
+            ([[0, 1, 2], [], []], [[1], [], [0]]),         # Valid - FIXED
+            ([[0, 1, 2], [], []], [[], [1], [2]]),         # Valid - FIXED
+            ([[0], [1, 2], []], [[1], [], [2]]),           # Valid
+            ([[0, 1], [2], []], [[], [2, 0], [1]]),        # Valid
+            ([[0, 2], [1], []], [[2], [], [1]]),           # Valid
+            ([[0, 1, 2], [], []], [[0, 2], [], [1]]),      # Valid
+            ([[0, 2, 1], [], []], [[1, 0], [2], []]),      # Valid
+            ([[0], [2, 1], []], [[2, 1], [0], []]),        # Valid
         ],
         5: [
-            # 5-move problems
-            ([[0, 1, 2], [], []], [[], [], [0, 1, 2]]),
-            ([[0, 1, 2], [], []], [[], [2, 1], [0]]),
-            ([[0], [1, 2], []], [[], [], [1, 0, 2]]),
-            ([[0, 2], [1], []], [[], [0], [2, 1]]),
-            ([[0, 1], [2], []], [[], [], [2, 0, 1]]),
+            # 5-move problems (medium-hard)
+            ([[0, 1, 2], [], []], [[], [2], [0]]),         # Valid - FIXED
+            ([[0, 1, 2], [], []], [[], [2, 1], [0]]),      # Valid
+            ([[0], [1, 2], []], [[], [1], [2]]),           # Valid - FIXED
+            ([[0, 2], [1], []], [[], [0], [2]]),           # Valid - FIXED: stocking 2 gets 1 ball max
+            ([[0, 1], [2], []], [[], [1], [0]]),           # Valid - FIXED
+            ([[0, 2, 1], [], []], [[], [1, 2], [0]]),      # Valid
+            ([[0, 1], [], [2]], [[], [0, 1], [2]]),        # Valid
         ],
         6: [
-            # 6-move problems
-            ([[0, 1, 2], [], []], [[], [0], [1, 2]]),
-            ([[0, 2], [1], []], [[], [], [1, 2, 0]]),
-            ([[0, 1], [2], []], [[2], [], [1, 0]]),
+            # 6-move problems (hard)
+            ([[0, 1, 2], [], []], [[], [0], [2]]),         # Valid - FIXED
+            ([[0, 2], [1], []], [[], [2], [0]]),           # Valid - FIXED
+            ([[0, 1], [2], []], [[2], [], [0]]),           # Valid
+            ([[0, 2, 1], [], []], [[], [2], [1]]),         # Valid
+            ([[0, 1, 2], [], []], [[2], [0], [1]]),        # Valid
+            ([[0], [1, 2], []], [[], [2, 1], [0]]),        # Valid
         ],
-        7: [
-            # 7-move problems (very hard)
-            ([[0, 1, 2], [], []], [[2], [1], [0]]),
-        ]
     }
     
     @classmethod

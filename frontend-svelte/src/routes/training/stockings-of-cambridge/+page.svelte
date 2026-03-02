@@ -43,6 +43,48 @@
 
 	const STOCKING_CAPACITIES = [3, 2, 1];
 
+	// BFS algorithm to find minimum moves
+	function findOptimalSolution(startState, goalState) {
+		const stateKey = (state) => JSON.stringify(state);
+		const isGoal = (state) => stateKey(state) === stateKey(goalState);
+
+		const queue = [{state: startState.map(stocking => [...stocking]), moves: 0, path: []}];
+		const visited = new Set([stateKey(startState)]);
+
+		while (queue.length > 0) {
+			const {state, moves, path} = queue.shift();
+
+			if (isGoal(state)) {
+				return {minMoves: moves, path};
+			}
+
+			for (let fromStocking = 0; fromStocking < 3; fromStocking++) {
+				if (state[fromStocking].length === 0) continue;
+
+				for (let toStocking = 0; toStocking < 3; toStocking++) {
+					if (fromStocking === toStocking) continue;
+					if (state[toStocking].length >= STOCKING_CAPACITIES[toStocking]) continue;
+
+					const newState = state.map(stocking => [...stocking]);
+					const ball = newState[fromStocking].pop();
+					newState[toStocking].push(ball);
+
+					const key = stateKey(newState);
+					if (!visited.has(key)) {
+						visited.add(key);
+						queue.push({
+							state: newState,
+							moves: moves + 1,
+							path: [...path, {from: fromStocking, to: toStocking, ball}]
+						});
+					}
+				}
+			}
+		}
+
+		return {minMoves: -1, path: []};
+	}
+
 	user.subscribe(value => {
 		if (value) {
 			userId = value.id;
@@ -59,22 +101,34 @@
 
 	async function loadSession() {
 		try {
-			// Fetch baseline to determine difficulty
-			const baselineRes = await fetch(`/api/baseline/${userId}`);
-			if (baselineRes.ok) {
-				const baseline = await baselineRes.json();
-				baselineScore = baseline.planning_score || 0;
-				
-				// Map baseline score to difficulty
-				if (baselineScore >= 90) difficulty = 9;
-				else if (baselineScore >= 80) difficulty = 8;
-				else if (baselineScore >= 70) difficulty = 7;
-				else if (baselineScore >= 60) difficulty = 6;
-				else if (baselineScore >= 50) difficulty = 5;
-				else if (baselineScore >= 40) difficulty = 4;
-				else if (baselineScore >= 30) difficulty = 3;
-				else if (baselineScore >= 20) difficulty = 2;
-				else difficulty = 1;
+			// Check if coming from dev tool (URL parameter takes priority)
+			const urlDifficulty = $page.url.searchParams.get('difficulty');
+			const isDevTool = $page.url.searchParams.get('taskId')?.includes('_dev');
+
+			if (isDevTool && urlDifficulty) {
+				// Dev tool mode - use URL parameter
+				difficulty = parseInt(urlDifficulty);
+				console.log('🛠️ Dev Tool Mode - Using URL difficulty:', difficulty);
+			} else {
+				// Normal mode - use baseline to determine difficulty
+				const baselineRes = await fetch(`/api/baseline/${userId}`);
+				if (baselineRes.ok) {
+					const baseline = await baselineRes.json();
+					baselineScore = baseline.planning_score || 0;
+
+					// Map baseline score to difficulty
+					if (baselineScore >= 90) difficulty = 9;
+					else if (baselineScore >= 80) difficulty = 8;
+					else if (baselineScore >= 70) difficulty = 7;
+					else if (baselineScore >= 60) difficulty = 6;
+					else if (baselineScore >= 50) difficulty = 5;
+					else if (baselineScore >= 40) difficulty = 4;
+					else if (baselineScore >= 30) difficulty = 3;
+					else if (baselineScore >= 20) difficulty = 2;
+					else difficulty = 1;
+
+					console.log('📊 Normal Mode - Baseline score:', baselineScore, '→ Difficulty:', difficulty);
+				}
 			}
 
 			const response = await fetch('/api/tasks/soc/generate', {
@@ -85,7 +139,8 @@
 
 			if (response.ok) {
 				sessionData = await response.json();
-				console.log('Session loaded:', sessionData);
+				difficulty = sessionData.difficulty;
+				console.log('✅ Session loaded with difficulty:', difficulty);
 			}
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -100,11 +155,20 @@
 	function loadProblem(index) {
 		currentProblemIndex = index;
 		currentProblem = sessionData.problems[index];
-		
+
 		// Deep copy states
 		currentState = currentProblem.start_state.map(stocking => [...stocking]);
 		goalState = currentProblem.goal_state.map(stocking => [...stocking]);
-		
+
+		// Calculate actual minimum moves using BFS
+		const solution = findOptimalSolution(currentState, goalState);
+		const actualMinMoves = solution.minMoves;
+
+		console.log('🎯 SOC Problem', index + 1, '- Backend:', currentProblem.minimum_moves, 'Actual (BFS):', actualMinMoves);
+
+		// Override backend's potentially incorrect value
+		currentProblem.minimum_moves = actualMinMoves;
+
 		selectedBall = null;
 		moveHistory = [];
 		totalMoves = 0;
@@ -143,13 +207,10 @@
 		// Can only select top ball
 		if (ballIndex !== stocking.length - 1) return;
 		
-		if (selectedBall) {
-			// If same ball clicked, deselect
-			if (selectedBall.stockingIndex === stockingIndex && selectedBall.ballIndex === ballIndex) {
-				selectedBall = null;
-			}
+		// If same ball clicked, deselect; otherwise select this ball
+		if (selectedBall && selectedBall.stockingIndex === stockingIndex && selectedBall.ballIndex === ballIndex) {
+			selectedBall = null;
 		} else {
-			// Select this ball
 			const color = stocking[ballIndex];
 			selectedBall = { stockingIndex, ballIndex, color };
 		}
@@ -157,16 +218,16 @@
 
 	function moveToStocking(targetStockingIndex) {
 		if (gamePhase !== 'solving' || !selectedBall) return;
-		
+
 		const sourceStocking = currentState[selectedBall.stockingIndex];
 		const targetStocking = currentState[targetStockingIndex];
-		
+
 		// Can't move to same stocking
 		if (selectedBall.stockingIndex === targetStockingIndex) {
 			selectedBall = null;
 			return;
 		}
-		
+
 		// Check capacity
 		if (targetStocking.length >= STOCKING_CAPACITIES[targetStockingIndex]) {
 			alert(`Stocking ${targetStockingIndex + 1} is full!`);
@@ -192,8 +253,8 @@
 			completeProblem();
 		}
 		
-		// Force reactivity
-		currentState = currentState;
+		// Force reactivity by creating new array reference
+		currentState = currentState.map(stocking => [...stocking]);
 	}
 
 	function checkSolved() {
@@ -259,7 +320,7 @@
 	async function saveResults() {
 		try {
 			taskId = $page.url.searchParams.get('taskId');
-			const response = await fetch(`${API_BASE_URL}/api/tasks/soc/submit/${userId}`, {
+			const response = await fetch(`${API_BASE_URL}/api/training/tasks/soc/submit/${userId}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
@@ -493,7 +554,7 @@
 						<div style="display: flex; justify-content: center; gap: 3rem; align-items: flex-end; padding: 1rem;">
 							{#each currentState as stocking, stockingIndex}
 								<div style="position: relative; width: 100px; height: 380px; display: flex; flex-direction: column; align-items: center;">
-									<!-- Clickable stocking area -->
+									<!-- Clickable stocking area - FIXED: z-index 5 with pointer-events control -->
 									<button on:click={() => moveToStocking(stockingIndex)}
 										aria-label="Move ball to stocking {stockingIndex + 1}"
 										on:mouseenter={(e) => {
@@ -505,15 +566,16 @@
 										style="position: absolute; top: 0; left: 0; width: 100%; height: 350px; 
 										background: transparent; 
 										border: 3px dashed {selectedBall && selectedBall.stockingIndex !== stockingIndex ? (stocking.length >= STOCKING_CAPACITIES[stockingIndex] ? '#ef4444' : '#8b5cf6') : 'transparent'}; 
-										border-radius: 12px; cursor: {selectedBall ? 'pointer' : 'default'}; z-index: 0;
+										border-radius: 12px; cursor: {selectedBall ? 'pointer' : 'default'}; z-index: 5;
+										pointer-events: {selectedBall ? 'auto' : 'none'};
 										transition: all 0.3s ease;">
 									</button>
 									
-									<!-- Stocking top (opening) -->
-									<div style="width: 90px; height: 25px; background: linear-gradient(to bottom, #cbd5e1, #94a3b8); border-radius: 8px 8px 0 0; border: 3px solid #64748b; border-bottom: none; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1); z-index: 1;"></div>
-									
-									<!-- Stocking body -->
-									<div style="width: 85px; flex-grow: 1; background: linear-gradient(to right, #e2e8f0, #cbd5e1, #e2e8f0); border: 3px solid #64748b; border-top: none; border-radius: 0 0 12px 12px; position: relative; display: flex; flex-direction: column-reverse; align-items: center; padding: 0.5rem 0; box-shadow: inset -3px 0 8px rgba(0,0,0,0.1); z-index: 1;">
+									<!-- Stocking top (opening) - FIXED: pointer-events none -->
+									<div style="width: 90px; height: 25px; background: linear-gradient(to bottom, #cbd5e1, #94a3b8); border-radius: 8px 8px 0 0; border: 3px solid #64748b; border-bottom: none; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1); z-index: 1; pointer-events: none;"></div>
+
+									<!-- Stocking body - FIXED: pointer-events none -->
+									<div style="width: 85px; flex-grow: 1; background: linear-gradient(to right, #e2e8f0, #cbd5e1, #e2e8f0); border: 3px solid #64748b; border-top: none; border-radius: 0 0 12px 12px; position: relative; display: flex; flex-direction: column-reverse; align-items: center; padding: 0.5rem 0; box-shadow: inset -3px 0 8px rgba(0,0,0,0.1); z-index: 1; pointer-events: none;">
 										<!-- Balls stacked from bottom (interactive) -->
 										{#each stocking as ballColor, ballIndex}
 											{@const isTopBall = ballIndex === stocking.length - 1}
@@ -534,9 +596,9 @@
 													}
 												}}
 												disabled={!isTopBall}
-												style="width: 52px; height: 52px; border-radius: 50%; 
-												background: radial-gradient(circle at 30% 30%, {isSelected ? BALL_COLORS[ballColor] : BALL_COLORS[ballColor] + 'ee'}, {BALL_COLORS[ballColor]}); 
-												margin: 0.3rem 0; 
+												style="width: 52px; height: 52px; border-radius: 50%;
+												background: radial-gradient(circle at 30% 30%, {isSelected ? BALL_COLORS[ballColor] : BALL_COLORS[ballColor] + 'ee'}, {BALL_COLORS[ballColor]});
+												margin: 0.3rem 0;
 												border: {isSelected ? '4px solid #fbbf24' : '3px solid rgba(0,0,0,0.2)'}; 
 												box-shadow: {isSelected ? '0 0 0 5px rgba(251, 191, 36, 0.4), 0 8px 20px rgba(251, 191, 36, 0.3)' : '0 4px 8px rgba(0,0,0,0.2), inset -5px -5px 10px rgba(0,0,0,0.2), inset 5px 5px 10px rgba(255,255,255,0.3)'};
 												cursor: {isTopBall ? 'pointer' : 'not-allowed'};
@@ -544,7 +606,9 @@
 												transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 												filter: {isSelected ? 'brightness(1.15)' : 'none'};
 												transform: {isSelected ? 'scale(1.1) translateY(-8px)' : 'scale(1)'};
-												z-index: {ballIndex + 2};">
+												z-index: {ballIndex + 10};
+												pointer-events: auto;
+												position: relative;">
 											</button>
 										{/each}
 									</div>

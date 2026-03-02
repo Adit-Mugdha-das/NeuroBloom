@@ -276,17 +276,18 @@ def score_tol_session(
 
 
 @router.post("/soc/generate")
-def generate_soc_session(difficulty: int = 1):
+def generate_soc_session(request: dict = Body(...)):
     """
     Generate a Stockings of Cambridge session
     
     Args:
-        difficulty: Difficulty level 1-10
-        
+        request: Request body containing difficulty level 1-10
+
     Returns:
         Complete session with planning problems (balls in stockings)
     """
     try:
+        difficulty = request.get('difficulty', 1)
         session_data = soc_task_service.generate_session(difficulty)
         return session_data
     except Exception as e:
