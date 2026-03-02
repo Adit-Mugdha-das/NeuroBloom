@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { generateMOTTrial, submitMOTResponse } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 

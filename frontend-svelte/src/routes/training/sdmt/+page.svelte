@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -53,7 +54,7 @@
 				return;
 			}
 
-			const planRes = await fetch(`http://localhost:8000/training/plan/${userId}`);
+			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
 			let userDifficulty = 5;
@@ -63,9 +64,11 @@
 						? JSON.parse(plan.current_difficulty)
 						: plan.current_difficulty;
 				userDifficulty = currentDiff.processing_speed || 5;
+				console.log('📊 SDMT - Loaded difficulty from plan:', userDifficulty, 'Full diff:', currentDiff);
 			}
 
 			difficulty = userDifficulty;
+			console.log('📊 SDMT - Final difficulty:', difficulty);
 
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/sdmt/generate/${userId}?difficulty=${difficulty}`,
@@ -219,7 +222,10 @@
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
-			<h1>⚡ Symbol Digit Modalities Test (SDMT)</h1>
+			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+				<h1>⚡ Symbol Digit Modalities Test (SDMT)</h1>
+				<DifficultyBadge {difficulty} domain="Processing Speed" />
+			</div>
 			<div class="gold-badge">⭐ GOLD STANDARD for MS Assessment ⭐</div>
 			
 			<div class="instruction-card">

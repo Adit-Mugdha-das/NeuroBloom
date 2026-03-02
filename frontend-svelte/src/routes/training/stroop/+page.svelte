@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -303,7 +304,10 @@
 	{:else if phase === 'intro'}
 			<!-- Introduction Screen -->
 		<div class="instructions">
-			<h1>🧠 Stroop Color-Word Test</h1>
+			<div class="header-with-badge">
+				<h1>🧠 Stroop Color-Word Test</h1>
+				<DifficultyBadge {difficulty} domain="Attention" />
+			</div>
 			<div class="classic-badge">Classic Attention & Inhibitory Control Assessment</div>
 			
 			<div class="instruction-card">
@@ -865,11 +869,20 @@
 		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
 	}
 
+	.header-with-badge {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+		margin-bottom: 1rem;
+	}
+
 	.instructions h1 {
 		text-align: center;
 		color: #667eea;
 		font-size: 2.5rem;
-		margin-bottom: 1rem;
+		margin-bottom: 0;
 	}
 
 	.classic-badge {

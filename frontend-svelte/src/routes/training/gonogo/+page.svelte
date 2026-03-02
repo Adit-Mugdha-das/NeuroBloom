@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -320,7 +321,10 @@
 	{:else if phase === 'intro'}
 		<!-- Introduction Screen -->
 		<div class="instructions">
-			<h1>⚡ Go/No-Go Task</h1>
+			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+				<h1>⚡ Go/No-Go Task</h1>
+				<DifficultyBadge {difficulty} domain="Attention" />
+			</div>
 			<div class="classic-badge">Response Inhibition & Impulse Control Test</div>
 			
 			<div class="instruction-card">

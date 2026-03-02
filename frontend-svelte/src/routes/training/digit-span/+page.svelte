@@ -37,7 +37,11 @@
 	// UI state
 	let showHelp = false;
 	let currentDifficulty = 5;
-	
+
+	// Timing variables - will be set based on difficulty
+	let DIGIT_DISPLAY_TIME = 1400;
+	let INTER_DIGIT_INTERVAL = 600;
+
 	onMount(() => {
 		// Get taskId from URL params
 		taskId = $page.url.searchParams.get('taskId');
@@ -58,11 +62,11 @@
 		return 400;
 	}
 
-	let DIGIT_DISPLAY_TIME = 1500;
-	let INTER_DIGIT_INTERVAL = 700;
 	const READY_DISPLAY_TIME = 2000;
 
 	onMount(async () => {
+		// Get taskId from URL params
+		taskId = $page.url.searchParams.get('taskId');
 		await loadSession();
 	});
 
@@ -77,7 +81,7 @@
 			}
 
 			// Get user's current difficulty from their training plan
-			const planRes = await fetch(`http://localhost:8000/training/plan/${userId}`);
+			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
 			let difficulty = 5; // Default
@@ -93,6 +97,7 @@
 			currentDifficulty = difficulty;
 			DIGIT_DISPLAY_TIME = getDisplayTime(difficulty);
 			INTER_DIGIT_INTERVAL = getInterDigitInterval(difficulty);
+			console.log('📊 Digit Span - Loaded difficulty:', difficulty, 'Display time:', DIGIT_DISPLAY_TIME);
 
 			// Generate session
 			const res = await fetch(

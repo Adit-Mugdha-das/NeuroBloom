@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -332,7 +333,10 @@
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
-			<h1>🎯 Trail Making Test - Part A</h1>
+			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+				<h1>🎯 Trail Making Test - Part A</h1>
+				<DifficultyBadge difficulty={difficulty} domain="Processing Speed" />
+			</div>
 			<div class="classic-badge">Classic Neuropsychological Test</div>
 			
 			<div class="instruction-card">

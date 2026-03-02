@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { generateUFOVTrial, submitUFOVResponse } from '$lib/api.js';
 	import { onDestroy, onMount } from 'svelte';
 	
@@ -182,7 +183,10 @@
 		<button class="back-button" on:click={exitTask}>
 			← Back to Dashboard
 		</button>
-		<h1>Useful Field of View (UFOV)</h1>
+		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+			<h1>Useful Field of View (UFOV)</h1>
+			<DifficultyBadge difficulty={difficulty} domain="Visual Scanning" />
+		</div>
 		<div class="clinical-badge">
 			<span class="badge-icon">🚗</span>
 			<span class="badge-text">Driving Safety Assessment</span>

@@ -3198,6 +3198,68 @@ def dev_set_streak(user_id: int, days: int, session: Session = Depends(get_sessi
         "message": f"Streak set to {days} days 🔥"
     }
 
+@router.post("/dev/set-domain-difficulty/{user_id}")
+def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: Session = Depends(get_session)):
+    """
+    DEV TOOL: Set difficulty for a specific cognitive domain.
+    This allows testing tasks at different difficulty levels without modifying core app code.
+
+    Body:
+        domain: str - The domain key (working_memory, attention, flexibility, etc.)
+        difficulty: int - Difficulty level (1-10)
+    """
+    domain = request.get("domain")
+    difficulty = request.get("difficulty", 5)
+
+    # Validate difficulty
+    difficulty = max(1, min(10, int(difficulty)))
+
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+
+    # Parse current difficulty
+    current_diff = plan.current_difficulty
+    if isinstance(current_diff, str):
+        current_diff = json.loads(current_diff)
+
+    # Update the specific domain
+    if domain in current_diff:
+        old_difficulty = current_diff[domain]
+        current_diff[domain] = difficulty
+        plan.current_difficulty = json.dumps(current_diff)
+
+        session.add(plan)
+        session.commit()
+
+        return {
+            "success": True,
+            "domain": domain,
+            "old_difficulty": old_difficulty,
+            "new_difficulty": difficulty,
+            "message": f"Set {domain} difficulty to {difficulty}"
+        }
+    else:
+        # Domain not found, but add it anyway
+        current_diff[domain] = difficulty
+        plan.current_difficulty = json.dumps(current_diff)
+
+        session.add(plan)
+        session.commit()
+
+        return {
+            "success": True,
+            "domain": domain,
+            "old_difficulty": None,
+            "new_difficulty": difficulty,
+            "message": f"Added {domain} with difficulty {difficulty}"
+        }
+
 @router.delete("/dev/clear-sessions/{user_id}")
 def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
     """

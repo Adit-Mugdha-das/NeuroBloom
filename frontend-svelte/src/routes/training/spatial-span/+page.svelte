@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -58,7 +59,7 @@
 			}
 
 			// Get user's current difficulty from their training plan
-			const planRes = await fetch(`http://localhost:8000/training/plan/${userId}`);
+			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
 			let userDifficulty = 5; // Default
@@ -71,6 +72,7 @@
 			}
 
 			difficulty = userDifficulty;
+			console.log('📊 Spatial Span - Loaded difficulty:', difficulty);
 
 			// Generate session
 			const response = await fetch(
@@ -266,8 +268,11 @@
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
-			<h1>🎯 Spatial Span Test (Corsi Blocks)</h1>
-			
+			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+				<h1>🎯 Spatial Span Test (Corsi Blocks)</h1>
+				<DifficultyBadge {difficulty} domain="Working Memory" />
+			</div>
+
 			<div class="instruction-card">
 				<h2>How It Works</h2>
 				<p>Blocks will light up in a specific sequence. Your job is to remember the pattern.</p>

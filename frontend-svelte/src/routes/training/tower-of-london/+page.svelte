@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -61,7 +62,7 @@
 			if (baselineRes.ok) {
 				const baseline = await baselineRes.json();
 				baselineScore = baseline.planning_score || 0;
-				
+
 				// Map baseline score to difficulty
 				if (baselineScore >= 90) difficulty = 9;
 				else if (baselineScore >= 80) difficulty = 8;
@@ -306,9 +307,12 @@
 		{#if gamePhase === 'intro'}
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
 				<div style="text-align: center; margin-bottom: 2rem;">
-					<h1 style="font-size: 2.5rem; color: #667eea; margin-bottom: 0.5rem; font-weight: 700;">
-						🎯 Tower of London
-					</h1>
+					<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+						<h1 style="font-size: 2.5rem; color: #667eea; margin: 0; font-weight: 700;">
+							🎯 Tower of London
+						</h1>
+						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Executive Planning" />
+					</div>
 					<p style="font-size: 1.1rem; color: #64748b;">
 						Executive Planning & Problem Solving
 					</p>

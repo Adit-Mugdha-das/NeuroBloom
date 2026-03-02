@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -299,7 +300,10 @@
 	{:else if showInstructions}
 		<div class="instructions-panel">
 			<div class="task-header">
-				<h1>🎯 PASAT (Paced Auditory Serial Addition Test)</h1>
+				<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+					<h1>🎯 PASAT (Paced Auditory Serial Addition Test)</h1>
+					<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
+				</div>
 				<p class="task-subtitle">MS Gold Standard Attention Assessment</p>
 				<div class="gold-standard-badge">⭐⭐⭐⭐⭐ CLINICAL GOLD STANDARD</div>
 			</div>

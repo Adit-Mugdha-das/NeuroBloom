@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -241,7 +242,10 @@
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
 				<div style="text-align: center; margin-bottom: 2rem;">
 					<div style="font-size: 4rem; margin-bottom: 1rem;">🗣️</div>
-					<h1 style="color: #667eea; font-size: 2.5rem; margin-bottom: 0.5rem;">Verbal Fluency Test</h1>
+					<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+						<h1 style="color: #667eea; font-size: 2.5rem; margin: 0;">Verbal Fluency Test</h1>
+						<DifficultyBadge difficulty={5} domain="Executive Planning" />
+					</div>
 					<p style="color: #64748b; font-size: 1.1rem;">COWAT (Controlled Oral Word Association)</p>
 				</div>
 

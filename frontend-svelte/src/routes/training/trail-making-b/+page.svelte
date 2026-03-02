@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -439,7 +440,10 @@
 		<!-- Introduction Screen -->
 		<div class="intro-container">
 			<div class="intro-header">
-				<h1>Trail Making Test - Part B</h1>
+				<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+					<h1>Trail Making Test - Part B</h1>
+					<DifficultyBadge {difficulty} domain="Cognitive Flexibility" />
+				</div>
 				<div class="classic-badge">Executive Function & Cognitive Flexibility Test</div>
 			</div>
 

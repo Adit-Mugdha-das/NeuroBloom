@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -256,7 +257,10 @@
 	{:else if showInstructions}
 		<div class="instructions-panel">
 			<div class="task-header">
-				<h1>🔍 Inspection Time Task</h1>
+				<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+					<h1>🔍 Inspection Time Task</h1>
+					<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
+				</div>
 				<p class="task-subtitle">Pure Perceptual Speed Assessment</p>
 			</div>
 

@@ -11,11 +11,64 @@
 	let messageType = 'success'; // success, error, info
 	let showTaskLauncher = false;
 	let selectedDomain = null;
-	
+	let selectedDifficulty = 5; // Default difficulty (1-10)
+
 	user.subscribe(value => {
 		currentUser = value;
 	});
 	
+	// Map domain display names to backend domain keys
+	const domainKeyMap = {
+		'Working Memory': 'working_memory',
+		'Processing Speed': 'processing_speed',
+		'Attention': 'attention',
+		'Cognitive Flexibility': 'flexibility',
+		'Executive Planning': 'planning',
+		'Visual Scanning': 'visual_scanning'
+	};
+
+	// Route mapping for all tasks - maps task code to actual route
+	const taskRoutes = {
+		// Working Memory
+		'n_back': '/baseline/tasks/working-memory',
+		'digit-span': '/training/digit-span',
+		'spatial-span': '/training/spatial-span',
+		'letter-number-sequencing': '/training/letter-number-sequencing',
+		'operation-span': '/training/operation-span',
+
+		// Processing Speed
+		'simple_reaction': '/baseline/tasks/processing-speed',
+		'sdmt': '/training/sdmt',
+		'pasat': '/training/pasat',
+		'inspection-time': '/training/inspection-time',
+		'pattern-comparison': '/training/pattern-comparison',
+
+		// Attention
+		'gonogo': '/training/gonogo',
+		'flanker': '/training/flanker',
+		'stroop': '/training/stroop',
+
+		// Cognitive Flexibility
+		'dccs': '/training/dccs',
+		'trail-making-a': '/training/trail-making-a',
+		'trail-making-b': '/training/trail-making-b',
+		'plus-minus': '/training/plus-minus',
+		'wcst': '/training/wcst',
+
+		// Executive Planning
+		'tower-of-london': '/training/tower-of-london',
+		'stockings-of-cambridge': '/training/stockings-of-cambridge',
+		'twenty-questions': '/training/twenty-questions',
+		'category-fluency': '/training/category-fluency',
+		'verbal-fluency': '/training/verbal-fluency',
+
+		// Visual Scanning
+		'visual-search': '/training/visual-search',
+		'cancellation-test': '/training/cancellation-test',
+		'multiple-object-tracking': '/training/multiple-object-tracking',
+		'useful-field-of-view': '/training/useful-field-of-view'
+	};
+
 	const tasksByDomain = {
 		'Working Memory': [
 			{ name: 'N-Back Test', code: 'n_back' },
@@ -26,50 +79,116 @@
 		],
 		'Processing Speed': [
 			{ name: 'Simple Reaction Time', code: 'simple_reaction' },
-			{ name: 'Choice Reaction Time', code: 'choice_reaction' },
 			{ name: 'SDMT', code: 'sdmt' },
 			{ name: 'PASAT', code: 'pasat' },
-			{ name: 'Inspection Time', code: 'inspection-time' }
+			{ name: 'Inspection Time', code: 'inspection-time' },
+			{ name: 'Pattern Comparison', code: 'pattern-comparison' }
 		],
 		'Attention': [
-			{ name: 'CPT (Go/No-Go)', code: 'gonogo' },
+			{ name: 'Go/No-Go (CPT)', code: 'gonogo' },
 			{ name: 'Flanker Task', code: 'flanker' },
-			{ name: 'Visual Search', code: 'visual-search' },
-			{ name: 'Multiple Object Tracking', code: 'multiple-object-tracking' },
-			{ name: 'Cancellation Test', code: 'cancellation-test' }
+			{ name: 'Stroop Test', code: 'stroop' }
 		],
 		'Cognitive Flexibility': [
 			{ name: 'DCCS', code: 'dccs' },
-			{ name: 'Stroop Test', code: 'stroop' },
 			{ name: 'Trail Making A', code: 'trail-making-a' },
 			{ name: 'Trail Making B', code: 'trail-making-b' },
-			{ name: 'Plus-Minus Task', code: 'plus-minus' }
+			{ name: 'Plus-Minus Task', code: 'plus-minus' },
+			{ name: 'Wisconsin Card Sort', code: 'wcst' }
 		],
 		'Executive Planning': [
 			{ name: 'Tower of London', code: 'tower-of-london' },
 			{ name: 'Stockings of Cambridge', code: 'stockings-of-cambridge' },
-			{ name: 'Wisconsin Card Sort', code: 'wcst' },
 			{ name: '20 Questions', code: 'twenty-questions' },
-			{ name: 'Category Fluency', code: 'category-fluency' }
+			{ name: 'Category Fluency', code: 'category-fluency' },
+			{ name: 'Verbal Fluency', code: 'verbal-fluency' }
 		],
 		'Visual Scanning': [
-			{ name: 'Pattern Comparison', code: 'pattern-comparison' },
-			{ name: 'Useful Field of View', code: 'useful-field-of-view' },
-			{ name: 'Verbal Fluency', code: 'verbal-fluency' },
 			{ name: 'Visual Search', code: 'visual-search' },
-			{ name: 'Cancellation', code: 'cancellation-test' }
+			{ name: 'Cancellation Test', code: 'cancellation-test' },
+			{ name: 'Multiple Object Tracking', code: 'multiple-object-tracking' },
+			{ name: 'Useful Field of View', code: 'useful-field-of-view' }
 		]
 	};
-	
-	function launchTask(taskCode) {
+
+	function getTaskRoute(taskCode) {
+		return taskRoutes[taskCode] || `/training/${taskCode}`;
+	}
+
+	async function launchTask(taskCode) {
 		if (!currentUser) {
 			showMessage('❌ Please log in first', 'error');
 			return;
 		}
 		
-		goto(`/training/${taskCode}?training=true&planId=1&difficulty=2&taskId=${taskCode}_test`);
+		loading = true;
+
+		try {
+			// Ensure difficulty is a valid number between 1-10
+			const validDifficulty = Math.max(1, Math.min(10, parseInt(selectedDifficulty) || 5));
+
+			console.log('🎮 DevPanel - Launching task:', {
+				taskCode,
+				selectedDomain,
+				selectedDifficulty_RAW: selectedDifficulty,
+				selectedDifficulty_TYPE: typeof selectedDifficulty,
+				validDifficulty,
+				userId: currentUser.id
+			});
+
+			// Get the domain key for this task's domain
+			const domainKey = domainKeyMap[selectedDomain];
+			console.log('🗺️ DevPanel - Domain mapping:', { selectedDomain, domainKey });
+
+			if (domainKey) {
+				// Set difficulty via API before launching
+				console.log(`📡 DevPanel - Calling API to set ${domainKey} difficulty to ${validDifficulty}`);
+
+				const result = await training.dev.setDomainDifficulty(currentUser.id, domainKey, validDifficulty);
+
+				console.log('✅ DevPanel - API Response:', result);
+				console.log('📊 DevPanel - Difficulty change:', {
+					domain: domainKey,
+					from: result.old_difficulty,
+					to: result.new_difficulty,
+					wasSuccessful: result.success
+				});
+
+				showMessage(`🎯 Set ${selectedDomain} to Level ${validDifficulty}`, 'success');
+
+				// Wait for the API to complete
+				await new Promise(resolve => setTimeout(resolve, 500));
+			} else {
+				console.warn('⚠️ DevPanel - No domain key found for:', selectedDomain);
+				showMessage(`⚠️ Warning: Domain ${selectedDomain} not mapped`, 'error');
+			}
+
+			const route = getTaskRoute(taskCode);
+			console.log('🚀 DevPanel - Navigating to:', route, 'with difficulty:', validDifficulty);
+			goto(`${route}?training=true&planId=1&taskId=${taskCode}_dev&difficulty=${validDifficulty}`);
+		} catch (error) {
+			console.error('❌ DevPanel - Failed to set difficulty:', error);
+			showMessage(`❌ Failed to set difficulty: ${error.message}`, 'error');
+			// Still navigate even if setting difficulty fails
+			const route = getTaskRoute(taskCode);
+			goto(`${route}?training=true&planId=1&taskId=${taskCode}_dev`);
+		} finally {
+			loading = false;
+		}
 	}
-	
+
+	function adjustDifficulty(delta) {
+		selectedDifficulty = Math.max(1, Math.min(10, selectedDifficulty + delta));
+	}
+
+	function getDifficultyLabel(diff) {
+		if (diff <= 2) return 'Very Easy';
+		if (diff <= 4) return 'Easy';
+		if (diff <= 6) return 'Medium';
+		if (diff <= 8) return 'Hard';
+		return 'Expert';
+	}
+
 	async function completeSingleSession() {
 		if (!currentUser) return;
 		loading = true;
@@ -321,6 +440,15 @@
 			<!-- Game Launcher - Top Priority -->
 			{#if showTaskLauncher}
 			<div class="task-launcher">
+				<!-- Difficulty Selector - Always visible -->
+				<div class="difficulty-selector">
+					<span class="diff-label">Difficulty:</span>
+					<button class="diff-btn" on:click={() => adjustDifficulty(-1)} disabled={selectedDifficulty <= 1}>−</button>
+					<span class="diff-value">{selectedDifficulty}</span>
+					<button class="diff-btn" on:click={() => adjustDifficulty(1)} disabled={selectedDifficulty >= 10}>+</button>
+					<span class="diff-level">({getDifficultyLabel(selectedDifficulty)})</span>
+				</div>
+
 				{#if !selectedDomain}
 					<!-- Domain Selection -->
 					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">Select Domain</h4>
@@ -395,43 +523,7 @@
 					</span>
 				</button>
 			</div>
-			
-			{#if showTaskLauncher}
-			<div class="task-launcher">
-				{#if !selectedDomain}
-					<!-- Domain Selection -->
-					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">Select Domain</h4>
-					<div class="domain-grid">
-						{#each Object.keys(tasksByDomain) as domain}
-							<button 
-								class="domain-btn" 
-								on:click={() => selectDomain(domain)}
-							>
-								{domain}
-							</button>
-						{/each}
-					</div>
-				{:else}
-					<!-- Task Selection -->
-					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-						<button class="back-btn" on:click={backToDomains}>← Back</button>
-						<h4 style="margin: 0; color: #333; flex: 1; font-size: 0.9rem;">{selectedDomain}</h4>
-					</div>
-					<div class="tasks-list">
-						{#each tasksByDomain[selectedDomain] as task}
-							<button 
-								class="task-btn" 
-								on:click={() => launchTask(task.code)}
-								disabled={loading}
-							>
-								{task.name}
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
-			{/if}
-			
+
 			<div class="info">
 				<small>💡 Quick test tools for development</small>
 			</div>
@@ -746,7 +838,65 @@
 		background: #f8f9fa;
 		border-radius: 8px;
 	}
-	
+
+	.difficulty-selector {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+		padding: 0.6rem 0.75rem;
+		background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+		border-radius: 8px;
+		border: 1px solid #667eea30;
+	}
+
+	.diff-label {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #333;
+	}
+
+	.diff-btn {
+		width: 28px;
+		height: 28px;
+		border: none;
+		border-radius: 6px;
+		background: #667eea;
+		color: white;
+		font-size: 1.1rem;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+	}
+
+	.diff-btn:hover:not(:disabled) {
+		background: #5a6fd6;
+		transform: scale(1.1);
+	}
+
+	.diff-btn:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
+
+	.diff-value {
+		font-size: 1.1rem;
+		font-weight: bold;
+		color: #667eea;
+		min-width: 24px;
+		text-align: center;
+	}
+
+	.diff-level {
+		font-size: 0.75rem;
+		color: #666;
+		margin-left: auto;
+		font-style: italic;
+	}
+
 	.domain-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);

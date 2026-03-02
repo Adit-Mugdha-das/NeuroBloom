@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -179,7 +180,10 @@
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
-			<h1>🔍 Pattern Comparison (Visual Matching)</h1>
+			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+				<h1>🔍 Pattern Comparison (Visual Matching)</h1>
+				<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
+			</div>
 			<div class="woodcock-badge">Woodcock-Johnson Tests</div>
 			
 			<div class="instruction-card">

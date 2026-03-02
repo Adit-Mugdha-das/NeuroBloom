@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -43,11 +44,11 @@
 			const baselineResponse = await fetch(
 				`http://localhost:8000/api/baseline/${currentUser.id}`
 			);
-			
+
 			if (baselineResponse.ok) {
 				const baselineData = await baselineResponse.json();
 				baselineFlexibility = baselineData.flexibility;
-				
+
 				// Set difficulty based on baseline (1-10 scale)
 				if (baselineFlexibility !== null) {
 					if (baselineFlexibility >= 90) difficulty = 9;
@@ -236,9 +237,12 @@
 
 <div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
 	<div style="background: white; padding: 30px; border-radius: 10px; margin: 0 auto; max-width: 1000px;">
-		<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 20px; color: #333;">
-			Dimensional Change Card Sort (DCCS)
-		</h1>
+		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;">
+			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">
+				Dimensional Change Card Sort (DCCS)
+			</h1>
+			<DifficultyBadge difficulty={5} domain="Cognitive Flexibility" />
+		</div>
 
 		{#if loading}
 			<div style="text-align: center; padding: 40px;">

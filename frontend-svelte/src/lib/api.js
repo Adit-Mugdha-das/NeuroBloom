@@ -194,6 +194,15 @@ export const training = {
 		checkBadges: async (userId) => {
 			const response = await api.post(`/api/training/dev/check-badges/${userId}`);
 			return response.data;
+		},
+
+		// Set difficulty for a specific domain (for testing tasks at different levels)
+		setDomainDifficulty: async (userId, domain, difficulty) => {
+			const response = await api.post(`/api/training/dev/set-domain-difficulty/${userId}`, {
+				domain,
+				difficulty
+			});
+			return response.data;
 		}
 	}
 };
