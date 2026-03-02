@@ -35,14 +35,12 @@ declare module '$env/static/private' {
 	export const ComSpec: string;
 	export const DriverData: string;
 	export const EDITOR: string;
-	export const FIG_TERM: string;
 	export const FPS_BROWSER_APP_PROFILE_STRING: string;
 	export const FPS_BROWSER_USER_PROFILE_STRING: string;
 	export const HOME: string;
 	export const HOMEDRIVE: string;
 	export const HOMEPATH: string;
 	export const INIT_CWD: string;
-	export const INTELLIJ_TERMINAL_COMMAND_BLOCKS_REWORKED: string;
 	export const LOCALAPPDATA: string;
 	export const LOGONSERVER: string;
 	export const NODE: string;
@@ -75,8 +73,6 @@ declare module '$env/static/private' {
 	export const PROCESSOR_IDENTIFIER: string;
 	export const PROCESSOR_LEVEL: string;
 	export const PROCESSOR_REVISION: string;
-	export const PROCESS_LAUNCHED_BY_CW: string;
-	export const PROCESS_LAUNCHED_BY_Q: string;
 	export const ProgramData: string;
 	export const ProgramFiles: string;
 	export const ProgramW6432: string;
@@ -141,14 +137,12 @@ declare module '$env/dynamic/private' {
 		ComSpec: string;
 		DriverData: string;
 		EDITOR: string;
-		FIG_TERM: string;
 		FPS_BROWSER_APP_PROFILE_STRING: string;
 		FPS_BROWSER_USER_PROFILE_STRING: string;
 		HOME: string;
 		HOMEDRIVE: string;
 		HOMEPATH: string;
 		INIT_CWD: string;
-		INTELLIJ_TERMINAL_COMMAND_BLOCKS_REWORKED: string;
 		LOCALAPPDATA: string;
 		LOGONSERVER: string;
 		NODE: string;
@@ -181,8 +175,6 @@ declare module '$env/dynamic/private' {
 		PROCESSOR_IDENTIFIER: string;
 		PROCESSOR_LEVEL: string;
 		PROCESSOR_REVISION: string;
-		PROCESS_LAUNCHED_BY_CW: string;
-		PROCESS_LAUNCHED_BY_Q: string;
 		ProgramData: string;
 		ProgramFiles: string;
 		ProgramW6432: string;

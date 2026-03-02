@@ -33,6 +33,8 @@
 	let showingGoal = true;
 	let results = null;
 	let earnedBadges = [];
+	let showSolution = false;
+	let solutionPath = [];
 
 	// Colors for balls
 	const BALL_COLORS = {
@@ -163,6 +165,7 @@
 		// Calculate actual minimum moves using BFS
 		const solution = findOptimalSolution(currentState, goalState);
 		const actualMinMoves = solution.minMoves;
+		solutionPath = solution.path; // Store the solution path
 
 		console.log('🎯 SOC Problem', index + 1, '- Backend:', currentProblem.minimum_moves, 'Actual (BFS):', actualMinMoves);
 
@@ -173,7 +176,8 @@
 		moveHistory = [];
 		totalMoves = 0;
 		showingGoal = true;
-		
+		showSolution = false; // Reset solution display
+
 		// Start planning phase
 		gamePhase = 'planning';
 		planningTimeRemaining = sessionData.config.planning_time_seconds;
@@ -666,16 +670,55 @@
 							<div><strong>Minimum Required:</strong> {currentProblem.minimum_moves}</div>
 							{#if userSolutions[userSolutions.length - 1].moves_used === currentProblem.minimum_moves}
 								<div style="color: #15803d; font-weight: 700; margin-top: 0.5rem;">🎯 Perfect solution!</div>
+							{:else}
+								<div style="color: #92400e; margin-top: 0.5rem;">
+									Extra moves: {userSolutions[userSolutions.length - 1].moves_used - currentProblem.minimum_moves}
+								</div>
 							{/if}
 						{/if}
 					</div>
 				</div>
+
+				{#if !showSolution}
+					<button on:click={() => showSolution = true}
+						style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;
+						padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 1rem;">
+						💡 Show Optimal Solution
+					</button>
+				{/if}
 
 				<button on:click={nextProblem}
 					style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; border: none; 
 					padding: 1rem 2rem; font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
 					Next Problem →
 				</button>
+
+				{#if showSolution && solutionPath.length > 0}
+					<div style="background: #fffbeb; border-radius: 12px; padding: 2rem; margin-top: 2rem; border: 2px solid #fbbf24;">
+						<h3 style="color: #92400e; margin-bottom: 1.5rem;">📋 Optimal Solution ({currentProblem.minimum_moves} moves)</h3>
+
+						<div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+							{#each solutionPath as move, index}
+								{@const colorNames = {0: 'Red', 1: 'Blue', 2: 'Green'}}
+								<div style="background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; max-width: 500px;">
+									<div style="display: flex; align-items: center; justify-content: space-between;">
+										<span style="font-weight: 700; color: #8b5cf6; font-size: 1.1rem;">Step {index + 1}:</span>
+										<div style="display: flex; align-items: center; gap: 0.75rem;">
+											<span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+												<div style="width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, {BALL_COLORS[move.ball]}ee, {BALL_COLORS[move.ball]}); border: 2px solid rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.15);"></div>
+												<span style="font-weight: 600; color: #1e293b;">{colorNames[move.ball]} ball</span>
+											</span>
+											<span style="font-size: 1.5rem; color: #64748b;">→</span>
+											<span style="color: #1e293b; font-weight: 600;">
+												Stocking {move.from + 1} to Stocking {move.to + 1}
+											</span>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 
 		{:else if gamePhase === 'results'}
