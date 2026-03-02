@@ -31,6 +31,9 @@
 	let showingGoal = true;
 	let results = null;
 	let earnedBadges = [];
+	let showSolution = false;
+	let solutionPath = [];
+	let actualMinMoves = 0;
 
 	// Colors for disks
 	const DISK_COLORS = {
@@ -40,6 +43,50 @@
 	};
 
 	const PEG_CAPACITIES = [3, 2, 1];
+
+	// BFS algorithm to find minimum moves and solution path
+	function findOptimalSolution(startState, goalState) {
+		const stateKey = (state) => JSON.stringify(state);
+		const isGoal = (state) => stateKey(state) === stateKey(goalState);
+
+		const queue = [{state: startState.map(peg => [...peg]), moves: 0, path: []}];
+		const visited = new Set([stateKey(startState)]);
+
+		while (queue.length > 0) {
+			const {state, moves, path} = queue.shift();
+
+			if (isGoal(state)) {
+				return {minMoves: moves, path};
+			}
+
+			// Try all possible moves
+			for (let fromPeg = 0; fromPeg < 3; fromPeg++) {
+				if (state[fromPeg].length === 0) continue;
+
+				for (let toPeg = 0; toPeg < 3; toPeg++) {
+					if (fromPeg === toPeg) continue;
+					if (state[toPeg].length >= PEG_CAPACITIES[toPeg]) continue;
+
+					// Make move
+					const newState = state.map(peg => [...peg]);
+					const disk = newState[fromPeg].pop();
+					newState[toPeg].push(disk);
+
+					const key = stateKey(newState);
+					if (!visited.has(key)) {
+						visited.add(key);
+						queue.push({
+							state: newState,
+							moves: moves + 1,
+							path: [...path, {from: fromPeg, to: toPeg, disk}]
+						});
+					}
+				}
+			}
+		}
+
+		return {minMoves: -1, path: []}; // No solution found
+	}
 
 	user.subscribe(value => {
 		if (value) {
@@ -103,11 +150,25 @@
 		currentState = currentProblem.start_state.map(peg => [...peg]);
 		goalState = currentProblem.goal_state.map(peg => [...peg]);
 		
+		// Calculate actual minimum moves using BFS
+		const solution = findOptimalSolution(currentState, goalState);
+		actualMinMoves = solution.minMoves;
+		solutionPath = solution.path;
+
+		console.log('🎯 Tower of London - Problem', index + 1);
+		console.log('Backend minimum_moves:', currentProblem.minimum_moves);
+		console.log('Actual minimum_moves (BFS):', actualMinMoves);
+		console.log('Solution path:', solutionPath);
+
+		// Override the backend's incorrect minimum_moves
+		currentProblem.minimum_moves = actualMinMoves;
+
 		selectedDisk = null;
 		moveHistory = [];
 		totalMoves = 0;
 		showingGoal = true;
-		
+		showSolution = false;
+
 		// Start planning phase
 		gamePhase = 'planning';
 		planningTimeRemaining = sessionData.config.planning_time_seconds;
@@ -593,19 +654,56 @@
 					<div style="color: #166534; font-size: 1.1rem; line-height: 1.8;">
 						<div><strong>Moves Used:</strong> {userSolutions[userSolutions.length - 1].moves_used}</div>
 						{#if currentProblem.show_minimum}
-							<div><strong>Minimum Required:</strong> {currentProblem.minimum_moves}</div>
-							{#if userSolutions[userSolutions.length - 1].moves_used === currentProblem.minimum_moves}
+							<div><strong>Minimum Required:</strong> {actualMinMoves}</div>
+							{#if userSolutions[userSolutions.length - 1].moves_used === actualMinMoves}
 								<div style="color: #15803d; font-weight: 700; margin-top: 0.5rem;">🎯 Perfect solution!</div>
+							{:else}
+								<div style="color: #92400e; margin-top: 0.5rem;">
+									Extra moves: {userSolutions[userSolutions.length - 1].moves_used - actualMinMoves}
+								</div>
 							{/if}
 						{/if}
 					</div>
 				</div>
+
+				{#if !showSolution}
+					<button on:click={() => showSolution = true}
+						style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;
+						padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 1rem;">
+						💡 Show Optimal Solution
+					</button>
+				{/if}
 
 				<button on:click={nextProblem}
 					style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; 
 					padding: 1rem 2rem; font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
 					Next Problem →
 				</button>
+
+				{#if showSolution && solutionPath.length > 0}
+					<div style="background: #fffbeb; border-radius: 12px; padding: 2rem; margin-top: 2rem; border: 2px solid #fbbf24;">
+						<h3 style="color: #92400e; margin-bottom: 1.5rem;">📋 Optimal Solution ({actualMinMoves} moves)</h3>
+
+						<div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+							{#each solutionPath as move, index}
+								<div style="background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
+									<div style="display: flex; align-items: center; justify-content: space-between;">
+										<span style="font-weight: 700; color: #667eea; font-size: 1.1rem;">Step {index + 1}:</span>
+										<div style="display: flex; align-items: center; gap: 0.75rem;">
+											<span style="background: {DISK_COLORS[move.disk]}; color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem;">
+												{move.disk === 0 ? 'Red' : move.disk === 1 ? 'Blue' : 'Green'} disk
+											</span>
+											<span style="font-size: 1.5rem;">→</span>
+											<span style="color: #1e293b; font-weight: 600;">
+												Peg {move.from + 1} to Peg {move.to + 1}
+											</span>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 
 		{:else if gamePhase === 'results'}
