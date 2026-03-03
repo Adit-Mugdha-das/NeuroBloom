@@ -58,6 +58,14 @@
 		loading = true;
 		error = null;
 		
+		// Complete state reset to prevent cross-contamination
+		results = null;
+		centralResponse = null;
+		peripheralResponse = null;
+		responseStartTime = null;
+		responseTime = 0;
+		showStimulus = false;
+
 		try {
 			console.log('📊 UFOV - Loading trial for user:', userId);
 			const data = await generateUFOVTrial(userId);
@@ -69,10 +77,6 @@
 			
 			console.log('📊 UFOV - Difficulty:', difficulty, 'Trial data:', trialData);
 
-			// Reset response
-			centralResponse = null;
-			peripheralResponse = null;
-			
 			// Show fixation, then stimulus
 			gamePhase = 'ready';
 			loading = false; // Set loading to false so the ready phase shows
@@ -133,7 +137,16 @@
 				task_id: taskId
 			});
 			
-			results = data;
+			// Store both results and trial data (with correct answers)
+			results = {
+				...data,
+				// Include user responses and correct answers for comparison
+				user_central_response: centralResponse,
+				user_peripheral_response: peripheralResponse,
+				correct_central_target: trialData.central_target,
+				correct_peripheral_position: trialData.peripheral_position,
+				correct_peripheral_target: trialData.peripheral_target
+			};
 			trialsCompleted++;
 			gamePhase = 'results';
 			
@@ -150,7 +163,7 @@
 			// Session complete - return to training page to show updated progress
 			goto('/training');
 		} else {
-			results = null;
+			// loadTrial() now handles all state resets
 			loadTrial();
 		}
 	}
@@ -286,7 +299,7 @@
 			</div>
 		</div>
 	{/if}
-	
+
 	{#if gamePhase === 'ready'}
 		<div class="ready-phase">
 			<div class="ready-card">
@@ -325,8 +338,8 @@
 						<div 
 							class="peripheral-target"
 							style="
-								left: {50 + (Math.cos(trialData.peripheral_angle * Math.PI / 180) * 35)}%;
-								top: {50 + (Math.sin(trialData.peripheral_angle * Math.PI / 180) * 35)}%;
+								left: {50 + (Math.cos(trialData.peripheral_angle * Math.PI / 180) * 40)}%;
+								top: {50 - (Math.sin(trialData.peripheral_angle * Math.PI / 180) * 40)}%;
 							"
 						>
 							{#if trialData.peripheral_target === 'circle'}
@@ -345,8 +358,8 @@
 							<div 
 								class="distractor"
 								style="
-									left: {50 + (Math.cos(distractor.angle * Math.PI / 180) * distractor.radius * 35)}%;
-									top: {50 + (Math.sin(distractor.angle * Math.PI / 180) * distractor.radius * 35)}%;
+									left: {50 + (Math.cos(distractor.angle * Math.PI / 180) * distractor.radius * 40)}%;
+									top: {50 - (Math.sin(distractor.angle * Math.PI / 180) * distractor.radius * 40)}%;
 								"
 							>
 								{#if distractor.shape === 'circle'}
@@ -437,18 +450,18 @@
 		</div>
 	{/if}
 	
-	{#if gamePhase === 'results'}
+	{#if gamePhase === 'results' && results}
 		<div class="results-phase">
 			<div class="results-card">
-				<div class="performance-header" style="background: {getPerformanceBadge(results?.performance).color}">
-					<span class="performance-icon">{getPerformanceBadge(results?.performance).icon}</span>
-					<h2>{getPerformanceBadge(results?.performance).text}</h2>
+				<div class="performance-header" style="background: {getPerformanceBadge(results.performance).color}">
+					<span class="performance-icon">{getPerformanceBadge(results.performance).icon}</span>
+					<h2>{getPerformanceBadge(results.performance).text}</h2>
 				</div>
 				
 				<div class="results-content">
 					<div class="score-display">
-						<div class="score-circle" style="background: linear-gradient(135deg, {getPerformanceBadge(results?.performance).color}, {getPerformanceBadge(results?.performance).color}aa)">
-							<div class="score-value">{results?.score}</div>
+						<div class="score-circle" style="background: linear-gradient(135deg, {getPerformanceBadge(results.performance).color}, {getPerformanceBadge(results.performance).color}aa)">
+							<div class="score-value">{results.score}</div>
 							<div class="score-label">Score</div>
 						</div>
 					</div>
@@ -456,22 +469,22 @@
 					<div class="metrics-grid">
 						<div class="metric-card">
 							<div class="metric-label">Accuracy</div>
-							<div class="metric-value">{((results?.accuracy || 0) * 100).toFixed(0)}%</div>
+							<div class="metric-value">{((results.accuracy || 0) * 100).toFixed(0)}%</div>
 						</div>
 						
 						<div class="metric-card">
 							<div class="metric-label">Response Time</div>
-							<div class="metric-value">{results?.response_time}ms</div>
+							<div class="metric-value">{results.response_time}ms</div>
 						</div>
 						
 						<div class="metric-card">
 							<div class="metric-label">Processing Speed</div>
-							<div class="metric-value">{results?.processing_speed_score?.toFixed(2)}</div>
+							<div class="metric-value">{results.processing_speed_score.toFixed(2)}</div>
 						</div>
 						
 						<div class="metric-card">
 							<div class="metric-label">Presentation Time</div>
-							<div class="metric-value">{results?.presentation_time_ms}ms</div>
+							<div class="metric-value">{results.presentation_time_ms}ms</div>
 						</div>
 					</div>
 					
@@ -480,30 +493,96 @@
 						<div class="breakdown-grid">
 							<div class="breakdown-item">
 								<span class="breakdown-label">Central Target:</span>
-								<span class="breakdown-value {results?.central_correct ? 'correct' : 'incorrect'}">
-									{results?.central_correct ? '✓ Correct' : '✗ Incorrect'}
+								<span class="breakdown-value {results.central_correct ? 'correct' : 'incorrect'}">
+									{results.central_correct ? '✓ Correct' : '✗ Incorrect'}
 								</span>
 							</div>
-							{#if results?.subtest !== 'central_only'}
+							{#if results.subtest === 'central_peripheral' || results.subtest === 'central_peripheral_distractors'}
 								<div class="breakdown-item">
 									<span class="breakdown-label">Peripheral Target:</span>
-									<span class="breakdown-value {results?.peripheral_correct ? 'correct' : 'incorrect'}">
-										{results?.peripheral_correct ? '✓ Correct' : '✗ Incorrect'}
+									<span class="breakdown-value {results.peripheral_correct ? 'correct' : 'incorrect'}">
+										{results.peripheral_correct ? '✓ Correct' : '✗ Incorrect'}
 									</span>
 								</div>
 							{/if}
 							<div class="breakdown-item">
 								<span class="breakdown-label">Subtest:</span>
-								<span class="breakdown-value">{results?.subtest?.replace(/_/g, ' ')}</span>
+								<span class="breakdown-value">{results.subtest.replace(/_/g, ' ')}</span>
 							</div>
 						</div>
+
+						<!-- Answer Comparison Section -->
+						{#if results.user_central_response}
+							<div class="answer-comparison">
+								<h4>📋 Answer Review</h4>
+
+								<!-- Central Target Comparison -->
+								<div class="comparison-row">
+									<div class="comparison-label">Central Vehicle:</div>
+									<div class="comparison-content">
+										<div class="answer-item">
+											<span class="answer-tag">Your Answer:</span>
+											<span class="answer-text {results.central_correct ? 'answer-correct' : 'answer-wrong'}">
+												{results.user_central_response === 'car' ? '🚗 Car' : '🚚 Truck'}
+											</span>
+										</div>
+										<div class="answer-item">
+											<span class="answer-tag">Correct Answer:</span>
+											<span class="answer-text answer-correct">
+												{results.correct_central_target === 'car' ? '🚗 Car' : '🚚 Truck'}
+											</span>
+										</div>
+									</div>
+								</div>
+
+								<!-- Peripheral Target Comparison (if applicable) -->
+								{#if results.subtest === 'central_peripheral' || results.subtest === 'central_peripheral_distractors'}
+									<div class="comparison-row">
+										<div class="comparison-label">Peripheral Shape:</div>
+										<div class="comparison-content">
+											<div class="answer-item">
+												<span class="answer-tag">Shape Type:</span>
+												<span class="answer-text answer-info">
+													{results.correct_peripheral_target === 'circle' ? '⭕ Circle' :
+													 results.correct_peripheral_target === 'triangle' ? '🔺 Triangle' : '⬜ Square'}
+												</span>
+											</div>
+											<div class="answer-item">
+												<span class="answer-tag">Your Location:</span>
+												<span class="answer-text {results.peripheral_correct ? 'answer-correct' : 'answer-wrong'}">
+													{results.user_peripheral_response || 'Not selected'}
+												</span>
+											</div>
+											<div class="answer-item">
+												<span class="answer-tag">Correct Location:</span>
+												<span class="answer-text answer-correct">
+													{results.correct_peripheral_position}
+												</span>
+											</div>
+										</div>
+									</div>
+
+									{#if !results.peripheral_correct && results.correct_peripheral_position}
+										<div class="location-hint">
+											<span class="hint-icon">💡</span>
+											<span class="hint-text">
+												The {results.correct_peripheral_target} was at <strong>{results.correct_peripheral_position}</strong>
+												{#if results.user_peripheral_response}
+													, but you selected <strong>{results.user_peripheral_response}</strong>
+												{/if}
+											</span>
+										</div>
+									{/if}
+								{/if}
+							</div>
+						{/if}
 					</div>
 					
 					<div class="feedback-section">
-						<p class="feedback-message">{results?.feedback_message}</p>
+						<p class="feedback-message">{results.feedback_message}</p>
 					</div>
 					
-					{#if results?.new_badges && results.new_badges.length > 0}
+					{#if results.new_badges && results.new_badges.length > 0}
 						<div class="badges-earned">
 							<h3>🏆 Badges Earned!</h3>
 							<div class="badge-list">
@@ -522,15 +601,15 @@
 					
 					<div class="difficulty-info">
 						<p>
-							{#if results?.new_difficulty > results?.old_difficulty}
+							{#if results.new_difficulty > results.old_difficulty}
 								📈 <strong>Level Up!</strong> Advancing to level {results.new_difficulty}
-							{:else if results?.new_difficulty < results?.old_difficulty}
+							{:else if results.new_difficulty < results.old_difficulty}
 								📉 Adjusting to level {results.new_difficulty} for better learning
 							{:else}
 								✓ Staying at level {results.new_difficulty}
 							{/if}
 						</p>
-						<p class="adaptation-reason">{results?.adaptation_reason}</p>
+						<p class="adaptation-reason">{results.adaptation_reason}</p>
 					</div>
 					
 					<div class="progress-tracker">
@@ -1225,6 +1304,101 @@
 		color: #ef4444;
 	}
 	
+	/* Answer Comparison Styles */
+	.answer-comparison {
+		margin-top: 1.5rem;
+		padding-top: 1.5rem;
+		border-top: 2px solid #ddd;
+	}
+
+	.answer-comparison h4 {
+		color: #667eea;
+		margin: 0 0 1rem 0;
+		font-size: 1.1rem;
+	}
+
+	.comparison-row {
+		margin: 1.5rem 0;
+		background: white;
+		padding: 1rem;
+		border-radius: 8px;
+		border-left: 4px solid #667eea;
+	}
+
+	.comparison-label {
+		font-weight: bold;
+		color: #667eea;
+		margin-bottom: 0.75rem;
+		font-size: 1.05rem;
+	}
+
+	.comparison-content {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.answer-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5rem 0;
+	}
+
+	.answer-tag {
+		color: #666;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.answer-text {
+		font-size: 1rem;
+		font-weight: bold;
+		padding: 0.25rem 0.75rem;
+		border-radius: 6px;
+	}
+
+	.answer-correct {
+		background: #d1fae5;
+		color: #065f46;
+	}
+
+	.answer-wrong {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.answer-info {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+
+	.location-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: #fef3c7;
+		padding: 1rem;
+		border-radius: 8px;
+		margin-top: 1rem;
+		border-left: 4px solid #f59e0b;
+	}
+
+	.hint-icon {
+		font-size: 1.5rem;
+		flex-shrink: 0;
+	}
+
+	.hint-text {
+		color: #78350f;
+		font-size: 0.95rem;
+		line-height: 1.5;
+	}
+
+	.hint-text strong {
+		color: #92400e;
+		font-weight: 700;
+	}
+
 	.feedback-section {
 		margin: 2rem 0;
 		background: #fffbeb;
