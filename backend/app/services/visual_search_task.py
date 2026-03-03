@@ -229,19 +229,49 @@ class VisualSearchTask:
     
     @staticmethod
     def _random_position(index: int, total: int) -> Dict[str, float]:
-        """Generate random position for item in visual field."""
-        # Grid-based positioning with some jitter for natural appearance
+        """
+        Generate random position for item in visual field.
+
+        Research-valid display with scaled viewport:
+        - Viewport size scales with item count (more items = larger area)
+        - This ensures RT scales linearly with items (research-valid)
+        - Maximum 70% of screen height (leave 30% for header + buttons)
+        - Random distribution for natural appearance
+
+        Viewport scaling:
+        - 12 items: ~40% of screen (compact, sparse)
+        - 24 items: ~52% of screen (medium density)
+        - 48 items: ~70% of screen (larger area, dense)
+        """
+        # Calculate grid for positioning
         grid_size = int(total ** 0.5) + 1
         row = index // grid_size
         col = index % grid_size
         
-        # Add random jitter (±10% of cell size)
-        jitter_x = random.uniform(-0.1, 0.1)
-        jitter_y = random.uniform(-0.1, 0.1)
-        
+        # Scale viewport based on item count (research-valid)
+        # Formula: grows from 40% (12 items) to 70% (48 items)
+        viewport_scale = 0.40 + ((total - 12) / 120.0)  # Gradual scaling
+        viewport_scale = min(0.70, max(0.40, viewport_scale))  # Clamp between 40-70%
+
+        # Center the viewport on screen
+        margin = (1.0 - viewport_scale) / 2.0
+
+        # Position within grid
+        x_in_grid = col / grid_size
+        y_in_grid = row / grid_size
+
+        # Map to scaled viewport (centered)
+        x = margin + (x_in_grid * viewport_scale)
+        y = margin + (y_in_grid * viewport_scale)
+
+        # Add random jitter for natural appearance
+        cell_size = viewport_scale / grid_size
+        jitter_x = random.uniform(-0.10, 0.10) * cell_size
+        jitter_y = random.uniform(-0.10, 0.10) * cell_size
+
         return {
-            "x": (col / grid_size) + jitter_x,
-            "y": (row / grid_size) + jitter_y
+            "x": x + jitter_x,
+            "y": y + jitter_y
         }
     
     @staticmethod
@@ -278,34 +308,79 @@ class VisualSearchTask:
         
         # Calculate search efficiency (RT per item)
         search_efficiency = reaction_time / set_size if set_size > 0 else 0
-        
-        # Estimate search slope (ms per item)
-        # Feature search: ~0-10 ms/item (parallel)
-        # Conjunction search: ~20-60 ms/item (serial)
-        search_slope = search_efficiency * 1000  # Convert to ms
-        
-        # Performance classification
+        search_slope = search_efficiency * 1000  # Convert to ms/item
+
+        # Performance classification - Research-valid with scaled viewport
+        # Now that viewport scales with item count, ms/item is valid measure
+        # Thresholds based on Treisman & Gelade (1980) + similarity effects
+
+        similarity = trial_data.get("similarity", "low")
+
         if search_type == "feature":
-            # Feature search should be fast and parallel
-            if search_slope < 10 and correct:
-                performance = "excellent"
-            elif search_slope < 20 and correct:
-                performance = "good"
-            elif correct:
-                performance = "average"
-            else:
-                performance = "needs_improvement"
+            # Feature search - parallel processing with pop-out
+            if similarity == "low":
+                # Clear pop-out: nearly flat slope
+                if search_slope < 15 and correct:
+                    performance = "excellent"  # Truly parallel
+                elif search_slope < 35 and correct:
+                    performance = "good"  # Efficient parallel
+                elif search_slope < 65 and correct:
+                    performance = "average"  # Adequate
+                else:
+                    performance = "needs_improvement"
+            elif similarity == "medium":
+                # Reduced pop-out: some serial component
+                if search_slope < 30 and correct:
+                    performance = "excellent"
+                elif search_slope < 60 and correct:
+                    performance = "good"
+                elif search_slope < 100 and correct:
+                    performance = "average"
+                else:
+                    performance = "needs_improvement"
+            else:  # high similarity
+                # Crowding effects: approaching serial
+                if search_slope < 50 and correct:
+                    performance = "excellent"
+                elif search_slope < 85 and correct:
+                    performance = "good"
+                elif search_slope < 130 and correct:
+                    performance = "average"
+                else:
+                    performance = "needs_improvement"
         else:
-            # Conjunction search is serial, slower is expected
-            if search_slope < 30 and correct:
-                performance = "excellent"
-            elif search_slope < 50 and correct:
-                performance = "good"
-            elif correct:
-                performance = "average"
-            else:
-                performance = "needs_improvement"
-        
+            # Conjunction search - serial attention required
+            if similarity == "low":
+                # Efficient serial search
+                if search_slope < 40 and correct:
+                    performance = "excellent"
+                elif search_slope < 75 and correct:
+                    performance = "good"
+                elif search_slope < 120 and correct:
+                    performance = "average"
+                else:
+                    performance = "needs_improvement"
+            elif similarity == "medium":
+                # Moderate serial search
+                if search_slope < 65 and correct:
+                    performance = "excellent"
+                elif search_slope < 110 and correct:
+                    performance = "good"
+                elif search_slope < 165 and correct:
+                    performance = "average"
+                else:
+                    performance = "needs_improvement"
+            else:  # high similarity
+                # Difficult serial search
+                if search_slope < 90 and correct:
+                    performance = "excellent"
+                elif search_slope < 145 and correct:
+                    performance = "good"
+                elif search_slope < 215 and correct:
+                    performance = "average"
+                else:
+                    performance = "needs_improvement"
+
         # Detect response type
         if correct and target_present:
             response_type = "hit"

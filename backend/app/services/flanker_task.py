@@ -54,6 +54,8 @@ class FlankerTask:
     
     # Difficulty levels: 10 levels optimized for MS patients
     # Key variables: presentation time, flanker count, congruent ratio, spacing
+    # Presentation time progression: 1200 → 1000 → 850 → 750 → 650 → 550 → 500 → 450 → 400 → 350ms
+    # Research-backed: ANT standard = 500ms, Elite = 350-400ms (achievable by healthy adults)
     DIFFICULTY_CONFIG = {
         1: {
             "arrow_set": "basic",
@@ -90,7 +92,7 @@ class FlankerTask:
         },
         4: {
             "arrow_set": "basic",
-            "presentation_time_ms": 700,  # Standard clinical timing starts here
+            "presentation_time_ms": 750,  # Smoother progression
             "inter_stimulus_interval_ms": 500,
             "total_trials": 70,
             "flanker_count": 2,
@@ -101,7 +103,7 @@ class FlankerTask:
         },
         5: {
             "arrow_set": "thick",
-            "presentation_time_ms": 600,  # Research standard (500-800ms typical)
+            "presentation_time_ms": 650,  # Research standard range (500-800ms)
             "inter_stimulus_interval_ms": 500,
             "total_trials": 80,
             "flanker_count": 3,
@@ -112,40 +114,40 @@ class FlankerTask:
         },
         6: {
             "arrow_set": "thick",
-            "presentation_time_ms": 500,  # Clinical ANT standard
+            "presentation_time_ms": 550,  # Approaching ANT standard
             "inter_stimulus_interval_ms": 450,
             "total_trials": 90,
             "flanker_count": 3,
             "congruent_ratio": 0.48,
             "stimulus_size": "medium",
             "spacing": "narrow",
-            "description": "Advanced - ANT standard"
+            "description": "Advanced - Fast responses"
         },
         7: {
             "arrow_set": "double",
-            "presentation_time_ms": 400,  # Getting challenging
+            "presentation_time_ms": 500,  # Clinical ANT standard (Gold standard timing)
             "inter_stimulus_interval_ms": 450,
             "total_trials": 100,
             "flanker_count": 3,
             "congruent_ratio": 0.45,
             "stimulus_size": "small",
             "spacing": "narrow",
-            "description": "Expert - Fast pace"
+            "description": "Expert - ANT standard"
         },
         8: {
             "arrow_set": "double",
-            "presentation_time_ms": 350,  # Very fast
+            "presentation_time_ms": 450,  # Challenging but achievable
             "inter_stimulus_interval_ms": 400,
             "total_trials": 110,
             "flanker_count": 3,
             "congruent_ratio": 0.43,
             "stimulus_size": "small",
             "spacing": "narrow",
-            "description": "Master - Demanding"
+            "description": "Master - Demanding pace"
         },
         9: {
             "arrow_set": "triangles",
-            "presentation_time_ms": 300,  # Elite performance
+            "presentation_time_ms": 400,  # Elite performance (research-proven achievable)
             "inter_stimulus_interval_ms": 400,
             "total_trials": 120,
             "flanker_count": 3,
@@ -156,14 +158,14 @@ class FlankerTask:
         },
         10: {
             "arrow_set": "triangles",
-            "presentation_time_ms": 250,  # Maximum challenge (research lower bound ~150-250ms)
+            "presentation_time_ms": 350,  # Ultimate challenge (achievable with practice, not superhuman)
             "inter_stimulus_interval_ms": 400,
             "total_trials": 120,
             "flanker_count": 3,
             "congruent_ratio": 0.40,  # 60% incongruent
             "stimulus_size": "small",
             "spacing": "tight",
-            "description": "Ultimate - Extreme speed, maximum conflict"
+            "description": "Ultimate - Maximum speed, maximum conflict"
         }
     }
     
@@ -427,13 +429,14 @@ class FlankerTask:
         performance_score = (overall_accuracy * 0.4) + (normalized_rt * 0.3) + (conflict_control * 0.3)
         
         # Performance level classification
-        if performance_score >= 85 and conflict_effect < 100:
+        # Research-backed thresholds: Healthy adults typically show 50-120ms conflict effect
+        if performance_score >= 85 and conflict_effect < 120:
             performance_level = "Excellent"
             feedback = "Outstanding selective attention! You effectively filtered flanker interference."
-        elif performance_score >= 70 and conflict_effect < 150:
+        elif performance_score >= 70 and conflict_effect < 180:
             performance_level = "Good"
             feedback = "Strong conflict resolution with good response speed."
-        elif performance_score >= 55 and conflict_effect < 200:
+        elif performance_score >= 55 and conflict_effect < 250:
             performance_level = "Fair"
             feedback = "Moderate attention control. Practice helps reduce flanker interference."
         else:
@@ -490,33 +493,33 @@ class FlankerTask:
         
         # Increase difficulty if excellent performance:
         # - High overall accuracy (≥88%) AND
-        # - Low conflict effect (<100ms - excellent selective attention) AND
+        # - Low conflict effect (<120ms - excellent selective attention, research-backed) AND
         # - Good incongruent accuracy (≥85%) AND
         # - Fast RT (<700ms)
-        if overall_accuracy >= 88 and conflict_effect < 100 and incongruent_accuracy >= 85 and mean_rt < 700:
+        if overall_accuracy >= 88 and conflict_effect < 120 and incongruent_accuracy >= 85 and mean_rt < 700:
             return 1
         
         # Strong performance (faster progression):
         # - Very high accuracy (≥92%) AND
-        # - Moderate conflict effect (<150ms) AND
+        # - Moderate conflict effect (<150ms - strong performance) AND
         # - Very good incongruent trials (≥88%)
         elif overall_accuracy >= 92 and conflict_effect < 150 and incongruent_accuracy >= 88:
             return 1
         
         # Decrease difficulty if struggling:
         # - Low accuracy (<70%) OR
-        # - Very large conflict effect (>300ms - severe interference) OR
+        # - Very large conflict effect (>350ms - severe interference) OR
         # - Poor incongruent accuracy (<60%) OR
         # - Very slow RT (>1200ms)
-        elif overall_accuracy < 70 or conflict_effect > 300 or incongruent_accuracy < 60 or mean_rt > 1200:
+        elif overall_accuracy < 70 or conflict_effect > 350 or incongruent_accuracy < 60 or mean_rt > 1200:
             return -1
         
         # Severe difficulty - drop 2 levels:
         # - Very poor accuracy (<60%) OR
-        # - Extreme conflict effect (>400ms) OR
+        # - Extreme conflict effect (>500ms - cannot handle interference) OR
         # - Failing incongruent trials (<50%) OR
         # - Extremely slow (>1500ms)
-        elif overall_accuracy < 60 or conflict_effect > 400 or incongruent_accuracy < 50 or mean_rt > 1500:
+        elif overall_accuracy < 60 or conflict_effect > 500 or incongruent_accuracy < 50 or mean_rt > 1500:
             return -2
         
         return 0

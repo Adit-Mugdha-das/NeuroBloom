@@ -359,8 +359,8 @@
 								placeholder="e.g., Is it an animal?"
 								style="flex: 1; padding: 1rem; font-size: 1.1rem; border: 2px solid #cbd5e1; 
 								border-radius: 8px; outline: none; transition: all 0.3s;"
-								on:focus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
-								on:blur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+								on:focus={(e) => { e.currentTarget.style.borderColor = '#f59e0b'; }}
+								on:blur={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; }}
 							/>
 							<button on:click={askQuestion}
 								disabled={!questionInput.trim()}
@@ -404,8 +404,8 @@
 						style="background: #64748b; color: white; border: none; 
 						padding: 0.75rem 2rem; font-size: 1rem; border-radius: 8px; cursor: pointer; 
 						font-weight: 600; transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.background = '#475569'}
-						on:mouseleave={(e) => e.currentTarget.style.background = '#64748b'}>
+						on:mouseenter={(e) => { e.currentTarget.style.background = '#475569'; }}
+						on:mouseleave={(e) => { e.currentTarget.style.background = '#64748b'; }}>
 						Give Up
 					</button>
 				</div>

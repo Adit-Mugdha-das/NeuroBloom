@@ -30,6 +30,8 @@ class StroopTask:
     FULL_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange']
     
     # Difficulty levels: 10 levels with varying complexity
+    # Presentation time progression: 3000 → 2500 → 2000 → 1900 → 1800 → 1500 → 1400 → 1300 → 1100 → 1000ms
+    # All timings research-backed and achievable by healthy adults with practice
     DIFFICULTY_CONFIG = {
         1: {
             "colors": BASIC_COLORS,
@@ -54,10 +56,10 @@ class StroopTask:
         },
         4: {
             "colors": EXTENDED_COLORS,
-            "presentation_time_ms": 2000,
+            "presentation_time_ms": 1900,  # Smooth progression (was 2000ms - removed plateau)
             "trials_per_condition": 12,
-            "response_timeout_ms": 3000,
-            "description": "Standard - 5 colors, challenging"
+            "response_timeout_ms": 2900,
+            "description": "Standard - 5 colors, building speed"
         },
         5: {
             "colors": EXTENDED_COLORS,
@@ -75,7 +77,7 @@ class StroopTask:
         },
         7: {
             "colors": FULL_COLORS,
-            "presentation_time_ms": 1500,
+            "presentation_time_ms": 1400,  # Smooth progression (was 1500ms - removed plateau)
             "trials_per_condition": 15,
             "response_timeout_ms": 2000,
             "description": "Advanced - 6 colors, fast pace"
@@ -305,14 +307,15 @@ class StroopTask:
         normalized_interference = max(0, 100 - (interference_cost / 2))  # Normalize to 0-100
         performance_score = (overall_accuracy * 0.6) + (normalized_interference * 0.4)
         
-        # Classify performance
-        if performance_score >= 85:
+        # Classify performance (with interference cost as secondary criterion)
+        # Research-backed: Healthy adults show 20-50% interference cost
+        if performance_score >= 85 and interference_cost < 30:
             performance_level = "Excellent"
             feedback = "Outstanding inhibitory control and selective attention!"
-        elif performance_score >= 70:
+        elif performance_score >= 70 and interference_cost < 50:
             performance_level = "Good"
             feedback = "Strong attention control with effective interference management."
-        elif performance_score >= 55:
+        elif performance_score >= 55 and interference_cost < 70:
             performance_level = "Fair"
             feedback = "Moderate interference control. Practice helps improve inhibition."
         else:
@@ -354,27 +357,59 @@ class StroopTask:
         Determine difficulty adjustment based on performance.
         
         Focus on:
-        1. Overall accuracy (primary)
-        2. Interference cost (cognitive control measure)
+        1. Overall accuracy (primary measure)
+        2. Interference cost (cognitive control - research-backed metric)
         3. Incongruent trial accuracy (hardest condition)
+        4. Mean RT (cognitive overload detection)
+
+        Research-backed thresholds:
+        - Healthy adults: 20-50% interference cost typical
+        - Excellent inhibition: <25% interference cost
+        - Good inhibition: 25-40% interference cost
+        - Struggling: >60% interference cost
         """
         accuracy = results['overall_accuracy']
         interference_cost = results['interference_cost']
         incongruent_accuracy = results['incongruent_accuracy']
-        
-        # Increase difficulty if:
-        # - High overall accuracy (≥90%) AND
-        # - Low interference cost (≤30%) AND
-        # - High incongruent accuracy (≥85%)
-        if accuracy >= 90 and interference_cost <= 30 and incongruent_accuracy >= 85:
-            return 1  # Increase difficulty
-        
-        # Decrease difficulty if:
-        # - Low overall accuracy (<60%) OR
-        # - Very high interference cost (>80%) OR
-        # - Poor incongruent performance (<50%)
-        elif accuracy < 60 or interference_cost > 80 or incongruent_accuracy < 50:
-            return -1  # Decrease difficulty
-        
-        # Stay at current difficulty
+        mean_rt = results.get('incongruent_rt', 0)  # Use incongruent RT as primary metric
+
+        # INCREASE +2 (Exceptional performance - rapid progression):
+        # - Near-perfect accuracy (≥95%) AND
+        # - Excellent interference control (<20% - research elite level) AND
+        # - Perfect incongruent trials (≥90%)
+        if accuracy >= 95 and interference_cost < 20 and incongruent_accuracy >= 90:
+            return 2
+
+        # INCREASE +1 (Strong performance):
+        # - High overall accuracy (≥85%) AND
+        # - Good interference control (<35% - healthy adult range) AND
+        # - Strong incongruent accuracy (≥80%) AND
+        # - Reasonable speed (<2500ms - not overthinking)
+        if accuracy >= 85 and interference_cost < 35 and incongruent_accuracy >= 80 and mean_rt < 2500:
+            return 1
+
+        # INCREASE +1 (Very strong alternative path):
+        # - Excellent accuracy (≥92%) AND
+        # - Moderate interference (<45%) AND
+        # - Very good incongruent (≥85%)
+        elif accuracy >= 92 and interference_cost < 45 and incongruent_accuracy >= 85:
+            return 1
+
+        # DECREASE -1 (Struggling):
+        # - Moderate accuracy issues (<75%) OR
+        # - High interference cost (>60% - losing control) OR
+        # - Poor incongruent accuracy (<65%) OR
+        # - Very slow responses (>3500ms - cognitive overload)
+        elif accuracy < 75 or interference_cost > 60 or incongruent_accuracy < 65 or mean_rt > 3500:
+            return -1
+
+        # DECREASE -2 (Severe difficulty - needs immediate adjustment):
+        # - Very low accuracy (<60%) OR
+        # - Extreme interference (>90% - complete loss of inhibition) OR
+        # - Failing incongruent trials (<50%) OR
+        # - Extremely slow (>5000ms - overwhelmed)
+        elif accuracy < 60 or interference_cost > 90 or incongruent_accuracy < 50 or mean_rt > 5000:
+            return -2
+
+        # STAY (Performance in acceptable range: 75-85% accuracy, 35-60% interference)
         return 0
