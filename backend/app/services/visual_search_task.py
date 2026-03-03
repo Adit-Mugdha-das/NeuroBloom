@@ -313,38 +313,49 @@ class VisualSearchTask:
         # Performance classification - Research-valid with scaled viewport
         # Now that viewport scales with item count, ms/item is valid measure
         # Thresholds based on Treisman & Gelade (1980) + similarity effects
+        # ADJUSTED: More forgiving ratings for lower difficulties to encourage patients
 
         similarity = trial_data.get("similarity", "low")
+        difficulty = trial_data.get("difficulty", 5)
+
+        # Apply difficulty-based flexibility multiplier
+        # Lower difficulties get more lenient thresholds
+        if difficulty <= 3:
+            flexibility = 1.5  # 50% more lenient for beginners
+        elif difficulty <= 6:
+            flexibility = 1.2  # 20% more lenient for intermediate
+        else:
+            flexibility = 1.0  # Standard thresholds for advanced
 
         if search_type == "feature":
             # Feature search - parallel processing with pop-out
             if similarity == "low":
                 # Clear pop-out: nearly flat slope
-                if search_slope < 15 and correct:
+                if search_slope < (15 * flexibility) and correct:
                     performance = "excellent"  # Truly parallel
-                elif search_slope < 35 and correct:
+                elif search_slope < (35 * flexibility) and correct:
                     performance = "good"  # Efficient parallel
-                elif search_slope < 65 and correct:
+                elif search_slope < (65 * flexibility) and correct:
                     performance = "average"  # Adequate
                 else:
                     performance = "needs_improvement"
             elif similarity == "medium":
                 # Reduced pop-out: some serial component
-                if search_slope < 30 and correct:
+                if search_slope < (30 * flexibility) and correct:
                     performance = "excellent"
-                elif search_slope < 60 and correct:
+                elif search_slope < (60 * flexibility) and correct:
                     performance = "good"
-                elif search_slope < 100 and correct:
+                elif search_slope < (100 * flexibility) and correct:
                     performance = "average"
                 else:
                     performance = "needs_improvement"
             else:  # high similarity
                 # Crowding effects: approaching serial
-                if search_slope < 50 and correct:
+                if search_slope < (50 * flexibility) and correct:
                     performance = "excellent"
-                elif search_slope < 85 and correct:
+                elif search_slope < (85 * flexibility) and correct:
                     performance = "good"
-                elif search_slope < 130 and correct:
+                elif search_slope < (130 * flexibility) and correct:
                     performance = "average"
                 else:
                     performance = "needs_improvement"
@@ -352,31 +363,31 @@ class VisualSearchTask:
             # Conjunction search - serial attention required
             if similarity == "low":
                 # Efficient serial search
-                if search_slope < 40 and correct:
+                if search_slope < (40 * flexibility) and correct:
                     performance = "excellent"
-                elif search_slope < 75 and correct:
+                elif search_slope < (75 * flexibility) and correct:
                     performance = "good"
-                elif search_slope < 120 and correct:
+                elif search_slope < (120 * flexibility) and correct:
                     performance = "average"
                 else:
                     performance = "needs_improvement"
             elif similarity == "medium":
                 # Moderate serial search
-                if search_slope < 65 and correct:
+                if search_slope < (65 * flexibility) and correct:
                     performance = "excellent"
-                elif search_slope < 110 and correct:
+                elif search_slope < (110 * flexibility) and correct:
                     performance = "good"
-                elif search_slope < 165 and correct:
+                elif search_slope < (165 * flexibility) and correct:
                     performance = "average"
                 else:
                     performance = "needs_improvement"
             else:  # high similarity
                 # Difficult serial search
-                if search_slope < 90 and correct:
+                if search_slope < (90 * flexibility) and correct:
                     performance = "excellent"
-                elif search_slope < 145 and correct:
+                elif search_slope < (145 * flexibility) and correct:
                     performance = "good"
-                elif search_slope < 215 and correct:
+                elif search_slope < (215 * flexibility) and correct:
                     performance = "average"
                 else:
                     performance = "needs_improvement"

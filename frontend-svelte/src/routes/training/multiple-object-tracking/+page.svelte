@@ -26,6 +26,11 @@
 	let timeRemaining = 0;
 	let timerInterval = null;
 
+	// Selection timing
+	let selectionStartTime = null;
+	let selectionElapsed = 0;
+	let selectionTimerInterval = null;
+
 	// Results
 	let results = null;
 	let earnedBadges = [];
@@ -45,6 +50,7 @@
 	onDestroy(() => {
 		stopAnimation();
 		if (timerInterval) clearInterval(timerInterval);
+		if (selectionTimerInterval) clearInterval(selectionTimerInterval);
 	});
 
 	async function loadTrial() {
@@ -161,6 +167,16 @@
 			clearInterval(timerInterval);
 			timerInterval = null;
 		}
+
+		// Start selection timing - this is the actual response time
+		selectionStartTime = Date.now();
+		selectionElapsed = 0;
+
+		// Start selection elapsed time counter
+		selectionTimerInterval = setInterval(() => {
+			selectionElapsed = (Date.now() - selectionStartTime) / 1000;
+		}, 100);
+
 		phase = 'selection';
 	}
 
@@ -181,7 +197,14 @@
 	}
 
 	async function submitSelection() {
-		const responseTime = (Date.now() - startTime) / 1000;
+		// Stop selection timer
+		if (selectionTimerInterval) {
+			clearInterval(selectionTimerInterval);
+			selectionTimerInterval = null;
+		}
+
+		// Calculate actual selection response time (from when objects stopped moving)
+		const responseTime = (Date.now() - selectionStartTime) / 1000;
 		taskId = $page.url.searchParams.get('taskId');
 		
 		const userResponse = {
@@ -209,6 +232,12 @@
 		selectedObjects = new Set();
 		results = null;
 		earnedBadges = [];
+		selectionStartTime = null;
+		selectionElapsed = 0;
+		if (selectionTimerInterval) {
+			clearInterval(selectionTimerInterval);
+			selectionTimerInterval = null;
+		}
 		loadTrial();
 	}
 
@@ -381,6 +410,10 @@
 					Click on the {trialData.num_targets} circles you were tracking
 					<span class="selection-count">({selectedObjects.size}/{trialData.num_targets} selected)</span>
 				</p>
+				<div class="selection-timer">
+					<span class="timer-icon">⏱️</span>
+					<span class="timer-value">{selectionElapsed.toFixed(1)}s</span>
+				</div>
 			</div>
 
 			<div class="tracking-arena" style="width: {trialData.arena_size}px; height: {trialData.arena_size}px;">
@@ -788,6 +821,28 @@
 	.selection-count {
 		color: #667eea;
 		font-weight: 600;
+	}
+
+	.selection-timer {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+		padding: 0.5rem 1.5rem;
+		border-radius: 50px;
+		margin-top: 0.75rem;
+		border: 2px solid #a5b4fc;
+	}
+
+	.selection-timer .timer-icon {
+		font-size: 1.25rem;
+	}
+
+	.selection-timer .timer-value {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: #4338ca;
+		min-width: 50px;
 	}
 
 	/* Tracking Controls */
