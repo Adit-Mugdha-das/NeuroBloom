@@ -4503,6 +4503,7 @@ def submit_plus_minus_session(
     # Score the session
     session_data = request_data.get("session_data")
     user_responses = request_data.get("user_responses")
+    total_time = request_data.get("total_time", 0)  # Get total elapsed time from frontend
     task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
     if not session_data or not user_responses:
@@ -4510,6 +4511,9 @@ def submit_plus_minus_session(
     
     results = plus_minus_task_service.score_session(session_data, user_responses)
     
+    # Add total_time to results
+    results["total_time"] = total_time
+
     difficulty = session_data.get("difficulty", 1)
     
     # Adaptive difficulty calculation (before creating session)
@@ -4570,9 +4574,14 @@ def submit_plus_minus_session(
     return {
         "success": True,
         "score": results["score"],
+        "accuracy": results["accuracy"],
         "overall_accuracy": results["overall_accuracy"],
         "switching_cost": results["switching_cost"],
+        "switching_cost_accuracy": results["switching_cost_accuracy"],
         "switch_accuracy": results["switch_accuracy"],
+        "average_rt": results["average_rt"],
+        "total_errors": results["total_errors"],
+        "blocks": results["blocks"],  # Include block-level results for frontend
         "new_difficulty": new_difficulty,
         "new_badges": session_info["newly_earned_badges"],
         "session_complete": session_info["session_complete"],

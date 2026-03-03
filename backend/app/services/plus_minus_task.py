@@ -396,6 +396,13 @@ class PlusMinusTask:
         
         results["score"] = int(accuracy_score + speed_score + switching_score)
         
+        # Add alias fields for API compatibility
+        results["overall_accuracy"] = results["accuracy"]
+        results["average_rt"] = results["mean_rt"]
+        results["total_errors"] = results["total_trials"] - results["correct_trials"]
+        results["switch_accuracy"] = results["blocks"].get("block_c", {}).get("accuracy", 0.0)
+        results["total_time"] = 0  # Will be calculated by frontend if needed
+
         return results
 
 

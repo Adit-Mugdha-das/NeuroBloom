@@ -4,7 +4,7 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { user } from '$lib/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	let phase = 'intro';
 	let loading = false;
@@ -17,6 +17,8 @@
 	let currentTrialIndex = 0;
 	let responses = [];
 	let startTime = null;
+	let elapsedTime = 0; // Add elapsed time tracking
+	let timerInterval = null; // Timer interval reference
 	let trialStartTime = null;
 	let showCue = false;
 	let cueText = '';
@@ -87,6 +89,13 @@
 		currentBlock = sessionData.blocks.block_a;
 		phase = 'task';
 		startTime = Date.now();
+		elapsedTime = 0;
+
+		// Start timer to update elapsed time
+		timerInterval = setInterval(() => {
+			elapsedTime = (Date.now() - startTime) / 1000;
+		}, 100); // Update every 100ms for smooth display
+
 		startTrial();
 	}
 
@@ -121,6 +130,13 @@
 		const responseTime = Date.now() - trialStartTime;
 		const answer = parseInt(userAnswer);
 		
+		// Validate that the answer is a valid number
+		if (isNaN(answer)) {
+			// Invalid input - clear the field and don't record response
+			userAnswer = '';
+			return;
+		}
+
 		responses.push({
 			trial_number: trial.trial_number,
 			user_answer: answer,
@@ -137,6 +153,13 @@
 	function handleKeyPress(event) {
 		if (event.key === 'Enter') {
 			handleSubmit();
+			return;
+		}
+
+		// Allow only numbers, minus sign, and control keys
+		const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', 'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+		if (!allowedKeys.includes(event.key)) {
+			event.preventDefault();
 		}
 	}
 
@@ -177,6 +200,13 @@
 			loading = true;
 			error = null;
 			const totalTime = Date.now() - startTime;
+
+			// Stop timer interval
+			if (timerInterval) {
+				clearInterval(timerInterval);
+				timerInterval = null;
+			}
+
 			taskId = $page.url.searchParams.get('taskId');
 			
 			// Submit to training endpoint
@@ -188,6 +218,7 @@
 					body: JSON.stringify({
 						session_data: sessionData,
 						user_responses: responses,
+						total_time: totalTime,  // Send total elapsed time
 						task_id: taskId
 					})
 				}
@@ -212,6 +243,14 @@
 			return;
 		}
 		await loadSession();
+	});
+
+	onDestroy(() => {
+		// Clean up timer interval
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
 	});
 </script>
 
@@ -335,11 +374,17 @@
 				{@const trialNum = currentTrialIndex + 1}
 
 				<div>
-					<!-- Progress -->
+					<!-- Progress and Timer -->
 					<div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-						<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
 							<span style="font-size: 14px; color: #666;">Block {blockNum} of 3: {currentBlock.instruction}</span>
-							<span style="font-size: 14px; color: #666;">Trial {trialNum} / {totalTrials}</span>
+							<div style="display: flex; align-items: center; gap: 20px;">
+								<span style="font-size: 14px; color: #666;">Trial {trialNum} / {totalTrials}</span>
+								<div style="display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 0.5rem 1rem; border-radius: 1.5rem; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">
+									<span style="font-size: 1.2rem;">⏱️</span>
+									<span style="font-size: 1rem; font-weight: 700; color: white; min-width: 50px; text-align: center;">{elapsedTime.toFixed(1)}s</span>
+								</div>
+							</div>
 						</div>
 						<div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
 							<div style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); height: 100%; width: {(trialNum / totalTrials) * 100}%; transition: width 0.3s;"></div>
