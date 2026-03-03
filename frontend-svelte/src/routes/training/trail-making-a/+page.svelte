@@ -204,29 +204,37 @@
 		ctx.font = 'bold 24px Arial';
 		
 		for (const circle of trial.circles) {
-			const isNext = circle.number === currentNumber;
 			const isCompleted = circle.number < currentNumber;
-			
-			// Circle
-			if (isCompleted) {
-				ctx.fillStyle = '#4CAF50';
-			} else if (isNext) {
-				ctx.fillStyle = '#FFC107';
+			const isLastClicked = circle.number === currentNumber - 1; // Most recently clicked
+
+			// Circle fill - Yellow for last clicked, Green for earlier completed, White for unclicked
+			if (isLastClicked) {
+				ctx.fillStyle = '#FFC107'; // Yellow for current/last clicked
+			} else if (isCompleted) {
+				ctx.fillStyle = '#4CAF50'; // Green for previously completed
 			} else {
-				ctx.fillStyle = 'white';
+				ctx.fillStyle = 'white'; // White for not yet clicked
 			}
 			
 			ctx.beginPath();
 			ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
 			ctx.fill();
 			
-			// Border
-			ctx.strokeStyle = isNext ? '#FF9800' : (isCompleted ? '#388E3C' : '#667eea');
-			ctx.lineWidth = isNext ? 4 : 3;
+			// Border - Thicker for last clicked
+			if (isLastClicked) {
+				ctx.strokeStyle = '#FF9800';
+				ctx.lineWidth = 4;
+			} else if (isCompleted) {
+				ctx.strokeStyle = '#388E3C';
+				ctx.lineWidth = 3;
+			} else {
+				ctx.strokeStyle = '#667eea';
+				ctx.lineWidth = 2;
+			}
 			ctx.stroke();
 			
-			// Number
-			ctx.fillStyle = isCompleted ? 'white' : '#2c3e50';
+			// Number text - White on completed, dark on unclicked
+			ctx.fillStyle = (isCompleted || isLastClicked) ? 'white' : '#2c3e50';
 			ctx.fillText(circle.number, circle.x, circle.y);
 		}
 	}

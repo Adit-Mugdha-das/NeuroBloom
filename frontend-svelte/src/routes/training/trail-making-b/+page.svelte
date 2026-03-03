@@ -26,6 +26,8 @@
 	let errors = [];
 	let startTime = 0;
 	let completionTime = 0;
+	let elapsedTime = 0; // Reactive elapsed time variable
+	let timerInterval = null; // Timer interval reference
 	let hoveredCircle = null;
 	let completed = false;
 
@@ -112,20 +114,21 @@
 
 		// Draw circles
 		practiceCircles.forEach((circle, idx) => {
-			const isNext = idx === practiceIndex;
 			const isCompleted = idx < practiceIndex;
+			const isLastClicked = idx === practiceIndex - 1; // Most recently clicked
 
 			ctx.beginPath();
 			ctx.arc(circle.x, circle.y, 30, 0, Math.PI * 2);
 			
-			if (isCompleted) {
-				ctx.fillStyle = '#4ade80';
-				ctx.strokeStyle = '#22c55e';
-			} else if (isNext) {
-				ctx.fillStyle = '#fbbf24';
+			// Yellow for last clicked, green for earlier completed, white for unclicked
+			if (isLastClicked) {
+				ctx.fillStyle = '#fbbf24'; // Yellow for current/last clicked
 				ctx.strokeStyle = '#f59e0b';
+			} else if (isCompleted) {
+				ctx.fillStyle = '#4ade80'; // Green for earlier completed
+				ctx.strokeStyle = '#22c55e';
 			} else {
-				ctx.fillStyle = 'white';
+				ctx.fillStyle = 'white'; // White for unclicked
 				ctx.strokeStyle = '#3b82f6';
 			}
 			
@@ -133,24 +136,22 @@
 			ctx.fill();
 			ctx.stroke();
 
-			// Label
-			ctx.fillStyle = isCompleted ? 'white' : '#1e293b';
+			// Label - White on completed, dark on unclicked
+			ctx.fillStyle = (isCompleted || isLastClicked) ? 'white' : '#1e293b';
 			ctx.font = 'bold 20px Arial';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
 			ctx.fillText(circle.label, circle.x, circle.y);
 		});
 
-		// Draw connections
+		// Draw connections - only between already clicked circles
 		ctx.strokeStyle = '#3b82f6';
 		ctx.lineWidth = 2;
-		for (let i = 0; i < practiceIndex; i++) {
-			if (i < practiceCircles.length - 1) {
-				ctx.beginPath();
-				ctx.moveTo(practiceCircles[i].x, practiceCircles[i].y);
-				ctx.lineTo(practiceCircles[i + 1].x, practiceCircles[i + 1].y);
-				ctx.stroke();
-			}
+		for (let i = 0; i < practiceIndex - 1; i++) {
+			ctx.beginPath();
+			ctx.moveTo(practiceCircles[i].x, practiceCircles[i].y);
+			ctx.lineTo(practiceCircles[i + 1].x, practiceCircles[i + 1].y);
+			ctx.stroke();
 		}
 	}
 
@@ -202,7 +203,13 @@
 		errors = [];
 		completed = false;
 		startTime = Date.now();
-		
+		elapsedTime = 0;
+
+		// Start timer to update elapsed time
+		timerInterval = setInterval(() => {
+			elapsedTime = (Date.now() - startTime) / 1000;
+		}, 100); // Update every 100ms for smooth display
+
 		setTimeout(() => {
 			if (canvas) {
 				ctx = canvas.getContext('2d');
@@ -228,36 +235,37 @@
 
 		// Draw circles
 		circles.forEach(circle => {
-			const isNext = !circle.is_distractor && circle.sequence_index === currentIndex;
 			const isCompleted = !circle.is_distractor && circle.sequence_index < currentIndex;
+			const isLastClicked = !circle.is_distractor && circle.sequence_index === currentIndex - 1; // Most recently clicked
 			const isHovered = hoveredCircle === circle.id;
 
 			ctx.beginPath();
 			ctx.arc(circle.x, circle.y, getCircleRadius(), 0, Math.PI * 2);
 			
-			if (isCompleted) {
-				ctx.fillStyle = '#4ade80';
-				ctx.strokeStyle = '#22c55e';
-			} else if (isNext) {
-				ctx.fillStyle = '#fbbf24';
+			// Highlight last clicked circle in yellow, earlier ones in green
+			if (isLastClicked) {
+				ctx.fillStyle = '#fbbf24'; // Yellow for most recent click
 				ctx.strokeStyle = '#f59e0b';
+			} else if (isCompleted) {
+				ctx.fillStyle = '#4ade80'; // Green for earlier completed
+				ctx.strokeStyle = '#22c55e';
 			} else if (isHovered) {
-				ctx.fillStyle = '#e0f2fe';
+				ctx.fillStyle = '#e0f2fe'; // Light blue on hover
 				ctx.strokeStyle = '#0ea5e9';
 			} else if (circle.is_distractor) {
-				ctx.fillStyle = '#f1f5f9';
+				ctx.fillStyle = '#f1f5f9'; // Gray for distractors
 				ctx.strokeStyle = '#cbd5e1';
 			} else {
-				ctx.fillStyle = 'white';
+				ctx.fillStyle = 'white'; // White for unclicked targets
 				ctx.strokeStyle = '#3b82f6';
 			}
 			
-			ctx.lineWidth = isNext ? 4 : 2;
+			ctx.lineWidth = isLastClicked ? 4 : 2;
 			ctx.fill();
 			ctx.stroke();
 
-			// Label
-			ctx.fillStyle = isCompleted ? 'white' : circle.is_distractor ? '#94a3b8' : '#1e293b';
+			// Label - White on completed/last clicked, dark on others
+			ctx.fillStyle = (isCompleted || isLastClicked) ? 'white' : circle.is_distractor ? '#94a3b8' : '#1e293b';
 			ctx.font = `bold ${getFontSize()}px Arial`;
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
@@ -545,7 +553,7 @@
 					<div class="step-content">
 						<h3>Click in Sequence</h3>
 						<p>Click circles one at a time in the correct order. A line will connect them as you go.</p>
-						<p class="tip">The next correct circle will be highlighted in yellow</p>
+						<p class="tip">Your most recent click will be highlighted in yellow to show progress</p>
 					</div>
 				</div>
 
@@ -610,13 +618,16 @@
 		<div class="test-container">
 			<div class="test-header">
 				<h2>Trail Making Test - Part B</h2>
-				<div class="progress-info">
-					<span class="progress-text">
-						Progress: {currentIndex}/{sessionData.correct_sequence.length}
-					</span>
-					<span class="next-hint">
-						Next: <strong>{sessionData.correct_sequence[currentIndex] || 'Done!'}</strong>
-					</span>
+				<div class="header-info">
+					<div class="progress-info">
+						<span class="progress-text">
+							Progress: {currentIndex}/{sessionData.correct_sequence.length}
+						</span>
+					</div>
+					<div class="timer-display">
+						<span class="timer-icon">⏱️</span>
+						<span class="timer-value">{elapsedTime.toFixed(1)}s</span>
+					</div>
 				</div>
 			</div>
 
@@ -1072,8 +1083,39 @@
 	}
 
 	.progress-text {
-		color: #64748b;
-		font-weight: 500;
+		display: inline-block;
+		background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+		color: white;
+		padding: 0.75rem 1.5rem;
+		border-radius: 2rem;
+		font-weight: 700;
+		font-size: 1.1rem;
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+	}
+
+	.timer-display {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+		padding: 0.75rem 1.5rem;
+		border-radius: 2rem;
+		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+	}
+
+	.timer-icon {
+		font-size: 1.5rem;
+		line-height: 1;
+	}
+
+	.timer-value {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: white;
+		font-variant-numeric: tabular-nums;
+		min-width: 60px;
+		text-align: center;
+		line-height: 1;
 	}
 
 	.next-hint {
