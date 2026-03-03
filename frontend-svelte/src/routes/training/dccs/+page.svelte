@@ -40,26 +40,34 @@
 			loading = true;
 			error = null;
 			
-			// Get user's baseline to determine appropriate difficulty
-			const baselineResponse = await fetch(
-				`http://localhost:8000/api/baseline/${currentUser.id}`
-			);
+			// Check if difficulty is provided via URL (dev tool override)
+			const urlDifficulty = $page.url.searchParams.get('difficulty');
+			if (urlDifficulty) {
+				difficulty = parseInt(urlDifficulty);
+				console.log('🔧 DCCS - Using URL difficulty:', difficulty);
+			} else {
+				// Get user's baseline to determine appropriate difficulty
+				const baselineResponse = await fetch(
+					`http://localhost:8000/api/baseline/${currentUser.id}`
+				);
 
-			if (baselineResponse.ok) {
-				const baselineData = await baselineResponse.json();
-				baselineFlexibility = baselineData.flexibility;
+				if (baselineResponse.ok) {
+					const baselineData = await baselineResponse.json();
+					baselineFlexibility = baselineData.flexibility;
 
-				// Set difficulty based on baseline (1-10 scale)
-				if (baselineFlexibility !== null) {
-					if (baselineFlexibility >= 90) difficulty = 9;
-					else if (baselineFlexibility >= 80) difficulty = 8;
-					else if (baselineFlexibility >= 70) difficulty = 7;
-					else if (baselineFlexibility >= 60) difficulty = 6;
-					else if (baselineFlexibility >= 50) difficulty = 5;
-					else if (baselineFlexibility >= 40) difficulty = 4;
-					else if (baselineFlexibility >= 30) difficulty = 3;
-					else if (baselineFlexibility >= 20) difficulty = 2;
-					else difficulty = 1;
+					// Set difficulty based on baseline (1-10 scale)
+					if (baselineFlexibility !== null) {
+						if (baselineFlexibility >= 90) difficulty = 9;
+						else if (baselineFlexibility >= 80) difficulty = 8;
+						else if (baselineFlexibility >= 70) difficulty = 7;
+						else if (baselineFlexibility >= 60) difficulty = 6;
+						else if (baselineFlexibility >= 50) difficulty = 5;
+						else if (baselineFlexibility >= 40) difficulty = 4;
+						else if (baselineFlexibility >= 30) difficulty = 3;
+						else if (baselineFlexibility >= 20) difficulty = 2;
+						else difficulty = 1;
+					}
+					console.log('📊 DCCS - Using baseline difficulty:', difficulty);
 				}
 			}
 			
@@ -75,6 +83,7 @@
 			
 			// Update difficulty from session data
 			difficulty = sessionData.difficulty;
+			console.log('✅ DCCS - Final difficulty loaded:', difficulty);
 		} catch (err) {
 			error = err.message;
 		} finally {

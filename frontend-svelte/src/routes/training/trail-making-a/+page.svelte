@@ -27,10 +27,12 @@
 	let currentNumber = 1;
 	let startTime = 0;
 	let completionTime = 0;
+	let elapsedTime = 0; // Add reactive elapsed time variable
 	let clicks = [];
 	let errors = [];
 	let lines = [];
-	
+	let timerInterval = null; // Add timer interval reference
+
 	let showHelp = false;
 	let sessionResults = null;
 	let countdown = 3;
@@ -40,7 +42,11 @@
 	});
 
 	onDestroy(() => {
-		// Clean up
+		// Clean up timer interval
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
 	});
 
 	async function loadSession() {
@@ -53,19 +59,35 @@
 				return;
 			}
 
-			const planRes = await fetch(`http://localhost:8000/training/plan/${userId}`);
-			const plan = await planRes.json();
+			// Check if difficulty is provided via URL (dev tool override)
+			const urlDifficulty = $page.url.searchParams.get('difficulty');
+			if (urlDifficulty) {
+				difficulty = parseInt(urlDifficulty);
+				console.log('🔧 Trail Making A - Using URL difficulty:', difficulty);
+			} else {
+				// Get user's training plan to determine difficulty
+				const planRes = await fetch(`http://localhost:8000/api/training/plan/${userId}`);
 
-			let userDifficulty = 5;
-			if (plan && plan.current_difficulty) {
-				const currentDiff =
-					typeof plan.current_difficulty === 'string'
-						? JSON.parse(plan.current_difficulty)
-						: plan.current_difficulty;
-				userDifficulty = currentDiff.processing_speed || 5;
+				if (planRes.ok) {
+					const plan = await planRes.json();
+
+					let userDifficulty = 5;
+					if (plan && plan.current_difficulty) {
+						const currentDiff =
+							typeof plan.current_difficulty === 'string'
+								? JSON.parse(plan.current_difficulty)
+								: plan.current_difficulty;
+						userDifficulty = currentDiff.processing_speed || 5;
+					}
+
+					difficulty = userDifficulty;
+					console.log('📊 Trail Making A - Using plan difficulty:', difficulty);
+				} else {
+					// Default to level 5 if plan not found
+					difficulty = 5;
+					console.log('⚠️ Trail Making A - Plan not found, using default difficulty:', difficulty);
+				}
 			}
-
-			difficulty = userDifficulty;
 
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/trail-making-a/generate/${userId}?difficulty=${difficulty}`,
@@ -105,10 +127,16 @@
 		state = STATE.TESTING;
 		currentNumber = 1;
 		startTime = Date.now();
+		elapsedTime = 0;
 		clicks = [];
 		errors = [];
 		lines = [];
 		
+		// Start timer to update elapsed time
+		timerInterval = setInterval(() => {
+			elapsedTime = (Date.now() - startTime) / 1000;
+		}, 100); // Update every 100ms for smooth display
+
 		// Initialize canvas
 		setTimeout(() => {
 			initCanvas();
@@ -274,6 +302,13 @@
 
 	function completeTest() {
 		completionTime = Date.now() - startTime;
+
+		// Stop the timer interval
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
 		submitResults();
 	}
 
@@ -465,7 +500,7 @@
 				<div class="timer-display">
 					<span class="timer-icon">⏱️</span>
 					<span class="timer-value">
-						{((Date.now() - startTime) / 1000).toFixed(1)}s
+						{elapsedTime.toFixed(1)}s
 					</span>
 				</div>
 				<button class="help-button-floating" on:click={toggleHelp}>?</button>
