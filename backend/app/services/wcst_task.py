@@ -53,42 +53,42 @@ class WCSTTask:
             "feedback_clarity": "clear",  # Clear feedback
             "rule_change_warning": False,  # No warning
             "feedback_delay_ms": 200,
-            "correct_needed": 10,
+            "correct_needed": 9,  # Smoother progression
         },
         4: {
             "trials": 64,
             "feedback_clarity": "clear",
             "rule_change_warning": False,
             "feedback_delay_ms": 300,
-            "correct_needed": 10,
+            "correct_needed": 9,  # Smoother progression
         },
         5: {
             "trials": 64,
             "feedback_clarity": "subtle",  # Less obvious feedback
             "rule_change_warning": False,
             "feedback_delay_ms": 400,
-            "correct_needed": 10,
+            "correct_needed": 8,  # Moderate challenge
         },
         6: {
             "trials": 64,
             "feedback_clarity": "subtle",
             "rule_change_warning": False,
             "feedback_delay_ms": 500,
-            "correct_needed": 10,
+            "correct_needed": 8,  # Moderate challenge
         },
         7: {
             "trials": 80,
             "feedback_clarity": "ambiguous",  # Minimal feedback
             "rule_change_warning": False,
             "feedback_delay_ms": 600,
-            "correct_needed": 8,  # Faster rule changes
+            "correct_needed": 7,  # High challenge
         },
         8: {
             "trials": 80,
             "feedback_clarity": "ambiguous",
             "rule_change_warning": False,
             "feedback_delay_ms": 700,
-            "correct_needed": 8,
+            "correct_needed": 7,  # High challenge
         },
         9: {
             "trials": 96,
@@ -102,7 +102,7 @@ class WCSTTask:
             "feedback_clarity": "minimal",
             "rule_change_warning": False,
             "feedback_delay_ms": 1000,
-            "correct_needed": 6,
+            "correct_needed": 5,  # Maximum challenge - very rapid switching
         },
     }
     

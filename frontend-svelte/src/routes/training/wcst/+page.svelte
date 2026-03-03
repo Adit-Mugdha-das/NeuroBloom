@@ -24,6 +24,8 @@
 	let feedbackMessage = '';
 	let feedbackType = '';
 	let currentRule = null;
+	let correctNeeded = 10;  // Will be set from session config
+	let categoryCompletedAt = -1;  // Track when last category was completed
 	let results = null;
 	let newBadges = [];
 	let currentUser = null;
@@ -68,13 +70,20 @@
 				}
 			);
 			if (!response.ok) throw new Error('Failed to load session');
-			const data = await response.json();
-			sessionData = data.session_data;
-			difficulty = data.difficulty;
-			baselineFlexibility = data.baseline_flexibility;
-			instructions = data.instructions;
-			practiceTrials = generatePracticeTrials();
-			currentRule = 'color';
+		const data = await response.json();
+		sessionData = data.session_data;
+		difficulty = data.difficulty;
+		baselineFlexibility = data.baseline_flexibility;
+		instructions = data.instructions;
+		practiceTrials = generatePracticeTrials();
+
+		// Randomize starting rule (clinical standard)
+		const rules = ['color', 'shape', 'number'];
+		currentRule = rules[Math.floor(Math.random() * rules.length)];
+
+		// Get correct_needed from difficulty config
+		correctNeeded = sessionData.config?.correct_needed || 10;
+		console.log(`📋 WCST Config: Difficulty ${difficulty}, Correct needed: ${correctNeeded}, Starting rule: ${currentRule}`);
 		} catch (err) {
 			error = err.message;
 		} finally {
@@ -94,6 +103,7 @@
 		isPractice = false;
 		currentTrialIndex = 0;
 		responses = [];
+		categoryCompletedAt = -1;  // Reset category tracking
 		phase = 'test';
 		startTime = Date.now();
 		trialStartTime = Date.now();
@@ -120,15 +130,70 @@
 					trialStartTime = Date.now();
 				}
 			}, 1000);
-		} else {
-			responses.push({
-				trial_index: currentTrialIndex,
-				selected_pile: pileIndex,
-				response_time: responseTime
-			});
-			moveToNextTrial();
+	} else {
+		// ACTUAL TEST - MUST SHOW FEEDBACK (clinical requirement!)
+		const trialCard = sessionData.trial_cards[currentTrialIndex];
+		const targetCard = sessionData.target_cards[pileIndex];
+
+		// Check if correct based on current rule
+		const isCorrect = trialCard[currentRule] === targetCard[currentRule];
+
+		// Record response
+		responses.push({
+			trial_index: currentTrialIndex,
+			selected_pile: pileIndex,
+			response_time: responseTime,
+			is_correct: isCorrect
+		});
+
+		// Show feedback - CRITICAL for WCST to function
+		feedbackType = isCorrect ? 'correct' : 'wrong';
+		feedbackMessage = isCorrect ? 'Correct!' : 'Wrong!';
+		showFeedback = true;
+
+		// Check for rule change using sliding window approach
+		if (responses.length >= correctNeeded) {
+			const windowSize = correctNeeded + 2; // Allow 2 errors in the window
+			const recentResponses = responses.slice(-windowSize);
+			const correctInWindow = recentResponses.filter(r => r.is_correct).length;
+			const trialsSinceLastChange = currentTrialIndex - categoryCompletedAt;
+
+			if (correctInWindow >= correctNeeded && trialsSinceLastChange >= correctNeeded) {
+				const rules = ['color', 'shape', 'number'];
+				const oldRule = currentRule;
+
+				// Clinical WCST: Randomly select from the OTHER 2 rules (not current)
+				const otherRules = rules.filter(rule => rule !== currentRule);
+				currentRule = otherRules[Math.floor(Math.random() * otherRules.length)];
+
+				// Mark this trial as when category was completed
+				categoryCompletedAt = currentTrialIndex;
+
+				console.log(`🔄 RULE CHANGED! ${oldRule} → ${currentRule}`);
+				console.log(`   Strategy: Random selection from [${otherRules.join(', ')}]`);
+				console.log(`   Achieved: ${correctInWindow}/${windowSize} correct in sliding window`);
+				console.log(`   Required: ${correctNeeded} correct (difficulty level ${difficulty})`);
+				console.log(`   Trial: ${currentTrialIndex + 1}, Next change not before trial ${categoryCompletedAt + correctNeeded + 1}`);
+			}
 		}
+
+		// Log current progress
+		if (responses.length >= correctNeeded) {
+			const windowSize = correctNeeded + 2;
+			const recentResponses = responses.slice(-windowSize);
+			const correctInWindow = recentResponses.filter(r => r.is_correct).length;
+			const trialsSinceLastChange = currentTrialIndex - categoryCompletedAt;
+			console.log(`${isCorrect ? '✅' : '❌'} Trial ${currentTrialIndex + 1}: ${correctInWindow}/${windowSize} correct in window (need ${correctNeeded}), ${trialsSinceLastChange} trials since last change, Rule: ${currentRule}`);
+		} else {
+			console.log(`${isCorrect ? '✅' : '❌'} Trial ${currentTrialIndex + 1}: Building history (${responses.length}/${correctNeeded} minimum), Rule: ${currentRule}`);
+		}
+
+		setTimeout(() => {
+			showFeedback = false;
+			moveToNextTrial();
+		}, 800);
 	}
+}
 
 	function moveToNextTrial() {
 		currentTrialIndex++;
@@ -424,6 +489,13 @@
 								<div>{sessionData.trial_cards[currentTrialIndex].color} {sessionData.trial_cards[currentTrialIndex].shape}</div>
 							</div>
 						</div>
+					</div>
+				{/if}
+
+				<!-- Feedback Display - CRITICAL for WCST! -->
+				{#if showFeedback}
+					<div style="text-align: center; padding: 15px; border-radius: 8px; margin-top: 20px; background: {feedbackType === 'correct' ? '#d4edda' : '#f8d7da'}; color: {feedbackType === 'correct' ? '#155724' : '#721c24'}; font-size: 20px; font-weight: bold;">
+						{feedbackMessage}
 					</div>
 				{/if}
 			</div>
