@@ -13,12 +13,17 @@
 	let targetItems = [];
 	let markedPositions = [];
 	let startTime = null;
-	let timeRemaining = 0;
+	let elapsedTime = 0; // Track elapsed time instead of countdown
 	let timerInterval = null;
 	let taskId = null;
 	
 	let results = null;
 	let earnedBadges = [];
+
+	// Fixed large cell size for optimal visibility - prioritizes accessibility
+	// Scrollable container allows larger grids while keeping cells readable
+	let cellSize = '55px';  // Large enough for patients with visual impairments
+	let cellFontSize = '1.2rem';  // Clear, readable font size
 
 	// Load trial on mount
 	onMount(async () => {
@@ -43,7 +48,7 @@
 			trialData = data.trial_data;
 			grid = trialData.grid;
 			targetItems = trialData.target_items;
-			timeRemaining = trialData.time_limit;
+			elapsedTime = 0;
 			gamePhase = 'intro';
 		} catch (error) {
 			console.error('Error loading trial:', error);
@@ -54,16 +59,12 @@
 	function startGame() {
 		markedPositions = [];
 		startTime = Date.now();
+		elapsedTime = 0;
 		gamePhase = 'playing';
 		
-		// Start timer
+		// Start timer - track elapsed time
 		timerInterval = setInterval(() => {
-			const elapsed = Math.floor((Date.now() - startTime) / 1000);
-			timeRemaining = Math.max(0, trialData.time_limit - elapsed);
-			
-			if (timeRemaining === 0) {
-				finishGame();
-			}
+			elapsedTime = Math.floor((Date.now() - startTime) / 1000);
 		}, 100);
 	}
 
@@ -105,7 +106,7 @@
 					marked_positions: markedPositions,
 					target_positions: trialData.target_positions,
 					completion_time: completionTime,
-					time_limit: trialData.time_limit,
+					suggested_time: trialData.suggested_time,
 					difficulty: trialData.difficulty,
 					task_id: taskId
 				})
@@ -162,6 +163,111 @@
 	}
 </script>
 
+<style>
+	.grid-cell {
+		/* Fixed large size for optimal visibility - accessibility priority */
+		width: var(--cell-size);
+		height: var(--cell-size);
+		min-width: var(--cell-size);
+		min-height: var(--cell-size);
+		max-width: var(--cell-size);
+		max-height: var(--cell-size);
+
+		/* Styling - using 1px border to prevent clipping */
+		border: 1px solid #94a3b8;
+		background: white;
+		border-radius: 4px;
+		cursor: pointer;
+		font-weight: 600;
+		font-size: var(--cell-font-size);
+		color: #475569;
+
+		/* Layout */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		user-select: none;
+		flex-shrink: 0;
+		padding: 0;
+
+		/* Effects */
+		transition: all 0.15s ease;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	}
+
+	.grid-cell:hover:not(.marked) {
+		background: #f1f5f9;
+		border-color: #6366f1;
+		border-width: 2px;
+		transform: scale(1.08);
+		z-index: 10;
+		box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+	}
+
+	.grid-cell.marked {
+		border: 2px solid #6366f1;
+		background: #dbeafe;
+		color: #1e40af;
+		box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+	}
+
+	.grid-cell:active {
+		transform: scale(0.98);
+	}
+
+	/* Button styles to avoid inline style mutations */
+	.btn-primary {
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		color: white;
+		border: none;
+		padding: 1.5rem 4rem;
+		font-size: 1.3rem;
+		border-radius: 12px;
+		cursor: pointer;
+		font-weight: 700;
+		box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+		transition: all 0.3s;
+	}
+
+	.btn-primary:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+	}
+
+	.btn-success {
+		background: #10b981;
+		color: white;
+		border: none;
+		padding: 1rem 3rem;
+		font-size: 1.1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.3s;
+	}
+
+	.btn-success:hover {
+		background: #059669;
+	}
+
+	.btn-secondary {
+		background: #6366f1;
+		color: white;
+		border: none;
+		padding: 1rem 2rem;
+		font-size: 1.1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.3s;
+	}
+
+	.btn-secondary:hover {
+		background: #4f46e5;
+	}
+
+</style>
+
 <div style="min-height: 100vh; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 2rem;">
 	<div style="max-width: 1400px; margin: 0 auto;">
 
@@ -187,7 +293,7 @@
 					<div style="color: #475569; line-height: 1.8;">
 						{trialData.instructions}
 					</div>
-					
+
 					<div style="background: white; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
 						<h4 style="color: #6366f1; margin-bottom: 1rem;">Your Task:</h4>
 						<ul style="color: #64748b; line-height: 2;">
@@ -195,7 +301,7 @@
 							<li>Work as quickly and accurately as possible</li>
 							<li>Click marked items again to unmark them if you made a mistake</li>
 							<li>Try to scan systematically (e.g., left to right, top to bottom)</li>
-							<li>Time limit: {formatTime(trialData.time_limit)}</li>
+							<li>No time limit - focus on accuracy!</li>
 						</ul>
 					</div>
 				</div>
@@ -215,13 +321,7 @@
 				</div>
 
 				<div style="text-align: center;">
-					<button on:click={startGame}
-						style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; 
-						border: none; padding: 1.5rem 4rem; font-size: 1.3rem; border-radius: 12px; 
-						cursor: pointer; font-weight: 700; box-shadow: 0 4px 15px rgba(99,102,241,0.4); 
-						transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-						on:mouseleave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+					<button on:click={startGame} class="btn-primary">
 						Start Task
 					</button>
 				</div>
@@ -241,50 +341,27 @@
 						</div>
 					</div>
 					<div style="text-align: right;">
-						<div style="font-size: 2.5rem; font-weight: 700; color: {timeRemaining < 10 ? '#ef4444' : '#6366f1'}; 
+						<div style="font-size: 2.5rem; font-weight: 700; color: #6366f1;
 							font-variant-numeric: tabular-nums;">
-							{formatTime(timeRemaining)}
+							{formatTime(elapsedTime)}
 						</div>
-						<div style="color: #64748b; font-size: 0.9rem;">Time Remaining</div>
+						<div style="color: #64748b; font-size: 0.9rem;">Elapsed Time</div>
 					</div>
 				</div>
 
-				<!-- Grid -->
-				<div style="background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; overflow-x: auto;">
-					<div style="display: inline-block; min-width: 100%;">
+				<!-- Grid Container -->
+				<div style="background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;
+					display: flex; justify-content: flex-start; align-items: flex-start;
+					max-height: 60vh; overflow: auto;
+					--cell-size: {cellSize}; --cell-font-size: {cellFontSize};">
+					<div style="display: inline-block; padding: 5px;">
 						{#each grid as row, rowIndex}
-							<div style="display: flex; gap: 2px; margin-bottom: 2px;">
+							<div style="display: flex; gap: 3px; margin-bottom: {rowIndex === grid.length - 1 ? '0' : '3px'};">
 								{#each row as item, colIndex}
 									<button
 										on:click={() => toggleCell(rowIndex, colIndex, item)}
-										style="
-											width: 30px; 
-											height: 30px; 
-											border: 2px solid {isMarked(rowIndex, colIndex) ? '#6366f1' : '#cbd5e1'}; 
-											background: {isMarked(rowIndex, colIndex) ? '#dbeafe' : 'white'}; 
-											border-radius: 4px; 
-											cursor: pointer; 
-											font-weight: 600; 
-											font-size: 0.9rem;
-											color: {isMarked(rowIndex, colIndex) ? '#1e40af' : '#475569'};
-											transition: all 0.15s;
-											display: flex;
-											align-items: center;
-											justify-content: center;
-											user-select: none;
-										"
-										on:mouseenter={(e) => {
-											if (!isMarked(rowIndex, colIndex)) {
-												e.currentTarget.style.background = '#f1f5f9';
-												e.currentTarget.style.borderColor = '#94a3b8';
-											}
-										}}
-										on:mouseleave={(e) => {
-											if (!isMarked(rowIndex, colIndex)) {
-												e.currentTarget.style.background = 'white';
-												e.currentTarget.style.borderColor = '#cbd5e1';
-											}
-										}}
+										class="grid-cell"
+										class:marked={isMarked(rowIndex, colIndex)}
 									>
 										{item}
 									</button>
@@ -296,12 +373,7 @@
 
 				<!-- Finish Button -->
 				<div style="text-align: center;">
-					<button on:click={finishGame}
-						style="background: #10b981; color: white; border: none; padding: 1rem 3rem; 
-						font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; 
-						transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.background = '#059669'}
-						on:mouseleave={(e) => e.currentTarget.style.background = '#10b981'}>
+					<button on:click={finishGame} class="btn-success">
 						Finish Task
 					</button>
 				</div>
@@ -329,7 +401,7 @@
 						<div style="color: #059669; font-size: 0.9rem; margin-bottom: 0.5rem;">Accuracy</div>
 						<div style="font-size: 2rem; font-weight: 700; color: #10b981;">{results.accuracy.toFixed(1)}%</div>
 					</div>
-					
+
 					<div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 1.5rem; text-align: center;">
 						<div style="color: #1e40af; font-size: 0.9rem; margin-bottom: 0.5rem;">Targets Found</div>
 						<div style="font-size: 2rem; font-weight: 700; color: #3b82f6;">{results.targets_found}/{results.total_targets}</div>
@@ -354,7 +426,7 @@
 						<h3 style="color: #1e293b; margin-bottom: 1.5rem;">
 							📊 Spatial Pattern Analysis
 						</h3>
-						
+
 						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1.5rem;">
 							<div>
 								<div style="color: #64748b; margin-bottom: 0.5rem;">Left Side Accuracy</div>
@@ -417,21 +489,11 @@
 
 				<!-- Action Buttons -->
 				<div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
-					<button on:click={restartTask}
-						style="background: #6366f1; color: white; border: none; padding: 1rem 2rem; 
-						font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; 
-						transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.background = '#4f46e5'}
-						on:mouseleave={(e) => e.currentTarget.style.background = '#6366f1'}>
+					<button on:click={restartTask} class="btn-secondary">
 						Try Again
 					</button>
 					
-					<button on:click={goToDashboard}
-						style="background: #10b981; color: white; border: none; padding: 1rem 2rem; 
-						font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; 
-						transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.background = '#059669'}
-						on:mouseleave={(e) => e.currentTarget.style.background = '#10b981'}>
+					<button on:click={goToDashboard} class="btn-success">
 						Back to Dashboard
 					</button>
 				</div>

@@ -30,18 +30,22 @@ class CancellationTestTask:
     SYMBOLS = ["★", "●", "■", "▲", "◆", "♦", "♣", "♠", "♥", "✦", "✧", "○", "□", "△"]
     
     # Grid configurations by difficulty
-    # Based on clinical cancellation tests (e.g., Mesulam, 1985) - optimized for MS patients
+    # Optimized for MS patients with visual accessibility as PRIMARY concern
+    # Reference: Mesulam (1985), Weintraub & Mesulam (1988)
+    # Uses scrollable container with LARGE cells (50-60px) for patients with visual impairments
+    # Challenge increases through: grid size, target count, target types, letter complexity
+    # Clinical validity: 150-540 cells matches standard cancellation tests
     GRID_CONFIGS = {
-        1: {"rows": 10, "cols": 15, "total": 150, "targets": 1, "target_count": 20, "time_limit": 120},
-        2: {"rows": 12, "cols": 18, "total": 216, "targets": 1, "target_count": 28, "time_limit": 120},
-        3: {"rows": 14, "cols": 20, "total": 280, "targets": 1, "target_count": 35, "time_limit": 90},
-        4: {"rows": 15, "cols": 22, "total": 330, "targets": 2, "target_count": 40, "time_limit": 90},
-        5: {"rows": 16, "cols": 24, "total": 384, "targets": 2, "target_count": 45, "time_limit": 90},
-        6: {"rows": 18, "cols": 25, "total": 450, "targets": 2, "target_count": 52, "time_limit": 75},
-        7: {"rows": 20, "cols": 25, "total": 500, "targets": 2, "target_count": 58, "time_limit": 75},
-        8: {"rows": 20, "cols": 28, "total": 560, "targets": 3, "target_count": 65, "time_limit": 60},
-        9: {"rows": 22, "cols": 30, "total": 660, "targets": 3, "target_count": 75, "time_limit": 60},
-        10: {"rows": 25, "cols": 30, "total": 750, "targets": 3, "target_count": 85, "time_limit": 60}
+        1: {"rows": 10, "cols": 15, "total": 150, "targets": 1, "target_count": 18, "suggested_time": 120},
+        2: {"rows": 12, "cols": 17, "total": 204, "targets": 1, "target_count": 24, "suggested_time": 150},
+        3: {"rows": 13, "cols": 19, "total": 247, "targets": 2, "target_count": 28, "suggested_time": 180},
+        4: {"rows": 14, "cols": 21, "total": 294, "targets": 2, "target_count": 32, "suggested_time": 210},
+        5: {"rows": 15, "cols": 22, "total": 330, "targets": 2, "target_count": 36, "suggested_time": 240},
+        6: {"rows": 16, "cols": 23, "total": 368, "targets": 2, "target_count": 40, "suggested_time": 270},
+        7: {"rows": 17, "cols": 24, "total": 408, "targets": 3, "target_count": 44, "suggested_time": 300},
+        8: {"rows": 18, "cols": 25, "total": 450, "targets": 3, "target_count": 48, "suggested_time": 330},
+        9: {"rows": 19, "cols": 26, "total": 494, "targets": 3, "target_count": 52, "suggested_time": 360},
+        10: {"rows": 20, "cols": 27, "total": 540, "targets": 3, "target_count": 56, "suggested_time": 390}
     }
     
     # Performance benchmarks (percentage of targets found)
@@ -125,28 +129,29 @@ class CancellationTestTask:
             "target_items": target_items,
             "target_count": config["target_count"],
             "target_positions": target_positions,
-            "time_limit": config["time_limit"],
+            "suggested_time": config["suggested_time"],
             "use_symbols": use_symbols,
             "instructions": f"Find and click all instances of: {', '.join(target_items)}",
             "total_items": config["total"]
         }
-    
+
     @staticmethod
     def score_response(
         marked_positions: List[Dict[str, int]],
         target_positions: List[Dict[str, Any]],
         completion_time: float,
-        time_limit: int,
+        suggested_time: int,
         difficulty: int
     ) -> Dict[str, Any]:
         """
         Score the cancellation test response.
-        
+        No time limits - focuses on accuracy. Completion time is tracked for performance analysis.
+
         Args:
             marked_positions: List of positions marked by user [{"row": 0, "col": 1}, ...]
             target_positions: List of actual target positions
             completion_time: Time taken in seconds
-            time_limit: Maximum time allowed
+            suggested_time: Suggested time (not enforced)
             difficulty: Difficulty level
             
         Returns:
@@ -169,7 +174,7 @@ class CancellationTestTask:
             target_positions, marked_positions
         )
         
-        # Determine performance rating
+        # Determine performance rating based ONLY on accuracy
         if accuracy >= CancellationTestTask.PERFORMANCE_BENCHMARKS["excellent"]:
             performance_rating = "excellent"
             raw_score = 100
@@ -186,18 +191,15 @@ class CancellationTestTask:
             performance_rating = "poor"
             raw_score = 30
         
-        # Speed bonus/penalty
-        expected_time = time_limit * 0.7  # Expected to finish in 70% of time limit
-        if completion_time < expected_time and accuracy >= 80:
-            speed_bonus = min(10, (expected_time - completion_time) / expected_time * 10)
-        else:
-            speed_bonus = 0
-        
-        final_score = min(100, raw_score + speed_bonus)
-        
-        # Difficulty adjustment
+        # Speed metric (for tracking only, not penalized)
+        # Items per minute = (total_targets / completion_time) * 60
+        scanning_speed = (total_targets / completion_time * 60) if completion_time > 0 else 0
+
+        final_score = raw_score
+
+        # Difficulty adjustment based on accuracy only
         difficulty_adjustment = CancellationTestTask.calculate_difficulty_adjustment(
-            accuracy, completion_time, time_limit, difficulty
+            accuracy, completion_time, suggested_time, difficulty
         )
         
         return {
@@ -209,9 +211,9 @@ class CancellationTestTask:
             "false_alarms": false_positives,
             "total_targets": total_targets,
             "completion_time": round(completion_time, 1),
-            "time_limit": time_limit,
+            "suggested_time": suggested_time,
+            "scanning_speed": round(scanning_speed, 1),
             "performance_rating": performance_rating,
-            "speed_bonus": round(speed_bonus, 1),
             "spatial_analysis": spatial_analysis,
             "difficulty_adjustment": difficulty_adjustment,
             "feedback": CancellationTestTask._generate_feedback(
@@ -302,25 +304,26 @@ class CancellationTestTask:
     def calculate_difficulty_adjustment(
         accuracy: float,
         completion_time: float,
-        time_limit: int,
+        suggested_time: int,
         current_difficulty: int
     ) -> int:
         """
         Calculate difficulty adjustment for next trial.
-        
+        Based primarily on accuracy, time is tracked but not penalized.
+
         Args:
             accuracy: Percentage of targets found
             completion_time: Time taken
-            time_limit: Time limit
+            suggested_time: Suggested time (not enforced)
             current_difficulty: Current difficulty level
             
         Returns:
             Difficulty adjustment (-2 to +2)
         """
         # Excellent performance: increase difficulty
-        if accuracy >= 95 and completion_time < time_limit * 0.6:
+        if accuracy >= 95:
             return 2
-        elif accuracy >= 90 and completion_time < time_limit * 0.7:
+        elif accuracy >= 90:
             return 1
         
         # Poor performance: decrease difficulty

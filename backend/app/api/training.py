@@ -5012,6 +5012,7 @@ def submit_cancellation_test(
     """
     Submit Cancellation Test response and get scoring with difficulty adaptation.
     Tracks visual scanning performance and awards badges.
+    No time limits - focuses on accuracy.
     """
     from app.services.cancellation_test_task import CancellationTestTask
     
@@ -5019,7 +5020,7 @@ def submit_cancellation_test(
     marked_positions = request_data.get("marked_positions", [])
     target_positions = request_data.get("target_positions", [])
     completion_time = request_data.get("completion_time", 0)
-    time_limit = request_data.get("time_limit", 120)
+    suggested_time = request_data.get("suggested_time", 180)  # Changed from time_limit
     difficulty = request_data.get("difficulty", 5)
     task_id = request_data.get("task_id")  # Extract task_id for session tracking
     
@@ -5034,7 +5035,7 @@ def submit_cancellation_test(
         marked_positions,
         target_positions,
         completion_time,
-        time_limit,
+        suggested_time,  # Changed from time_limit
         difficulty
     )
     
