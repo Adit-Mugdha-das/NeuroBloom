@@ -45,16 +45,29 @@
 				return;
 			}
 
-			const planRes = await fetch(`http://localhost:8000/training/plan/${userId}`);
-			const plan = await planRes.json();
+			// Check for dev tool mode - use URL difficulty parameter if present
+			const urlDifficulty = $page.url.searchParams.get('difficulty');
+			const isDevMode = $page.url.searchParams.get('taskId')?.includes('_dev');
 
 			let userDifficulty = 5;
-			if (plan && plan.current_difficulty) {
-				const currentDiff =
-					typeof plan.current_difficulty === 'string'
-						? JSON.parse(plan.current_difficulty)
-						: plan.current_difficulty;
-				userDifficulty = currentDiff.processing_speed || 5;
+
+			if (isDevMode && urlDifficulty) {
+				// Dev tool mode - use URL parameter
+				userDifficulty = parseInt(urlDifficulty);
+				console.log('🛠️ Pattern Comparison - Dev Mode - Using URL difficulty:', userDifficulty);
+			} else {
+				// Normal mode - fetch from training plan
+				const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
+				const plan = await planRes.json();
+
+				if (plan && plan.current_difficulty) {
+					const currentDiff =
+						typeof plan.current_difficulty === 'string'
+							? JSON.parse(plan.current_difficulty)
+							: plan.current_difficulty;
+					userDifficulty = currentDiff.processing_speed || 5;
+					console.log('📊 Pattern Comparison - Normal Mode - Using plan difficulty:', userDifficulty);
+				}
 			}
 
 			difficulty = userDifficulty;
@@ -131,7 +144,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/tasks/pattern-comparison/submit/${userId}`,
+				`http://localhost:8000/api/training/tasks/pattern-comparison/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
