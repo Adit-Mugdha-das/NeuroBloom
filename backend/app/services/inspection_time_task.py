@@ -30,28 +30,28 @@ class InspectionTimeTask:
             "description": "Beginner - Clear differences, longer viewing time"
         },
         2: {
-            "presentation_time_ms": 180,
+            "presentation_time_ms": 170,
             "trials_per_session": 15,
             "line_difference_min": 22,
             "line_difference_max": 45,
             "description": "Easy - Noticeable differences"
         },
         3: {
-            "presentation_time_ms": 160,
+            "presentation_time_ms": 140,
             "trials_per_session": 18,
             "line_difference_min": 20,
             "line_difference_max": 40,
             "description": "Moderate - Shorter viewing time"
         },
         4: {
-            "presentation_time_ms": 140,
+            "presentation_time_ms": 120,
             "trials_per_session": 18,
             "line_difference_min": 18,
             "line_difference_max": 35,
             "description": "Intermediate - Quick perception needed"
         },
         5: {
-            "presentation_time_ms": 120,
+            "presentation_time_ms": 110,
             "trials_per_session": 20,
             "line_difference_min": 15,
             "line_difference_max": 30,
@@ -65,28 +65,28 @@ class InspectionTimeTask:
             "description": "Challenging - Rapid perception required"
         },
         7: {
-            "presentation_time_ms": 85,
+            "presentation_time_ms": 90,
             "trials_per_session": 22,
             "line_difference_min": 12,
             "line_difference_max": 25,
             "description": "Advanced - Very brief exposure"
         },
         8: {
-            "presentation_time_ms": 70,
+            "presentation_time_ms": 80,
             "trials_per_session": 22,
             "line_difference_min": 12,
             "line_difference_max": 22,
             "description": "Expert - Subtle differences"
         },
         9: {
-            "presentation_time_ms": 60,
+            "presentation_time_ms": 75,
             "trials_per_session": 25,
             "line_difference_min": 10,
             "line_difference_max": 20,
             "description": "Master - Minimal viewing time"
         },
         10: {
-            "presentation_time_ms": 50,  # Expert level - very difficult
+            "presentation_time_ms": 70,
             "trials_per_session": 25,
             "line_difference_min": 10,
             "line_difference_max": 18,
