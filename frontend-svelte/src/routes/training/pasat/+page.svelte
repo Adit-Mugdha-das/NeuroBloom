@@ -120,7 +120,7 @@
 
 	function handlePracticeAnswer() {
 		if (!waitingForAnswer || userAnswer === '') return;
-		
+
 		const correctAnswer = practicePrevious + currentDigit;
 		const isCorrect = parseInt(userAnswer) === correctAnswer;
 		
@@ -272,6 +272,11 @@
 
 	function returnToDashboard() {
 		goto('/dashboard');
+	}
+
+	// Input validation - only allow numeric characters
+	function validateNumericInput() {
+		userAnswer = userAnswer.replace(/[^0-9]/g, '');
 	}
 
 	// Reactive calculations
@@ -429,19 +434,23 @@
 				<div class="practice-display">
 					<div class="digit-card">
 						<div class="current-digit">{currentDigit}</div>
-						{#if practicePrevious !== null && practiceIndex > 0}
-							<div class="hint-text">Previous digit was: <strong>{practicePrevious}</strong></div>
-							<div class="hint-text">Answer should be: {practicePrevious} + {currentDigit} = ?</div>
-						{:else}
+						{#if practiceIndex === 0}
 							<div class="hint-text">First digit - just remember it!</div>
+						{:else if practiceIndex === 1}
+							<div class="hint-text">Add this digit to the previous one: {practicePrevious} + {currentDigit} = ?</div>
+						{:else}
+							<div class="hint-text">Add to the previous digit (remember it!)</div>
 						{/if}
 					</div>
 
 					{#if waitingForAnswer}
 						<div class="answer-input-area">
 							<input
-								type="number"
+								type="text"
+								inputmode="numeric"
+								pattern="[0-9]*"
 								bind:value={userAnswer}
+								on:input={validateNumericInput}
 								placeholder="Type your answer"
 								autofocus
 								class="answer-input"
@@ -484,16 +493,16 @@
 			<div class="test-display">
 				<div class="digit-card large">
 					<div class="current-digit-large">{currentDigit}</div>
-					{#if previousDigit !== null && currentTrialIndex > 0}
-						<div class="previous-hint">Previous: {previousDigit}</div>
-					{/if}
 				</div>
 
 				{#if waitingForAnswer}
 					<div class="answer-input-area">
 						<input
-							type="number"
+							type="text"
+							inputmode="numeric"
+							pattern="[0-9]*"
 							bind:value={userAnswer}
+							on:input={validateNumericInput}
 							placeholder="Enter sum"
 							autofocus
 							class="answer-input large"
@@ -1218,12 +1227,6 @@
 		color: #5b21b6;
 	}
 
-	.previous-hint {
-		color: #7c3aed;
-		font-size: 1.2rem;
-		margin-top: 1rem;
-		font-weight: 500;
-	}
 
 	.answer-input.large {
 		width: 250px;
