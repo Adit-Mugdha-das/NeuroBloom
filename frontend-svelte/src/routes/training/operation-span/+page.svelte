@@ -35,7 +35,9 @@
 	let userLetters = [];
 	let mathResponses = [];
 	let trialStartTime = 0;
-	
+	let lastTrialCorrect = false;
+	let lastTrial = null;
+
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
@@ -208,9 +210,12 @@
 		trials[currentTrialIndex].user_letters = userLetters;
 		trials[currentTrialIndex].math_responses = mathResponses;
 		trials[currentTrialIndex].reaction_time = reactionTime;
-		
+
+		lastTrialCorrect = checkCorrect();
+		lastTrial = currentTrial;
+
 		state = STATE.FEEDBACK;
-		
+
 		setTimeout(() => {
 			if (currentTrialIndex < trials.length - 1) {
 				currentTrialIndex++;
@@ -222,9 +227,7 @@
 	}
 
 	function checkCorrect() {
-		const lettersCorrect = JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
-		const mathCorrect = mathResponses.every((response, i) => response === currentTrial.items[i].is_correct);
-		return lettersCorrect && mathCorrect;
+		return JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
 	}
 
 	async function submitSession() {
@@ -234,7 +237,6 @@
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
-			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/operation-span/submit/${userId}`,
 				{
@@ -434,8 +436,7 @@
 					<button 
 						class="letter-btn" 
 						class:selected={userLetters.includes(letter)}
-						class:available={currentTrial.correct_letters.includes(letter)}
-						disabled={userLetters.includes(letter)}
+						disabled={userLetters.includes(letter) || userLetters.length >= currentTrial.set_size}
 						on:click={() => addLetter(letter)}
 					>
 						{letter}
@@ -462,15 +463,15 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
-			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
-				{checkCorrect() ? '✓' : '✗'}
+			<div class="feedback-icon {lastTrialCorrect ? 'correct' : 'incorrect'}">
+				{lastTrialCorrect ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
-				{checkCorrect() ? 'Perfect!' : 'Not quite'}
+				{lastTrialCorrect ? 'Perfect!' : 'Not quite'}
 			</p>
-			{#if !checkCorrect()}
+			{#if !lastTrialCorrect}
 				<div class="correct-answer">
-					<p>Correct letters: <strong>{currentTrial.correct_letters.join(' - ')}</strong></p>
+					<p>Correct letters: <strong>{lastTrial.correct_letters.join(' - ')}</strong></p>
 				</div>
 			{/if}
 		</div>
@@ -1047,7 +1048,7 @@
 		transition: all 0.2s;
 	}
 
-	.letter-btn.available:hover:not(:disabled) {
+	.letter-btn:hover:not(:disabled) {
 		background: #667eea;
 		color: white;
 		transform: scale(1.05);

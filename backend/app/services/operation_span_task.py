@@ -19,20 +19,25 @@ class OperationSpanTask:
     Service for generating and scoring Operation Span (OSPAN) trials
     """
     
-    # Difficulty configuration
-    # Time limits based on cognitive research: dual-task requires more time than single task
-    # Simple addition: 6-4s, Subtraction: 7-5s, Multi-operation: 8-6s
+    # Difficulty configuration — one axis changes per level:
+    # Levels 1-3:  simple addition, set size grows 2→3→4, generous time
+    # Levels 4-6:  subtraction introduced, set size 4→5→5, time tightens
+    # Levels 7-9:  multi-operation, set size 5→6→7, time tightens further
+    # Level 10:    multi-operation, set size 8, tightest time — expert ceiling
+    #
+    # Time limits are set per math type so each type starts with breathing room
+    # then gradually tightens: addition 6→5s, subtraction 7→5.5s, multi 8→6s
     DIFFICULTY_CONFIG = {
-        1: {"set_size": 2, "operation_type": "simple_addition", "time_limit": 6000},   # Easiest: 6s
-        2: {"set_size": 2, "operation_type": "simple_addition", "time_limit": 5500},   # 5.5s
-        3: {"set_size": 3, "operation_type": "simple_addition", "time_limit": 5000},   # 5s
-        4: {"set_size": 4, "operation_type": "subtraction", "time_limit": 7000},       # Subtraction needs more time: 7s
-        5: {"set_size": 4, "operation_type": "subtraction", "time_limit": 6500},       # 6.5s
-        6: {"set_size": 5, "operation_type": "subtraction", "time_limit": 6000},       # 6s
-        7: {"set_size": 6, "operation_type": "multi_operation", "time_limit": 8000},   # Multi-op hardest: 8s
-        8: {"set_size": 6, "operation_type": "multi_operation", "time_limit": 7500},   # 7.5s
-        9: {"set_size": 7, "operation_type": "multi_operation", "time_limit": 7000},   # 7s
-        10: {"set_size": 8, "operation_type": "multi_operation", "time_limit": 6500}   # Expert level: 6.5s
+        1:  {"set_size": 2, "operation_type": "simple_addition",  "time_limit": 6000},  # 2 letters, easy addition, 6s
+        2:  {"set_size": 3, "operation_type": "simple_addition",  "time_limit": 5500},  # +1 letter, time tightens
+        3:  {"set_size": 4, "operation_type": "simple_addition",  "time_limit": 5000},  # +1 letter, time tightens
+        4:  {"set_size": 4, "operation_type": "subtraction",      "time_limit": 7000},  # math type switch only, time resets
+        5:  {"set_size": 5, "operation_type": "subtraction",      "time_limit": 6500},  # +1 letter, time tightens
+        6:  {"set_size": 5, "operation_type": "subtraction",      "time_limit": 5500},  # same letters, time tightens
+        7:  {"set_size": 5, "operation_type": "multi_operation",  "time_limit": 8000},  # math type switch only, time resets
+        8:  {"set_size": 6, "operation_type": "multi_operation",  "time_limit": 7000},  # +1 letter, time tightens
+        9:  {"set_size": 7, "operation_type": "multi_operation",  "time_limit": 6500},  # +1 letter, time tightens
+        10: {"set_size": 8, "operation_type": "multi_operation",  "time_limit": 6000},  # +1 letter, tightest — expert ceiling
     }
     
     # Available letters (excluding vowels to reduce acronym formation)
@@ -71,10 +76,11 @@ class OperationSpanTask:
             
         else:  # multi_operation
             # Mix of operations: (a op1 b) op2 c
-            a = random.randint(2, 9)
-            b = random.randint(1, 5)
-            c = random.randint(1, 5)
-            
+            # Larger numbers than addition/subtraction to genuinely increase cognitive load
+            a = random.randint(4, 12)
+            b = random.randint(2, 8)
+            c = random.randint(2, 6)
+
             op1 = random.choice(['+', '-'])
             op2 = random.choice(['+', '-'])
             
