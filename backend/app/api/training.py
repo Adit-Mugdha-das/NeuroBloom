@@ -1162,38 +1162,39 @@ def submit_spatial_span_session(
     # Extract task_id for session tracking
     task_id = session_data.get("task_id")
     
-    # Score each trial
+    # Score each trial — pass reaction_time and par_ms for speed bonus
     trials = session_data.get('trials', [])
     scored_trials = []
-    
+
     for trial in trials:
         score_result = SpatialSpanTask.score_response(
             trial['sequence'],
             trial.get('user_response', []),
-            trial['span_type']
+            trial['span_type'],
+            reaction_time_ms=trial.get('reaction_time', 0),
+            par_ms=trial.get('par_ms', 9000),
         )
-        
         scored_trial = {**trial, **score_result}
         scored_trials.append(scored_trial)
-    
+
     # Calculate session metrics
     metrics = SpatialSpanTask.calculate_session_metrics(scored_trials)
     avg_rt = SpatialSpanTask.calculate_average_reaction_time(scored_trials)
-    
-    # Determine difficulty adaptation
-    difficulty = session_data.get('difficulty', 5)
-    accuracy = metrics['accuracy']
-    
-    if accuracy >= 85:
+
+    # Difficulty adaptation uses session score + class thresholds
+    difficulty    = session_data.get('difficulty', 5)
+    session_score = metrics['score']
+
+    if session_score >= SpatialSpanTask.ADVANCE_THRESHOLD:
         new_difficulty = min(difficulty + 1, 10)
-        adaptation_reason = f"Increased difficulty (accuracy {accuracy:.1f}% >= 85%)"
-    elif accuracy < 65:
+        adaptation_reason = f"Increased difficulty (score {session_score:.1f} >= {SpatialSpanTask.ADVANCE_THRESHOLD})"
+    elif session_score < SpatialSpanTask.REGRESS_THRESHOLD:
         new_difficulty = max(difficulty - 1, 1)
-        adaptation_reason = f"Decreased difficulty (accuracy {accuracy:.1f}% < 65%)"
+        adaptation_reason = f"Decreased difficulty (score {session_score:.1f} < {SpatialSpanTask.REGRESS_THRESHOLD})"
     else:
         new_difficulty = difficulty
-        adaptation_reason = f"Maintained difficulty (accuracy {accuracy:.1f}% in 65-85% range)"
-    
+        adaptation_reason = f"Maintained difficulty (score {session_score:.1f} in {SpatialSpanTask.REGRESS_THRESHOLD}–{SpatialSpanTask.ADVANCE_THRESHOLD} range)"
+
     # Create training session record
     training_session = TrainingSession(
         user_id=user_id,
@@ -1453,14 +1454,14 @@ def submit_letter_number_sequencing_session(
 
 @router.post("/tasks/operation-span/generate/{user_id}")
 def generate_operation_span_session(
-    user_id: int, 
+    user_id: int,
     difficulty: int = 5,
     num_trials: int = 6,
     session: Session = Depends(get_session)
 ):
     """
     Generate Operation Span (OSPAN) task session
-    
+
     Returns trials with math problems and letters to remember
     """
     from app.services.operation_span_task import OperationSpanTask

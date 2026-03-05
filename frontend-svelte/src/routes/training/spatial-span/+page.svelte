@@ -23,25 +23,13 @@
 	let userResponse = [];
 	let gridSize = 3;
 	let highlightedBlock = null;
-	let highlightIndex = 0;
-	let showingSequence = false;
 	let startTime = 0;
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
 
-	// Timings (in milliseconds) - adaptive based on difficulty
-	function getBlockHighlightTime(diff) {
-		if (diff <= 3) return 1000; // Easy
-		if (diff <= 6) return 800;  // Medium
-		return 600;                 // Hard
-	}
-
-	function getInterBlockInterval(diff) {
-		if (diff <= 3) return 400;
-		if (diff <= 6) return 300;
-		return 200;
-	}
+	// Timings come from each trial's display_ms / interval_ms set by the backend
+	// based on the exact difficulty level — no coarse frontend brackets needed.
 
 	onMount(async () => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -122,7 +110,6 @@
 		
 		// Show sequence
 		state = STATE.SHOWING;
-		showingSequence = true;
 		await playSequence();
 		
 		// Allow user input
@@ -132,8 +119,8 @@
 
 	async function playSequence() {
 		const sequence = currentTrial.sequence;
-		const highlightTime = getBlockHighlightTime(difficulty);
-		const intervalTime = getInterBlockInterval(difficulty);
+		const highlightTime = currentTrial.display_ms  ?? 750;
+		const intervalTime  = currentTrial.interval_ms ?? 300;
 
 		for (let i = 0; i < sequence.length; i++) {
 			highlightedBlock = sequence[i];
@@ -144,23 +131,13 @@
 				await new Promise(resolve => setTimeout(resolve, intervalTime));
 			}
 		}
-		
-		showingSequence = false;
+
+		highlightedBlock = null;
 	}
 
 	function handleBlockClick(blockIndex) {
 		if (state !== STATE.INPUT) return;
-		
-		// Don't allow more clicks than the sequence length
-		if (userResponse.length >= currentTrial.sequence.length) return;
-		
-		// Add the click (blocks can be clicked multiple times if they appear multiple times in sequence)
 		userResponse = [...userResponse, blockIndex];
-		
-		// Check if user has completed their response
-		if (userResponse.length === currentTrial.sequence.length) {
-			setTimeout(() => completeResponse(), 300);
-		}
 	}
 
 	function undoLastClick() {
@@ -177,9 +154,8 @@
 		const reactionTime = Date.now() - startTime;
 		trials[currentTrialIndex].user_response = userResponse;
 		trials[currentTrialIndex].reaction_time = reactionTime;
-		
+
 		// Show feedback
-		const correct = checkCorrect();
 		state = STATE.FEEDBACK;
 		
 		setTimeout(() => {
@@ -230,18 +206,8 @@
 		}
 	}
 
-	function getBlockPosition(index) {
-		const row = Math.floor(index / gridSize);
-		const col = index % gridSize;
-		return { row, col };
-	}
-
 	function isBlockClicked(index) {
 		return userResponse.includes(index);
-	}
-	
-	function getBlockClickCount(index) {
-		return userResponse.filter(blockIdx => blockIdx === index).length;
 	}
 
 	function getClickNumber(index) {
@@ -335,20 +301,15 @@
 							Click blocks in the <strong>SAME</strong> order
 						{/if}
 					</p>
-					<div class="progress-indicator">
-						<span class="progress-text">
-							{userResponse.length} / {currentTrial.sequence.length} blocks
-						</span>
-						<div class="progress-bar">
-							<div class="progress-fill" style="width: {(userResponse.length / currentTrial.sequence.length) * 100}%"></div>
-						</div>
-					</div>
 					<div class="control-buttons">
 						<button class="control-btn" on:click={undoLastClick} disabled={userResponse.length === 0}>
 							↶ Undo
 						</button>
 						<button class="control-btn" on:click={clearClicks} disabled={userResponse.length === 0}>
 							✕ Clear
+						</button>
+						<button class="submit-btn" on:click={completeResponse} disabled={userResponse.length === 0}>
+							Submit ✓
 						</button>
 					</div>
 				</div>
@@ -376,7 +337,10 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
-			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
+			<div
+				class="feedback-icon"
+				style="background: {checkCorrect() ? '#4CAF50' : '#f44336'}"
+			>
 				{checkCorrect() ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
@@ -447,8 +411,19 @@
 </div>
 
 {#if showHelp}
-	<div class="help-modal" on:click={toggleHelp}>
-		<div class="help-content" on:click|stopPropagation>
+	<div
+		class="help-modal"
+		role="presentation"
+		on:click={toggleHelp}
+		on:keydown={(e) => e.key === 'Escape' && toggleHelp()}
+	>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="help-content"
+			role="document"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+		>
 			<button class="close-button" on:click={toggleHelp}>×</button>
 			<h2>Memory Strategies</h2>
 			
@@ -642,35 +617,6 @@
 		color: #555;
 	}
 
-	.progress-indicator {
-		margin: 1rem auto;
-		max-width: 400px;
-	}
-
-	.progress-text {
-		display: block;
-		text-align: center;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-		color: #4CAF50;
-		font-size: 1.1rem;
-	}
-
-	.progress-bar {
-		height: 8px;
-		background: #e0e0e0;
-		border-radius: 10px;
-		overflow: hidden;
-		margin-bottom: 1rem;
-	}
-
-	.progress-fill {
-		height: 100%;
-		background: linear-gradient(90deg, #4CAF50, #66BB6A);
-		transition: width 0.3s ease;
-		border-radius: 10px;
-	}
-
 	.control-buttons {
 		display: flex;
 		gap: 0.5rem;
@@ -702,6 +648,32 @@
 		cursor: not-allowed;
 		border-color: #ccc;
 		color: #ccc;
+	}
+
+	.submit-btn {
+		padding: 0.5rem 1.4rem;
+		border: 2px solid #4CAF50;
+		background: #4CAF50;
+		color: white;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.submit-btn:hover:not(:disabled) {
+		background: #43a047;
+		border-color: #43a047;
+		transform: translateY(-2px);
+		box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+	}
+
+	.submit-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+		background: #ccc;
+		border-color: #ccc;
 	}
 
 	.grid-container {
@@ -785,13 +757,6 @@
 		color: white;
 	}
 
-	.feedback-icon.correct {
-		background: #4CAF50;
-	}
-
-	.feedback-icon.incorrect {
-		background: #f44336;
-	}
 
 	.feedback-text {
 		font-size: 2rem;
