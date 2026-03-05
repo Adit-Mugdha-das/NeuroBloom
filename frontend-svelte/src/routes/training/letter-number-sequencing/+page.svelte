@@ -33,18 +33,8 @@
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 	const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
 
-	// Timings - adaptive based on difficulty
-	function getItemDisplayTime(diff) {
-		if (diff <= 3) return 1200; // Easy
-		if (diff <= 6) return 1000; // Medium
-		return 800;                 // Hard
-	}
-
-	function getInterItemInterval(diff) {
-		if (diff <= 3) return 500;
-		if (diff <= 6) return 400;
-		return 300;
-	}
+	// Timings come from each trial's display_ms / interval_ms set by the backend
+	// based on the exact difficulty level — no coarse frontend brackets needed.
 
 	onMount(async () => {
 		await loadSession();
@@ -130,8 +120,8 @@
 
 	async function playSequence() {
 		const sequence = currentTrial.sequence;
-		const displayTime = getItemDisplayTime(difficulty);
-		const intervalTime = getInterItemInterval(difficulty);
+		const displayTime = currentTrial.display_ms ?? 1000;
+		const intervalTime = currentTrial.interval_ms ?? 400;
 
 		for (let i = 0; i < sequence.length; i++) {
 			currentItemIndex = i;
@@ -359,8 +349,7 @@
 								<button 
 									class="item-button number" 
 									class:selected={userNumbers.includes(num)}
-									class:available={currentTrial.sequence.includes(num)}
-									disabled={!currentTrial.sequence.includes(num) || userNumbers.includes(num)}
+									disabled={userNumbers.includes(num)}
 									on:click={() => addNumber(num)}
 								>
 									{num}
@@ -394,8 +383,7 @@
 								<button 
 									class="item-button letter" 
 									class:selected={userLetters.includes(letter)}
-									class:available={currentTrial.sequence.includes(letter)}
-									disabled={!currentTrial.sequence.includes(letter) || userLetters.includes(letter)}
+									disabled={userLetters.includes(letter)}
 									on:click={() => addLetter(letter)}
 								>
 									{letter}
@@ -417,7 +405,6 @@
 					<button 
 						class="submit-button" 
 						on:click={submitResponse}
-						disabled={userNumbers.length === 0 && userLetters.length === 0}
 					>
 						Submit Answer
 					</button>
@@ -446,15 +433,16 @@
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
 			<h1>Session Complete! 🎉</h1>
-			
+
+			<!-- Primary score cards -->
 			<div class="results-grid">
-				<div class="result-card">
+				<div class="result-card highlight">
 					<div class="result-value">{sessionResults.metrics.score}</div>
-					<div class="result-label">Score</div>
+					<div class="result-label">Session Score</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.accuracy.toFixed(1)}%</div>
-					<div class="result-label">Accuracy</div>
+					<div class="result-value">{sessionResults.metrics.binary_accuracy.toFixed(1)}%</div>
+					<div class="result-label">Fully Correct</div>
 				</div>
 				<div class="result-card">
 					<div class="result-value">{sessionResults.metrics.longest_sequence}</div>
@@ -466,15 +454,52 @@
 				</div>
 			</div>
 
+			<!-- Component score breakdown -->
 			<div class="breakdown">
-				<h3>Performance Breakdown</h3>
+				<h3>Score Breakdown</h3>
 				<div class="breakdown-row">
-					<span>Numbers Accuracy:</span>
-					<span>{sessionResults.metrics.numbers_accuracy.toFixed(1)}%</span>
+					<span>🧠 Item Recall (what you remembered)</span>
+					<span>{sessionResults.metrics.avg_set_accuracy.toFixed(1)}%</span>
 				</div>
 				<div class="breakdown-row">
-					<span>Letters Accuracy:</span>
-					<span>{sessionResults.metrics.letters_accuracy.toFixed(1)}%</span>
+					<span>🔢 Ordering (correct sequence)</span>
+					<span>{sessionResults.metrics.avg_order_accuracy.toFixed(1)}%</span>
+				</div>
+				<div class="breakdown-row">
+					<span>⚡ Speed Bonus (avg)</span>
+					<span>+{sessionResults.metrics.avg_speed_bonus.toFixed(1)} pts</span>
+				</div>
+				<div class="breakdown-row">
+					<span>⚠️ Wrong Selections (penalty)</span>
+					<span>−{sessionResults.metrics.avg_penalty.toFixed(1)} pts</span>
+				</div>
+			</div>
+
+			<!-- Numbers vs Letters breakdown -->
+			<div class="breakdown">
+				<h3>Numbers vs Letters</h3>
+				<div class="breakdown-row">
+					<span>🔢 Numbers — recalled</span>
+					<span>{sessionResults.metrics.numbers_set_accuracy.toFixed(1)}%</span>
+				</div>
+				<div class="breakdown-row">
+					<span>🔢 Numbers — ordered correctly</span>
+					<span>{sessionResults.metrics.numbers_order_accuracy.toFixed(1)}%</span>
+				</div>
+				<div class="breakdown-row">
+					<span>🔤 Letters — recalled</span>
+					<span>{sessionResults.metrics.letters_set_accuracy.toFixed(1)}%</span>
+				</div>
+				<div class="breakdown-row">
+					<span>🔤 Letters — ordered correctly</span>
+					<span>{sessionResults.metrics.letters_order_accuracy.toFixed(1)}%</span>
+				</div>
+				<div class="breakdown-row">
+					<span>⏱️ Response speed trend</span>
+					<span class="trend-{sessionResults.metrics.speed_trend}">
+						{sessionResults.metrics.speed_trend === 'improving' ? '📈 Improving' :
+						 sessionResults.metrics.speed_trend === 'slowing'   ? '📉 Slowing'   : '➡️ Stable'}
+					</span>
 				</div>
 			</div>
 
@@ -902,16 +927,16 @@
 		border-color: #4CAF50;
 	}
 
-	.item-button.available:hover:not(:disabled) {
+	.item-button:hover:not(:disabled) {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 	}
 
-	.item-button.number.available:hover:not(:disabled) {
+	.item-button.number:hover:not(:disabled) {
 		background: #e3f2fd;
 	}
 
-	.item-button.letter.available:hover:not(:disabled) {
+	.item-button.letter:hover:not(:disabled) {
 		background: #e8f5e9;
 	}
 
@@ -1064,6 +1089,16 @@
 		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 	}
 
+	.result-card.highlight {
+		background: linear-gradient(135deg, #4CAF50, #45a049);
+		color: white;
+	}
+
+	.result-card.highlight .result-value,
+	.result-card.highlight .result-label {
+		color: white;
+	}
+
 	.result-value {
 		font-size: 2.5rem;
 		font-weight: bold;
@@ -1099,6 +1134,10 @@
 	.breakdown-row:last-child {
 		border-bottom: none;
 	}
+
+	.trend-improving { color: #4CAF50; font-weight: 600; }
+	.trend-slowing   { color: #f44336; font-weight: 600; }
+	.trend-stable    { color: #FF9800; font-weight: 600; }
 
 	.difficulty-info {
 		background: #e3f2fd;

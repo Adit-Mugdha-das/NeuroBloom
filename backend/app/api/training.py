@@ -1350,36 +1350,39 @@ def submit_letter_number_sequencing_session(
     # Score each trial
     trials = session_data.get('trials', [])
     scored_trials = []
-    
+
     for trial in trials:
         score_result = LetterNumberSequencingTask.score_response(
             trial['correct_numbers'],
             trial['correct_letters'],
             trial.get('user_numbers', []),
-            trial.get('user_letters', [])
+            trial.get('user_letters', []),
+            reaction_time_ms=trial.get('reaction_time', 0),
+            par_ms=trial.get('par_ms', 18000),
         )
-        
         scored_trial = {**trial, **score_result}
         scored_trials.append(scored_trial)
-    
+
     # Calculate session metrics
     metrics = LetterNumberSequencingTask.calculate_session_metrics(scored_trials)
     avg_rt = LetterNumberSequencingTask.calculate_average_reaction_time(scored_trials)
-    
-    # Determine difficulty adaptation
+
+    # Determine difficulty adaptation using weighted score and clinical thresholds
     difficulty = session_data.get('difficulty', 5)
-    accuracy = metrics['accuracy']
-    
-    if accuracy >= 85:
+    session_score = metrics['score']
+    advance_threshold = LetterNumberSequencingTask.ADVANCE_THRESHOLD
+    regress_threshold = LetterNumberSequencingTask.REGRESS_THRESHOLD
+
+    if session_score >= advance_threshold:
         new_difficulty = min(difficulty + 1, 10)
-        adaptation_reason = f"Increased difficulty (accuracy {accuracy:.1f}% >= 85%)"
-    elif accuracy < 65:
+        adaptation_reason = f"Increased difficulty (score {session_score:.1f} >= {advance_threshold})"
+    elif session_score < regress_threshold:
         new_difficulty = max(difficulty - 1, 1)
-        adaptation_reason = f"Decreased difficulty (accuracy {accuracy:.1f}% < 65%)"
+        adaptation_reason = f"Decreased difficulty (score {session_score:.1f} < {regress_threshold})"
     else:
         new_difficulty = difficulty
-        adaptation_reason = f"Maintained difficulty (accuracy {accuracy:.1f}% in 65-85% range)"
-    
+        adaptation_reason = f"Maintained difficulty (score {session_score:.1f} in {regress_threshold}–{advance_threshold} range)"
+
     # Create training session record
     training_session = TrainingSession(
         user_id=user_id,
@@ -1388,7 +1391,7 @@ def submit_letter_number_sequencing_session(
         task_type="letter_number_sequencing",
         task_code="letter_number_sequencing",
         score=metrics['score'],
-        accuracy=metrics['accuracy'],
+        accuracy=metrics['binary_accuracy'],
         average_reaction_time=avg_rt,
         consistency=metrics['consistency'],
         errors=metrics['total_trials'] - metrics['correct_count'],
@@ -1432,11 +1435,19 @@ def submit_letter_number_sequencing_session(
         "completed_tasks": session_info["completed_tasks"],
         "total_tasks": session_info["total_tasks"],
         "performance_summary": {
-            "score": metrics['score'],
-            "accuracy": metrics['accuracy'],
-            "longest_sequence": metrics['longest_sequence'],
-            "numbers_accuracy": metrics['numbers_accuracy'],
-            "letters_accuracy": metrics['letters_accuracy']
+            "score":                   metrics['score'],
+            "binary_accuracy":         metrics['binary_accuracy'],
+            "longest_sequence":        metrics['longest_sequence'],
+            "consistency":             metrics['consistency'],
+            "speed_trend":             metrics['speed_trend'],
+            "avg_set_accuracy":        metrics['avg_set_accuracy'],
+            "avg_order_accuracy":      metrics['avg_order_accuracy'],
+            "avg_speed_bonus":         metrics['avg_speed_bonus'],
+            "avg_penalty":             metrics['avg_penalty'],
+            "numbers_set_accuracy":    metrics['numbers_set_accuracy'],
+            "letters_set_accuracy":    metrics['letters_set_accuracy'],
+            "numbers_order_accuracy":  metrics['numbers_order_accuracy'],
+            "letters_order_accuracy":  metrics['letters_order_accuracy'],
         }
     }
 

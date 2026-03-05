@@ -1,3 +1,7 @@
+		const lettersCorrect = JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
+		const mathCorrect = mathResponses.every((response, i) => response === currentTrial.items[i].is_correct);
+		return lettersCorrect && mathCorrect;
+				currentTrialIndex++;
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
