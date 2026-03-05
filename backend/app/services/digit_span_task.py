@@ -15,18 +15,22 @@ class DigitSpanTask:
     Backward: Repeat digits in reverse order
     """
     
-    # Difficulty to sequence length mapping
+    # Difficulty to sequence length + type mapping
+    # Levels 1-3 : forward only      (3-5 digits)   — warm-up
+    # Levels 4-5 : mixed fwd/bwd     (4-5 digits)   — introduce backward
+    # Levels 6-7 : backward only     (5-6 digits)   — consolidate backward
+    # Levels 8-10: mixed fwd/bwd     (7-9 digits)   — high load / MS clinical range
     DIFFICULTY_CONFIG = {
-        1: {'length': 3, 'type': 'forward'},
-        2: {'length': 4, 'type': 'forward'},
-        3: {'length': 5, 'type': 'forward'},
-        4: {'length': 4, 'type': 'backward'},
-        5: {'length': 5, 'type': 'backward'},
-        6: {'length': 6, 'type': 'backward'},
-        7: {'length': 7, 'type': 'backward'},
-        8: {'length': 8, 'type': 'mixed'},  # Mix of forward/backward
-        9: {'length': 9, 'type': 'mixed'},
-        10: {'length': 10, 'type': 'mixed'}
+        1:  {'length': 3,  'type': 'forward'},
+        2:  {'length': 4,  'type': 'forward'},
+        3:  {'length': 5,  'type': 'forward'},
+        4:  {'length': 4,  'type': 'mixed'},    # first exposure to backward
+        5:  {'length': 5,  'type': 'mixed'},
+        6:  {'length': 5,  'type': 'backward'},
+        7:  {'length': 6,  'type': 'backward'},
+        8:  {'length': 7,  'type': 'mixed'},
+        9:  {'length': 8,  'type': 'mixed'},
+        10: {'length': 9,  'type': 'mixed'}
     }
     
     @staticmethod
@@ -168,13 +172,16 @@ class DigitSpanTask:
         
         correct_count = sum(1 for t in trials if t.get('correct', False))
         total_trials = len(trials)
-        
-        # Overall accuracy
+
+        # Overall positional accuracy (0–100)
         avg_accuracy = sum(t.get('accuracy', 0) for t in trials) / total_trials
-        
-        # Score: combination of correct trials and accuracy
-        score = (correct_count / total_trials * 70) + (avg_accuracy * 0.3)
-        
+
+        # Score (0–100):
+        #   60 % — proportion of fully-correct trials
+        #   40 % — average positional accuracy (partial credit)
+        trial_accuracy_pct = (correct_count / total_trials) * 100
+        score = (trial_accuracy_pct * 0.60) + (avg_accuracy * 0.40)
+
         # Longest span achieved correctly
         correct_trials = [t for t in trials if t.get('correct', False)]
         longest_span = max([t['length'] for t in correct_trials], default=0)

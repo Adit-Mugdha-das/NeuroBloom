@@ -24,8 +24,9 @@
 	let displayedDigits = [];
 	let currentDigitIndex = 0;
 
-	// User input
-	let userInput = '';
+	// User input — one slot per digit in the sequence
+	let digitSlots = [];      // array of single digit strings, length = sequence length
+	let activeSlot = 0;       // index of the currently focused slot
 	let isCorrect = false;
 	let trialStartTime = 0;
 
@@ -159,25 +160,30 @@
 			// All digits shown, switch to input
 			setTimeout(() => {
 				currentState = STATE_INPUT;
-				userInput = '';
+				digitSlots = Array(currentTrial.sequence.length).fill('');
+				activeSlot = 0;
 				trialStartTime = Date.now();
+				// Focus first slot after DOM updates
+				setTimeout(() => focusSlot(0), 50);
 			}, INTER_DIGIT_INTERVAL);
 		}
 	}
 
+	function focusSlot(index) {
+		const el = document.getElementById(`slot-${index}`);
+		if (el) el.focus();
+	}
+
 	function submitResponse() {
-		if (!userInput.trim()) return;
+		// All slots must be filled
+		if (digitSlots.some((s) => s === '')) return;
 
 		const reactionTime = Date.now() - trialStartTime;
 
-		// Parse user input (expecting space-separated or just concatenated digits)
-		const userDigits = userInput
-			.trim()
-			.split(/[\s,]+/)
-			.map((d) => parseInt(d))
-			.filter((d) => !isNaN(d));
+		// Each slot holds exactly one digit string — convert to integers directly
+		const userDigits = digitSlots.map((s) => parseInt(s));
 
-		// Check if correct
+		// Expected sequence
 		const expectedSequence =
 			currentTrial.span_type === 'forward'
 				? currentTrial.sequence
@@ -187,7 +193,6 @@
 			userDigits.length === expectedSequence.length &&
 			userDigits.every((d, i) => d === expectedSequence[i]);
 
-		// Save trial result
 		const trialResult = {
 			...currentTrial,
 			user_response: userDigits,
@@ -196,20 +201,62 @@
 		};
 
 		completedTrials.push(trialResult);
-
-		// Show feedback
 		currentState = STATE_FEEDBACK;
 
-		// Move to next trial or complete
 		setTimeout(() => {
 			currentTrialIndex++;
-
 			if (currentTrialIndex < sessionData.trials.length) {
 				startTrial();
 			} else {
 				completeSession();
 			}
 		}, 1500);
+	}
+
+	function handleSlotKeydown(event, index) {
+		const key = event.key;
+
+		if (key === 'Backspace') {
+			event.preventDefault();
+			if (digitSlots[index] !== '') {
+				// Clear this slot
+				digitSlots[index] = '';
+				digitSlots = [...digitSlots];
+				activeSlot = index;
+			} else if (index > 0) {
+				// Move back and clear previous slot
+				digitSlots[index - 1] = '';
+				digitSlots = [...digitSlots];
+				activeSlot = index - 1;
+				focusSlot(index - 1);
+			}
+			return;
+		}
+
+		if (key === 'Enter') {
+			submitResponse();
+			return;
+		}
+
+		// Only accept single digit 0-9
+		if (/^[0-9]$/.test(key)) {
+			event.preventDefault();
+			digitSlots[index] = key;
+			digitSlots = [...digitSlots];
+			if (index < digitSlots.length - 1) {
+				// Advance to next slot
+				activeSlot = index + 1;
+				focusSlot(index + 1);
+			} else {
+				// Last slot filled — auto-submit
+				activeSlot = index;
+				submitResponse();
+			}
+			return;
+		}
+
+		// Block everything else
+		event.preventDefault();
 	}
 
 	async function completeSession() {
@@ -243,15 +290,8 @@
 			goto('/dashboard');
 		}
 	}
-
-	function handleKeydown(event) {
-		if (currentState === STATE_INPUT && event.key === 'Enter') {
-			submitResponse();
-		}
-	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
 
 <div class="digit-span-container">
 	{#if currentState === STATE_LOADING}
@@ -319,9 +359,9 @@
 			<div class="tips">
 				<h3>💡 Tips</h3>
 				<ul>
-					<li>Take your time to remember the sequence</li>
-					<li>Use memory strategies that work for you (chunking, visualization, etc.)</li>
-					<li>Separate digits with spaces when typing</li>
+					<li>Take your time to remember the sequence before typing</li>
+					<li>Use chunking or visualization to hold the digits in mind</li>
+					<li>One box per digit — Backspace to correct the last entry</li>
 					<li>Don't worry about mistakes - the task adapts to your level</li>
 				</ul>
 			</div>
@@ -381,18 +421,31 @@
 					: '↩️ Type in reverse order'}
 			</div>
 
-			<div class="input-container">
-				<input
-					type="text"
-					bind:value={userInput}
-					placeholder="Type the digits (e.g., 3 7 2)"
-					class="digit-input"
-				/>
+			<div class="slot-row">
+				{#each digitSlots as slot, i}
+					<input
+						id="slot-{i}"
+						type="text"
+						inputmode="numeric"
+						maxlength="1"
+						value={slot}
+						on:keydown={(e) => handleSlotKeydown(e, i)}
+						on:focus={() => (activeSlot = i)}
+						readonly
+						class="digit-slot {activeSlot === i ? 'active' : ''} {slot !== '' ? 'filled' : ''}"
+					/>
+				{/each}
 			</div>
 
-			<div class="input-hint">Separate digits with spaces, then press Enter or click Submit</div>
+			<div class="input-hint">
+				Type each digit · Backspace to correct · auto-submits on last digit
+			</div>
 
-			<button class="submit-button" on:click={submitResponse} disabled={!userInput.trim()}>
+			<button
+				class="submit-button"
+				on:click={submitResponse}
+				disabled={digitSlots.some((s) => s === '')}
+			>
 				Submit Answer
 			</button>
 		</div>
@@ -812,25 +865,48 @@
 		color: #9f1239;
 	}
 
-	.input-container {
-		margin-bottom: 1rem;
+	.slot-row {
+		display: flex;
+		gap: 0.6rem;
+		justify-content: center;
+		flex-wrap: wrap;
+		margin-bottom: 1.5rem;
 	}
 
-	.digit-input {
-		width: 100%;
-		max-width: 400px;
-		padding: 1.5rem;
-		font-size: 2rem;
-		text-align: center;
-		border: 3px solid #2563eb;
-		border-radius: 12px;
+	.digit-slot {
+		width: 3rem;
+		height: 3.5rem;
+		font-size: 1.8rem;
 		font-family: monospace;
+		font-weight: 700;
+		text-align: center;
+		border: 2.5px solid #cbd5e1;
+		border-radius: 10px;
+		background: #f8fafc;
+		color: #1e293b;
+		cursor: default;
+		caret-color: transparent;
+		transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+		/* prevent any browser text-editing UI */
+		user-select: none;
 	}
 
-	.digit-input:focus {
+	.digit-slot.active {
+		border-color: #2563eb;
+		background: #eff6ff;
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 		outline: none;
+	}
+
+	.digit-slot.filled {
 		border-color: #7c3aed;
-		box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+		color: #2563eb;
+		background: #f5f3ff;
+	}
+
+	.digit-slot.active.filled {
+		border-color: #2563eb;
+		background: #eff6ff;
 	}
 
 	.input-hint {
