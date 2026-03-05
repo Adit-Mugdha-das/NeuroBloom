@@ -4,7 +4,8 @@
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
-	
+	import { browser } from '$app/environment';
+
 	let currentUser = null;
 	let stage = 'intro'; // intro, test, results
 	let nBackLevel = 1; // Start with 1-back
@@ -35,7 +36,7 @@
 	
 	user.subscribe(value => {
 		currentUser = value;
-		if (!value) {
+		if (!value && browser) {
 			goto('/login');
 		}
 	});

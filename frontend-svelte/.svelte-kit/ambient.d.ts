@@ -41,6 +41,7 @@ declare module '$env/static/private' {
 	export const HOME: string;
 	export const HOMEDRIVE: string;
 	export const HOMEPATH: string;
+	export const IJ_RESTARTER_LOG: string;
 	export const INIT_CWD: string;
 	export const INTELLIJ_TERMINAL_COMMAND_BLOCKS_REWORKED: string;
 	export const LOCALAPPDATA: string;
@@ -147,6 +148,7 @@ declare module '$env/dynamic/private' {
 		HOME: string;
 		HOMEDRIVE: string;
 		HOMEPATH: string;
+		IJ_RESTARTER_LOG: string;
 		INIT_CWD: string;
 		INTELLIJ_TERMINAL_COMMAND_BLOCKS_REWORKED: string;
 		LOCALAPPDATA: string;
