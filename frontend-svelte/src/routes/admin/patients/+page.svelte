@@ -174,6 +174,7 @@
 		<div class="sidebar-brand">NeuroBloom Admin</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">Dashboard</a>
+			<a href="/admin/analytics" class="nav-item">System Analytics</a>
 			<a href="/admin/doctors" class="nav-item">Doctor Management</a>
 			<a href="/admin/patients" class="nav-item active">Patient Management</a>
 			<a href="/admin/departments" class="nav-item">Departments</a>

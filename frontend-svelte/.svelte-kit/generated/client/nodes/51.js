@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/visual-search/+page.svelte";
+export { default as component } from "../../../../src/routes/training/verbal-fluency/+page.svelte";

@@ -74,6 +74,9 @@
 			<a href="/admin/dashboard" class="nav-item">
 				<span class="nav-icon">📊</span> Dashboard
 			</a>
+			<a href="/admin/analytics" class="nav-item">
+				<span class="nav-icon">📈</span> System Analytics
+			</a>
 			<a href="/admin/doctors" class="nav-item">
 				<span class="nav-icon">👨‍⚕️</span> Doctor Management
 			</a>

@@ -5,7 +5,15 @@
 	import { onMount } from 'svelte';
 
 	let admin = null;
-	let stats = { total_patients: 0, active_patients: 0, total_doctors: 0, pending_doctors: 0, active_doctors: 0, total_departments: 0 };
+	let stats = {
+		total_patients: 0,
+		active_patients_today: 0,
+		total_doctors: 0,
+		pending_doctors: 0,
+		active_doctors: 0,
+		completed_sessions: 0,
+		total_departments: 0
+	};
 	let loading = true;
 	let error = '';
 
@@ -22,7 +30,15 @@
 	async function loadStats() {
 		try {
 			const res = await api.get(`/api/admin/stats?admin_id=${admin.id}`);
-			stats = res.data;
+			stats = {
+				total_patients: res.data.total_patients,
+				active_patients_today: res.data.active_patients_today,
+				total_doctors: res.data.total_doctors,
+				pending_doctors: res.data.pending_doctors,
+				active_doctors: res.data.active_doctors,
+				completed_sessions: res.data.completed_sessions,
+				total_departments: res.data.total_departments
+			};
 		} catch (e) {
 			error = e.response?.data?.detail || 'Failed to load stats';
 		} finally {
@@ -46,6 +62,9 @@
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item active">
 				<span class="nav-icon">📊</span> Dashboard
+			</a>
+			<a href="/admin/analytics" class="nav-item">
+				<span class="nav-icon">📈</span> System Analytics
 			</a>
 			<a href="/admin/doctors" class="nav-item">
 				<span class="nav-icon">👨‍⚕️</span> Doctor Management
@@ -78,12 +97,11 @@
 
 		{#if loading}
 			<div class="loading-grid">
-				{#each Array(6) as _}
+				{#each Array(8) as _}
 					<div class="stat-card skeleton"></div>
 				{/each}
 			</div>
 		{:else}
-			<!-- Stats grid -->
 			<div class="stats-grid">
 				<div class="stat-card blue">
 					<div class="stat-icon">👥</div>
@@ -95,8 +113,15 @@
 				<div class="stat-card green">
 					<div class="stat-icon">✅</div>
 					<div class="stat-body">
-						<p class="stat-label">Active Patients</p>
+						<p class="stat-label">Active Patient Accounts</p>
 						<p class="stat-value">{stats.active_patients}</p>
+					</div>
+				</div>
+				<div class="stat-card emerald">
+					<div class="stat-icon">📍</div>
+					<div class="stat-body">
+						<p class="stat-label">Active Patients Today</p>
+						<p class="stat-value">{stats.active_patients_today}</p>
 					</div>
 				</div>
 				<div class="stat-card purple">
@@ -120,6 +145,13 @@
 						<p class="stat-value">{stats.active_doctors}</p>
 					</div>
 				</div>
+				<div class="stat-card slate">
+					<div class="stat-icon">🧠</div>
+					<div class="stat-body">
+						<p class="stat-label">Sessions Completed</p>
+						<p class="stat-value">{stats.completed_sessions}</p>
+					</div>
+				</div>
 				<div class="stat-card navy">
 					<div class="stat-icon">🏢</div>
 					<div class="stat-body">
@@ -129,10 +161,31 @@
 				</div>
 			</div>
 
-			<!-- Quick actions -->
+			<section class="overview-panel">
+				<div class="overview-copy">
+					<p class="panel-kicker">Admin Workspace</p>
+					<h2>Operational dashboard kept intentionally light</h2>
+					<p class="panel-copy">Detailed system metrics, task usage, fatigue trends, and performance charts have been moved into a dedicated analytics page so this dashboard stays readable for day-to-day administration.</p>
+				</div>
+				<a href="/admin/analytics" class="analytics-link-card">
+					<span class="analytics-link-icon">📈</span>
+					<div>
+						<h3>Open System Analytics</h3>
+						<p>View the system-wide overview, high-risk patients, most used tasks, and the core trend charts.</p>
+					</div>
+				</a>
+			</section>
+
 			<section class="quick-actions">
 				<h2>Quick Actions</h2>
 				<div class="action-cards">
+					<a href="/admin/analytics" class="action-card">
+						<span class="action-icon">📈</span>
+						<div>
+							<h3>System Analytics</h3>
+							<p>Open the dedicated analytics workspace with only the necessary system charts and metrics.</p>
+						</div>
+					</a>
 					<a href="/admin/doctors" class="action-card">
 						<span class="action-icon">👨‍⚕️</span>
 						<div>
@@ -316,9 +369,11 @@
 
 	.stat-card.blue  { border-top-color: #3b82f6; }
 	.stat-card.green { border-top-color: #22c55e; }
+	.stat-card.emerald { border-top-color: #059669; }
 	.stat-card.purple{ border-top-color: #a855f7; }
 	.stat-card.orange{ border-top-color: #f97316; }
 	.stat-card.teal  { border-top-color: #14b8a6; }
+	.stat-card.slate { border-top-color: #475569; }
 	.stat-card.navy  { border-top-color: #1e3a8a; }
 	.stat-card.skeleton { height: 96px; background: #f1f5f9; animation: pulse 1.4s infinite; }
 
@@ -326,9 +381,93 @@
 	.stat-label { font-size: 0.78rem; color: #64748b; margin: 0 0 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
 	.stat-value { font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0; }
 
+	.panel-kicker {
+		margin: 0 0 0.35rem;
+		font-size: 0.74rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #1d4ed8;
+	}
+
+	.panel-copy {
+		margin: 0.35rem 0 0;
+		max-width: 48rem;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: #64748b;
+	}
+
+	.overview-panel {
+		margin: 2rem 2rem 0;
+		padding: 1.4rem;
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+		gap: 1.25rem;
+		background: linear-gradient(135deg, #f8fafc, #ffffff);
+		border: 1px solid #e2e8f0;
+		border-radius: 18px;
+		box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
+	}
+
+	.overview-copy h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		color: #0f172a;
+	}
+
+	.analytics-link-card {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-start;
+		padding: 1rem 1.1rem;
+		border-radius: 16px;
+		text-decoration: none;
+		background: #eff6ff;
+		border: 1px solid #bfdbfe;
+		color: inherit;
+	}
+
+	.analytics-link-icon {
+		font-size: 1.8rem;
+		line-height: 1;
+	}
+
+	.analytics-link-card h3 {
+		margin: 0;
+		font-size: 1rem;
+		color: #1e3a8a;
+	}
+
+	.analytics-link-card p {
+		margin: 0.35rem 0 0;
+		font-size: 0.86rem;
+		line-height: 1.5;
+		color: #475569;
+	}
+
 	/* ── Quick actions ── */
 	.quick-actions {
 		padding: 2rem;
+	}
+
+	@media (max-width: 1100px) {
+		.overview-panel {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.stats-grid,
+		.quick-actions {
+			padding-left: 1rem;
+			padding-right: 1rem;
+		}
+
+		.topbar {
+			padding-left: 1rem;
+			padding-right: 1rem;
+		}
 	}
 
 	.quick-actions h2 {
