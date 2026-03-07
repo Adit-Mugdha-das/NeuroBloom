@@ -2,14 +2,17 @@
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores';
-	import { onDestroy, onMount, tick } from 'svelte';
 	import { Chart, registerables } from 'chart.js';
+	import { onDestroy, onMount, tick } from 'svelte';
 
 	Chart.register(...registerables);
 
 	let admin = null;
 	let loading = true;
 	let error = '';
+	let successMsg = '';
+	let riskAlerts = [];
+	let riskActionLoading = {};
 	let stats = {
 		total_patients: 0,
 		total_doctors: 0,
@@ -42,13 +45,17 @@
 		}
 
 		admin = currentUser;
-		await loadStats();
+		await loadAnalytics();
 	});
 
-	async function loadStats() {
+	async function loadAnalytics() {
 		try {
-			const response = await api.get(`/api/admin/stats?admin_id=${admin.id}`);
-			stats = response.data;
+			const [statsResponse, alertsResponse] = await Promise.all([
+				api.get(`/api/admin/stats?admin_id=${admin.id}`),
+				api.get(`/api/admin/risk-alerts?admin_id=${admin.id}`)
+			]);
+			stats = statsResponse.data;
+			riskAlerts = alertsResponse.data.alerts;
 			await tick();
 			renderActivityChart();
 			renderPerformanceChart();
@@ -58,6 +65,34 @@
 			error = requestError.response?.data?.detail || 'Failed to load analytics';
 		} finally {
 			loading = false;
+		}
+	}
+
+	function isRiskActionLoading(patientId, action) {
+		return Boolean(riskActionLoading[`${patientId}:${action}`]);
+	}
+
+	async function runRiskAction(patientId, action) {
+		error = '';
+		successMsg = '';
+		const key = `${patientId}:${action}`;
+		riskActionLoading = { ...riskActionLoading, [key]: true };
+
+		const endpoints = {
+			notify: 'notify-doctor',
+			escalate: 'escalate',
+			review: 'mark-reviewed'
+		};
+
+		try {
+			const response = await api.post(`/api/admin/risk-alerts/${patientId}/${endpoints[action]}?admin_id=${admin.id}`);
+			successMsg = response.data.message;
+			const alertsResponse = await api.get(`/api/admin/risk-alerts?admin_id=${admin.id}`);
+			riskAlerts = alertsResponse.data.alerts;
+		} catch (requestError) {
+			error = requestError.response?.data?.detail || 'Risk action failed';
+		} finally {
+			riskActionLoading = { ...riskActionLoading, [key]: false };
 		}
 	}
 
@@ -446,6 +481,9 @@
 		{#if error}
 			<div class="alert error">{error}</div>
 		{/if}
+		{#if successMsg}
+			<div class="alert success">{successMsg}</div>
+		{/if}
 
 		{#if loading}
 			<div class="loading-grid">
@@ -481,6 +519,77 @@
 				</div>
 			</div>
 
+			<section class="risk-monitor-panel">
+				<div class="panel-header">
+					<div>
+						<p class="panel-kicker rose-text">Risk Monitoring</p>
+						<h2>High-Risk Patients</h2>
+						<p class="panel-copy">System-wide alerts are consolidated here so the admin can quickly notify the assigned doctor, escalate urgent cases, or mark alerts as reviewed without adding workflow clutter elsewhere.</p>
+					</div>
+					<div class="panel-chip rose-chip">{riskAlerts.length} active alerts</div>
+				</div>
+
+				<div class="risk-monitor-list">
+					{#if riskAlerts.length === 0}
+						<div class="empty-risk-state">No patients are currently flagged as high risk.</div>
+					{:else}
+						{#each riskAlerts as alert}
+							<div class="risk-monitor-row">
+								<div class="risk-monitor-main">
+									<div class="risk-monitor-top">
+										<div>
+											<h3>{alert.name}</h3>
+											<p class="risk-summary">{alert.alert_summary}</p>
+										</div>
+										<div class="risk-status-group">
+											<span class="status-chip {alert.alert_status}">{alert.alert_status}</span>
+											<span class="metric-chip">Risk score {alert.risk_score}</span>
+										</div>
+									</div>
+
+									<div class="risk-monitor-meta">
+										<span>{alert.email}</span>
+										<span>Doctor: {alert.assigned_doctor_name || 'Unassigned'}</span>
+										{#if alert.recent_avg_fatigue !== null}
+											<span>Fatigue {alert.recent_avg_fatigue}</span>
+										{/if}
+										{#if alert.recent_avg_score !== null}
+											<span>Score {alert.recent_avg_score}</span>
+										{/if}
+									</div>
+
+									<p class="risk-reasons">{alert.reasons.join(' • ')}</p>
+								</div>
+
+								<div class="risk-monitor-actions">
+									<button
+										class="action-btn secondary"
+										on:click={() => runRiskAction(alert.id, 'notify')}
+										disabled={!alert.assigned_doctor_id || alert.doctor_notified || isRiskActionLoading(alert.id, 'notify')}
+									>
+										{#if isRiskActionLoading(alert.id, 'notify')}Sending...{:else if alert.doctor_notified}Doctor notified{:else}Notify doctor{/if}
+									</button>
+									<button
+										class="action-btn danger"
+										on:click={() => runRiskAction(alert.id, 'escalate')}
+										disabled={alert.alert_status === 'escalated' || isRiskActionLoading(alert.id, 'escalate')}
+									>
+										{#if isRiskActionLoading(alert.id, 'escalate')}Escalating...{:else if alert.alert_status === 'escalated'}Escalated{:else}Escalate case{/if}
+									</button>
+									<button
+										class="action-btn success"
+										on:click={() => runRiskAction(alert.id, 'review')}
+										disabled={alert.alert_status === 'reviewed' || isRiskActionLoading(alert.id, 'review')}
+									>
+										{#if isRiskActionLoading(alert.id, 'review')}Saving...{:else if alert.alert_status === 'reviewed'}Reviewed{:else}Mark reviewed{/if}
+									</button>
+								</div>
+							</div>
+						{/each}
+					{/if}
+				</div>
+			</section>
+
 			<section class="insights-layout">
 				<div class="insight-panel">
 					<div class="panel-header compact">
@@ -507,29 +616,6 @@
 					</div>
 				</div>
 
-				<div class="insight-panel risk-panel">
-					<div class="panel-header compact">
-						<div>
-							<p class="panel-kicker rose-text">Clinical Watchlist</p>
-							<h2>Flagged High-Risk Patients</h2>
-						</div>
-					</div>
-					<div class="risk-list">
-						{#if stats.high_risk_list.length === 0}
-							<p class="empty-copy">No patients are currently flagged as high risk.</p>
-						{:else}
-							{#each stats.high_risk_list as patient}
-								<div class="risk-row">
-									<div class="risk-patient">
-										<p class="risk-name">{patient.name}</p>
-										<p class="risk-email">{patient.email}</p>
-									</div>
-									<p class="risk-reasons">{patient.reasons.join(' • ')}</p>
-								</div>
-							{/each}
-						{/if}
-					</div>
-				</div>
 			</section>
 
 			<section class="chart-grid">
@@ -732,6 +818,15 @@
 		color: #b91c1c;
 	}
 
+	.alert.success {
+		margin: 1rem 2rem 0;
+		padding: 0.9rem 1.2rem;
+		background: #ecfdf5;
+		border: 1px solid #a7f3d0;
+		border-radius: 8px;
+		color: #065f46;
+	}
+
 	.stats-grid,
 	.loading-grid {
 		display: grid;
@@ -764,10 +859,150 @@
 	.stat-value { font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0; }
 	.stat-value.small { font-size: 1.65rem; }
 
+	.risk-monitor-panel {
+		margin: 2rem 2rem 0;
+		background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,247,247,0.98));
+		border: 1px solid #fecaca;
+		border-radius: 18px;
+		padding: 1.35rem;
+		box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
+	}
+
+	.risk-monitor-list {
+		display: grid;
+		gap: 0.85rem;
+	}
+
+	.empty-risk-state {
+		padding: 1.25rem;
+		border-radius: 14px;
+		background: #fffafa;
+		border: 1px dashed #fecaca;
+		color: #7f1d1d;
+		font-size: 0.92rem;
+	}
+
+	.risk-monitor-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: 16px;
+		background: #fff;
+		border: 1px solid #fee2e2;
+	}
+
+	.risk-monitor-top {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: flex-start;
+	}
+
+	.risk-monitor-top h3 {
+		margin: 0;
+		font-size: 1rem;
+		color: #0f172a;
+	}
+
+	.risk-summary {
+		margin: 0.3rem 0 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: #991b1b;
+	}
+
+	.risk-status-group {
+		display: flex;
+		gap: 0.45rem;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	.status-chip,
+	.metric-chip {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.3rem 0.6rem;
+		border-radius: 999px;
+		font-size: 0.74rem;
+		font-weight: 700;
+	}
+
+	.status-chip.open {
+		background: #fef3c7;
+		color: #92400e;
+	}
+
+	.status-chip.escalated {
+		background: #fee2e2;
+		color: #991b1b;
+	}
+
+	.status-chip.reviewed {
+		background: #dcfce7;
+		color: #166534;
+	}
+
+	.metric-chip {
+		background: #e2e8f0;
+		color: #334155;
+	}
+
+	.risk-monitor-meta {
+		margin-top: 0.65rem;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.8rem;
+		font-size: 0.8rem;
+		color: #64748b;
+	}
+
+	.risk-monitor-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		justify-content: center;
+		min-width: 150px;
+	}
+
+	.action-btn {
+		border: 1px solid transparent;
+		border-radius: 10px;
+		padding: 0.7rem 0.85rem;
+		font-size: 0.82rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: background 0.2s, border-color 0.2s, color 0.2s;
+	}
+
+	.action-btn.secondary {
+		background: #eff6ff;
+		border-color: #bfdbfe;
+		color: #1d4ed8;
+	}
+
+	.action-btn.danger {
+		background: #fef2f2;
+		border-color: #fecaca;
+		color: #b91c1c;
+	}
+
+	.action-btn.success {
+		background: #ecfdf5;
+		border-color: #a7f3d0;
+		color: #047857;
+	}
+
+	.action-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
 	.insights-layout {
 		padding: 2rem 2rem 0;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr);
 		gap: 1.25rem;
 	}
 
@@ -778,10 +1013,6 @@
 		border-radius: 18px;
 		padding: 1.35rem;
 		box-shadow: 0 18px 36px rgba(15, 23, 42, 0.05);
-	}
-
-	.risk-panel {
-		background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,247,247,0.98));
 	}
 
 	.panel-header {
@@ -834,8 +1065,7 @@
 	.rose-chip { background: #ffe4e6; color: #9f1239; }
 	.sky-chip { background: #e0f2fe; color: #075985; }
 
-	.task-list,
-	.risk-list {
+	.task-list {
 		display: grid;
 		gap: 0.75rem;
 	}
@@ -867,15 +1097,6 @@
 	.task-sub { margin: 0.15rem 0 0; font-size: 0.76rem; color: #64748b; }
 	.task-count { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
 
-	.risk-row {
-		padding: 0.85rem 0.95rem;
-		border-radius: 14px;
-		background: #fff7f7;
-		border: 1px solid #fecaca;
-	}
-
-	.risk-name { margin: 0; font-size: 0.95rem; font-weight: 700; color: #0f172a; }
-	.risk-email { margin: 0.2rem 0 0; font-size: 0.78rem; color: #64748b; }
 	.risk-reasons { margin: 0.55rem 0 0; font-size: 0.8rem; line-height: 1.5; color: #7f1d1d; }
 
 	.chart-grid {
@@ -907,6 +1128,15 @@
 		.insights-layout,
 		.chart-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.risk-monitor-row {
+			grid-template-columns: 1fr;
+		}
+
+		.risk-monitor-actions {
+			flex-direction: row;
+			flex-wrap: wrap;
 		}
 	}
 

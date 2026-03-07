@@ -9,3 +9,4 @@ from app.models.doctor_intervention import DoctorIntervention
 from app.models.assignment_request import AssignmentRequest
 from app.models.message import Message
 from app.models.progress_report import ProgressReport
+from app.models.risk_alert import RiskAlert

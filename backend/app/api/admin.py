@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select, col
-from typing import List
+from typing import List, Sequence
 from datetime import datetime, timedelta
 from app.models.admin import Admin
 from app.models.department import Department
@@ -10,10 +10,13 @@ from app.models.patient_assignment import PatientAssignment
 from app.models.baseline_assessment import BaselineAssessment
 from app.models.training_session import TrainingSession
 from app.models.session_context import SessionContext
+from app.models.risk_alert import RiskAlert
+from app.models.doctor_intervention import DoctorIntervention
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
 from pydantic import BaseModel
+import json
 import traceback
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -47,6 +50,204 @@ def _require_admin(admin_id: int, session: Session) -> Admin:
     if not admin or not admin.is_active:
         raise HTTPException(status_code=403, detail="Admin access required")
     return admin
+
+
+def _summarize_risk_reasons(reasons: list[str]) -> str:
+    if "declining from baseline" in reasons or "below baseline" in reasons or "low recent performance" in reasons:
+        return "Cognitive decline detected"
+    if "high fatigue" in reasons:
+        return "Severe fatigue patterns"
+    if "elevated fatigue" in reasons:
+        return "Fatigue patterns detected"
+    if "low completion rate" in reasons:
+        return "Rapid performance drop"
+    if "low baseline score" in reasons:
+        return "Persistent cognitive risk detected"
+    return "Clinical risk alert detected"
+
+
+def _build_risk_monitoring(
+    session: Session,
+    today_start: datetime,
+    completed_training_sessions: Sequence[TrainingSession],
+    all_training_sessions: Sequence[TrainingSession],
+    session_contexts: Sequence[SessionContext],
+):
+    baselines = session.exec(select(BaselineAssessment)).all()
+    baseline_by_user = {}
+    for baseline in baselines:
+        existing = baseline_by_user.get(baseline.user_id)
+        if not existing or baseline.created_at > existing.created_at:
+            baseline_by_user[baseline.user_id] = baseline
+
+    patient_lookup = {patient.id: patient for patient in session.exec(select(User)).all() if patient.id is not None}
+    doctors_by_id = {doctor.id: doctor for doctor in session.exec(select(Doctor)).all() if doctor.id is not None}
+    active_assignments = session.exec(
+        select(PatientAssignment).where(PatientAssignment.is_active == True)
+    ).all()
+    assignment_by_patient = {assignment.patient_id: assignment for assignment in active_assignments}
+    existing_alerts = {
+        alert.patient_id: alert
+        for alert in session.exec(select(RiskAlert)).all()
+    }
+
+    recent_window_start = today_start - timedelta(days=13)
+    risk_breakdown = {"high": 0, "moderate": 0, "stable": 0}
+    high_risk_patients = []
+
+    recent_sessions_by_user = {}
+    for training_session in completed_training_sessions:
+        if training_session.created_at >= recent_window_start:
+            recent_sessions_by_user.setdefault(training_session.user_id, []).append(training_session)
+
+    all_sessions_by_user = {}
+    for training_session in all_training_sessions:
+        if training_session.created_at >= recent_window_start:
+            all_sessions_by_user.setdefault(training_session.user_id, []).append(training_session)
+
+    recent_contexts_by_user = {}
+    for context in session_contexts:
+        if context.created_at >= recent_window_start:
+            recent_contexts_by_user.setdefault(context.user_id, []).append(context)
+
+    monitored_user_ids = set(baseline_by_user.keys()) | set(recent_sessions_by_user.keys()) | set(recent_contexts_by_user.keys())
+    for user_id in monitored_user_ids:
+        if user_id is None:
+            continue
+        patient = patient_lookup.get(user_id)
+        if not patient:
+            continue
+
+        baseline = baseline_by_user.get(user_id)
+        recent_sessions = recent_sessions_by_user.get(user_id, [])
+        recent_all_sessions = all_sessions_by_user.get(user_id, [])
+        recent_contexts = recent_contexts_by_user.get(user_id, [])
+        active_assignment = assignment_by_patient.get(user_id)
+        assigned_doctor = doctors_by_id.get(active_assignment.doctor_id) if active_assignment else None
+
+        reasons = []
+        risk_score = 0
+        recent_scores: List[float] = [session_row.score for session_row in recent_sessions]
+        fatigue_values: List[float] = [float(context.fatigue_level) for context in recent_contexts if context.fatigue_level is not None]
+        recent_avg_score = round(sum(recent_scores) / len(recent_scores), 1) if recent_scores else None
+        recent_avg_fatigue = round(sum(fatigue_values) / len(fatigue_values), 1) if fatigue_values else None
+        completion_rate = round((len(recent_sessions) / len(recent_all_sessions)) * 100, 1) if recent_all_sessions else None
+
+        if baseline and baseline.overall_score < 45:
+            risk_score += 2
+            reasons.append("low baseline score")
+
+        if baseline and recent_avg_score is not None:
+            score_delta = round(recent_avg_score - baseline.overall_score, 1)
+            if score_delta <= -12:
+                risk_score += 2
+                reasons.append("declining from baseline")
+            elif score_delta <= -6:
+                risk_score += 1
+                reasons.append("below baseline")
+
+        if recent_avg_score is not None and recent_avg_score < 50:
+            risk_score += 1
+            reasons.append("low recent performance")
+
+        if recent_avg_fatigue is not None:
+            if recent_avg_fatigue >= 8:
+                risk_score += 2
+                reasons.append("high fatigue")
+            elif recent_avg_fatigue >= 6.5:
+                risk_score += 1
+                reasons.append("elevated fatigue")
+
+        if completion_rate is not None and len(recent_all_sessions) >= 3 and completion_rate < 60:
+            risk_score += 1
+            reasons.append("low completion rate")
+
+        if risk_score >= 4:
+            risk_level = "high"
+        elif risk_score >= 2:
+            risk_level = "moderate"
+        else:
+            risk_level = "stable"
+
+        risk_breakdown[risk_level] += 1
+
+        if risk_level == "high":
+            existing_alert = existing_alerts.get(user_id)
+            high_risk_patients.append({
+                "id": patient.id,
+                "name": patient.full_name or patient.email,
+                "email": patient.email,
+                "risk_score": risk_score,
+                "risk_level": risk_level,
+                "alert_summary": _summarize_risk_reasons(reasons),
+                "recent_avg_score": recent_avg_score,
+                "recent_avg_fatigue": recent_avg_fatigue,
+                "completion_rate": completion_rate,
+                "reasons": reasons[:3],
+                "assigned_doctor_id": assigned_doctor.id if assigned_doctor else None,
+                "assigned_doctor_name": (assigned_doctor.full_name or assigned_doctor.email) if assigned_doctor else None,
+                "alert_status": existing_alert.status if existing_alert else "open",
+                "doctor_notified": bool(existing_alert and existing_alert.doctor_notified_at),
+                "doctor_notified_at": existing_alert.doctor_notified_at.isoformat() if existing_alert and existing_alert.doctor_notified_at else None,
+                "escalated_at": existing_alert.escalated_at.isoformat() if existing_alert and existing_alert.escalated_at else None,
+                "reviewed_at": existing_alert.reviewed_at.isoformat() if existing_alert and existing_alert.reviewed_at else None,
+            })
+
+    high_risk_patients.sort(key=lambda patient: (-patient["risk_score"], patient["name"].lower()))
+
+    return {
+        "risk_breakdown": risk_breakdown,
+        "high_risk_patients": high_risk_patients,
+    }
+
+
+def _get_current_risk_alert(session: Session, patient_id: int):
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    completed_training_sessions = list(session.exec(
+        select(TrainingSession).where(TrainingSession.completed == True)
+    ).all())
+    all_training_sessions = list(session.exec(select(TrainingSession)).all())
+    completed_session_ids = {
+        training_session.id for training_session in completed_training_sessions if training_session.id is not None
+    }
+    session_contexts = [
+        context
+        for context in session.exec(select(SessionContext)).all()
+        if context.training_session_id in completed_session_ids
+    ] if completed_session_ids else []
+
+    risk_monitoring = _build_risk_monitoring(
+        session,
+        today_start,
+        completed_training_sessions,
+        all_training_sessions,
+        session_contexts,
+    )
+    risk_patient = next((patient for patient in risk_monitoring["high_risk_patients"] if patient["id"] == patient_id), None)
+    if not risk_patient:
+        raise HTTPException(status_code=404, detail="Patient is not currently flagged as high risk")
+
+    alert = session.exec(select(RiskAlert).where(RiskAlert.patient_id == patient_id)).first()
+    now = datetime.utcnow()
+    if not alert:
+        alert = RiskAlert(
+            patient_id=patient_id,
+            assigned_doctor_id=risk_patient["assigned_doctor_id"],
+            risk_score=risk_patient["risk_score"],
+            risk_level=risk_patient["risk_level"],
+            alert_summary=risk_patient["alert_summary"],
+            risk_reasons_json=json.dumps(risk_patient["reasons"]),
+            status="open",
+        )
+    else:
+        alert.assigned_doctor_id = risk_patient["assigned_doctor_id"]
+        alert.risk_score = risk_patient["risk_score"]
+        alert.risk_level = risk_patient["risk_level"]
+        alert.alert_summary = risk_patient["alert_summary"]
+        alert.risk_reasons_json = json.dumps(risk_patient["reasons"])
+        alert.updated_at = now
+
+    return alert, risk_patient
 
 
 # ─────────────────────────────────────────────
@@ -227,97 +428,13 @@ def get_stats(admin_id: int, session: Session = Depends(get_session)):
 
     average_improvement_score = round(sum(improvements) / len(improvements), 1) if improvements else 0.0
 
-    patient_lookup = {patient.id: patient for patient in session.exec(select(User)).all() if patient.id is not None}
-    recent_window_start = today_start - timedelta(days=13)
-    risk_breakdown = {"high": 0, "moderate": 0, "stable": 0}
-    high_risk_patients = []
-
-    recent_sessions_by_user = {}
-    for training_session in completed_training_sessions:
-        if training_session.created_at >= recent_window_start:
-            recent_sessions_by_user.setdefault(training_session.user_id, []).append(training_session)
-
-    all_sessions_by_user = {}
-    for training_session in all_training_sessions:
-        if training_session.created_at >= recent_window_start:
-            all_sessions_by_user.setdefault(training_session.user_id, []).append(training_session)
-
-    recent_contexts_by_user = {}
-    for context in session_contexts:
-        if context.created_at >= recent_window_start:
-            recent_contexts_by_user.setdefault(context.user_id, []).append(context)
-
-    monitored_user_ids = set(baseline_by_user.keys()) | set(recent_sessions_by_user.keys()) | set(recent_contexts_by_user.keys())
-    for user_id in monitored_user_ids:
-        patient = patient_lookup.get(user_id)
-        if not patient:
-            continue
-
-        baseline = baseline_by_user.get(user_id)
-        recent_sessions = recent_sessions_by_user.get(user_id, [])
-        recent_all_sessions = all_sessions_by_user.get(user_id, [])
-        recent_contexts = recent_contexts_by_user.get(user_id, [])
-
-        reasons = []
-        risk_score = 0
-        recent_scores: List[float] = [session_row.score for session_row in recent_sessions]
-        fatigue_values: List[float] = [float(context.fatigue_level) for context in recent_contexts if context.fatigue_level is not None]
-        recent_avg_score = round(sum(recent_scores) / len(recent_scores), 1) if recent_scores else None
-        recent_avg_fatigue = round(sum(fatigue_values) / len(fatigue_values), 1) if fatigue_values else None
-        completion_rate = round((len(recent_sessions) / len(recent_all_sessions)) * 100, 1) if recent_all_sessions else None
-
-        if baseline and baseline.overall_score < 45:
-            risk_score += 2
-            reasons.append("low baseline score")
-
-        if baseline and recent_avg_score is not None:
-            score_delta = round(recent_avg_score - baseline.overall_score, 1)
-            if score_delta <= -12:
-                risk_score += 2
-                reasons.append("declining from baseline")
-            elif score_delta <= -6:
-                risk_score += 1
-                reasons.append("below baseline")
-
-        if recent_avg_score is not None and recent_avg_score < 50:
-            risk_score += 1
-            reasons.append("low recent performance")
-
-        if recent_avg_fatigue is not None:
-            if recent_avg_fatigue >= 8:
-                risk_score += 2
-                reasons.append("high fatigue")
-            elif recent_avg_fatigue >= 6.5:
-                risk_score += 1
-                reasons.append("elevated fatigue")
-
-        if completion_rate is not None and len(recent_all_sessions) >= 3 and completion_rate < 60:
-            risk_score += 1
-            reasons.append("low completion rate")
-
-        if risk_score >= 4:
-            risk_level = "high"
-        elif risk_score >= 2:
-            risk_level = "moderate"
-        else:
-            risk_level = "stable"
-
-        risk_breakdown[risk_level] += 1
-
-        if risk_level == "high":
-            high_risk_patients.append({
-                "id": patient.id,
-                "name": patient.full_name or patient.email,
-                "email": patient.email,
-                "risk_score": risk_score,
-                "risk_level": risk_level,
-                "recent_avg_score": recent_avg_score,
-                "recent_avg_fatigue": recent_avg_fatigue,
-                "completion_rate": completion_rate,
-                "reasons": reasons[:3],
-            })
-
-    high_risk_patients.sort(key=lambda patient: (-patient["risk_score"], patient["name"].lower()))
+    risk_monitoring = _build_risk_monitoring(
+        session,
+        today_start,
+        completed_training_sessions,
+        all_training_sessions,
+        session_contexts,
+    )
 
     return {
         "total_patients": total_patients,
@@ -329,11 +446,15 @@ def get_stats(admin_id: int, session: Session = Depends(get_session)):
         "completed_sessions": completed_sessions,
         "total_departments": total_departments,
         "average_improvement_score": average_improvement_score,
-        "high_risk_patients": len(high_risk_patients),
-        "high_risk_list": high_risk_patients[:5],
+        "high_risk_patients": len(risk_monitoring["high_risk_patients"]),
+        "high_risk_list": risk_monitoring["high_risk_patients"][:5],
         "risk_distribution": {
             "labels": ["High", "Moderate", "Stable"],
-            "counts": [risk_breakdown["high"], risk_breakdown["moderate"], risk_breakdown["stable"]],
+            "counts": [
+                risk_monitoring["risk_breakdown"]["high"],
+                risk_monitoring["risk_breakdown"]["moderate"],
+                risk_monitoring["risk_breakdown"]["stable"],
+            ],
         },
         "most_used_tasks": most_used_tasks,
         "patient_activity": {
@@ -356,6 +477,122 @@ def get_stats(admin_id: int, session: Session = Depends(get_session)):
             "scores": performance_scores,
         },
     }
+
+
+@router.get("/risk-alerts")
+def list_risk_alerts(admin_id: int, session: Session = Depends(get_session)):
+    _require_admin(admin_id, session)
+
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    completed_training_sessions = list(session.exec(
+        select(TrainingSession).where(TrainingSession.completed == True)
+    ).all())
+    all_training_sessions = list(session.exec(select(TrainingSession)).all())
+    completed_session_ids = {
+        training_session.id for training_session in completed_training_sessions if training_session.id is not None
+    }
+    session_contexts = [
+        context
+        for context in session.exec(select(SessionContext)).all()
+        if context.training_session_id in completed_session_ids
+    ] if completed_session_ids else []
+
+    risk_monitoring = _build_risk_monitoring(
+        session,
+        today_start,
+        completed_training_sessions,
+        all_training_sessions,
+        session_contexts,
+    )
+
+    return {
+        "alerts": risk_monitoring["high_risk_patients"],
+        "total": len(risk_monitoring["high_risk_patients"]),
+    }
+
+
+@router.post("/risk-alerts/{patient_id}/notify-doctor")
+def notify_risk_alert_doctor(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
+    admin = _require_admin(admin_id, session)
+    alert, risk_patient = _get_current_risk_alert(session, patient_id)
+
+    if not alert.assigned_doctor_id:
+        raise HTTPException(status_code=400, detail="No assigned doctor found for this patient")
+
+    doctor = session.get(Doctor, alert.assigned_doctor_id)
+    if not doctor or doctor.id is None:
+        raise HTTPException(status_code=404, detail="Assigned doctor not found")
+
+    now = datetime.utcnow()
+    intervention = DoctorIntervention(
+        doctor_id=doctor.id,
+        patient_id=patient_id,
+        intervention_type="admin_risk_alert",
+        description=f"Admin risk alert from {admin.full_name}: {risk_patient['alert_summary']}. Indicators: {', '.join(risk_patient['reasons'])}.",
+        intervention_data=json.dumps({
+            "source": "admin_risk_dashboard",
+            "risk_score": risk_patient["risk_score"],
+            "alert_status": alert.status,
+        }),
+    )
+
+    alert.doctor_notified_at = now
+    alert.updated_at = now
+    session.add(intervention)
+    session.add(alert)
+    session.commit()
+
+    return {"message": f"Dr. {doctor.full_name or doctor.email} has been notified", "patient_id": patient_id}
+
+
+@router.post("/risk-alerts/{patient_id}/escalate")
+def escalate_risk_alert(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
+    admin = _require_admin(admin_id, session)
+    alert, risk_patient = _get_current_risk_alert(session, patient_id)
+
+    now = datetime.utcnow()
+    alert.status = "escalated"
+    alert.escalated_at = now
+    alert.updated_at = now
+    if alert.doctor_notified_at is None:
+        alert.doctor_notified_at = now
+
+    if alert.assigned_doctor_id:
+        doctor = session.get(Doctor, alert.assigned_doctor_id)
+        if doctor and doctor.id is not None:
+            intervention = DoctorIntervention(
+                doctor_id=doctor.id,
+                patient_id=patient_id,
+                intervention_type="admin_escalation",
+                description=f"Escalated risk case from {admin.full_name}: {risk_patient['alert_summary']}. Please review urgently.",
+                intervention_data=json.dumps({
+                    "source": "admin_risk_dashboard",
+                    "risk_score": risk_patient["risk_score"],
+                    "reasons": risk_patient["reasons"],
+                }),
+            )
+            session.add(intervention)
+
+    session.add(alert)
+    session.commit()
+
+    return {"message": "Risk case escalated", "patient_id": patient_id}
+
+
+@router.post("/risk-alerts/{patient_id}/mark-reviewed")
+def mark_risk_alert_reviewed(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
+    _require_admin(admin_id, session)
+    alert, _ = _get_current_risk_alert(session, patient_id)
+
+    now = datetime.utcnow()
+    alert.status = "reviewed"
+    alert.reviewed_at = now
+    alert.reviewed_by_admin_id = admin_id
+    alert.updated_at = now
+    session.add(alert)
+    session.commit()
+
+    return {"message": "Risk alert marked as reviewed", "patient_id": patient_id}
 
 
 # ─────────────────────────────────────────────
