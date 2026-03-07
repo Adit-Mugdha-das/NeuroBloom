@@ -170,6 +170,9 @@
 			<a href="/admin/audit-logs" class="nav-item">
 				<span class="nav-icon">&#128203;</span> Audit Logs
 			</a>
+			<a href="/admin/system-health" class="nav-item">
+				<span class="nav-icon">&#128421;&#65039;</span> System Health
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>&#128682;</span> Logout

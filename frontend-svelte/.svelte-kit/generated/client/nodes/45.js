@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/sdmt/+page.svelte";
+export { default as component } from "../../../../src/routes/training/plus-minus/+page.svelte";

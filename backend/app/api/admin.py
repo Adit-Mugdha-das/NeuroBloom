@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select, col
 from typing import List, Sequence
 from datetime import datetime, timedelta
+from time import perf_counter
 from app.models.admin import Admin
 from app.models.department import Department
 from app.models.doctor import Doctor
@@ -23,6 +24,7 @@ import json
 import traceback
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+PROCESS_STARTED_AT = datetime.utcnow()
 
 
 class ResetPasswordBody(BaseModel):
@@ -1476,4 +1478,71 @@ def get_audit_logs(
             "communication_events": by_category["communication"],
         },
         "logs": limited_events,
+    }
+
+
+@router.get("/system-health")
+def get_system_health(admin_id: int, session: Session = Depends(get_session)):
+    """Enterprise-style health snapshot for admin monitoring."""
+    _require_admin(admin_id, session)
+
+    api_now = datetime.utcnow()
+    uptime_delta = api_now - PROCESS_STARTED_AT
+    uptime_seconds = max(int(uptime_delta.total_seconds()), 0)
+
+    db_latency_started = perf_counter()
+    database_status = "operational"
+    database_latency_ms = 0.0
+    database_error = None
+    try:
+        session.exec(select(Admin.id).limit(1)).first()
+        database_latency_ms = round((perf_counter() - db_latency_started) * 1000, 1)
+    except Exception as exc:
+        database_status = "degraded"
+        database_latency_ms = round((perf_counter() - db_latency_started) * 1000, 1)
+        database_error = str(exc)
+
+    active_cutoff = api_now - timedelta(minutes=15)
+    recent_contexts = list(session.exec(
+        select(SessionContext).where(SessionContext.created_at >= active_cutoff)
+    ).all())
+    recent_training = list(session.exec(
+        select(TrainingSession).where(TrainingSession.created_at >= active_cutoff)
+    ).all())
+
+    active_user_ids = {
+        context.user_id for context in recent_contexts if context.user_id is not None
+    } | {
+        training.user_id for training in recent_training if training.user_id is not None
+    }
+
+    total_patients = len(list(session.exec(select(User.id)).all()))
+    total_doctors = len(list(session.exec(select(Doctor.id)).all()))
+
+    return {
+        "api": {
+            "status": "operational",
+            "checked_at": api_now.isoformat(),
+            "version": "v1",
+        },
+        "database": {
+            "status": database_status,
+            "latency_ms": database_latency_ms,
+            "error": database_error,
+        },
+        "sessions": {
+            "active_count": len(active_user_ids),
+            "window_minutes": 15,
+            "recent_contexts": len(recent_contexts),
+            "recent_training_events": len(recent_training),
+        },
+        "server": {
+            "started_at": PROCESS_STARTED_AT.isoformat(),
+            "uptime_seconds": uptime_seconds,
+            "uptime_minutes": round(uptime_seconds / 60, 1),
+        },
+        "capacity": {
+            "patients": total_patients,
+            "doctors": total_doctors,
+        },
     }

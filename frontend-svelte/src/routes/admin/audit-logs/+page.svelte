@@ -154,6 +154,9 @@
 			<a href="/admin/audit-logs" class="nav-item active">
 				<span class="nav-icon">📋</span> Audit Logs
 			</a>
+			<a href="/admin/system-health" class="nav-item">
+				<span class="nav-icon">🖥️</span> System Health
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout
