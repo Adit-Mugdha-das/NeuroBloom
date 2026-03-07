@@ -13,6 +13,7 @@ from app.models.session_context import SessionContext
 from app.models.risk_alert import RiskAlert
 from app.models.doctor_intervention import DoctorIntervention
 from app.models.progress_report import ProgressReport
+from app.models.message import Message
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
@@ -1106,4 +1107,137 @@ def list_interventions(admin_id: int, days: int = 0, session: Session = Depends(
             "top_doctors": top_doctors[:5],
         },
         "interventions": items,
+    }
+
+
+def _audit_message_content(subject: str | None, body: str):
+    combined = f"{subject or ''} {body}".strip()
+    lowered = combined.lower()
+    abuse_terms = [
+        term
+        for term in ["idiot", "stupid", "useless", "worthless", "shut up", "hate you", "lazy"]
+        if term in lowered
+    ]
+
+    letters = [char for char in combined if char.isalpha()]
+    uppercase_ratio = (
+        sum(1 for char in letters if char.isupper()) / len(letters)
+        if len(letters) >= 12
+        else 0
+    )
+    repeated_punctuation = any(token in combined for token in ("!!!", "???", "?!?!", "!!?"))
+
+    reasons: list[str] = []
+    if abuse_terms:
+        reasons.append("abusive language detected")
+    if uppercase_ratio >= 0.65:
+        reasons.append("excessive capitalization")
+    if repeated_punctuation:
+        reasons.append("aggressive punctuation")
+
+    score = len(abuse_terms) * 2
+    if uppercase_ratio >= 0.65:
+        score += 1
+    if repeated_punctuation:
+        score += 1
+
+    severity = "none"
+    if score >= 4:
+        severity = "high"
+    elif score >= 2:
+        severity = "medium"
+    elif score >= 1:
+        severity = "low"
+
+    return {
+        "flagged": bool(reasons),
+        "severity": severity,
+        "reasons": reasons,
+        "abuse_terms": abuse_terms,
+    }
+
+
+@router.get("/messages/audit")
+def audit_messages(
+    admin_id: int,
+    days: int = 0,
+    limit: int = 300,
+    session: Session = Depends(get_session),
+):
+    """Read-only communication audit view for admins."""
+    _require_admin(admin_id, session)
+
+    query = select(Message).order_by(col(Message.created_at).desc()).limit(limit)
+    if days > 0:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        query = query.where(Message.created_at >= cutoff)
+
+    messages = list(session.exec(query).all())
+    doctors_by_id = {doctor.id: doctor for doctor in session.exec(select(Doctor)).all() if doctor.id is not None}
+    patients_by_id = {patient.id: patient for patient in session.exec(select(User)).all() if patient.id is not None}
+
+    items = []
+    flagged_count = 0
+    patient_to_doctor = 0
+    doctor_to_patient = 0
+    unread_count = 0
+
+    for message in messages:
+        if message.sender_type == "doctor":
+            sender = doctors_by_id.get(message.sender_id)
+            sender_name = sender.full_name if sender else f"Doctor #{message.sender_id}"
+        else:
+            sender = patients_by_id.get(message.sender_id)
+            sender_name = (sender.full_name or sender.email) if sender else f"Patient #{message.sender_id}"
+
+        if message.recipient_type == "doctor":
+            recipient = doctors_by_id.get(message.recipient_id)
+            recipient_name = recipient.full_name if recipient else f"Doctor #{message.recipient_id}"
+        else:
+            recipient = patients_by_id.get(message.recipient_id)
+            recipient_name = (recipient.full_name or recipient.email) if recipient else f"Patient #{message.recipient_id}"
+
+        direction = f"{message.sender_type}_to_{message.recipient_type}"
+        if direction == "patient_to_doctor":
+            patient_to_doctor += 1
+        elif direction == "doctor_to_patient":
+            doctor_to_patient += 1
+
+        if not message.is_read:
+            unread_count += 1
+
+        audit = _audit_message_content(message.subject, message.message)
+        if audit["flagged"]:
+            flagged_count += 1
+
+        preview = message.message.strip()
+        if len(preview) > 180:
+            preview = f"{preview[:177]}..."
+
+        items.append({
+            "id": message.id,
+            "sender_id": message.sender_id,
+            "sender_type": message.sender_type,
+            "sender_name": sender_name,
+            "recipient_id": message.recipient_id,
+            "recipient_type": message.recipient_type,
+            "recipient_name": recipient_name,
+            "direction": direction,
+            "subject": message.subject,
+            "message": message.message,
+            "preview": preview,
+            "is_read": message.is_read,
+            "created_at": message.created_at.isoformat(),
+            "audit": audit,
+        })
+
+    return {
+        "summary": {
+            "total": len(items),
+            "flagged": flagged_count,
+            "unread": unread_count,
+            "patient_to_doctor": patient_to_doctor,
+            "doctor_to_patient": doctor_to_patient,
+        },
+        "messages": items,
     }

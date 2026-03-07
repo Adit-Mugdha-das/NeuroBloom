@@ -463,6 +463,9 @@
 			<a href="/admin/interventions" class="nav-item">
 				<span class="nav-icon">🩺</span> Interventions
 			</a>
+			<a href="/admin/messages" class="nav-item">
+				<span class="nav-icon">💬</span> Message Audit
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout
