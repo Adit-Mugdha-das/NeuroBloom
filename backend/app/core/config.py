@@ -20,6 +20,7 @@ def init_db():
     from app.models.department import Department
     from app.models.risk_alert import RiskAlert
     from app.models.audit_log import AuditLog
+    from app.models.notification import Notification
 
     # Use checkfirst=True to avoid errors on existing tables
     SQLModel.metadata.create_all(engine, checkfirst=True)

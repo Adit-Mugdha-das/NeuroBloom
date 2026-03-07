@@ -173,6 +173,9 @@
 			<a href="/admin/system-health" class="nav-item">
 				<span class="nav-icon">&#128421;&#65039;</span> System Health
 			</a>
+			<a href="/admin/notifications" class="nav-item">
+				<span class="nav-icon">&#128276;</span> Notification Center
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>&#128682;</span> Logout

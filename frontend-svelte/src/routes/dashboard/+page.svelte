@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { tasks, training } from '$lib/api';
+	import api from '$lib/api.js';
 	import DoctorWidget from '$lib/components/DoctorWidget.svelte';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -8,6 +9,7 @@
 	let currentUser = null;
 	let stats = null;
 	let baselineStatus = null;
+	let notifications = [];
 	let loading = true;
 	
 	user.subscribe(value => {
@@ -21,11 +23,16 @@
 		}
 		
 		try {
-			// Get training metrics (training sessions)
+			const [baselineResp, notificationResp] = await Promise.all([
+				tasks.getBaselineStatus(currentUser.id),
+				api.get(`/api/auth/patient/${currentUser.id}/notifications`)
+			]);
+			baselineStatus = baselineResp;
+			notifications = notificationResp.data.notifications.slice(0, 3);
+
 			try {
 				stats = await training.getMetrics(currentUser.id);
 			} catch (err) {
-				// If no training data exists, set empty stats
 				console.log('No training data yet');
 				stats = {
 					total_sessions: 0,
@@ -33,14 +40,26 @@
 					best_score: 0
 				};
 			}
-			
-			baselineStatus = await tasks.getBaselineStatus(currentUser.id);
 		} catch (error) {
 			console.error('Error fetching dashboard data:', error);
 		} finally {
 			loading = false;
 		}
 	});
+
+	function notificationTypeLabel(type) {
+		if (type === 'announcement') return 'Announcement';
+		if (type === 'feature_update') return 'Feature Update';
+		if (type === 'research_invitation') return 'Research Invitation';
+		return 'Notice';
+	}
+
+	function notificationTypeClass(type) {
+		if (type === 'announcement') return 'notice-blue';
+		if (type === 'feature_update') return 'notice-teal';
+		if (type === 'research_invitation') return 'notice-amber';
+		return 'notice-blue';
+	}
 	
 	function handleLogout() {
 		clearUser();
@@ -67,6 +86,28 @@
 		{#if loading}
 			<p>Loading...</p>
 		{:else}
+			{#if notifications.length > 0}
+				<div class="notice-center">
+					<div class="notice-center-head">
+						<div>
+							<h3>🔔 Notification Center</h3>
+							<p>Latest admin notices and platform updates</p>
+						</div>
+					</div>
+					<div class="notice-list">
+						{#each notifications as notification (notification.id)}
+							<div class="notice-item">
+								<div class="notice-item-top">
+									<p class="notice-item-title">{notification.title}</p>
+									<span class="notice-pill {notificationTypeClass(notification.notification_type)}">{notificationTypeLabel(notification.notification_type)}</span>
+								</div>
+								<p class="notice-item-message">{notification.message}</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<!-- Doctor Widget -->
 			{#if currentUser}
 				<DoctorWidget userId={currentUser.id} />
@@ -282,6 +323,70 @@
 		margin: 0 auto;
 		padding: 2rem;
 	}
+
+	.notice-center {
+		background: rgba(255, 255, 255, 0.95);
+		border-radius: 16px;
+		padding: 1.25rem;
+		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+		margin-bottom: 1.5rem;
+	}
+
+	.notice-center-head h3 {
+		margin: 0;
+		color: #1f2937;
+	}
+
+	.notice-center-head p {
+		margin: 0.25rem 0 0;
+		color: #6b7280;
+		font-size: 0.9rem;
+	}
+
+	.notice-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-top: 1rem;
+	}
+
+	.notice-item {
+		background: #f8fafc;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		padding: 0.9rem 1rem;
+	}
+
+	.notice-item-top {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		align-items: flex-start;
+	}
+
+	.notice-item-title {
+		margin: 0;
+		font-weight: 700;
+		color: #111827;
+	}
+
+	.notice-item-message {
+		margin: 0.45rem 0 0;
+		color: #4b5563;
+		line-height: 1.6;
+	}
+
+	.notice-pill {
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.notice-blue { background: #dbeafe; color: #1d4ed8; }
+	.notice-teal { background: #ccfbf1; color: #0f766e; }
+	.notice-amber { background: #fef3c7; color: #92400e; }
 	
 	.stats-grid {
 		display: grid;

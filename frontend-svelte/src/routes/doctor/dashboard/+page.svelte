@@ -9,6 +9,7 @@
 	let analytics = null;
 	let domainAnalytics = null;
 	let cohortTrends = null;
+	let notifications = [];
 	let loading = true;
 	let error = '';
 	let userData;
@@ -36,18 +37,20 @@
 	
 	async function loadData() {
 		try {
-			const [patientsResp, requestsResp, analyticsResp, domainResp, trendsResp] = await Promise.all([
+			const [patientsResp, requestsResp, analyticsResp, domainResp, trendsResp, notificationsResp] = await Promise.all([
 				api.get(`/api/doctor/${userData.id}/patients`),
 				api.get(`/api/doctor/${userData.id}/pending-requests`),
 				api.get(`/api/doctor/${userData.id}/analytics`),
 				api.get(`/api/doctor/${userData.id}/analytics/domains`),
-				api.get(`/api/doctor/${userData.id}/analytics/trends?days=30`)
+				api.get(`/api/doctor/${userData.id}/analytics/trends?days=30`),
+				api.get(`/api/doctor/${userData.id}/notifications`)
 			]);
 			patients = patientsResp.data.patients;
 			pendingRequests = requestsResp.data.requests;
 			analytics = analyticsResp.data;
 			domainAnalytics = domainResp.data;
 			cohortTrends = trendsResp.data;
+			notifications = notificationsResp.data.notifications.slice(0, 3);
 		} catch (err) {
 			error = 'Failed to load data';
 			console.error('Error loading data:', err);
@@ -125,6 +128,20 @@
 	function handleLogout() {
 		user.set(null);
 		goto('/login');
+	}
+
+	function notificationTypeLabel(type) {
+		if (type === 'announcement') return 'Announcement';
+		if (type === 'feature_update') return 'Feature Update';
+		if (type === 'research_invitation') return 'Research Invitation';
+		return 'Notice';
+	}
+
+	function notificationTypeClass(type) {
+		if (type === 'announcement') return 'notice-blue';
+		if (type === 'feature_update') return 'notice-teal';
+		if (type === 'research_invitation') return 'notice-amber';
+		return 'notice-blue';
 	}
 	
 	function sortPatients(field) {
@@ -206,6 +223,28 @@
 	{:else if error}
 		<div class="error">{error}</div>
 	{:else}
+		{#if notifications.length > 0}
+			<div class="doctor-notice-section">
+				<div class="notice-banner-head">
+					<div>
+						<h2>🔔 Notification Center</h2>
+						<p>Important admin notices, feature updates, and research invitations</p>
+					</div>
+				</div>
+				<div class="doctor-notice-grid">
+					{#each notifications as notification (notification.id)}
+						<div class="doctor-notice-card">
+							<div class="doctor-notice-top">
+								<p class="doctor-notice-title">{notification.title}</p>
+								<span class="doctor-notice-pill {notificationTypeClass(notification.notification_type)}">{notificationTypeLabel(notification.notification_type)}</span>
+							</div>
+							<p class="doctor-notice-message">{notification.message}</p>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
 		<!-- Pending Requests Section -->
 		{#if pendingRequests.length > 0}
 			<div class="pending-requests-section">
@@ -625,6 +664,73 @@
 		color: #666;
 		font-size: 1.1rem;
 	}
+
+	.doctor-notice-section {
+		margin-bottom: 2rem;
+		background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+		border: 1px solid #bfdbfe;
+		border-radius: 16px;
+		padding: 1.5rem;
+	}
+
+	.notice-banner-head h2 {
+		margin: 0;
+		color: #1e3a8a;
+	}
+
+	.notice-banner-head p {
+		margin: 0.3rem 0 0;
+		font-size: 0.95rem;
+		color: #475569;
+	}
+
+	.doctor-notice-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+
+	.doctor-notice-card {
+		background: white;
+		border: 1px solid #dbeafe;
+		border-radius: 12px;
+		padding: 1rem;
+		box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+	}
+
+	.doctor-notice-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+
+	.doctor-notice-title {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: #0f172a;
+	}
+
+	.doctor-notice-message {
+		margin: 0.6rem 0 0;
+		line-height: 1.6;
+		color: #475569;
+		font-size: 0.9rem;
+	}
+
+	.doctor-notice-pill {
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.notice-blue { background: #dbeafe; color: #1d4ed8; }
+	.notice-teal { background: #ccfbf1; color: #0f766e; }
+	.notice-amber { background: #fef3c7; color: #92400e; }
 	
 	.stats-cards {
 		display: grid;
@@ -1489,5 +1595,36 @@
 	
 	tr.risk-medium {
 		background: rgba(255, 193, 7, 0.05);
+	}
+
+	@media (max-width: 900px) {
+		.doctor-dashboard {
+			padding: 1rem;
+		}
+
+		.header-content,
+		.notice-banner-head,
+		.analytics-header,
+		.section-header,
+		.request-card {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.progress-summary,
+		.trends-summary,
+		.week-stats,
+		.request-actions,
+		.header-actions {
+			flex-wrap: wrap;
+		}
+
+		.week-bar {
+			grid-template-columns: 1fr;
+		}
+
+		.success-metrics {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

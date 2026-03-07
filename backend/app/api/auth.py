@@ -5,6 +5,7 @@ from app.models.user import User
 from app.models.doctor import Doctor
 from app.models.patient_assignment import PatientAssignment
 from app.models.message import Message
+from app.models.notification import Notification
 from app.schemas.user import UserCreate, UserLogin, UserRead
 from app.schemas.doctor import DoctorCreate, DoctorLogin, DoctorRead, MessageCreate
 from app.core.config import engine
@@ -370,6 +371,34 @@ def get_patient_messages(
     except Exception as e:
         print(f"ERROR in get_patient_messages: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/patient/{patient_id}/notifications")
+def get_patient_notifications(patient_id: int, session: Session = Depends(get_session)):
+    """Get active admin notifications for a patient."""
+    patient = session.get(User, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    notifications = list(session.exec(
+        select(Notification)
+        .where(Notification.is_active == True)
+        .where((Notification.audience == "all") | (Notification.audience == "patient"))
+        .order_by(col(Notification.created_at).desc())
+    ).all())
+
+    return {
+        "notifications": [
+            {
+                "id": notification.id,
+                "notification_type": notification.notification_type,
+                "title": notification.title,
+                "message": notification.message,
+                "created_at": notification.created_at.isoformat(),
+            }
+            for notification in notifications
+        ]
+    }
 
 @router.post("/patient/{patient_id}/messages/{message_id}/mark-read")
 def mark_patient_message_read(

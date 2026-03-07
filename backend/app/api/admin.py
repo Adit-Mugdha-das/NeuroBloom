@@ -16,6 +16,7 @@ from app.models.doctor_intervention import DoctorIntervention
 from app.models.progress_report import ProgressReport
 from app.models.message import Message
 from app.models.audit_log import AuditLog
+from app.models.notification import Notification
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
@@ -33,6 +34,13 @@ class ResetPasswordBody(BaseModel):
 
 class TransferPatientBody(BaseModel):
     new_doctor_id: int
+
+
+class NotificationCreateBody(BaseModel):
+    notification_type: str
+    audience: str
+    title: str
+    message: str
 
 
 class CreateDepartmentBody(BaseModel):
@@ -1545,4 +1553,84 @@ def get_system_health(admin_id: int, session: Session = Depends(get_session)):
             "patients": total_patients,
             "doctors": total_doctors,
         },
+    }
+
+
+@router.get("/notifications")
+def list_notifications(admin_id: int, session: Session = Depends(get_session)):
+    """List admin notifications and summary metrics."""
+    _require_admin(admin_id, session)
+
+    admins_by_id = {admin.id: admin for admin in session.exec(select(Admin)).all() if admin.id is not None}
+    notifications = list(session.exec(
+        select(Notification).order_by(col(Notification.created_at).desc())
+    ).all())
+
+    items = []
+    for notification in notifications:
+        creator = admins_by_id.get(notification.created_by_admin_id)
+        items.append({
+            "id": notification.id,
+            "notification_type": notification.notification_type,
+            "audience": notification.audience,
+            "title": notification.title,
+            "message": notification.message,
+            "is_active": notification.is_active,
+            "created_at": notification.created_at.isoformat(),
+            "created_by": creator.full_name if creator else f"Admin #{notification.created_by_admin_id}",
+        })
+
+    return {
+        "summary": {
+            "total": len(items),
+            "active": sum(1 for item in items if item["is_active"]),
+            "research": sum(1 for item in items if item["notification_type"] == "research_invitation"),
+            "feature_updates": sum(1 for item in items if item["notification_type"] == "feature_update"),
+        },
+        "notifications": items,
+    }
+
+
+@router.post("/notifications")
+def create_notification(admin_id: int, body: NotificationCreateBody, session: Session = Depends(get_session)):
+    """Publish a new admin notification."""
+    admin = _require_admin(admin_id, session)
+    allowed_types = {"announcement", "feature_update", "research_invitation"}
+    allowed_audiences = {"all", "patient", "doctor"}
+
+    if body.notification_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid notification type")
+    if body.audience not in allowed_audiences:
+        raise HTTPException(status_code=400, detail="Invalid audience")
+    if not body.title.strip() or not body.message.strip():
+        raise HTTPException(status_code=400, detail="Title and message are required")
+
+    notification = Notification(
+        notification_type=body.notification_type,
+        audience=body.audience,
+        title=body.title.strip(),
+        message=body.message.strip(),
+        created_by_admin_id=admin_id,
+    )
+    session.add(notification)
+    _create_audit_log(
+        session,
+        "admin",
+        admin_id,
+        admin.full_name,
+        "notification_published",
+        "admin",
+        f"Admin published notification: {notification.title}",
+        "notification",
+        None,
+        notification.title,
+        f"Audience: {notification.audience}",
+        {"type": notification.notification_type, "audience": notification.audience},
+    )
+    session.commit()
+    session.refresh(notification)
+
+    return {
+        "message": "Notification published successfully",
+        "notification_id": notification.id,
     }

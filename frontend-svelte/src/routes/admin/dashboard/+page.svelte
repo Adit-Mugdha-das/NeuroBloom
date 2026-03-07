@@ -87,6 +87,9 @@
 			<a href="/admin/system-health" class="nav-item">
 				<span class="nav-icon">🖥️</span> System Health
 			</a>
+			<a href="/admin/notifications" class="nav-item">
+				<span class="nav-icon">🔔</span> Notification Center
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout
