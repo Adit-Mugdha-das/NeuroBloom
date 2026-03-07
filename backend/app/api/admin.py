@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
 from app.models.admin import Admin
+from app.models.department import Department
 from app.models.doctor import Doctor
 from app.models.user import User
 from app.models.patient_assignment import PatientAssignment
@@ -21,6 +22,15 @@ class ResetPasswordBody(BaseModel):
 
 class TransferPatientBody(BaseModel):
     new_doctor_id: int
+
+
+class CreateDepartmentBody(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class AssignDoctorDepartmentBody(BaseModel):
+    department_id: int | None = None
 
 
 def get_session():
@@ -85,12 +95,14 @@ def get_stats(admin_id: int, session: Session = Depends(get_session)):
     active_doctors = len(
         session.exec(select(Doctor).where(Doctor.is_verified == True).where(Doctor.is_active == True)).all()
     )
+    total_departments = len(session.exec(select(Department)).all())
     return {
         "total_patients": total_patients,
         "active_patients": active_patients,
         "total_doctors": total_doctors,
         "pending_doctors": pending_doctors,
         "active_doctors": active_doctors,
+        "total_departments": total_departments,
     }
 
 
@@ -112,6 +124,8 @@ def list_doctors(admin_id: int, session: Session = Depends(get_session)):
                 "license_number": d.license_number,
                 "specialization": d.specialization,
                 "institution": d.institution,
+                "department_id": d.department_id,
+                "department_name": d.department.name if d.department else None,
                 "is_active": d.is_active,
                 "is_verified": d.is_verified,
                 "created_at": d.created_at,
@@ -120,6 +134,93 @@ def list_doctors(admin_id: int, session: Session = Depends(get_session)):
             for d in doctors
         ],
         "total": len(doctors),
+    }
+
+
+# ─────────────────────────────────────────────
+# DEPARTMENT MANAGEMENT
+# ─────────────────────────────────────────────
+
+@router.get("/departments")
+def list_departments(admin_id: int, session: Session = Depends(get_session)):
+    """List departments with doctor and patient counts."""
+    _require_admin(admin_id, session)
+    departments = session.exec(select(Department)).all()
+
+    department_rows = []
+    for department in departments:
+        doctors = session.exec(select(Doctor).where(Doctor.department_id == department.id)).all()
+        doctor_ids = [doctor.id for doctor in doctors]
+        patient_count = 0
+        if doctor_ids:
+            assignments = session.exec(select(PatientAssignment).where(PatientAssignment.is_active == True)).all()
+            patient_ids = {assignment.patient_id for assignment in assignments if assignment.doctor_id in doctor_ids}
+            patient_count = len(patient_ids)
+
+        department_rows.append({
+            "id": department.id,
+            "name": department.name,
+            "description": department.description,
+            "doctor_count": len(doctors),
+            "patient_count": patient_count,
+        })
+
+    return {"departments": department_rows, "total": len(department_rows)}
+
+
+@router.post("/departments")
+def create_department(body: CreateDepartmentBody, admin_id: int, session: Session = Depends(get_session)):
+    """Create a new hospital department."""
+    _require_admin(admin_id, session)
+
+    department_name = body.name.strip()
+    if not department_name:
+        raise HTTPException(status_code=400, detail="Department name is required")
+
+    existing = session.exec(select(Department).where(Department.name == department_name)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Department already exists")
+
+    department = Department(name=department_name, description=(body.description or '').strip() or None)
+    session.add(department)
+    session.commit()
+    session.refresh(department)
+
+    return {
+        "message": f"Department {department.name} created successfully",
+        "department": {
+            "id": department.id,
+            "name": department.name,
+            "description": department.description,
+            "doctor_count": 0,
+            "patient_count": 0,
+        },
+    }
+
+
+@router.patch("/doctors/{doctor_id}/department")
+def assign_doctor_department(doctor_id: int, body: AssignDoctorDepartmentBody, admin_id: int, session: Session = Depends(get_session)):
+    """Assign or clear a doctor's department."""
+    _require_admin(admin_id, session)
+
+    doctor = session.get(Doctor, doctor_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    department = None
+    if body.department_id is not None:
+        department = session.get(Department, body.department_id)
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+
+    doctor.department_id = body.department_id
+    session.add(doctor)
+    session.commit()
+
+    return {
+        "message": f"Dr. {doctor.full_name} assigned to {department.name}" if department else f"Department cleared for Dr. {doctor.full_name}",
+        "doctor_id": doctor.id,
+        "department_id": body.department_id,
     }
 
 

@@ -4,6 +4,7 @@ from datetime import datetime
 
 if TYPE_CHECKING:
     from app.models.patient_assignment import PatientAssignment
+    from app.models.department import Department
 
 class Doctor(SQLModel, table=True):
     """Healthcare provider/clinician model"""
@@ -18,6 +19,7 @@ class Doctor(SQLModel, table=True):
     license_number: Optional[str] = Field(default=None)
     specialization: Optional[str] = Field(default=None)  # "Neurologist", "Neuropsychologist", etc.
     institution: Optional[str] = Field(default=None)
+    department_id: Optional[int] = Field(default=None, foreign_key="departments.id")
     
     # Account management
     is_active: bool = Field(default=True)
@@ -27,3 +29,4 @@ class Doctor(SQLModel, table=True):
     
     # Relationships
     patient_assignments: List["PatientAssignment"] = Relationship(back_populates="doctor")
+    department: Optional["Department"] = Relationship(back_populates="doctors")

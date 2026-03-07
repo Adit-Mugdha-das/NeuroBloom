@@ -5,7 +5,7 @@
 	import { onMount } from 'svelte';
 
 	let admin = null;
-	let stats = { total_patients: 0, active_patients: 0, total_doctors: 0, pending_doctors: 0, active_doctors: 0 };
+	let stats = { total_patients: 0, active_patients: 0, total_doctors: 0, pending_doctors: 0, active_doctors: 0, total_departments: 0 };
 	let loading = true;
 	let error = '';
 
@@ -53,6 +53,9 @@
 			<a href="/admin/patients" class="nav-item">
 				<span class="nav-icon">👤</span> Patient Management
 			</a>
+			<a href="/admin/departments" class="nav-item">
+				<span class="nav-icon">🏢</span> Departments
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout
@@ -75,7 +78,7 @@
 
 		{#if loading}
 			<div class="loading-grid">
-				{#each Array(5) as _}
+				{#each Array(6) as _}
 					<div class="stat-card skeleton"></div>
 				{/each}
 			</div>
@@ -117,6 +120,13 @@
 						<p class="stat-value">{stats.active_doctors}</p>
 					</div>
 				</div>
+				<div class="stat-card navy">
+					<div class="stat-icon">🏢</div>
+					<div class="stat-body">
+						<p class="stat-label">Departments</p>
+						<p class="stat-value">{stats.total_departments}</p>
+					</div>
+				</div>
 			</div>
 
 			<!-- Quick actions -->
@@ -138,6 +148,13 @@
 						<div>
 							<h3>Manage Patients</h3>
 							<p>View and control all patient accounts in the system</p>
+						</div>
+					</a>
+					<a href="/admin/departments" class="action-card">
+						<span class="action-icon">🏢</span>
+						<div>
+							<h3>Manage Departments</h3>
+							<p>Create departments, assign doctors, and track patient counts</p>
 						</div>
 					</a>
 				</div>
@@ -302,6 +319,7 @@
 	.stat-card.purple{ border-top-color: #a855f7; }
 	.stat-card.orange{ border-top-color: #f97316; }
 	.stat-card.teal  { border-top-color: #14b8a6; }
+	.stat-card.navy  { border-top-color: #1e3a8a; }
 	.stat-card.skeleton { height: 96px; background: #f1f5f9; animation: pulse 1.4s infinite; }
 
 	.stat-icon { font-size: 2rem; }

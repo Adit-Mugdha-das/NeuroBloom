@@ -10,6 +10,9 @@
 	let error = '';
 	let successMsg = '';
 	let filter = 'all'; // 'all' | 'pending' | 'active' | 'suspended'
+	let departments = [];
+	let assignModal = { open: false, id: null, name: '', departmentId: '' };
+	let assignLoading = false;
 
 	onMount(async () => {
 		const u = $user;
@@ -24,6 +27,8 @@
 		try {
 			const res = await api.get(`/api/admin/doctors?admin_id=${admin.id}`);
 			doctors = res.data.doctors;
+			const deptRes = await api.get(`/api/admin/departments?admin_id=${admin.id}`);
+			departments = deptRes.data.departments;
 		} catch (e) {
 			error = e.response?.data?.detail || 'Failed to load doctors';
 		} finally {
@@ -93,6 +98,36 @@
 		}
 	}
 
+	function openAssignModal(doctor) {
+		assignModal = {
+			open: true,
+			id: doctor.id,
+			name: doctor.full_name,
+			departmentId: doctor.department_id ? String(doctor.department_id) : ''
+		};
+	}
+
+	function closeAssignModal() {
+		assignModal = { open: false, id: null, name: '', departmentId: '' };
+	}
+
+	async function submitDepartmentAssignment() {
+		assignLoading = true;
+		try {
+			const payload = {
+				department_id: assignModal.departmentId ? Number(assignModal.departmentId) : null
+			};
+			const response = await api.patch(`/api/admin/doctors/${assignModal.id}/department?admin_id=${admin.id}`, payload);
+			successMsg = response.data.message;
+			closeAssignModal();
+			await loadDoctors();
+		} catch (e) {
+			error = e.response?.data?.detail || 'Department assignment failed';
+		} finally {
+			assignLoading = false;
+		}
+	}
+
 	$: filtered = doctors.filter(d => {
 		if (filter === 'pending')   return !d.is_verified && d.is_active;
 		if (filter === 'active')    return d.is_verified && d.is_active;
@@ -123,6 +158,9 @@
 			</a>
 			<a href="/admin/patients" class="nav-item">
 				<span class="nav-icon">👤</span> Patient Management
+			</a>
+			<a href="/admin/departments" class="nav-item">
+				<span class="nav-icon">🏢</span> Departments
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>
@@ -178,6 +216,7 @@
 								<th>Name</th>
 								<th>Email</th>
 								<th>Specialization</th>
+								<th>Department</th>
 								<th>Institution</th>
 								<th>Registered</th>
 								<th>Status</th>
@@ -194,6 +233,7 @@
 									</td>
 									<td>{d.email}</td>
 									<td>{d.specialization || '—'}</td>
+									<td>{d.department_name || 'Unassigned'}</td>
 									<td>{d.institution || '—'}</td>
 									<td>{new Date(d.created_at).toLocaleDateString()}</td>
 									<td><span class={st.cls}>{st.text}</span></td>
@@ -206,6 +246,7 @@
 										{:else}
 											<button class="btn-sm red" on:click={() => suspendDoctor(d.id, d.full_name)}>Suspend</button>
 										{/if}
+										<button type="button" class="btn-sm blue" on:click|stopPropagation={() => openAssignModal(d)}>Department</button>
 									</td>
 								</tr>
 							{/each}
@@ -219,8 +260,8 @@
 
 <!-- Reset Password Modal -->
 {#if resetModal.open}
-	<div class="modal-overlay" on:click={closeResetModal} role="presentation">
-		<div class="modal" on:click|stopPropagation role="dialog" aria-modal="true">
+	<div class="modal-overlay" on:click|self={closeResetModal} role="presentation">
+		<div class="modal" role="dialog" aria-modal="true" tabindex="-1">
 			<h2 class="modal-title">🔑 Reset Password</h2>
 			<p class="modal-sub">Set a new password for <strong>Dr. {resetModal.name}</strong></p>
 			<input
@@ -233,6 +274,27 @@
 				<button class="btn-modal cancel" on:click={closeResetModal} disabled={resetLoading}>Cancel</button>
 				<button class="btn-modal confirm" on:click={submitResetPassword} disabled={resetLoading}>
 					{resetLoading ? 'Saving…' : 'Reset Password'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if assignModal.open}
+	<div class="modal-overlay" on:click|self={closeAssignModal} role="presentation">
+		<div class="modal" role="dialog" aria-modal="true" tabindex="-1">
+			<h2 class="modal-title">Assign Department</h2>
+			<p class="modal-sub">Select a department for <strong>Dr. {assignModal.name}</strong></p>
+			<select class="modal-input" bind:value={assignModal.departmentId}>
+				<option value="">No department</option>
+				{#each departments as department (department.id)}
+					<option value={department.id}>{department.name}</option>
+				{/each}
+			</select>
+			<div class="modal-actions">
+				<button class="btn-modal cancel" on:click={closeAssignModal} disabled={assignLoading}>Cancel</button>
+				<button class="btn-modal confirm" on:click={submitDepartmentAssignment} disabled={assignLoading}>
+					{assignLoading ? 'Saving...' : 'Save Department'}
 				</button>
 			</div>
 		</div>

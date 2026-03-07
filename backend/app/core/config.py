@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-      DATABASE_URL: str = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
+	DATABASE_URL: str = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
 
 settings = Settings()
 
@@ -17,6 +17,7 @@ def init_db():
     from app.models.training_plan import TrainingPlan
     from app.models.training_session import TrainingSession
     from app.models.admin import Admin
+    from app.models.department import Department
 
     # Use checkfirst=True to avoid errors on existing tables
     SQLModel.metadata.create_all(engine, checkfirst=True)
