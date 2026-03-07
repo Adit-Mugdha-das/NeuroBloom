@@ -10,69 +10,149 @@
 	let stats = null;
 	let baselineStatus = null;
 	let notifications = [];
+	let unreadCount = 0;
 	let loading = true;
+	let pollHandle = null;
+	let toastTimer = null;
+	let notificationToast = null;
+	let latestNotificationFingerprint = null;
+	let notificationsHydrated = false;
 	
-	user.subscribe(value => {
+	const unsubscribe = user.subscribe(value => {
 		currentUser = value;
 	});
 	
-	onMount(async () => {
+	onMount(() => {
 		if (!currentUser) {
 			goto('/login');
-			return;
+			return unsubscribe;
 		}
-		
-		try {
-			const [baselineResp, notificationResp] = await Promise.all([
-				tasks.getBaselineStatus(currentUser.id),
-				api.get(`/api/auth/patient/${currentUser.id}/notifications`)
-			]);
-			baselineStatus = baselineResp;
-			notifications = notificationResp.data.notifications.slice(0, 3);
 
+		async function initializeDashboard() {
 			try {
-				stats = await training.getMetrics(currentUser.id);
-			} catch (err) {
-				console.log('No training data yet');
-				stats = {
-					total_sessions: 0,
-					average_score: 0,
-					best_score: 0
-				};
+				const baselineResp = await tasks.getBaselineStatus(currentUser.id);
+				baselineStatus = baselineResp;
+				await loadNotifications();
+
+				try {
+					stats = await training.getMetrics(currentUser.id);
+				} catch (err) {
+					console.log('No training data yet');
+					stats = {
+						total_sessions: 0,
+						average_score: 0,
+						best_score: 0
+					};
+				}
+			} catch (error) {
+				console.error('Error fetching dashboard data:', error);
+			} finally {
+				loading = false;
 			}
-		} catch (error) {
-			console.error('Error fetching dashboard data:', error);
-		} finally {
-			loading = false;
 		}
+
+		initializeDashboard();
+
+		pollHandle = window.setInterval(() => {
+			loadNotifications();
+		}, 45000);
+
+		return () => {
+			if (pollHandle) window.clearInterval(pollHandle);
+			if (toastTimer) window.clearTimeout(toastTimer);
+			unsubscribe();
+		};
 	});
 
-	function notificationTypeLabel(type) {
-		if (type === 'announcement') return 'Announcement';
-		if (type === 'feature_update') return 'Feature Update';
-		if (type === 'research_invitation') return 'Research Invitation';
-		return 'Notice';
+	async function loadNotifications() {
+		if (!currentUser) return;
+		try {
+			const response = await api.get(`/api/auth/patient/${currentUser.id}/notifications`);
+			syncNotifications(response.data.notifications || []);
+		} catch (error) {
+			console.error('Error fetching notifications:', error);
+		}
 	}
 
-	function notificationTypeClass(type) {
-		if (type === 'announcement') return 'notice-blue';
-		if (type === 'feature_update') return 'notice-teal';
-		if (type === 'research_invitation') return 'notice-amber';
-		return 'notice-blue';
+	function syncNotifications(nextNotifications) {
+		const newestNotification = nextNotifications[0] ?? null;
+		const nextFingerprint = newestNotification
+			? `${newestNotification.id}:${newestNotification.created_at}`
+			: null;
+
+		if (notificationsHydrated && nextFingerprint && nextFingerprint !== latestNotificationFingerprint) {
+			showNotificationToast(newestNotification);
+		}
+
+		notifications = nextNotifications;
+		latestNotificationFingerprint = nextFingerprint;
+		notificationsHydrated = true;
+		updateUnreadCount();
+	}
+
+	function showNotificationToast(notification) {
+		if (!notification) return;
+
+		notificationToast = {
+			title: notification.title,
+			message: notification.message
+		};
+
+		if (toastTimer) window.clearTimeout(toastTimer);
+		toastTimer = window.setTimeout(() => {
+			notificationToast = null;
+			toastTimer = null;
+		}, 4200);
+	}
+
+	function notificationSeenKey() {
+		return currentUser ? `patient-notifications-seen-${currentUser.id}` : 'patient-notifications-seen';
+	}
+
+	function updateUnreadCount() {
+		if (typeof localStorage === 'undefined') {
+			unreadCount = 0;
+			return;
+		}
+
+		const lastSeen = localStorage.getItem(notificationSeenKey());
+		const lastSeenTime = lastSeen ? new Date(lastSeen).getTime() : 0;
+		unreadCount = notifications.filter((notification) => new Date(notification.created_at).getTime() > lastSeenTime).length;
 	}
 	
 	function handleLogout() {
+		if (pollHandle) window.clearInterval(pollHandle);
+		if (toastTimer) window.clearTimeout(toastTimer);
 		clearUser();
 		goto('/login');
 	}
 </script>
 
 <div class="dashboard">
+	{#if notificationToast}
+		<div class="toast-shell" role="status" aria-live="polite">
+			<div class="notification-toast">
+				<div class="toast-accent"></div>
+				<div class="toast-content">
+					<p class="toast-label">New notification</p>
+					<p class="toast-title">{notificationToast.title}</p>
+					<p class="toast-message">{notificationToast.message}</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<header class="header">
 		<h1>🧠 NeuroBloom</h1>
 		<div class="header-right">
 			{#if currentUser}
 				<span class="user-email">{currentUser.email}</span>
+				<button class="btn-notifications" on:click={() => goto('/notifications')}>
+					<span>🔔 Notification Center</span>
+					{#if unreadCount > 0}
+						<span class="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+					{/if}
+				</button>
 				<button class="btn-messages" on:click={() => goto('/messages')}>💬 Messages</button>
 				<button class="btn-settings" on:click={() => goto('/settings')}>⚙️ Settings</button>
 			{/if}
@@ -86,28 +166,6 @@
 		{#if loading}
 			<p>Loading...</p>
 		{:else}
-			{#if notifications.length > 0}
-				<div class="notice-center">
-					<div class="notice-center-head">
-						<div>
-							<h3>🔔 Notification Center</h3>
-							<p>Latest admin notices and platform updates</p>
-						</div>
-					</div>
-					<div class="notice-list">
-						{#each notifications as notification (notification.id)}
-							<div class="notice-item">
-								<div class="notice-item-top">
-									<p class="notice-item-title">{notification.title}</p>
-									<span class="notice-pill {notificationTypeClass(notification.notification_type)}">{notificationTypeLabel(notification.notification_type)}</span>
-								</div>
-								<p class="notice-item-message">{notification.message}</p>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
 			<!-- Doctor Widget -->
 			{#if currentUser}
 				<DoctorWidget userId={currentUser.id} />
@@ -247,6 +305,71 @@
 		min-height: 100vh;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	}
+
+	.toast-shell {
+		position: fixed;
+		top: 1.35rem;
+		right: 1.35rem;
+		z-index: 1100;
+		pointer-events: none;
+	}
+
+	.notification-toast {
+		display: grid;
+		grid-template-columns: 5px 1fr;
+		min-width: 320px;
+		max-width: 380px;
+		background: rgba(255, 255, 255, 0.96);
+		border-radius: 18px;
+		overflow: hidden;
+		box-shadow: 0 18px 45px rgba(31, 41, 55, 0.22);
+		border: 1px solid rgba(255, 255, 255, 0.85);
+		animation: slide-toast-in 0.26s ease-out;
+	}
+
+	.toast-accent {
+		background: linear-gradient(180deg, #0f766e 0%, #14b8a6 100%);
+	}
+
+	.toast-content {
+		padding: 0.9rem 1rem;
+	}
+
+	.toast-label {
+		margin: 0;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #0f766e;
+	}
+
+	.toast-title {
+		margin: 0.3rem 0 0;
+		font-size: 0.95rem;
+		font-weight: 800;
+		color: #111827;
+	}
+
+	.toast-message {
+		margin: 0.35rem 0 0;
+		font-size: 0.84rem;
+		line-height: 1.5;
+		color: #4b5563;
+		max-height: 2.5rem;
+		overflow: hidden;
+	}
+
+	@keyframes slide-toast-in {
+		from {
+			opacity: 0;
+			transform: translateY(-12px) scale(0.98);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
 	
 	.header {
 		background: white;
@@ -287,6 +410,46 @@
 	.btn-messages:hover {
 		transform: translateY(-2px);
 	}
+
+	.btn-notifications {
+		position: relative;
+		background: linear-gradient(135deg, #0f766e 0%, #155e75 100%);
+		color: white;
+		border: none;
+		padding: 0.5rem 1.1rem;
+		border-radius: 999px;
+		cursor: pointer;
+		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		transition: transform 0.2s, box-shadow 0.2s;
+		box-shadow: 0 10px 24px rgba(15, 118, 110, 0.25);
+	}
+
+	.btn-notifications:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 14px 28px rgba(15, 118, 110, 0.3);
+	}
+
+	.notification-badge {
+		position: absolute;
+		top: -0.35rem;
+		right: -0.35rem;
+		min-width: 1.25rem;
+		height: 1.25rem;
+		padding: 0 0.35rem;
+		border-radius: 999px;
+		background: #dc2626;
+		color: white;
+		font-size: 0.72rem;
+		font-weight: 800;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+		border: 2px solid white;
+	}
 	
 	.btn-logout {
 		background: #dc3545;
@@ -323,70 +486,6 @@
 		margin: 0 auto;
 		padding: 2rem;
 	}
-
-	.notice-center {
-		background: rgba(255, 255, 255, 0.95);
-		border-radius: 16px;
-		padding: 1.25rem;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-		margin-bottom: 1.5rem;
-	}
-
-	.notice-center-head h3 {
-		margin: 0;
-		color: #1f2937;
-	}
-
-	.notice-center-head p {
-		margin: 0.25rem 0 0;
-		color: #6b7280;
-		font-size: 0.9rem;
-	}
-
-	.notice-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-
-	.notice-item {
-		background: #f8fafc;
-		border: 1px solid #e5e7eb;
-		border-radius: 12px;
-		padding: 0.9rem 1rem;
-	}
-
-	.notice-item-top {
-		display: flex;
-		justify-content: space-between;
-		gap: 0.75rem;
-		align-items: flex-start;
-	}
-
-	.notice-item-title {
-		margin: 0;
-		font-weight: 700;
-		color: #111827;
-	}
-
-	.notice-item-message {
-		margin: 0.45rem 0 0;
-		color: #4b5563;
-		line-height: 1.6;
-	}
-
-	.notice-pill {
-		padding: 0.2rem 0.65rem;
-		border-radius: 999px;
-		font-size: 0.72rem;
-		font-weight: 700;
-		white-space: nowrap;
-	}
-
-	.notice-blue { background: #dbeafe; color: #1d4ed8; }
-	.notice-teal { background: #ccfbf1; color: #0f766e; }
-	.notice-amber { background: #fef3c7; color: #92400e; }
 	
 	.stats-grid {
 		display: grid;
@@ -564,6 +663,47 @@
 		font-size: 1.5rem;
 		font-weight: bold;
 		box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+	}
+
+	@media (max-width: 900px) {
+		.toast-shell {
+			top: auto;
+			bottom: 1rem;
+			left: 1rem;
+			right: 1rem;
+		}
+
+		.notification-toast {
+			min-width: 0;
+			max-width: none;
+			width: 100%;
+		}
+
+		.header {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 1rem;
+		}
+
+		.header-right,
+		.progress-header {
+			flex-wrap: wrap;
+		}
+
+		.btn-notifications,
+		.btn-messages,
+		.btn-settings,
+		.btn-logout {
+			justify-content: center;
+		}
+
+		.container {
+			padding: 1rem;
+		}
+
+		.action-buttons {
+			flex-direction: column;
+		}
 	}
 </style>
 
