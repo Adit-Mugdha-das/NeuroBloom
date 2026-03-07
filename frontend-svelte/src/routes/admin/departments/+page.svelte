@@ -86,6 +86,9 @@
 			<a href="/admin/departments" class="nav-item active">
 				<span class="nav-icon">🏢</span> Departments
 			</a>
+			<a href="/admin/interventions" class="nav-item">
+				<span class="nav-icon">🩺</span> Interventions
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>
 			<span>🚪</span> Logout

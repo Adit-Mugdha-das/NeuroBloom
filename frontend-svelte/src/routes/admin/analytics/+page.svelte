@@ -460,6 +460,9 @@
 			<a href="/admin/departments" class="nav-item">
 				<span class="nav-icon">🏢</span> Departments
 			</a>
+			<a href="/admin/interventions" class="nav-item">
+				<span class="nav-icon">🩺</span> Interventions
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout

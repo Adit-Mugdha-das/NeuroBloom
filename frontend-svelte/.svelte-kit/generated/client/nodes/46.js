@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/tower-of-london/+page.svelte";
+export { default as component } from "../../../../src/routes/training/stroop/+page.svelte";

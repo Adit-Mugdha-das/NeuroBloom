@@ -1045,3 +1045,65 @@ def get_patient_overview_admin(patient_id: int, admin_id: int, session: Session 
         "recent_sessions": recent_sessions_data,
         "reports": reports_data,
     }
+
+
+# ─────────────────────────────────────────────
+# INTERVENTION MONITORING
+# ─────────────────────────────────────────────
+
+@router.get("/interventions")
+def list_interventions(admin_id: int, days: int = 0, session: Session = Depends(get_session)):
+    """
+    List all doctor interventions for admin clinical quality oversight.
+    days=0 returns all-time records. Includes enriched doctor and patient names.
+    """
+    _require_admin(admin_id, session)
+
+    query = select(DoctorIntervention).order_by(col(DoctorIntervention.created_at).desc())
+    if days > 0:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        query = query.where(DoctorIntervention.created_at >= cutoff)
+
+    interventions = list(session.exec(query).all())
+
+    all_doctors = {d.id: d for d in session.exec(select(Doctor)).all() if d.id is not None}
+    all_patients = {p.id: p for p in session.exec(select(User)).all() if p.id is not None}
+
+    items = []
+    for i in interventions:
+        doc = all_doctors.get(i.doctor_id)
+        pat = all_patients.get(i.patient_id)
+        items.append({
+            "id": i.id,
+            "doctor_id": i.doctor_id,
+            "doctor_name": doc.full_name if doc else f"Doctor #{i.doctor_id}",
+            "doctor_specialization": doc.specialization if doc else None,
+            "patient_id": i.patient_id,
+            "patient_name": (pat.full_name or pat.email) if pat else f"Patient #{i.patient_id}",
+            "intervention_type": i.intervention_type,
+            "description": i.description,
+            "created_at": i.created_at.isoformat(),
+        })
+
+    by_type: dict[str, int] = {}
+    by_doctor: dict[int, dict] = {}
+    for item in items:
+        t = item["intervention_type"]
+        by_type[t] = by_type.get(t, 0) + 1
+        did = item["doctor_id"]
+        if did not in by_doctor:
+            by_doctor[did] = {"doctor_id": did, "doctor_name": item["doctor_name"], "count": 0}
+        by_doctor[did]["count"] += 1
+
+    top_doctors = sorted(by_doctor.values(), key=lambda x: -x["count"])
+    doctor_generated = sum(1 for item in items if not item["intervention_type"].startswith("admin_"))
+
+    return {
+        "summary": {
+            "total": len(items),
+            "doctor_generated": doctor_generated,
+            "by_type": by_type,
+            "top_doctors": top_doctors[:5],
+        },
+        "interventions": items,
+    }
