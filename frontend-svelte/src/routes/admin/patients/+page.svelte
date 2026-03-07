@@ -228,6 +228,7 @@
 			<a href="/admin/audit-logs" class="nav-item">Audit Logs</a>
 			<a href="/admin/system-health" class="nav-item">System Health</a>
 			<a href="/admin/notifications" class="nav-item">Notification Center</a>
+			<a href="/admin/research-data" class="nav-item">Research Data</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>Logout</button>
 	</aside>

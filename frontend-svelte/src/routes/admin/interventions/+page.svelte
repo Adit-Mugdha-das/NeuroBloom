@@ -176,6 +176,9 @@
 			<a href="/admin/notifications" class="nav-item">
 				<span class="nav-icon">&#128276;</span> Notification Center
 			</a>
+			<a href="/admin/research-data" class="nav-item">
+				<span class="nav-icon">&#129514;</span> Research Data
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>&#128682;</span> Logout

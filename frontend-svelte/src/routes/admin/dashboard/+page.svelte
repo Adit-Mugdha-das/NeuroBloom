@@ -90,6 +90,9 @@
 			<a href="/admin/notifications" class="nav-item">
 				<span class="nav-icon">🔔</span> Notification Center
 			</a>
+			<a href="/admin/research-data" class="nav-item">
+				<span class="nav-icon">🧪</span> Research Data
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>🚪</span> Logout

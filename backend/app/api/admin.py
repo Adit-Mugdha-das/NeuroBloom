@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, col
-from typing import List, Sequence
+from typing import List, Sequence, Literal
 from datetime import datetime, timedelta
 from time import perf_counter
+from hashlib import sha256
+import csv
+import io
 from app.models.admin import Admin
 from app.models.department import Department
 from app.models.doctor import Doctor
@@ -23,6 +27,8 @@ from app.core.security import verify_password, hash_password
 from pydantic import BaseModel
 import json
 import traceback
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 PROCESS_STARTED_AT = datetime.utcnow()
@@ -113,6 +119,304 @@ def _create_audit_log(
 def _format_task_name(training_session: TrainingSession) -> str:
     raw_name = training_session.task_code or training_session.task_type or training_session.domain
     return raw_name.replace("_", " ").title()
+
+
+def _anonymized_patient_id(user: User) -> str:
+    seed = f"{user.id}:{user.email}:neurobloom-research"
+    return f"NB-{sha256(seed.encode()).hexdigest()[:12].upper()}"
+
+
+def _safe_iso(value):
+    return value.isoformat() if isinstance(value, datetime) else value
+
+
+def _safe_float(value, digits: int = 2):
+    if value is None:
+        return None
+    return round(float(value), digits)
+
+
+def _parse_age_band(date_of_birth: str | None) -> str:
+    if not date_of_birth:
+        return "unknown"
+
+    parsed_date = None
+    for parser in (datetime.fromisoformat,):
+        try:
+            parsed_date = parser(date_of_birth)
+            break
+        except ValueError:
+            continue
+
+    if parsed_date is None:
+        for date_format in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                parsed_date = datetime.strptime(date_of_birth, date_format)
+                break
+            except ValueError:
+                continue
+
+    if parsed_date is None:
+        return "unknown"
+
+    today = datetime.utcnow().date()
+    age = today.year - parsed_date.date().year - (
+        (today.month, today.day) < (parsed_date.date().month, parsed_date.date().day)
+    )
+
+    if age < 18:
+        return "under_18"
+    if age < 30:
+        return "18_29"
+    if age < 40:
+        return "30_39"
+    if age < 50:
+        return "40_49"
+    if age < 60:
+        return "50_59"
+    if age < 70:
+        return "60_69"
+    return "70_plus"
+
+
+def _latest_baseline_by_user(session: Session):
+    latest = {}
+    for baseline in session.exec(select(BaselineAssessment)).all():
+        current = latest.get(baseline.user_id)
+        if current is None or baseline.created_at > current.created_at:
+            latest[baseline.user_id] = baseline
+    return latest
+
+
+def _pdf_preview_line(record: dict) -> str:
+    preview_parts = []
+    for key, value in list(record.items())[:6]:
+        preview_parts.append(f"{key}: {value}")
+    return " | ".join(preview_parts)
+
+
+def _write_pdf_lines(pdf: canvas.Canvas, lines: list[str], title: str):
+    width, height = A4
+    y = height - 48
+
+    pdf.setTitle(title)
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(40, y, title)
+    y -= 28
+
+    pdf.setFont("Helvetica", 9)
+    for line in lines:
+        if y < 48:
+            pdf.showPage()
+            y = height - 48
+            pdf.setFont("Helvetica", 9)
+        pdf.drawString(40, y, str(line)[:135])
+        y -= 14
+
+
+def _serialize_csv(rows: list[dict]) -> bytes:
+    output = io.StringIO()
+    fieldnames = list(rows[0].keys()) if rows else ["message"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    if rows:
+        writer.writerows(rows)
+    else:
+        writer.writerow({"message": "No records available"})
+    return output.getvalue().encode("utf-8")
+
+
+def _serialize_json(summary: dict, rows: list[dict]) -> bytes:
+    return json.dumps({"summary": summary, "records": rows}, indent=2, ensure_ascii=False).encode("utf-8")
+
+
+def _serialize_pdf(title: str, summary: dict, rows: list[dict]) -> bytes:
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+
+    lines = [
+        f"Generated at: {summary.get('generated_at')}",
+        f"Dataset key: {summary.get('dataset_key')}",
+        f"Total records: {summary.get('record_count')}",
+        f"Unique patients: {summary.get('unique_patients')}",
+        f"Date range start: {summary.get('date_range', {}).get('start') or '-'}",
+        f"Date range end: {summary.get('date_range', {}).get('end') or '-'}",
+        "",
+        "Preview records:",
+    ]
+
+    preview_rows = rows[:18] if rows else [{"message": "No records available"}]
+    lines.extend(_pdf_preview_line(row) for row in preview_rows)
+
+    _write_pdf_lines(pdf, lines, title)
+    pdf.save()
+    buffer.seek(0)
+    return buffer.read()
+
+
+def _build_research_dataset(session: Session, dataset_key: str):
+    patients = [patient for patient in session.exec(select(User)).all() if patient.id is not None]
+    patient_by_id = {patient.id: patient for patient in patients if patient.id is not None}
+    anonymized_ids = {patient.id: _anonymized_patient_id(patient) for patient in patients if patient.id is not None}
+    training_sessions = [
+        training_session
+        for training_session in session.exec(
+            select(TrainingSession).order_by(col(TrainingSession.created_at).desc())
+        ).all()
+        if training_session.user_id in patient_by_id
+    ]
+    session_contexts = [
+        context
+        for context in session.exec(
+            select(SessionContext).order_by(col(SessionContext.created_at).desc())
+        ).all()
+        if context.user_id in patient_by_id
+    ]
+    latest_baselines = _latest_baseline_by_user(session)
+    training_session_by_id = {
+        training_session.id: training_session
+        for training_session in training_sessions
+        if training_session.id is not None
+    }
+    context_by_session_id = {
+        context.training_session_id: context
+        for context in session_contexts
+        if context.training_session_id is not None
+    }
+
+    rows: list[dict] = []
+
+    if dataset_key == "cognitive_performance":
+        for training_session in training_sessions:
+            patient = patient_by_id.get(training_session.user_id)
+            if not patient or training_session.id is None:
+                continue
+            linked_context = context_by_session_id.get(training_session.id)
+            rows.append({
+                "anonymous_patient_id": anonymized_ids[training_session.user_id],
+                "session_date": _safe_iso(training_session.created_at),
+                "diagnosis": patient.diagnosis or "unspecified",
+                "domain": training_session.domain,
+                "task_type": training_session.task_type,
+                "task_code": training_session.task_code or training_session.task_type,
+                "score": _safe_float(training_session.score),
+                "accuracy": _safe_float(training_session.accuracy),
+                "consistency": _safe_float(training_session.consistency),
+                "errors": training_session.errors,
+                "duration_seconds": training_session.duration,
+                "average_reaction_time_ms": _safe_float(training_session.average_reaction_time),
+                "difficulty_before": training_session.difficulty_before,
+                "difficulty_after": training_session.difficulty_after,
+                "fatigue_level": linked_context.fatigue_level if linked_context else None,
+                "sleep_quality": linked_context.sleep_quality if linked_context else None,
+                "time_of_day": linked_context.time_of_day if linked_context else None,
+            })
+
+    elif dataset_key == "fatigue":
+        for context in session_contexts:
+            patient = patient_by_id.get(context.user_id)
+            if not patient:
+                continue
+            linked_session = training_session_by_id.get(context.training_session_id) if context.training_session_id is not None else None
+            rows.append({
+                "anonymous_patient_id": anonymized_ids[context.user_id],
+                "recorded_at": _safe_iso(context.created_at),
+                "diagnosis": patient.diagnosis or "unspecified",
+                "fatigue_level": context.fatigue_level,
+                "sleep_quality": context.sleep_quality,
+                "sleep_hours": context.sleep_hours,
+                "medication_taken_today": context.medication_taken_today,
+                "hours_since_medication": context.hours_since_medication,
+                "pain_level": context.pain_level,
+                "stress_level": context.stress_level,
+                "readiness_level": context.readiness_level,
+                "time_of_day": context.time_of_day,
+                "distractions_present": context.distractions_present,
+                "location": context.location,
+                "linked_domain": linked_session.domain if linked_session else None,
+                "linked_task_code": linked_session.task_code if linked_session else None,
+                "linked_score": _safe_float(linked_session.score) if linked_session else None,
+                "linked_accuracy": _safe_float(linked_session.accuracy) if linked_session else None,
+                "linked_average_reaction_time_ms": _safe_float(linked_session.average_reaction_time) if linked_session else None,
+            })
+
+    elif dataset_key == "reaction_time":
+        for training_session in training_sessions:
+            patient = patient_by_id.get(training_session.user_id)
+            if not patient:
+                continue
+            rows.append({
+                "anonymous_patient_id": anonymized_ids[training_session.user_id],
+                "session_date": _safe_iso(training_session.created_at),
+                "diagnosis": patient.diagnosis or "unspecified",
+                "domain": training_session.domain,
+                "task_type": training_session.task_type,
+                "task_code": training_session.task_code or training_session.task_type,
+                "average_reaction_time_ms": _safe_float(training_session.average_reaction_time),
+                "accuracy": _safe_float(training_session.accuracy),
+                "score": _safe_float(training_session.score),
+                "consistency": _safe_float(training_session.consistency),
+                "difficulty_level": training_session.difficulty_level,
+                "duration_seconds": training_session.duration,
+                "errors": training_session.errors,
+            })
+
+    elif dataset_key == "anonymized_patients":
+        sessions_by_user = {}
+        fatigue_by_user = {}
+        for training_session in training_sessions:
+            sessions_by_user.setdefault(training_session.user_id, []).append(training_session)
+        for context in session_contexts:
+            if context.fatigue_level is not None:
+                fatigue_by_user.setdefault(context.user_id, []).append(context.fatigue_level)
+
+        for patient in patients:
+            patient_id = patient.id
+            if patient_id is None:
+                continue
+            user_sessions = sessions_by_user.get(patient.id, [])
+            latest_baseline = latest_baselines.get(patient_id)
+            avg_score = sum(session_row.score for session_row in user_sessions) / len(user_sessions) if user_sessions else None
+            avg_accuracy = sum(session_row.accuracy for session_row in user_sessions) / len(user_sessions) if user_sessions else None
+            avg_reaction_time = sum(session_row.average_reaction_time for session_row in user_sessions) / len(user_sessions) if user_sessions else None
+            fatigue_values = fatigue_by_user.get(patient_id, [])
+            rows.append({
+                "anonymous_patient_id": anonymized_ids[patient_id],
+                "age_band": _parse_age_band(patient.date_of_birth),
+                "diagnosis": patient.diagnosis or "unspecified",
+                "consent_to_share": patient.consent_to_share,
+                "is_active": patient.is_active,
+                "latest_baseline_score": _safe_float(latest_baseline.overall_score) if latest_baseline else None,
+                "total_sessions": len(user_sessions),
+                "average_score": _safe_float(avg_score),
+                "average_accuracy": _safe_float(avg_accuracy),
+                "average_reaction_time_ms": _safe_float(avg_reaction_time),
+                "average_fatigue": _safe_float(sum(fatigue_values) / len(fatigue_values)) if fatigue_values else None,
+                "first_session_at": _safe_iso(user_sessions[-1].created_at) if user_sessions else None,
+                "last_session_at": _safe_iso(user_sessions[0].created_at) if user_sessions else None,
+            })
+
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported dataset")
+
+    date_values = []
+    for row in rows:
+        for candidate_key in ("session_date", "recorded_at", "first_session_at", "last_session_at"):
+            if row.get(candidate_key):
+                date_values.append(row[candidate_key])
+                break
+
+    summary = {
+        "dataset_key": dataset_key,
+        "record_count": len(rows),
+        "unique_patients": len({row["anonymous_patient_id"] for row in rows if row.get("anonymous_patient_id")}),
+        "generated_at": datetime.utcnow().isoformat(),
+        "date_range": {
+            "start": min(date_values) if date_values else None,
+            "end": max(date_values) if date_values else None,
+        },
+    }
+    return rows, summary
 
 
 def _build_risk_monitoring(
@@ -1634,3 +1938,96 @@ def create_notification(admin_id: int, body: NotificationCreateBody, session: Se
         "message": "Notification published successfully",
         "notification_id": notification.id,
     }
+
+
+@router.get("/research-exports/summary")
+def get_research_export_summary(admin_id: int, session: Session = Depends(get_session)):
+    _require_admin(admin_id, session)
+
+    dataset_catalog = [
+        ("cognitive_performance", "Cognitive Performance Dataset", "Training-session level scores, accuracy, difficulty shifts, and linked context."),
+        ("fatigue", "Fatigue Dataset", "Fatigue and contextual variables correlated with task performance."),
+        ("reaction_time", "Reaction Time Dataset", "Reaction-time focused export across tasks and domains for research analysis."),
+        ("anonymized_patients", "Anonymized Patient Data", "Patient-level anonymized demographics and aggregated outcomes."),
+    ]
+
+    datasets = []
+    for dataset_key, label, description in dataset_catalog:
+        rows, summary = _build_research_dataset(session, dataset_key)
+        datasets.append({
+            "key": dataset_key,
+            "label": label,
+            "description": description,
+            "record_count": summary["record_count"],
+            "unique_patients": summary["unique_patients"],
+            "date_range": summary["date_range"],
+            "formats": ["csv", "json", "pdf"],
+            "preview_fields": list(rows[0].keys())[:6] if rows else [],
+        })
+
+    return {
+        "datasets": datasets,
+        "summary": {
+            "total_datasets": len(datasets),
+            "total_records": sum(dataset["record_count"] for dataset in datasets),
+            "generated_at": datetime.utcnow().isoformat(),
+        },
+    }
+
+
+@router.get("/research-exports/download")
+def download_research_export(
+    admin_id: int,
+    dataset: Literal["cognitive_performance", "fatigue", "reaction_time", "anonymized_patients"],
+    file_format: Literal["csv", "json", "pdf"],
+    session: Session = Depends(get_session),
+):
+    admin = _require_admin(admin_id, session)
+    rows, summary = _build_research_dataset(session, dataset)
+
+    dataset_title_map = {
+        "cognitive_performance": "Cognitive Performance Dataset",
+        "fatigue": "Fatigue Dataset",
+        "reaction_time": "Reaction Time Dataset",
+        "anonymized_patients": "Anonymized Patient Dataset",
+    }
+    dataset_title = dataset_title_map[dataset]
+    date_stamp = datetime.utcnow().strftime("%Y-%m-%d")
+    filename_base = f"neurobloom-{dataset.replace('_', '-')}-{date_stamp}"
+
+    if file_format == "csv":
+        payload = _serialize_csv(rows)
+        media_type = "text/csv"
+        file_extension = "csv"
+    elif file_format == "json":
+        payload = _serialize_json(summary, rows)
+        media_type = "application/json"
+        file_extension = "json"
+    else:
+        payload = _serialize_pdf(dataset_title, summary, rows)
+        media_type = "application/pdf"
+        file_extension = "pdf"
+
+    _create_audit_log(
+        session,
+        "admin",
+        admin_id,
+        admin.full_name,
+        "research_export_downloaded",
+        "admin",
+        f"Admin exported {dataset_title}",
+        "research_export",
+        None,
+        dataset_title,
+        f"Format: {file_format.upper()}",
+        {"dataset": dataset, "format": file_format, "records": summary["record_count"]},
+    )
+    session.commit()
+
+    return StreamingResponse(
+        io.BytesIO(payload),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename_base}.{file_extension}"'
+        },
+    )
