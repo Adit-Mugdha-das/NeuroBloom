@@ -6,7 +6,7 @@
 	
 	let email = '';
 	let password = '';
-	let loginType = 'patient'; // 'patient' or 'doctor'
+	let loginType = 'patient'; // 'patient', 'doctor', or 'admin'
 	let error = '';
 	let loading = false;
 	
@@ -26,8 +26,10 @@
 		loading = true;
 		
 		try {
-			const endpoint = loginType === 'doctor' 
-				? '/api/auth/doctor/login' 
+const endpoint = loginType === 'doctor'
+			? '/api/auth/doctor/login'
+			: loginType === 'admin'
+			? '/api/admin/login'
 				: '/api/auth/login';
 			
 			console.log('Attempting login to:', endpoint);
@@ -48,6 +50,8 @@
 			// Redirect based on role
 			if (loginType === 'doctor') {
 				goto('/doctor/dashboard');
+			} else if (loginType === 'admin') {
+				goto('/admin/dashboard');
 			} else {
 				goto('/dashboard');
 			}
@@ -84,6 +88,14 @@
 			>
 				👨‍⚕️ Doctor
 			</button>
+		<button 
+			type="button"
+			class="type-btn {loginType === 'admin' ? 'active' : ''}"
+			on:click={() => loginType = 'admin'}
+			disabled={loading}
+		>
+			🏥 Admin
+		</button>
 		</div>
 		
 		{#if error}
@@ -114,7 +126,7 @@
 			</div>
 			
 			<button type="submit" class="btn" disabled={loading}>
-				{loading ? 'Logging in...' : `Login as ${loginType === 'doctor' ? 'Doctor' : 'Patient'}`}
+				{loading ? 'Logging in...' : `Login as ${loginType === 'doctor' ? 'Doctor' : loginType === 'admin' ? 'Admin' : 'Patient'}`}
 			</button>
 		</form>
 		

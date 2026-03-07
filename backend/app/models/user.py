@@ -11,3 +11,6 @@ class User(SQLModel, table=True):
     date_of_birth: Optional[str] = Field(default=None)
     diagnosis: Optional[str] = Field(default=None)
     consent_to_share: bool = Field(default=False)  # Patient consent for doctor access
+
+    # Account management
+    is_active: bool = Field(default=True)

@@ -6,6 +6,7 @@ from app.api.baseline import router as baseline_router
 from app.api.training import router as training_router
 from app.api.doctor import router as doctor_router
 from app.api.advanced_analytics import router as advanced_analytics_router  # Phase 1: MS Research
+from app.api.admin import router as admin_router
 from app.core.config import init_db
 
 app = FastAPI()
@@ -37,6 +38,7 @@ app.include_router(baseline_router, prefix="/api/baseline")
 app.include_router(training_router, prefix="/api/training")
 app.include_router(doctor_router, prefix="/api")  # Doctor routes include /doctor prefix already
 app.include_router(advanced_analytics_router)  # Advanced analytics for MS research
+app.include_router(admin_router, prefix="/api")  # Hospital admin routes
 
 @app.get("/")
 def root():

@@ -16,6 +16,7 @@ def init_db():
     from app.models.baseline_assessment import BaselineAssessment
     from app.models.training_plan import TrainingPlan
     from app.models.training_session import TrainingSession
-    
+    from app.models.admin import Admin
+
     # Use checkfirst=True to avoid errors on existing tables
     SQLModel.metadata.create_all(engine, checkfirst=True)

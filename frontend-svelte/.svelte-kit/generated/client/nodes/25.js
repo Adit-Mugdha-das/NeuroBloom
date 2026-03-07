@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/category-fluency/+page.svelte";
+export { default as component } from "../../../../src/routes/settings/+page.svelte";
