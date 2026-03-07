@@ -5,7 +5,7 @@ from datetime import datetime
 
 class Admin(SQLModel, table=True):
     """Hospital Administrator model"""
-    __tablename__ = "admins"
+    __tablename__ = "admins"  # type: ignore[assignment]
 
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(unique=True, index=True)
