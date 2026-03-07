@@ -14,6 +14,7 @@ from app.models.risk_alert import RiskAlert
 from app.models.doctor_intervention import DoctorIntervention
 from app.models.progress_report import ProgressReport
 from app.models.message import Message
+from app.models.audit_log import AuditLog
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
@@ -66,6 +67,42 @@ def _summarize_risk_reasons(reasons: list[str]) -> str:
     if "low baseline score" in reasons:
         return "Persistent cognitive risk detected"
     return "Clinical risk alert detected"
+
+
+def _create_audit_log(
+    session: Session,
+    actor_type: str,
+    actor_id: int | None,
+    actor_name: str,
+    action_type: str,
+    category: str,
+    summary: str,
+    target_type: str | None = None,
+    target_id: int | None = None,
+    target_name: str | None = None,
+    detail: str | None = None,
+    metadata: dict | None = None,
+):
+    session.add(
+        AuditLog(
+            actor_type=actor_type,
+            actor_id=actor_id,
+            actor_name=actor_name,
+            action_type=action_type,
+            category=category,
+            summary=summary,
+            target_type=target_type,
+            target_id=target_id,
+            target_name=target_name,
+            detail=detail,
+            metadata_json=json.dumps(metadata) if metadata else None,
+        )
+    )
+
+
+def _format_task_name(training_session: TrainingSession) -> str:
+    raw_name = training_session.task_code or training_session.task_type or training_session.domain
+    return raw_name.replace("_", " ").title()
 
 
 def _build_risk_monitoring(
@@ -706,6 +743,20 @@ def assign_doctor_department(doctor_id: int, body: AssignDoctorDepartmentBody, a
 
     doctor.department_id = body.department_id
     session.add(doctor)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(
+        session,
+        actor_type="admin",
+        actor_id=admin_id,
+        actor_name=admin.full_name if admin else f"Admin #{admin_id}",
+        action_type="doctor_department_updated",
+        category="admin",
+        summary=f"Admin updated department for Dr. {doctor.full_name}",
+        target_type="doctor",
+        target_id=doctor.id,
+        target_name=doctor.full_name,
+        detail=f"Department set to {department.name}" if department else "Department cleared",
+    )
     session.commit()
 
     return {
@@ -726,6 +777,8 @@ def approve_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get
     doctor.is_verified = True
     doctor.is_active = True
     session.add(doctor)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "doctor_approved", "admin", f"Admin approved Dr. {doctor.full_name}", "doctor", doctor.id, doctor.full_name)
     session.commit()
     return {"message": f"Doctor {doctor.full_name} has been approved", "doctor_id": doctor_id}
 
@@ -740,6 +793,8 @@ def suspend_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get
 
     doctor.is_active = False
     session.add(doctor)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "doctor_suspended", "admin", f"Admin suspended Dr. {doctor.full_name}", "doctor", doctor.id, doctor.full_name)
     session.commit()
     return {"message": f"Doctor {doctor.full_name} has been suspended", "doctor_id": doctor_id}
 
@@ -754,6 +809,8 @@ def activate_doctor(doctor_id: int, admin_id: int, session: Session = Depends(ge
 
     doctor.is_active = True
     session.add(doctor)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "doctor_activated", "admin", f"Admin reactivated Dr. {doctor.full_name}", "doctor", doctor.id, doctor.full_name)
     session.commit()
     return {"message": f"Doctor {doctor.full_name} has been activated", "doctor_id": doctor_id}
 
@@ -794,6 +851,8 @@ def deactivate_patient(patient_id: int, admin_id: int, session: Session = Depend
 
     patient.is_active = False
     session.add(patient)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "patient_deactivated", "admin", f"Admin deactivated patient {patient.full_name or patient.email}", "patient", patient.id, patient.full_name or patient.email)
     session.commit()
     return {"message": f"Patient account deactivated", "patient_id": patient_id}
 
@@ -808,6 +867,8 @@ def activate_patient(patient_id: int, admin_id: int, session: Session = Depends(
 
     patient.is_active = True
     session.add(patient)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "patient_activated", "admin", f"Admin activated patient {patient.full_name or patient.email}", "patient", patient.id, patient.full_name or patient.email)
     session.commit()
     return {"message": f"Patient account activated", "patient_id": patient_id}
 
@@ -827,6 +888,8 @@ def reset_doctor_password(doctor_id: int, admin_id: int, body: ResetPasswordBody
         raise HTTPException(status_code=404, detail="Doctor not found")
     doctor.password_hash = hash_password(body.new_password)
     session.add(doctor)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "doctor_password_reset", "admin", f"Admin reset password for Dr. {doctor.full_name}", "doctor", doctor.id, doctor.full_name)
     session.commit()
     return {"message": f"Password reset for Dr. {doctor.full_name}", "doctor_id": doctor_id}
 
@@ -842,6 +905,8 @@ def reset_patient_password(patient_id: int, admin_id: int, body: ResetPasswordBo
         raise HTTPException(status_code=404, detail="Patient not found")
     patient.password_hash = hash_password(body.new_password)
     session.add(patient)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(session, "admin", admin_id, admin.full_name if admin else f"Admin #{admin_id}", "patient_password_reset", "admin", f"Admin reset password for patient {patient.full_name or patient.email}", "patient", patient.id, patient.full_name or patient.email)
     session.commit()
     return {"message": "Patient password reset successfully", "patient_id": patient_id}
 
@@ -883,6 +948,21 @@ def transfer_patient(patient_id: int, admin_id: int, body: TransferPatientBody, 
     assignment.assigned_at = datetime.utcnow()
     assignment.assigned_by = admin_id
     session.add(assignment)
+    admin = session.get(Admin, admin_id)
+    _create_audit_log(
+        session,
+        "admin",
+        admin_id,
+        admin.full_name if admin else f"Admin #{admin_id}",
+        "patient_transferred",
+        "admin",
+        f"Admin transferred {patient.full_name or patient.email} to Dr. {new_doctor.full_name}",
+        "patient",
+        patient.id,
+        patient.full_name or patient.email,
+        f"Transferred from {old_name} to Dr. {new_doctor.full_name}",
+        {"old_doctor": old_name, "new_doctor": new_doctor.full_name},
+    )
     session.commit()
 
     return {
@@ -1240,4 +1320,160 @@ def audit_messages(
             "doctor_to_patient": doctor_to_patient,
         },
         "messages": items,
+    }
+
+
+@router.get("/audit-logs")
+def get_audit_logs(
+    admin_id: int,
+    days: int = 30,
+    limit: int = 400,
+    session: Session = Depends(get_session),
+):
+    """Unified system activity feed for admin traceability."""
+    _require_admin(admin_id, session)
+
+    cutoff = datetime.utcnow() - timedelta(days=days) if days > 0 else None
+    doctors_by_id = {doctor.id: doctor for doctor in session.exec(select(Doctor)).all() if doctor.id is not None}
+    patients_by_id = {patient.id: patient for patient in session.exec(select(User)).all() if patient.id is not None}
+
+    events = []
+
+    audit_query = select(AuditLog).order_by(col(AuditLog.created_at).desc())
+    if cutoff:
+        audit_query = audit_query.where(AuditLog.created_at >= cutoff)
+    for entry in list(session.exec(audit_query).all()):
+        events.append({
+            "id": f"audit-{entry.id}",
+            "created_at": entry.created_at.isoformat(),
+            "category": entry.category,
+            "action_type": entry.action_type,
+            "actor_type": entry.actor_type,
+            "actor_name": entry.actor_name,
+            "target_name": entry.target_name,
+            "summary": entry.summary,
+            "detail": entry.detail,
+            "badge": "Admin Action",
+        })
+
+    training_query = select(TrainingSession).where(TrainingSession.completed == True).order_by(col(TrainingSession.created_at).desc())
+    if cutoff:
+        training_query = training_query.where(TrainingSession.created_at >= cutoff)
+    for training_session in list(session.exec(training_query).all()):
+        patient = patients_by_id.get(training_session.user_id)
+        patient_name = (patient.full_name or patient.email) if patient else f"Patient #{training_session.user_id}"
+        events.append({
+            "id": f"session-{training_session.id}",
+            "created_at": training_session.created_at.isoformat(),
+            "category": "training",
+            "action_type": "session_submitted",
+            "actor_type": "patient",
+            "actor_name": patient_name,
+            "target_name": _format_task_name(training_session),
+            "summary": f"{patient_name} submitted a training session",
+            "detail": f"{_format_task_name(training_session)} in {training_session.domain.replace('_', ' ').title()} with score {round(training_session.score, 1)}",
+            "badge": "Training",
+        })
+
+    intervention_query = select(DoctorIntervention).order_by(col(DoctorIntervention.created_at).desc())
+    if cutoff:
+        intervention_query = intervention_query.where(DoctorIntervention.created_at >= cutoff)
+    for intervention in list(session.exec(intervention_query).all()):
+        doctor = doctors_by_id.get(intervention.doctor_id)
+        patient = patients_by_id.get(intervention.patient_id)
+        doctor_name = doctor.full_name if doctor else f"Doctor #{intervention.doctor_id}"
+        patient_name = (patient.full_name or patient.email) if patient else f"Patient #{intervention.patient_id}"
+        events.append({
+            "id": f"intervention-{intervention.id}",
+            "created_at": intervention.created_at.isoformat(),
+            "category": "clinical",
+            "action_type": intervention.intervention_type,
+            "actor_type": "doctor",
+            "actor_name": doctor_name,
+            "target_name": patient_name,
+            "summary": f"Dr. {doctor_name} sent intervention for {patient_name}",
+            "detail": intervention.description,
+            "badge": "Clinical",
+        })
+
+    assignment_query = select(PatientAssignment).order_by(col(PatientAssignment.assigned_at).desc())
+    if cutoff:
+        assignment_query = assignment_query.where(PatientAssignment.assigned_at >= cutoff)
+    for assignment in list(session.exec(assignment_query).all()):
+        doctor = doctors_by_id.get(assignment.doctor_id)
+        patient = patients_by_id.get(assignment.patient_id)
+        doctor_name = doctor.full_name if doctor else f"Doctor #{assignment.doctor_id}"
+        patient_name = (patient.full_name or patient.email) if patient else f"Patient #{assignment.patient_id}"
+        actor_name = doctor_name
+        actor_type = "doctor"
+        summary = f"Dr. {doctor_name} assigned patient {patient_name}"
+        if assignment.assigned_by:
+            summary = f"Admin updated assignment for {patient_name}"
+            actor_name = "Hospital Administrator"
+            actor_type = "admin"
+        events.append({
+            "id": f"assignment-{assignment.id}",
+            "created_at": assignment.assigned_at.isoformat(),
+            "category": "system",
+            "action_type": "patient_assignment",
+            "actor_type": actor_type,
+            "actor_name": actor_name,
+            "target_name": patient_name,
+            "summary": summary,
+            "detail": f"Assigned to Dr. {doctor_name}",
+            "badge": "Assignment",
+        })
+
+    message_query = select(Message).order_by(col(Message.created_at).desc())
+    if cutoff:
+        message_query = message_query.where(Message.created_at >= cutoff)
+    for message in list(session.exec(message_query).all()):
+        if message.sender_type == "doctor":
+            sender = doctors_by_id.get(message.sender_id)
+            sender_name = sender.full_name if sender else f"Doctor #{message.sender_id}"
+        else:
+            sender = patients_by_id.get(message.sender_id)
+            sender_name = (sender.full_name or sender.email) if sender else f"Patient #{message.sender_id}"
+
+        if message.recipient_type == "doctor":
+            recipient = doctors_by_id.get(message.recipient_id)
+            recipient_name = recipient.full_name if recipient else f"Doctor #{message.recipient_id}"
+        else:
+            recipient = patients_by_id.get(message.recipient_id)
+            recipient_name = (recipient.full_name or recipient.email) if recipient else f"Patient #{message.recipient_id}"
+
+        direction_label = "Doctor → Patient" if message.sender_type == "doctor" else "Patient → Doctor"
+        events.append({
+            "id": f"message-{message.id}",
+            "created_at": message.created_at.isoformat(),
+            "category": "communication",
+            "action_type": "message_sent",
+            "actor_type": message.sender_type,
+            "actor_name": sender_name,
+            "target_name": recipient_name,
+            "summary": f"{direction_label}: {sender_name} to {recipient_name}",
+            "detail": message.subject or message.message[:140],
+            "badge": "Message",
+        })
+
+    events.sort(key=lambda event: event["created_at"], reverse=True)
+    limited_events = events[:limit]
+    by_category = {
+        "admin": sum(1 for event in limited_events if event["category"] == "admin"),
+        "clinical": sum(1 for event in limited_events if event["category"] == "clinical"),
+        "training": sum(1 for event in limited_events if event["category"] == "training"),
+        "communication": sum(1 for event in limited_events if event["category"] == "communication"),
+        "system": sum(1 for event in limited_events if event["category"] == "system"),
+    }
+
+    return {
+        "summary": {
+            "total": len(limited_events),
+            "by_category": by_category,
+            "admin_actions": by_category["admin"],
+            "clinical_actions": by_category["clinical"],
+            "training_events": by_category["training"],
+            "communication_events": by_category["communication"],
+        },
+        "logs": limited_events,
     }

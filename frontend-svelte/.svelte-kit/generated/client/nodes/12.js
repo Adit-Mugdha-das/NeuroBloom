@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/baseline/tasks/flexibility/+page.svelte";
+export { default as component } from "../../../../src/routes/baseline/tasks/attention/+page.svelte";

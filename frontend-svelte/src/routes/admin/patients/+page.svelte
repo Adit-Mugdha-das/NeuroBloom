@@ -225,6 +225,7 @@
 			<a href="/admin/departments" class="nav-item">Departments</a>
 			<a href="/admin/interventions" class="nav-item">Interventions</a>
 			<a href="/admin/messages" class="nav-item">Message Audit</a>
+			<a href="/admin/audit-logs" class="nav-item">Audit Logs</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>Logout</button>
 	</aside>

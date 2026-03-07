@@ -167,6 +167,9 @@
 			<a href="/admin/messages" class="nav-item">
 				<span class="nav-icon">&#128172;</span> Message Audit
 			</a>
+			<a href="/admin/audit-logs" class="nav-item">
+				<span class="nav-icon">&#128203;</span> Audit Logs
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<span>&#128682;</span> Logout

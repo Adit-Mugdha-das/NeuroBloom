@@ -10,3 +10,4 @@ from app.models.assignment_request import AssignmentRequest
 from app.models.message import Message
 from app.models.progress_report import ProgressReport
 from app.models.risk_alert import RiskAlert
+from app.models.audit_log import AuditLog

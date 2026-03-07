@@ -92,6 +92,9 @@
 			<a href="/admin/messages" class="nav-item">
 				<span class="nav-icon">💬</span> Message Audit
 			</a>
+			<a href="/admin/audit-logs" class="nav-item">
+				<span class="nav-icon">📋</span> Audit Logs
+			</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>
 			<span>🚪</span> Logout
