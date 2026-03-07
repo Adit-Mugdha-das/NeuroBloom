@@ -9,9 +9,18 @@ from app.models.patient_assignment import PatientAssignment
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
+from pydantic import BaseModel
 import traceback
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class ResetPasswordBody(BaseModel):
+    new_password: str
+
+
+class TransferPatientBody(BaseModel):
+    new_doctor_id: int
 
 
 def get_session():
@@ -209,3 +218,83 @@ def activate_patient(patient_id: int, admin_id: int, session: Session = Depends(
     session.add(patient)
     session.commit()
     return {"message": f"Patient account activated", "patient_id": patient_id}
+
+
+# ─────────────────────────────────────────────
+# RESET PASSWORDS
+# ─────────────────────────────────────────────
+
+@router.post("/doctors/{doctor_id}/reset-password")
+def reset_doctor_password(doctor_id: int, admin_id: int, body: ResetPasswordBody, session: Session = Depends(get_session)):
+    """Reset a doctor's password."""
+    _require_admin(admin_id, session)
+    if not body.new_password or len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    doctor = session.get(Doctor, doctor_id)
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    doctor.password_hash = hash_password(body.new_password)
+    session.add(doctor)
+    session.commit()
+    return {"message": f"Password reset for Dr. {doctor.full_name}", "doctor_id": doctor_id}
+
+
+@router.post("/patients/{patient_id}/reset-password")
+def reset_patient_password(patient_id: int, admin_id: int, body: ResetPasswordBody, session: Session = Depends(get_session)):
+    """Reset a patient's password."""
+    _require_admin(admin_id, session)
+    if not body.new_password or len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    patient = session.get(User, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    patient.password_hash = hash_password(body.new_password)
+    session.add(patient)
+    session.commit()
+    return {"message": "Patient password reset successfully", "patient_id": patient_id}
+
+
+# ─────────────────────────────────────────────
+# TRANSFER PATIENT TO ANOTHER DOCTOR
+# ─────────────────────────────────────────────
+
+@router.post("/patients/{patient_id}/transfer")
+def transfer_patient(patient_id: int, admin_id: int, body: TransferPatientBody, session: Session = Depends(get_session)):
+    """Transfer a patient's active assignment to a different doctor."""
+    _require_admin(admin_id, session)
+
+    patient = session.get(User, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    new_doctor = session.get(Doctor, body.new_doctor_id)
+    if not new_doctor or not new_doctor.is_active or not new_doctor.is_verified:
+        raise HTTPException(status_code=400, detail="Target doctor not found or not active/verified")
+
+    # Find current active assignment
+    assignment = session.exec(
+        select(PatientAssignment)
+        .where(PatientAssignment.patient_id == patient_id)
+        .where(PatientAssignment.is_active == True)
+    ).first()
+
+    if not assignment:
+        raise HTTPException(status_code=404, detail="No active assignment found for this patient")
+
+    if assignment.doctor_id == body.new_doctor_id:
+        raise HTTPException(status_code=400, detail="Patient is already assigned to this doctor")
+
+    old_doctor = session.get(Doctor, assignment.doctor_id)
+    old_name = old_doctor.full_name if old_doctor else f"Doctor #{assignment.doctor_id}"
+
+    assignment.doctor_id = body.new_doctor_id
+    assignment.assigned_at = datetime.utcnow()
+    assignment.assigned_by = admin_id
+    session.add(assignment)
+    session.commit()
+
+    return {
+        "message": f"Patient transferred from {old_name} to Dr. {new_doctor.full_name}",
+        "patient_id": patient_id,
+        "new_doctor_id": body.new_doctor_id,
+    }

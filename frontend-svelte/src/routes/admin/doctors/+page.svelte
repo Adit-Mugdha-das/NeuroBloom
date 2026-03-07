@@ -65,6 +65,34 @@
 
 	function clearMessages() { error = ''; successMsg = ''; }
 
+	// ── Reset password modal ──
+	let resetModal = { open: false, id: null, name: '' };
+	let resetNewPassword = '';
+	let resetLoading = false;
+
+	function openResetModal(id, name) {
+		resetModal = { open: true, id, name };
+		resetNewPassword = '';
+	}
+	function closeResetModal() { resetModal = { open: false, id: null, name: '' }; }
+
+	async function submitResetPassword() {
+		if (!resetNewPassword || resetNewPassword.length < 6) {
+			error = 'Password must be at least 6 characters.';
+			return;
+		}
+		resetLoading = true;
+		try {
+			await api.post(`/api/admin/doctors/${resetModal.id}/reset-password?admin_id=${admin.id}`, { new_password: resetNewPassword });
+			successMsg = `Password reset for Dr. ${resetModal.name}.`;
+			closeResetModal();
+		} catch (e) {
+			error = e.response?.data?.detail || 'Reset failed';
+		} finally {
+			resetLoading = false;
+		}
+	}
+
 	$: filtered = doctors.filter(d => {
 		if (filter === 'pending')   return !d.is_verified && d.is_active;
 		if (filter === 'active')    return d.is_verified && d.is_active;
@@ -189,6 +217,28 @@
 	</main>
 </div>
 
+<!-- Reset Password Modal -->
+{#if resetModal.open}
+	<div class="modal-overlay" on:click={closeResetModal} role="presentation">
+		<div class="modal" on:click|stopPropagation role="dialog" aria-modal="true">
+			<h2 class="modal-title">🔑 Reset Password</h2>
+			<p class="modal-sub">Set a new password for <strong>Dr. {resetModal.name}</strong></p>
+			<input
+				class="modal-input"
+				type="password"
+				placeholder="New password (min 6 chars)"
+				bind:value={resetNewPassword}
+			/>
+			<div class="modal-actions">
+				<button class="btn-modal cancel" on:click={closeResetModal} disabled={resetLoading}>Cancel</button>
+				<button class="btn-modal confirm" on:click={submitResetPassword} disabled={resetLoading}>
+					{resetLoading ? 'Saving…' : 'Reset Password'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	/* ── Layout (same sidebar shell as dashboard) ── */
 	.admin-layout { display: flex; min-height: 100vh; background: #f0f4f8; font-family: 'Inter', sans-serif; }
@@ -251,6 +301,23 @@
 	.btn-sm.green:hover { background: #bbf7d0; }
 	.btn-sm.red { background: #fee2e2; color: #b91c1c; }
 	.btn-sm.red:hover { background: #fecaca; }
+	.btn-sm.blue { background: #dbeafe; color: #1d4ed8; }
+	.btn-sm.blue:hover { background: #bfdbfe; }
+
+	/* ── Modal ── */
+	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 100; }
+	.modal { background: white; border-radius: 14px; padding: 2rem; width: 380px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+	.modal-title { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 0 0 .4rem; }
+	.modal-sub { font-size: .9rem; color: #64748b; margin: 0 0 1.2rem; }
+	.modal-input { width: 100%; padding: .6rem .9rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: .9rem; box-sizing: border-box; margin-bottom: 1.2rem; outline: none; }
+	.modal-input:focus { border-color: #94a3b8; }
+	.modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
+	.btn-modal { padding: .55rem 1.2rem; border: none; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+	.btn-modal:disabled { opacity: .6; cursor: not-allowed; }
+	.btn-modal.cancel { background: #f1f5f9; color: #475569; }
+	.btn-modal.cancel:hover:not(:disabled) { background: #e2e8f0; }
+	.btn-modal.confirm { background: #1e293b; color: white; }
+	.btn-modal.confirm:hover:not(:disabled) { background: #334155; }
 
 	.loading-msg { padding: 3rem; text-align: center; color: #64748b; }
 	.empty-state { padding: 4rem; text-align: center; color: #94a3b8; }
