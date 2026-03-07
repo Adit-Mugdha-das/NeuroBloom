@@ -12,6 +12,7 @@ from app.models.training_session import TrainingSession
 from app.models.session_context import SessionContext
 from app.models.risk_alert import RiskAlert
 from app.models.doctor_intervention import DoctorIntervention
+from app.models.progress_report import ProgressReport
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
@@ -887,4 +888,160 @@ def transfer_patient(patient_id: int, admin_id: int, body: TransferPatientBody, 
         "message": f"Patient transferred from {old_name} to Dr. {new_doctor.full_name}",
         "patient_id": patient_id,
         "new_doctor_id": body.new_doctor_id,
+    }
+
+
+# ─────────────────────────────────────────────
+# PATIENT OVERSIGHT (READ-ONLY PROFILE)
+# ─────────────────────────────────────────────
+
+@router.get("/patients/{patient_id}/overview")
+def get_patient_overview_admin(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
+    """
+    Read-only patient overview for admin oversight.
+    Returns profile, assigned doctor, training summary, risk level,
+    recent sessions, and progress reports. No medical data is modified.
+    """
+    _require_admin(admin_id, session)
+
+    patient = session.get(User, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Active doctor assignment
+    assignment = session.exec(
+        select(PatientAssignment)
+        .where(PatientAssignment.patient_id == patient_id)
+        .where(PatientAssignment.is_active == True)
+    ).first()
+
+    doctor = session.get(Doctor, assignment.doctor_id) if assignment else None
+
+    # Training sessions (sorted newest-first)
+    all_sessions = list(session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == patient_id)
+        .order_by(col(TrainingSession.created_at).desc())
+    ).all())
+
+    total_sessions = len(all_sessions)
+    last_activity = all_sessions[0].created_at if all_sessions else None
+    days_since: int | None = (datetime.utcnow() - last_activity).days if last_activity else None
+
+    # Risk level: re-use persisted RiskAlert if present, otherwise compute inline
+    risk_alert = session.exec(
+        select(RiskAlert).where(RiskAlert.patient_id == patient_id)
+    ).first()
+
+    if risk_alert:
+        risk_level = risk_alert.risk_level
+        risk_score = risk_alert.risk_score
+    else:
+        recent_cutoff = datetime.utcnow() - timedelta(days=14)
+        recent = [s for s in all_sessions if s.completed and s.created_at >= recent_cutoff]
+        scores = [s.score for s in recent]
+        avg_score = round(sum(scores) / len(scores), 1) if scores else None
+
+        baseline = session.exec(
+            select(BaselineAssessment).where(BaselineAssessment.user_id == patient_id)
+        ).first()
+
+        r = 0
+        if baseline and baseline.overall_score < 45:
+            r += 2
+        if baseline and avg_score is not None:
+            delta = avg_score - baseline.overall_score
+            if delta <= -12:
+                r += 2
+            elif delta <= -6:
+                r += 1
+        if avg_score is not None and avg_score < 50:
+            r += 1
+
+        risk_score = r
+        risk_level = "high" if r >= 4 else "moderate" if r >= 2 else "stable"
+
+    # Domain-level breakdown from all sessions
+    domain_counts: dict[str, int] = {}
+    domain_scores: dict[str, list[float]] = {}
+    for s in all_sessions:
+        domain_counts[s.domain] = domain_counts.get(s.domain, 0) + 1
+        domain_scores.setdefault(s.domain, []).append(s.score)
+    domain_summary = [
+        {
+            "domain": domain,
+            "sessions": domain_counts[domain],
+            "avg_score": round(sum(domain_scores[domain]) / len(domain_scores[domain]), 1),
+        }
+        for domain in domain_counts
+    ]
+
+    # Last 10 training sessions
+    recent_sessions_data = [
+        {
+            "id": s.id,
+            "domain": s.domain,
+            "task": s.task_code or s.task_type,
+            "score": round(s.score, 1),
+            "accuracy": round(s.accuracy, 1),
+            "duration_s": s.duration,
+            "difficulty": s.difficulty_level,
+            "completed": s.completed,
+            "date": s.created_at.isoformat(),
+        }
+        for s in all_sessions[:10]
+    ]
+
+    # Up to 5 most recent progress reports
+    reports = list(session.exec(
+        select(ProgressReport)
+        .where(ProgressReport.patient_id == patient_id)
+        .order_by(col(ProgressReport.generated_at).desc())
+    ).all())[:5]
+
+    reports_data = [
+        {
+            "id": r.id,
+            "period_type": r.period_type,
+            "period_start": r.period_start.isoformat() if r.period_start else None,
+            "period_end": r.period_end.isoformat() if r.period_end else None,
+            "generated_at": r.generated_at.isoformat() if r.generated_at else None,
+            "doctor_commentary": r.doctor_commentary,
+        }
+        for r in reports
+    ]
+
+    return {
+        "profile": {
+            "id": patient.id,
+            "full_name": patient.full_name or "(no name)",
+            "email": patient.email,
+            "date_of_birth": patient.date_of_birth,
+            "diagnosis": patient.diagnosis,
+            "is_active": patient.is_active,
+            "consent_to_share": patient.consent_to_share,
+        },
+        "doctor": {
+            "id": doctor.id,
+            "full_name": doctor.full_name,
+            "specialization": doctor.specialization,
+            "institution": doctor.institution,
+        } if doctor else None,
+        "assignment": {
+            "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+            "treatment_goal": assignment.treatment_goal,
+            "diagnosis": assignment.diagnosis,
+        } if assignment else None,
+        "training_summary": {
+            "total_sessions": total_sessions,
+            "last_activity": last_activity.isoformat() if last_activity else None,
+            "days_since_last_activity": days_since,
+            "domain_summary": domain_summary,
+        },
+        "risk": {
+            "level": risk_level,
+            "score": risk_score,
+        },
+        "recent_sessions": recent_sessions_data,
+        "reports": reports_data,
     }
