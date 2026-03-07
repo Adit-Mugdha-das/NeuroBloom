@@ -163,7 +163,15 @@ export const training = {
 		const response = await api.get(`/api/training/weekly-summary/${userId}`);
 		return response.data;
 	},
-	
+
+	// Get MS digital biomarkers (Phase 1 analytics)
+	getBiomarkers: async (userId, days = 30) => {
+		const response = await api.get(`/api/training/advanced-analytics/${userId}/biomarkers`, {
+			params: { days }
+		});
+		return response.data;
+	},
+
 	// DEV TOOLS - Quick testing endpoints
 	dev: {
 		completeSingleSession: async (userId) => {

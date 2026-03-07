@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { baseline, training } from '$lib/api';
 	import BadgesShowcase from '$lib/components/BadgesShowcase.svelte';
+	import BiomarkersPanel from '$lib/components/BiomarkersPanel.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PerformanceTrends from '$lib/components/PerformanceTrends.svelte';
@@ -20,6 +21,7 @@
 	let trendsData = null;
 	let weeklySummary = null;
 	let baselineData = null;
+	let biomarkerData = null;
 	let error = null;
 	
 	user.subscribe(value => {
@@ -67,6 +69,13 @@
 			
 			// Load weekly summary
 			weeklySummary = await training.getWeeklySummary(currentUser.id);
+
+			// Load MS digital biomarkers (Phase 1)
+			try {
+				biomarkerData = await training.getBiomarkers(currentUser.id, 30);
+			} catch (err) {
+				console.log('Biomarkers not available yet:', err);
+			}
 		} catch (err) {
 			console.error('Error loading progress data:', err);
 			error = 'No training data found. Start training to see your progress.';
@@ -416,20 +425,23 @@
 			{#if weeklySummary}
 				<WeeklySummary summaryData={weeklySummary} />
 			{/if}
-		
+
+		<!-- Brain Health Indicators (MS Biomarkers - patient friendly view) -->
+		<BiomarkersPanel {biomarkerData} doctorView={false} days={30} />
+
 		<!-- Performance Trends -->
 		{#if trendsData}
 			<PerformanceTrends trendsData={trendsData} />
 		{/if}
-	
-	<!-- Badges Showcase -->
-	{#if badgeData}
-		<BadgesShowcase 
-			badges={badgeData.all_badges}
-			totalBadges={badgeData.total_badges}
-			earnedCount={badgeData.earned_count}
-		/>
-	{/if}
+
+		<!-- Badges Showcase -->
+		{#if badgeData}
+			<BadgesShowcase 
+				badges={badgeData.all_badges}
+				totalBadges={badgeData.total_badges}
+				earnedCount={badgeData.earned_count}
+			/>
+		{/if}
 		</div>
 	{/if}
 </div>

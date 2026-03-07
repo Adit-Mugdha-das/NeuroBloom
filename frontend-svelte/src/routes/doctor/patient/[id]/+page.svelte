@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
+	import BiomarkersPanel from '$lib/components/BiomarkersPanel.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 	
@@ -10,6 +11,7 @@
 	let sessions = [];
 	let interventions = [];
 	let progressData = null;
+	let biomarkerData = null;
 	let loading = true;
 	let error = '';
 	let userData;
@@ -88,6 +90,17 @@
 				`/api/doctor/${userData.id}/patient/${patientId}/progress-monitoring`
 			);
 			progressData = progressResponse.data;
+
+			// Load MS digital biomarkers for this patient
+			try {
+				const biomarkersResponse = await api.get(
+					`/api/training/advanced-analytics/${patientId}/biomarkers`,
+					{ params: { days: 30 } }
+				);
+				biomarkerData = biomarkersResponse.data;
+			} catch (err) {
+				console.log('Biomarkers not yet available for patient:', err);
+			}
 			
 		} catch (err) {
 			error = 'Failed to load patient data';
@@ -399,7 +412,12 @@
 		<button class="btn-customize-focus" on:click={openFocusAreasModal}>
 			🎯 Customize Focus Areas
 		</button>
-		
+
+		<!-- MS Digital Biomarkers - full clinical view for doctor -->
+		<div class="section">
+			<BiomarkersPanel {biomarkerData} doctorView={true} days={30} />
+		</div>
+
 		{#if progressData}
 			<div class="section progress-monitoring">
 				<h2>📊 Progress Monitoring</h2>
