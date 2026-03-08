@@ -65,6 +65,13 @@ export const baseline = {
 };
 
 export const training = {
+	linkContextToSession: async (sessionId, contextId) => {
+		const response = await api.patch(`/api/training/training-session/${sessionId}/link-context`, null, {
+			params: { context_id: contextId }
+		});
+		return response.data;
+	},
+
 	// Generate personalized training plan from baseline
 	generatePlan: async (userId) => {
 		const response = await api.post(`/api/training/training-plan/generate/${userId}`);
@@ -101,7 +108,22 @@ export const training = {
 				duration: sessionData.session_duration
 			}
 		});
-		return response.data;
+
+		const result = response.data;
+		const queryContextId = typeof window !== 'undefined'
+			? Number.parseInt(new URLSearchParams(window.location.search).get('contextId') || '', 10)
+			: null;
+		const contextId = sessionData.context_id ?? queryContextId;
+
+		if (result?.id && Number.isInteger(contextId) && contextId > 0) {
+			try {
+				await training.linkContextToSession(result.id, contextId);
+			} catch (error) {
+				console.error('Failed to link questionnaire context to training session:', error);
+			}
+		}
+
+		return result;
 	},
 	
 	// Get training session history

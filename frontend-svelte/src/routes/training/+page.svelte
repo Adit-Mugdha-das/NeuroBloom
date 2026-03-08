@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
+	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -13,6 +14,8 @@
 	let metrics = null;
 	let error = null;
 	let newlyEarnedBadges = [];
+	let showPreTaskQuestionnaire = false;
+	let pendingTaskRoute = null;
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -155,6 +158,34 @@
 		if (difficulty <= 8) return 'Hard';
 		return 'Expert';
 	}
+
+	function launchTask(route, contextId = null) {
+		if (!route) return;
+
+		const separator = route.includes('?') ? '&' : '?';
+		const finalRoute = contextId ? `${route}${separator}contextId=${encodeURIComponent(contextId)}` : route;
+		goto(finalRoute);
+	}
+
+	function startTask(task) {
+		if (task.completed) return;
+
+		pendingTaskRoute = getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id);
+		showPreTaskQuestionnaire = true;
+	}
+
+	function handleQuestionnaireComplete(event) {
+		const contextId = event.detail?.contextId;
+		showPreTaskQuestionnaire = false;
+		launchTask(pendingTaskRoute, contextId);
+		pendingTaskRoute = null;
+	}
+
+	function handleQuestionnaireSkip() {
+		showPreTaskQuestionnaire = false;
+		launchTask(pendingTaskRoute);
+		pendingTaskRoute = null;
+	}
 	
 	function backToDashboard() {
 		goto('/dashboard');
@@ -162,6 +193,14 @@
 </script>
 
 <div class="container">
+	{#if showPreTaskQuestionnaire}
+		<PreTaskQuestionnaire
+			showQuestionnaire={showPreTaskQuestionnaire}
+			on:complete={handleQuestionnaireComplete}
+			on:skip={handleQuestionnaireSkip}
+		/>
+	{/if}
+
 	<!-- Badge Notifications -->
 	{#if newlyEarnedBadges.length > 0}
 		<BadgeNotification badges={newlyEarnedBadges} />
@@ -280,7 +319,7 @@
 							<button 
 								class="btn-start-task"
 								disabled={task.completed}
-								on:click={() => goto(getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id))}
+								on:click={() => startTask(task)}
 							>
 								{task.completed ? '✓ Completed' : 'Start Training'}
 							</button>
