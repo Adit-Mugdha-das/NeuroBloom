@@ -2065,6 +2065,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
         adherence_rates = []
         improvements = []
         all_scores = []
+        all_accuracies = []
         total_sessions = 0
         active_count = 0
         baseline_completed_count = 0
@@ -2137,8 +2138,11 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
             # Calculate average scores
             if all_patient_sessions:
                 scores = [s.score for s in all_patient_sessions if s.score is not None]
+                accuracies = [s.accuracy for s in all_patient_sessions if s.accuracy is not None]
                 all_scores.extend(scores)
+                all_accuracies.extend(accuracies)
                 avg_score = statistics.mean(scores) if scores else 0
+                avg_accuracy = statistics.mean(accuracies) if accuracies else 0
                 
                 # Calculate improvement (compare first 5 vs last 5 sessions)
                 if len(scores) >= 10:
@@ -2150,6 +2154,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
                     improvement = 0
             else:
                 avg_score = 0
+                avg_accuracy = 0
                 improvement = 0
             
             # Get latest session
@@ -2211,6 +2216,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
                 "adherence_rate": round(adherence_rate, 1),
                 "adherence_status": adherence_status,
                 "avg_score": round(avg_score, 1) if avg_score else 0,
+                "avg_accuracy": round(avg_accuracy, 1) if avg_accuracy else 0,
                 "improvement": round(improvement, 1),
                 "last_activity": last_activity.isoformat() if last_activity else None,
                 "risk_level": risk_level
@@ -2221,6 +2227,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
         avg_improvement = statistics.mean(improvements) if improvements else 0
         patients_improving = len([i for i in improvements if i > 0])
         avg_session_score = statistics.mean(all_scores) if all_scores else 0
+        avg_session_accuracy = statistics.mean(all_accuracies) if all_accuracies else 0
         
         # Adherence breakdown
         adherence_breakdown = {
@@ -2249,6 +2256,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
                 "patients_improving": patients_improving,
                 "patients_declining": len([i for i in improvements if i < 0]),
                 "avg_session_score": round(avg_session_score, 1),
+                "avg_session_accuracy": round(avg_session_accuracy, 1),
                 "total_sessions_completed": total_sessions
             },
             "high_risk_patients": high_risk_patients[:10],  # Top 10 high-risk

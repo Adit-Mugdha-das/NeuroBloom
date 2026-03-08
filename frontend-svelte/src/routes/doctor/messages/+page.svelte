@@ -1,9 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
-	
+
 	let userData;
 	let messages = [];
 	let selectedPatient = null;
@@ -13,61 +14,61 @@
 	let loading = true;
 	let unreadCount = 0;
 	let sendingMessage = false;
-	
-	const unsubscribe = user.subscribe(value => {
+
+	const unsubscribe = user.subscribe((value) => {
 		userData = value;
 	});
-	
+
 	onMount(() => {
 		if (!userData || userData.role !== 'doctor') {
 			goto('/login');
 			return;
 		}
-		
+
 		loadMessages();
-		
+
 		return unsubscribe;
 	});
-	
+
 	async function loadMessages() {
+		loading = true;
 		try {
 			const response = await api.get(`/api/doctor/${userData.id}/messages`);
-			messages = response.data.messages;
-			unreadCount = response.data.unread_count;
-			loading = false;
-		} catch (err) {
-			console.error('Failed to load messages:', err);
+			messages = response.data.messages || [];
+			unreadCount = response.data.unread_count || 0;
+		} catch (requestError) {
+			console.error('Failed to load messages:', requestError);
+		} finally {
 			loading = false;
 		}
 	}
-	
+
 	async function loadConversation(patientId) {
 		try {
 			const response = await api.get(`/api/doctor/${userData.id}/messages/conversation/${patientId}`);
-			conversation = response.data.messages;
+			conversation = response.data.messages || [];
 			selectedPatient = {
 				id: patientId,
 				name: response.data.patient_name
 			};
-			
-			// Mark unread messages as read
-			const unreadMessages = conversation.filter(m => 
-				!m.is_read && m.recipient_id === userData.id
+
+			const unreadMessages = conversation.filter(
+				(message) => !message.is_read && message.recipient_id === userData.id
 			);
-			
-			for (const msg of unreadMessages) {
-				await api.post(`/api/doctor/${userData.id}/messages/${msg.id}/mark-read`);
+
+			for (const message of unreadMessages) {
+				await api.post(`/api/doctor/${userData.id}/messages/${message.id}/mark-read`);
 			}
-			
-			await loadMessages(); // Refresh to update unread count
-		} catch (err) {
-			console.error('Failed to load conversation:', err);
+
+			await loadMessages();
+		} catch (requestError) {
+			console.error('Failed to load conversation:', requestError);
 		}
 	}
-	
+
 	async function sendMessage() {
 		if (!newMessage.trim() || !selectedPatient) return;
-		
+
 		sendingMessage = true;
 		try {
 			await api.post(`/api/doctor/${userData.id}/messages/send`, {
@@ -76,412 +77,383 @@
 				subject: newSubject || null,
 				message: newMessage
 			});
-			
+
 			newMessage = '';
 			newSubject = '';
 			await loadConversation(selectedPatient.id);
-		} catch (err) {
-			alert('Failed to send message: ' + (err.response?.data?.detail || 'Unknown error'));
+		} catch (requestError) {
+			alert(requestError.response?.data?.detail || 'Failed to send message');
 		} finally {
 			sendingMessage = false;
 		}
 	}
-	
+
 	function formatDate(dateStr) {
 		if (!dateStr) return '';
+
 		const date = new Date(dateStr);
 		const now = new Date();
 		const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-		
+
 		if (diffDays === 0) {
 			return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-		} else if (diffDays === 1) {
-			return 'Yesterday';
-		} else if (diffDays < 7) {
-			return date.toLocaleDateString([], { weekday: 'short' });
-		} else {
-			return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 		}
+
+		if (diffDays === 1) {
+			return 'Yesterday';
+		}
+
+		if (diffDays < 7) {
+			return date.toLocaleDateString([], { weekday: 'short' });
+		}
+
+		return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 	}
-	
+
 	function getUniquePatients() {
-		const patientsMap = new Map();
-		
-		messages.forEach(msg => {
-			let patientId, patientName, lastMessage, timestamp, hasUnread;
-			
-			if (msg.sender_type === 'patient') {
-				patientId = msg.sender_id;
-				patientName = msg.sender_name;
+		const patientMap = new Map();
+
+		messages.forEach((message) => {
+			let patientId;
+			let patientName;
+
+			if (message.sender_type === 'patient') {
+				patientId = message.sender_id;
+				patientName = message.sender_name;
 			} else {
-				patientId = msg.recipient_id;
-				patientName = msg.recipient_name;
+				patientId = message.recipient_id;
+				patientName = message.recipient_name;
 			}
-			
-			if (!patientsMap.has(patientId)) {
-				hasUnread = msg.sender_type === 'patient' && !msg.is_read;
-				patientsMap.set(patientId, {
+
+			if (!patientMap.has(patientId)) {
+				patientMap.set(patientId, {
 					id: patientId,
 					name: patientName,
-					lastMessage: msg.message,
-					timestamp: msg.created_at,
-					hasUnread: hasUnread
+					lastMessage: message.message,
+					timestamp: message.created_at,
+					hasUnread: message.sender_type === 'patient' && !message.is_read
 				});
 			}
 		});
-		
-		return Array.from(patientsMap.values());
+
+		return Array.from(patientMap.values());
 	}
 </script>
 
-<div class="messaging-container">
-	<div class="sidebar">
-		<div class="sidebar-header">
-			<button on:click={() => goto('/doctor/dashboard')} class="back-btn">
-				← Dashboard
-			</button>
-			<h2>Messages</h2>
-			{#if unreadCount > 0}
-				<span class="unread-badge">{unreadCount}</span>
+<DoctorWorkspaceShell
+	title="Messages"
+	subtitle="Patient conversations in a calmer clinical workspace, with the conversation list and thread separated clearly."
+	maxWidth="1360px"
+>
+	<svelte:fragment slot="actions">
+		<div class="message-pill">Unread {unreadCount}</div>
+	</svelte:fragment>
+
+	<section class="messaging-shell">
+		<aside class="conversation-list">
+			<div class="panel-head">
+				<p class="panel-kicker">Inbox</p>
+				<h2>Patient Conversations</h2>
+			</div>
+
+			{#if loading}
+				<p class="state-copy">Loading messages...</p>
+			{:else if getUniquePatients().length === 0}
+				<p class="state-copy">No patient conversations yet.</p>
+			{:else}
+				<div class="patient-list">
+					{#each getUniquePatients() as patient}
+						<button
+							class:selected={selectedPatient?.id === patient.id}
+							class:unread={patient.hasUnread}
+							class="patient-item"
+							on:click={() => loadConversation(patient.id)}
+						>
+							<div>
+								<p class="patient-title">{patient.name}</p>
+								<p class="patient-preview">{patient.lastMessage.slice(0, 72)}{patient.lastMessage.length > 72 ? '...' : ''}</p>
+							</div>
+							<div class="patient-meta">
+								<span>{formatDate(patient.timestamp)}</span>
+								{#if patient.hasUnread}
+									<span class="unread-dot"></span>
+								{/if}
+							</div>
+						</button>
+					{/each}
+				</div>
 			{/if}
-		</div>
-		
-		{#if loading}
-			<div class="loading-sidebar">Loading messages...</div>
-		{:else if getUniquePatients().length === 0}
-			<div class="no-messages">No messages yet</div>
-		{:else}
-			<div class="patient-list">
-				{#each getUniquePatients() as patient}
-					<button
-						class="patient-item {selectedPatient?.id === patient.id ? 'active' : ''} {patient.hasUnread ? 'unread' : ''}"
-						on:click={() => loadConversation(patient.id)}
-					>
-						<div class="patient-info">
-							<div class="patient-name">{patient.name}</div>
-							<div class="last-message">{patient.lastMessage.substring(0, 50)}{patient.lastMessage.length > 50 ? '...' : ''}</div>
-						</div>
-						<div class="message-meta">
-							<span class="timestamp">{formatDate(patient.timestamp)}</span>
-							{#if patient.hasUnread}
-								<span class="unread-dot"></span>
-							{/if}
-						</div>
-					</button>
-				{/each}
-			</div>
-		{/if}
-	</div>
-	
-	<div class="conversation-area">
-		{#if !selectedPatient}
-			<div class="no-selection">
-				<h3>Select a patient to view conversation</h3>
-				<p>Choose a patient from the list to start messaging</p>
-			</div>
-		{:else}
-			<div class="conversation-header">
-				<h3>{selectedPatient.name}</h3>
-			</div>
-			
-			<div class="messages-list">
-				{#each conversation as msg}
-					<div class="message-bubble {msg.sender_type === 'doctor' ? 'sent' : 'received'}">
-						{#if msg.subject}
-							<div class="message-subject">{msg.subject}</div>
-						{/if}
-						<div class="message-content">{msg.message}</div>
-						<div class="message-timestamp">
-							{new Date(msg.created_at).toLocaleString()}
-							{#if msg.sender_type === 'doctor' && msg.is_read}
-								<span class="read-indicator">✓✓</span>
-							{/if}
-						</div>
+		</aside>
+
+		<section class="conversation-panel">
+			{#if !selectedPatient}
+				<div class="empty-thread">
+					<h2>Select a patient</h2>
+					<p>Open a conversation from the left panel to review history and send a message.</p>
+				</div>
+			{:else}
+				<div class="thread-head">
+					<div>
+						<p class="panel-kicker">Active Thread</p>
+						<h2>{selectedPatient.name}</h2>
 					</div>
-				{/each}
-			</div>
-			
-			<div class="message-composer">
-				<input
-					type="text"
-					placeholder="Subject (optional)"
-					bind:value={newSubject}
-					class="subject-input"
-				/>
-				<div class="compose-row">
+					<button class="outline-btn" on:click={() => goto(`/doctor/patient/${selectedPatient.id}`)}>Open Patient</button>
+				</div>
+
+				<div class="message-stream">
+					{#each conversation as message}
+						<article class:sent={message.sender_type === 'doctor'} class="message-bubble">
+							{#if message.subject}
+								<p class="message-subject">{message.subject}</p>
+							{/if}
+							<p class="message-content">{message.message}</p>
+							<p class="message-time">
+								{new Date(message.created_at).toLocaleString()}
+								{#if message.sender_type === 'doctor' && message.is_read}
+									<span class="read-state">Read</span>
+								{/if}
+							</p>
+						</article>
+					{/each}
+				</div>
+
+				<div class="composer">
+					<input class="subject-input" bind:value={newSubject} placeholder="Subject (optional)" />
 					<textarea
-						placeholder="Type your message..."
 						bind:value={newMessage}
-						rows="3"
-						on:keydown={(e) => {
-							if (e.key === 'Enter' && !e.shiftKey) {
-								e.preventDefault();
+						rows="4"
+						placeholder="Write a message to the patient"
+						on:keydown={(event) => {
+							if (event.key === 'Enter' && !event.shiftKey) {
+								event.preventDefault();
 								sendMessage();
 							}
 						}}
 					></textarea>
-					<button
-						class="send-btn"
-						on:click={sendMessage}
-						disabled={!newMessage.trim() || sendingMessage}
-					>
-						{sendingMessage ? 'Sending...' : 'Send'}
-					</button>
+					<div class="composer-actions">
+						<button class="primary-btn" disabled={!newMessage.trim() || sendingMessage} on:click={sendMessage}>
+							{sendingMessage ? 'Sending...' : 'Send Message'}
+						</button>
+					</div>
 				</div>
-			</div>
-		{/if}
-	</div>
-</div>
+			{/if}
+		</section>
+	</section>
+</DoctorWorkspaceShell>
 
 <style>
-	.messaging-container {
+	.message-pill,
+	.conversation-list,
+	.conversation-panel {
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+	}
+
+	.message-pill {
+		border-radius: 999px;
+		padding: 0.8rem 1rem;
+		font-weight: 700;
+		color: #4f46e5;
+	}
+
+	.messaging-shell {
 		display: grid;
-		grid-template-columns: 350px 1fr;
-		height: 100vh;
-		background: #f5f5f5;
-	}
-	
-	.sidebar {
-		background: white;
-		border-right: 1px solid #e0e0e0;
-		display: flex;
-		flex-direction: column;
-	}
-	
-	.sidebar-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid #e0e0e0;
-		display: flex;
-		align-items: center;
+		grid-template-columns: 330px minmax(0, 1fr);
 		gap: 1rem;
+		min-height: 720px;
 	}
-	
-	.sidebar-header h2 {
-		margin: 0;
-		flex: 1;
-		font-size: 1.5rem;
-	}
-	
-	.back-btn {
-		background: #f0f0f0;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
-		cursor: pointer;
-		font-size: 0.9rem;
-	}
-	
-	.back-btn:hover {
-		background: #e0e0e0;
-	}
-	
-	.unread-badge {
-		background: #ef4444;
-		color: white;
-		padding: 0.25rem 0.5rem;
-		border-radius: 12px;
-		font-size: 0.85rem;
-		font-weight: 600;
-	}
-	
-	.patient-list {
-		flex: 1;
-		overflow-y: auto;
-	}
-	
-	.patient-item {
-		width: 100%;
+
+	.conversation-list,
+	.conversation-panel {
+		border-radius: 24px;
 		padding: 1rem;
-		border: none;
-		border-bottom: 1px solid #f0f0f0;
-		background: white;
-		cursor: pointer;
-		text-align: left;
+	}
+
+	.panel-head,
+	.thread-head {
 		display: flex;
 		justify-content: space-between;
+		gap: 1rem;
 		align-items: flex-start;
-		transition: background 0.2s;
+		margin-bottom: 1rem;
 	}
-	
-	.patient-item:hover {
-		background: #f9fafb;
+
+	.panel-kicker {
+		margin: 0;
+		font-size: 0.78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #6b7280;
 	}
-	
-	.patient-item.active {
-		background: #eff6ff;
-		border-left: 3px solid #3b82f6;
+
+	h2,
+	.patient-title,
+	.message-subject {
+		margin: 0.2rem 0 0;
+		color: #111827;
 	}
-	
+
+	.state-copy,
+	.patient-preview,
+	.message-time,
+	.empty-thread p {
+		color: #6b7280;
+	}
+
+	.patient-list,
+	.message-stream {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.patient-item {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 0.75rem;
+		text-align: left;
+		border: 1px solid #e5e7eb;
+		background: #ffffff;
+		border-radius: 18px;
+		padding: 0.95rem;
+		cursor: pointer;
+	}
+
+	.patient-item.selected {
+		border-color: #4f46e5;
+		background: #eef2ff;
+	}
+
 	.patient-item.unread {
-		background: #fef3c7;
+		background: #fffbeb;
 	}
-	
-	.patient-info {
-		flex: 1;
+
+	.patient-title {
+		font-weight: 800;
 	}
-	
-	.patient-name {
-		font-weight: 600;
-		margin-bottom: 0.25rem;
-		color: #333;
+
+	.patient-preview {
+		margin: 0.3rem 0 0;
+		line-height: 1.45;
 	}
-	
-	.last-message {
-		font-size: 0.85rem;
-		color: #666;
-	}
-	
-	.message-meta {
+
+	.patient-meta {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		gap: 0.25rem;
+		gap: 0.35rem;
+		font-size: 0.85rem;
 	}
-	
-	.timestamp {
-		font-size: 0.75rem;
-		color: #999;
-	}
-	
+
 	.unread-dot {
-		width: 10px;
-		height: 10px;
-		background: #ef4444;
+		width: 0.7rem;
+		height: 0.7rem;
 		border-radius: 50%;
+		background: #f59e0b;
 	}
-	
-	.loading-sidebar, .no-messages {
-		padding: 2rem;
-		text-align: center;
-		color: #999;
-	}
-	
-	.conversation-area {
-		display: flex;
-		flex-direction: column;
-		background: #fafafa;
-	}
-	
-	.no-selection {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		color: #999;
-	}
-	
-	.conversation-header {
-		background: white;
-		padding: 1.5rem;
-		border-bottom: 1px solid #e0e0e0;
-	}
-	
-	.conversation-header h3 {
-		margin: 0;
-		font-size: 1.25rem;
-	}
-	
-	.messages-list {
-		flex: 1;
-		overflow-y: auto;
-		padding: 1.5rem;
-		display: flex;
-		flex-direction: column;
+
+	.conversation-panel {
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr) auto;
 		gap: 1rem;
 	}
-	
+
+	.empty-thread {
+		align-self: center;
+		justify-self: center;
+		text-align: center;
+	}
+
+	.message-stream {
+		align-content: start;
+		overflow: auto;
+		padding-right: 0.2rem;
+	}
+
 	.message-bubble {
-		max-width: 70%;
-		padding: 1rem;
-		border-radius: 12px;
-		background: white;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		max-width: 78%;
+		padding: 0.95rem 1rem;
+		border-radius: 20px;
+		background: #f9fafb;
+		border: 1px solid #e5e7eb;
 	}
-	
+
 	.message-bubble.sent {
-		align-self: flex-end;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		margin-left: auto;
+		background: #eef2ff;
+		border-color: #c7d2fe;
 	}
-	
-	.message-bubble.received {
-		align-self: flex-start;
-		background: white;
-	}
-	
-	.message-subject {
-		font-weight: 600;
-		margin-bottom: 0.5rem;
-		padding-bottom: 0.5rem;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-	}
-	
+
 	.message-content {
-		margin-bottom: 0.5rem;
-		white-space: pre-wrap;
-		word-wrap: break-word;
+		margin: 0.35rem 0 0;
+		color: #1f2937;
+		line-height: 1.6;
 	}
-	
-	.message-timestamp {
-		font-size: 0.75rem;
-		opacity: 0.7;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
+
+	.message-time {
+		margin: 0.55rem 0 0;
+		font-size: 0.82rem;
 	}
-	
-	.read-indicator {
-		color: #4ade80;
+
+	.read-state {
+		margin-left: 0.45rem;
+		font-weight: 700;
+		color: #4f46e5;
 	}
-	
-	.message-composer {
-		background: white;
-		border-top: 1px solid #e0e0e0;
-		padding: 1rem;
-	}
-	
-	.subject-input {
-		width: 100%;
-		padding: 0.75rem;
-		border: 1px solid #e0e0e0;
-		border-radius: 8px;
-		margin-bottom: 0.5rem;
-		font-size: 0.95rem;
-	}
-	
-	.compose-row {
-		display: flex;
+
+	.composer {
+		display: grid;
 		gap: 0.75rem;
 	}
-	
-	.compose-row textarea {
-		flex: 1;
-		padding: 0.75rem;
-		border: 1px solid #e0e0e0;
-		border-radius: 8px;
-		resize: none;
-		font-family: inherit;
-		font-size: 0.95rem;
+
+	.subject-input,
+	textarea {
+		width: 100%;
+		border: 1px solid #d1d5db;
+		border-radius: 18px;
+		padding: 0.9rem 1rem;
+		font: inherit;
+		background: #f9fafb;
+		color: #111827;
 	}
-	
-	.send-btn {
-		padding: 0.75rem 1.5rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-weight: 600;
+
+	textarea {
+		resize: vertical;
+	}
+
+	.composer-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.primary-btn,
+	.outline-btn {
+		border-radius: 999px;
+		padding: 0.75rem 1rem;
+		font-weight: 700;
 		cursor: pointer;
-		transition: transform 0.2s;
 	}
-	
-	.send-btn:hover:not(:disabled) {
-		transform: translateY(-2px);
+
+	.primary-btn {
+		border: 1px solid #4f46e5;
+		background: #4f46e5;
+		color: #ffffff;
 	}
-	
-	.send-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+
+	.outline-btn {
+		border: 1px solid #d1d5db;
+		background: #ffffff;
+		color: #111827;
+	}
+
+	@media (max-width: 980px) {
+		.messaging-shell {
+			grid-template-columns: 1fr;
+		}
+
+		.message-bubble {
+			max-width: 100%;
+		}
 	}
 </style>

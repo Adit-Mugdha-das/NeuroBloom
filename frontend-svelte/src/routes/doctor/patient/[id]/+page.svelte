@@ -3,9 +3,10 @@
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
 	import BiomarkersPanel from '$lib/components/BiomarkersPanel.svelte';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
-	
+
 	let patientId;
 	let patientData = null;
 	let sessions = [];
@@ -15,23 +16,19 @@
 	let loading = true;
 	let error = '';
 	let userData;
-	let pageData;
-	
-	// Intervention form state
+
 	let showInterventionModal = false;
 	let interventionType = 'note';
 	let interventionDescription = '';
 	let suggestedTasks = '';
 	let difficultyAdjustments = {};
-	let performanceGoals = '';
-	
-	// Focus areas customization state
+
 	let showFocusAreasModal = false;
 	let primaryFocusAreas = [];
 	let secondaryFocusAreas = [];
 	let maintenanceAreas = [];
 	let focusAreasNotes = '';
-	
+
 	const allDomains = [
 		{ id: 'working_memory', label: 'Working Memory' },
 		{ id: 'attention', label: 'Attention' },
@@ -40,1923 +37,1174 @@
 		{ id: 'processing_speed', label: 'Processing Speed' },
 		{ id: 'visual_scanning', label: 'Visual Scanning' }
 	];
-	
-	// Subscribe to stores
-	const unsubscribeUser = user.subscribe(value => {
+
+	const unsubscribeUser = user.subscribe((value) => {
 		userData = value;
 	});
-	
-	const unsubscribePage = page.subscribe(value => {
-		pageData = value;
+
+	const unsubscribePage = page.subscribe((value) => {
 		patientId = value.params.id;
 	});
-	
+
 	onMount(() => {
 		if (!userData || userData.role !== 'doctor') {
 			goto('/login');
 			return;
 		}
-		
+
 		loadPatientData();
-		
+
 		return () => {
 			unsubscribeUser();
 			unsubscribePage();
 		};
 	});
-	
+
 	async function loadPatientData() {
+		loading = true;
+		error = '';
+
 		try {
-			// Load overview
-			const overviewResponse = await api.get(
-				`/api/doctor/${userData.id}/patient/${patientId}/overview`
-			);
+			const overviewResponse = await api.get(`/api/doctor/${userData.id}/patient/${patientId}/overview`);
 			patientData = overviewResponse.data;
-			
-			// Load sessions
-			const sessionsResponse = await api.get(
-				`/api/doctor/${userData.id}/patient/${patientId}/sessions?limit=20`
-			);
-			sessions = sessionsResponse.data.sessions;
-			
-			// Load interventions
-			const interventionsResponse = await api.get(
-				`/api/doctor/${userData.id}/patient/${patientId}/interventions`
-			);
-			interventions = interventionsResponse.data.interventions;
-			
-			// Load progress monitoring data
-			const progressResponse = await api.get(
-				`/api/doctor/${userData.id}/patient/${patientId}/progress-monitoring`
-			);
+
+			const sessionsResponse = await api.get(`/api/doctor/${userData.id}/patient/${patientId}/sessions?limit=20`);
+			sessions = sessionsResponse.data.sessions || [];
+
+			const interventionsResponse = await api.get(`/api/doctor/${userData.id}/patient/${patientId}/interventions`);
+			interventions = interventionsResponse.data.interventions || [];
+
+			const progressResponse = await api.get(`/api/doctor/${userData.id}/patient/${patientId}/progress-monitoring`);
 			progressData = progressResponse.data;
 
-			// Load MS digital biomarkers for this patient
 			try {
-				const biomarkersResponse = await api.get(
-					`/api/training/advanced-analytics/${patientId}/biomarkers`,
-					{ params: { days: 30 } }
-				);
+				const biomarkersResponse = await api.get(`/api/training/advanced-analytics/${patientId}/biomarkers`, {
+					params: { days: 30 }
+				});
 				biomarkerData = biomarkersResponse.data;
-			} catch (err) {
-				console.log('Biomarkers not yet available for patient:', err);
+			} catch (requestError) {
+				console.log('Biomarkers not yet available for patient:', requestError);
 			}
-			
-		} catch (err) {
-			error = 'Failed to load patient data';
-			console.error(err);
+		} catch (requestError) {
+			error = requestError.response?.data?.detail || 'Failed to load patient data';
+			console.error(requestError);
 		} finally {
 			loading = false;
 		}
 	}
-	
+
 	async function submitIntervention() {
 		try {
 			const data = {};
-			
+
 			if (interventionType === 'task_recommendation') {
-				data.suggested_tasks = suggestedTasks.split(',').map(t => t.trim()).filter(t => t);
+				data.suggested_tasks = suggestedTasks.split(',').map((task) => task.trim()).filter(Boolean);
 			}
-			
-			await api.post(
-				`/api/doctor/${userData.id}/patient/${patientId}/intervention`,
-				null,
-				{
-					params: {
-						intervention_type: interventionType,
-						description: interventionDescription,
-						intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
-					}
+
+			await api.post(`/api/doctor/${userData.id}/patient/${patientId}/intervention`, null, {
+				params: {
+					intervention_type: interventionType,
+					description: interventionDescription,
+					intervention_data: Object.keys(data).length > 0 ? JSON.stringify(data) : null
 				}
-			);
-			
-			alert('Clinical note added successfully!');
+			});
+
 			closeInterventionModal();
 			await loadPatientData();
-		} catch (err) {
-			alert('Failed to add note: ' + (err.response?.data?.detail || 'Unknown error'));
+		} catch (requestError) {
+			alert(requestError.response?.data?.detail || 'Failed to add note');
 		}
 	}
-	
+
 	function openInterventionModal() {
 		showInterventionModal = true;
 		interventionType = 'note';
 		interventionDescription = '';
 		suggestedTasks = '';
-		difficultyAdjustments = {};
-		performanceGoals = '';
 	}
-	
+
 	function closeInterventionModal() {
 		showInterventionModal = false;
 	}
-	
+
 	function openFocusAreasModal() {
 		showFocusAreasModal = true;
-		// Initialize with current focus areas
 		if (patientData?.focus_areas) {
 			primaryFocusAreas = [...(patientData.focus_areas.primary || [])];
 			secondaryFocusAreas = [...(patientData.focus_areas.secondary || [])];
 			maintenanceAreas = [...(patientData.focus_areas.maintenance || [])];
 		}
-		// Initialize difficulty adjustments with current values or defaults
+
 		difficultyAdjustments = {};
-		allDomains.forEach(domain => {
-			difficultyAdjustments[domain.id] = 5; // Default to medium difficulty
+		allDomains.forEach((domain) => {
+			difficultyAdjustments[domain.id] = 5;
 		});
 		focusAreasNotes = '';
 	}
-	
+
 	function closeFocusAreasModal() {
 		showFocusAreasModal = false;
 	}
-	
+
 	function toggleDomain(domain, category) {
 		const lists = {
 			primary: primaryFocusAreas,
 			secondary: secondaryFocusAreas,
 			maintenance: maintenanceAreas
 		};
-		
-		// Remove from all categories first
-		primaryFocusAreas = primaryFocusAreas.filter(d => d !== domain);
-		secondaryFocusAreas = secondaryFocusAreas.filter(d => d !== domain);
-		maintenanceAreas = maintenanceAreas.filter(d => d !== domain);
-		
-		// Add to selected category if not already there
+
+		primaryFocusAreas = primaryFocusAreas.filter((value) => value !== domain);
+		secondaryFocusAreas = secondaryFocusAreas.filter((value) => value !== domain);
+		maintenanceAreas = maintenanceAreas.filter((value) => value !== domain);
+
 		const list = lists[category];
 		if (!list.includes(domain)) {
 			lists[category].push(domain);
-			// Trigger reactivity
 			primaryFocusAreas = [...primaryFocusAreas];
 			secondaryFocusAreas = [...secondaryFocusAreas];
 			maintenanceAreas = [...maintenanceAreas];
 		}
 	}
-	
+
 	async function submitFocusAreas() {
 		try {
-			// Update focus areas
-			await api.patch(
-				`/api/doctor/${userData.id}/patient/${patientId}/focus-areas`,
-				null,
-				{
-					params: {
-						primary_focus: JSON.stringify(primaryFocusAreas),
-						secondary_focus: JSON.stringify(secondaryFocusAreas),
-						maintenance: JSON.stringify(maintenanceAreas),
-						notes: focusAreasNotes || 'Training plan adjusted by doctor'
-					}
+			await api.patch(`/api/doctor/${userData.id}/patient/${patientId}/focus-areas`, null, {
+				params: {
+					primary_focus: JSON.stringify(primaryFocusAreas),
+					secondary_focus: JSON.stringify(secondaryFocusAreas),
+					maintenance: JSON.stringify(maintenanceAreas),
+					notes: focusAreasNotes || 'Training plan adjusted by doctor'
 				}
-			);
-			
-			// Update difficulty adjustments if any were changed
+			});
+
 			if (Object.keys(difficultyAdjustments).length > 0) {
-				await api.patch(
-					`/api/doctor/${userData.id}/patient/${patientId}/training-plan`,
-					null,
-					{ 
-						params: {
-							difficulty_adjustments: JSON.stringify(difficultyAdjustments),
-							notes: focusAreasNotes || 'Difficulty levels adjusted by doctor'
-						}
+				await api.patch(`/api/doctor/${userData.id}/patient/${patientId}/training-plan`, null, {
+					params: {
+						difficulty_adjustments: JSON.stringify(difficultyAdjustments),
+						notes: focusAreasNotes || 'Difficulty levels adjusted by doctor'
 					}
-				);
+				});
 			}
-			
-			alert('Training plan updated successfully!');
+
 			closeFocusAreasModal();
 			await loadPatientData();
-		} catch (err) {
-			alert('Failed to update training plan: ' + (err.response?.data?.detail || 'Unknown error'));
+		} catch (requestError) {
+			alert(requestError.response?.data?.detail || 'Failed to update training plan');
 		}
 	}
-	
+
 	function adjustDifficulty(domain, change) {
 		if (!difficultyAdjustments[domain]) {
-			difficultyAdjustments[domain] = 1; // default
+			difficultyAdjustments[domain] = 1;
 		}
+
 		difficultyAdjustments[domain] = Math.max(1, Math.min(10, difficultyAdjustments[domain] + change));
-		difficultyAdjustments = {...difficultyAdjustments}; // trigger reactivity
+		difficultyAdjustments = { ...difficultyAdjustments };
 	}
-	
+
 	function getDomainColor(domain) {
 		const colors = {
-			working_memory: '#667eea',
-			attention: '#f093fb',
-			flexibility: '#4facfe',
-			planning: '#43e97b',
-			processing_speed: '#fa709a',
-			visual_scanning: '#feca57'
+			working_memory: '#4f46e5',
+			attention: '#0f766e',
+			flexibility: '#0ea5e9',
+			planning: '#15803d',
+			processing_speed: '#db2777',
+			visual_scanning: '#d97706'
 		};
-		return colors[domain] || '#999';
+		return colors[domain] || '#6b7280';
 	}
-	
+
 	function formatDate(dateStr) {
-		if (!dateStr) return 'N/A';
-		return new Date(dateStr).toLocaleString();
+		if (!dateStr) return 'Not available';
+		return new Date(dateStr).toLocaleString('en-GB', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
-	
+
 	function formatShortDate(dateStr) {
-		if (!dateStr) return 'N/A';
-		return new Date(dateStr).toLocaleDateString();
+		if (!dateStr) return 'No recent session';
+		return new Date(dateStr).toLocaleDateString('en-GB', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric'
+		});
 	}
+
+	function formatDomainLabel(value) {
+		return value.replaceAll('_', ' ');
+	}
+
+	function handleModalOverlayKeydown(event, closeModal) {
+		if (event.key === 'Enter' || event.key === ' ' || event.key === 'Escape') {
+			event.preventDefault();
+			closeModal();
+		}
+	}
+
+	function stopModalPropagation(event) {
+		if (event.key === 'Escape') {
+			event.stopPropagation();
+		}
+	}
+
+	$: patientName = patientData?.patient_info?.full_name || patientData?.patient_info?.email || 'Patient';
+	$: focusAreas = patientData?.focus_areas || { primary: [], secondary: [], maintenance: [] };
+	$: summaryCards = patientData
+		? [
+				{ label: 'Total Sessions', value: patientData.training_summary.total_sessions },
+				{ label: 'Current Streak', value: `${patientData.training_summary.current_streak} days` },
+				{ label: 'Average Score', value: `${patientData.recent_performance.avg_score}/100` },
+				{ label: 'Average Accuracy', value: `${patientData.recent_performance.avg_accuracy}%` }
+			]
+		: [];
 </script>
 
-<div class="patient-detail">
+<DoctorWorkspaceShell
+	title={patientName}
+	subtitle="Patient-specific clinical overview with adherence, focus areas, biomarker access, progress monitoring, and recent activity in one calmer workspace."
+	eyebrow="Doctor Patient Workspace"
+	maxWidth="1360px"
+>
+	<svelte:fragment slot="actions">
+		<button class="outline-btn" on:click={() => goto('/doctor/patients')}>All Patients</button>
+		<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patientId}/reports`)}>Progress Reports</button>
+		<button class="primary-btn" on:click={openInterventionModal}>Add Clinical Note</button>
+		<button class="accent-btn" on:click={openFocusAreasModal}>Adjust Training Plan</button>
+	</svelte:fragment>
+
 	{#if loading}
-		<div class="loading">Loading patient data...</div>
+		<section class="state-card">
+			<p>Loading patient workspace...</p>
+		</section>
 	{:else if error}
-		<div class="error">{error}</div>
+		<section class="state-card error-state">
+			<p>{error}</p>
+		</section>
 	{:else if patientData}
-		<div class="header">
-			<button on:click={() => goto('/doctor/dashboard')} class="back-btn">
-				← Back to Dashboard
-			</button>
-			<div class="header-content">
-				<div>
-					<h1>{patientData.patient_info.full_name || patientData.patient_info.email}</h1>
-					<p class="diagnosis">{patientData.patient_info.diagnosis || 'No diagnosis specified'}</p>
+		<section class="hero-card">
+			<div>
+				<p class="eyebrow">Clinical Summary</p>
+				<h2>{patientData.patient_info.diagnosis || 'Diagnosis not recorded'}</h2>
+				<p class="hero-copy">
 					{#if patientData.patient_info.treatment_goal}
-						<p class="treatment-goal">Goal: {patientData.patient_info.treatment_goal}</p>
+						Treatment goal: {patientData.patient_info.treatment_goal}
+					{:else}
+						No explicit treatment goal has been recorded yet.
 					{/if}
+				</p>
+			</div>
+			<div class="hero-meta">
+				<div>
+					<span>Last Session</span>
+					<strong>{formatShortDate(patientData.training_summary.last_session)}</strong>
 				</div>
-				<div class="header-actions">
-					<button class="btn-reports" on:click={() => goto(`/doctor/patient/${patientId}/reports`)}>
-						📊 Progress Reports
-					</button>
-					<button class="btn-note" on:click={openInterventionModal}>
-						📝 Add Clinical Note
-					</button>
-					<button class="btn-training" on:click={openFocusAreasModal}>
-						⚙️ Adjust Training Plan
-					</button>
+				<div>
+					<span>Longest Streak</span>
+					<strong>{patientData.training_summary.longest_streak} days</strong>
 				</div>
 			</div>
-		</div>
-		
-		<!-- Quick Info Box -->
-		<div class="info-box">
-			<div class="info-icon">ℹ️</div>
-			<div class="info-content">
-				<strong>Patient Overview:</strong> This page shows a quick snapshot of the patient's current status and recent activity. 
-				For detailed analytics, baseline comparisons, and comprehensive reports, click the 
-				<strong style="color: #4fc3f7;">📊 Progress Reports</strong> button above.
-			</div>
-		</div>
-		
-		<!-- Interventions Section -->
+		</section>
+
+		<section class="summary-grid">
+			{#each summaryCards as card}
+				<article class="summary-card">
+					<p>{card.label}</p>
+					<strong>{card.value}</strong>
+				</article>
+			{/each}
+		</section>
+
+		<section class="panel-grid top-grid">
+			<article class="panel-card">
+				<div class="panel-heading">
+					<div>
+						<p class="panel-kicker">Focus</p>
+						<h3>Training Priorities</h3>
+					</div>
+					<button class="outline-btn small" on:click={openFocusAreasModal}>Customize</button>
+				</div>
+
+				<div class="focus-groups">
+					<div>
+						<span class="focus-label">Primary</span>
+						<div class="focus-tags">
+							{#if focusAreas.primary?.length}
+								{#each focusAreas.primary as area}
+									<span class="focus-tag primary">{formatDomainLabel(area)}</span>
+								{/each}
+							{:else}
+								<span class="empty-inline">No primary focus set</span>
+							{/if}
+						</div>
+					</div>
+
+					<div>
+						<span class="focus-label">Secondary</span>
+						<div class="focus-tags">
+							{#if focusAreas.secondary?.length}
+								{#each focusAreas.secondary as area}
+									<span class="focus-tag secondary">{formatDomainLabel(area)}</span>
+								{/each}
+							{:else}
+								<span class="empty-inline">No secondary focus set</span>
+							{/if}
+						</div>
+					</div>
+
+					<div>
+						<span class="focus-label">Maintenance</span>
+						<div class="focus-tags">
+							{#if focusAreas.maintenance?.length}
+								{#each focusAreas.maintenance as area}
+									<span class="focus-tag maintenance">{formatDomainLabel(area)}</span>
+								{/each}
+							{:else}
+								<span class="empty-inline">No maintenance areas set</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</article>
+
+			<article class="panel-card">
+				<div class="panel-heading">
+					<div>
+						<p class="panel-kicker">Recent Performance</p>
+						<h3>Last 7 Days</h3>
+					</div>
+				</div>
+
+				<div class="metric-list">
+					<div><span>Sessions</span><strong>{patientData.recent_performance.sessions_last_7_days}</strong></div>
+					<div><span>Average Score</span><strong>{patientData.recent_performance.avg_score}</strong></div>
+					<div><span>Average Accuracy</span><strong>{patientData.recent_performance.avg_accuracy}%</strong></div>
+					<div><span>Total Sessions Overall</span><strong>{patientData.training_summary.total_sessions}</strong></div>
+				</div>
+			</article>
+		</section>
+
 		{#if interventions.length > 0}
-			<div class="section">
-				<h2>📋 Recent Interventions & Recommendations</h2>
+			<section class="panel-card">
+				<div class="panel-heading">
+					<div>
+						<p class="panel-kicker">Clinical Notes</p>
+						<h3>Recent Interventions</h3>
+					</div>
+				</div>
+
 				<div class="interventions-list">
 					{#each interventions as intervention}
-						<div class="intervention-card">
-							<div class="intervention-header">
-								<span class="intervention-type-badge type-{intervention.type}">
-									{intervention.type.replace('_', ' ')}
-								</span>
-								<span class="intervention-date">{formatDate(intervention.created_at)}</span>
+						<article class="intervention-card">
+							<div class="intervention-head">
+								<span class="type-pill">{formatDomainLabel(intervention.type)}</span>
+								<span class="date-copy">{formatDate(intervention.created_at)}</span>
 							</div>
-							<p class="intervention-desc">{intervention.description}</p>
+							<p class="intervention-copy">{intervention.description}</p>
 							{#if intervention.data}
-								<div class="intervention-data">
+								<div class="intervention-meta">
 									{#if intervention.data.suggested_tasks}
-										<div><strong>Suggested Tasks:</strong> {intervention.data.suggested_tasks.join(', ')}</div>
-									{/if}
-									{#if intervention.data.difficulty_adjustments}
-										<div><strong>Difficulty Adjustments:</strong> 
-											{JSON.stringify(intervention.data.difficulty_adjustments)}
-										</div>
+										<div><span>Suggested Tasks</span><strong>{intervention.data.suggested_tasks.join(', ')}</strong></div>
 									{/if}
 									{#if intervention.data.performance_goals}
-										<div><strong>Goals:</strong> {intervention.data.performance_goals}</div>
+										<div><span>Goals</span><strong>{intervention.data.performance_goals}</strong></div>
 									{/if}
 								</div>
 							{/if}
-						</div>
+						</article>
 					{/each}
 				</div>
-			</div>
+			</section>
 		{/if}
-		
-		<!-- Overview Stats -->
-		<div class="overview-grid">
-			<div class="overview-card">
-				<h3>Training Summary</h3>
-				<div class="stat-row">
-					<span>Total Sessions:</span>
-					<strong>{patientData.training_summary.total_sessions}</strong>
-				</div>
-				<div class="stat-row">
-					<span>Current Streak:</span>
-					<strong>{patientData.training_summary.current_streak} days</strong>
-				</div>
-				<div class="stat-row">
-					<span>Longest Streak:</span>
-					<strong>{patientData.training_summary.longest_streak} days</strong>
-				</div>
-				<div class="stat-row">
-					<span>Last Session:</span>
-					<strong>{formatShortDate(patientData.training_summary.last_session)}</strong>
-				</div>
-			</div>
-			
-			<div class="overview-card">
-				<h3>Recent Performance (7 days)</h3>
-				<div class="stat-row">
-					<span>Sessions:</span>
-					<strong>{patientData.recent_performance.sessions_last_7_days}</strong>
-				</div>
-				<div class="stat-row">
-					<span>Avg Score:</span>
-					<strong>{patientData.recent_performance.avg_score}/100</strong>
-				</div>
-				<div class="stat-row">
-					<span>Avg Accuracy:</span>
-					<strong>{patientData.recent_performance.avg_accuracy}%</strong>
-				</div>
-			</div>
-			
-			<div class="overview-card">
-				<h3>Focus Areas</h3>
-				<div class="focus-section">
-					<div>
-						<strong>Primary Focus:</strong>
-						{#if patientData.focus_areas.primary && patientData.focus_areas.primary.length > 0}
-							<div class="focus-tags">
-								{#each patientData.focus_areas.primary as area}
-									<span class="focus-tag primary">{area.replace('_', ' ')}</span>
-								{/each}
-							</div>
-						{:else}
-							<span class="no-data">None set</span>
-						{/if}
-					</div>
-					<div>
-						<strong>Secondary:</strong>
-						{#if patientData.focus_areas.secondary && patientData.focus_areas.secondary.length > 0}
-							<div class="focus-tags">
-								{#each patientData.focus_areas.secondary as area}
-									<span class="focus-tag secondary">{area.replace('_', ' ')}</span>
-								{/each}
-							</div>
-						{:else}
-							<span class="no-data">None set</span>
-						{/if}
-					</div>
-				</div>
-			</div>
-		</div>
-		
-		<button class="btn-customize-focus" on:click={openFocusAreasModal}>
-			🎯 Customize Focus Areas
-		</button>
 
-		<!-- MS Digital Biomarkers - full clinical view for doctor -->
-		<div class="section">
+		<section class="panel-card">
 			<BiomarkersPanel {biomarkerData} doctorView={true} days={30} />
-		</div>
+		</section>
 
 		{#if progressData}
-			<div class="section progress-monitoring">
-				<h2>📊 Progress Monitoring</h2>
-				
-				<!-- Concerning Areas Alert -->
-				{#if progressData.concerning_areas && progressData.concerning_areas.length > 0}
-					<div class="alert-box warning">
-						<h3>⚠️ Areas Requiring Attention</h3>
-						<div class="concerning-list">
-							{#each progressData.concerning_areas as concern}
-								<div class="concern-item severity-{concern.severity}">
-									<div class="concern-header">
-										<span class="concern-domain">{concern.domain.replace('_', ' ')}</span>
-										<span class="concern-severity">{concern.severity}</span>
-									</div>
-									<div class="concern-issue">{concern.issue.replace('_', ' ')}</div>
-									<div class="concern-details">{concern.details}</div>
-								</div>
-							{/each}
+			<section class="panel-grid">
+				<article class="panel-card">
+					<div class="panel-heading">
+						<div>
+							<p class="panel-kicker">Adherence</p>
+							<h3>Training Adherence</h3>
 						</div>
+						<span class="status-pill status-{progressData.adherence.status}">{progressData.adherence.status.replaceAll('_', ' ')}</span>
 					</div>
-				{/if}
-				
-				<!-- Adherence Tracking -->
-				<div class="monitoring-card">
-					<h3>📅 Training Adherence</h3>
-					<div class="adherence-summary">
-						<div class="adherence-status status-{progressData.adherence.status}">
-							<div class="status-label">{progressData.adherence.status.replace('_', ' ').toUpperCase()}</div>
-							<div class="adherence-rate">{progressData.adherence.adherence_rate}%</div>
-						</div>
-						<div class="adherence-stats">
-							<div class="stat-item">
-								<span class="stat-label">Total Sessions:</span>
-								<span class="stat-value">{progressData.adherence.total_sessions}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Expected:</span>
-								<span class="stat-value">{progressData.adherence.expected_sessions}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Last 7 days:</span>
-								<span class="stat-value">{progressData.adherence.sessions_last_7_days}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Last 30 days:</span>
-								<span class="stat-value">{progressData.adherence.sessions_last_30_days}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Avg Days Between:</span>
-								<span class="stat-value">{progressData.adherence.avg_days_between_sessions} days</span>
-							</div>
-						</div>
-					</div>
-				</div>
-				
-				<!-- Trend Analysis -->
-				{#if Object.keys(progressData.trends).length > 0}
-					<div class="monitoring-card">
-						<h3>📉 Recent Trends (Last 7 days vs Previous 7 days)</h3>
-						<div class="trends-grid">
-							{#each Object.entries(progressData.trends) as [domain, trend]}
-								<div class="trend-card direction-{trend.direction}">
-									<h4>{domain.replace('_', ' ')}</h4>
-									<div class="trend-comparison">
-										<div class="trend-value">
-											<span class="label">Previous</span>
-											<span class="value">{trend.previous_avg}</span>
-										</div>
-										<div class="trend-arrow">
-											{#if trend.direction === 'upward'}
-												<span class="arrow up">↗</span>
-											{:else if trend.direction === 'downward'}
-												<span class="arrow down">↘</span>
-											{:else}
-												<span class="arrow stable">→</span>
-											{/if}
-										</div>
-										<div class="trend-value">
-											<span class="label">Recent</span>
-											<span class="value">{trend.recent_avg}</span>
-										</div>
-									</div>
-									<div class="trend-change {trend.change >= 0 ? 'positive' : 'negative'}">
-										{trend.change >= 0 ? '+' : ''}{trend.change} points
-									</div>
-									{#if trend.is_concerning}
-										<div class="trend-warning">⚠️ Concerning decline</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-				
-				<!-- Domain-Specific Improvements -->
-				{#if Object.keys(progressData.domain_improvements).length > 0}
-					<div class="monitoring-card">
-						<h3>🎯 Domain-Specific Improvements</h3>
-						<div class="improvements-grid">
-							{#each Object.entries(progressData.domain_improvements) as [domain, improvement]}
-								<div class="improvement-card trending-{improvement.trending}">
-									<h4>{domain.replace('_', ' ')}</h4>
-									<div class="improvement-summary">
-										<div class="avg-comparison">
-											<div>
-												<span class="label">Early Average:</span>
-												<span class="value">{improvement.early_avg}</span>
-											</div>
-											<div>
-												<span class="label">Recent Average:</span>
-												<span class="value">{improvement.recent_avg}</span>
-											</div>
-										</div>
-										<div class="overall-change {improvement.overall_improvement >= 0 ? 'positive' : 'negative'}">
-											Overall: {improvement.overall_improvement >= 0 ? '+' : ''}{improvement.overall_improvement}
-										</div>
-									</div>
-									<div class="recent-scores">
-										<span class="label">Last 5 scores:</span>
-										<div class="scores-list">
-											{#each improvement.recent_scores as score}
-												<span class="score-badge">{score}</span>
-											{/each}
-										</div>
-									</div>
-									<div class="session-total">{improvement.total_sessions} total sessions</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-			</div>
-		{/if}
-		
-		<!-- Recent Sessions -->
-		<div class="section">
-		<h2>Recent Training Sessions</h2>
-		<div class="sessions-table">
-			<table>
-				<thead>
-					<tr>
-						<th>Date</th>
-						<th>Domain</th>
-						<th>Task</th>
-						<th>Difficulty</th>
-						<th>Score</th>
-						<th>Accuracy</th>
-						<th>RT (ms)</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each sessions as session}
-						<tr>
-							<td>{formatDate(session.completed_at)}</td>
-							<td>
-								<span 
-									class="domain-badge" 
-									style="background: {getDomainColor(session.domain)}; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;"
-								>
-									{session.domain.replace('_', ' ')}
-								</span>
-							</td>
-							<td>{session.task_code || session.task_type}</td>
-							<td>Level {session.difficulty}</td>
-							<td><strong>{session.score}</strong></td>
-							<td>{session.accuracy}%</td>
-							<td>{session.reaction_time || 'N/A'}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	</div>
-{/if}
-</div>
 
-<!-- Intervention Modal -->
-{#if showInterventionModal}
-	<div class="modal-overlay" on:click={closeInterventionModal}>
-		<div class="modal-content" on:click|stopPropagation>
-			<div class="modal-header">
-				<h2>📝 Add Clinical Note</h2>
-				<button class="close-btn" on:click={closeInterventionModal}>×</button>
+					<div class="adherence-layout">
+						<div class="adherence-score">
+							<strong>{progressData.adherence.adherence_rate}%</strong>
+							<span>adherence</span>
+						</div>
+						<div class="metric-list compact">
+							<div><span>Total Sessions</span><strong>{progressData.adherence.total_sessions}</strong></div>
+							<div><span>Expected</span><strong>{progressData.adherence.expected_sessions}</strong></div>
+							<div><span>Last 7 Days</span><strong>{progressData.adherence.sessions_last_7_days}</strong></div>
+							<div><span>Last 30 Days</span><strong>{progressData.adherence.sessions_last_30_days}</strong></div>
+							<div><span>Avg Days Between</span><strong>{progressData.adherence.avg_days_between_sessions} days</strong></div>
+						</div>
+					</div>
+				</article>
+
+				<article class="panel-card">
+					<div class="panel-heading">
+						<div>
+							<p class="panel-kicker">Alerts</p>
+							<h3>Areas Requiring Attention</h3>
+						</div>
+					</div>
+
+					{#if progressData.concerning_areas?.length}
+						<div class="concern-list">
+							{#each progressData.concerning_areas as concern}
+								<div class="concern-card severity-{concern.severity}">
+									<div class="concern-head">
+										<strong>{formatDomainLabel(concern.domain)}</strong>
+										<span>{concern.severity}</span>
+									</div>
+									<p>{formatDomainLabel(concern.issue)}</p>
+									<small>{concern.details}</small>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="empty-copy">No concerning areas are currently flagged.</p>
+					{/if}
+				</article>
+			</section>
+
+			{#if Object.keys(progressData.trends || {}).length > 0}
+				<section class="panel-card">
+					<div class="panel-heading">
+						<div>
+							<p class="panel-kicker">Trend Analysis</p>
+							<h3>Recent Changes</h3>
+						</div>
+					</div>
+
+					<div class="trend-grid">
+						{#each Object.entries(progressData.trends) as [domain, trend]}
+							<article class="trend-card direction-{trend.direction}">
+								<h4>{formatDomainLabel(domain)}</h4>
+								<div class="trend-comparison">
+									<div><span>Previous</span><strong>{trend.previous_avg}</strong></div>
+									<div><span>Recent</span><strong>{trend.recent_avg}</strong></div>
+								</div>
+								<p class:positive={trend.change >= 0} class:negative={trend.change < 0} class="trend-change">
+									{trend.change >= 0 ? '+' : ''}{trend.change} points
+								</p>
+								{#if trend.is_concerning}
+									<p class="warning-note">Concerning decline</p>
+								{/if}
+							</article>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
+			{#if Object.keys(progressData.domain_improvements || {}).length > 0}
+				<section class="panel-card">
+					<div class="panel-heading">
+						<div>
+							<p class="panel-kicker">Improvement</p>
+							<h3>Domain Improvement Snapshot</h3>
+						</div>
+					</div>
+
+					<div class="improvement-grid">
+						{#each Object.entries(progressData.domain_improvements) as [domain, improvement]}
+							<article class="improvement-card trending-{improvement.trending}">
+								<h4>{formatDomainLabel(domain)}</h4>
+								<div class="metric-list compact">
+									<div><span>Early Average</span><strong>{improvement.early_avg}</strong></div>
+									<div><span>Recent Average</span><strong>{improvement.recent_avg}</strong></div>
+									<div><span>Overall Change</span><strong>{improvement.overall_improvement >= 0 ? '+' : ''}{improvement.overall_improvement}</strong></div>
+									<div><span>Total Sessions</span><strong>{improvement.total_sessions}</strong></div>
+								</div>
+								<div class="score-row">
+									{#each improvement.recent_scores as score}
+										<span class="score-chip">{score}</span>
+									{/each}
+								</div>
+							</article>
+						{/each}
+					</div>
+				</section>
+			{/if}
+		{/if}
+
+		<section class="panel-card">
+			<div class="panel-heading">
+				<div>
+					<p class="panel-kicker">Activity</p>
+					<h3>Recent Training Sessions</h3>
+				</div>
 			</div>
-			
+
+			{#if sessions.length === 0}
+				<p class="empty-copy">No training sessions have been recorded yet.</p>
+			{:else}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Date</th>
+								<th>Domain</th>
+								<th>Task</th>
+								<th>Difficulty</th>
+								<th>Score</th>
+								<th>Accuracy</th>
+								<th>RT</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each sessions as session}
+								<tr>
+									<td>{formatDate(session.completed_at)}</td>
+									<td><span class="domain-pill" style={`background:${getDomainColor(session.domain)};`}>{formatDomainLabel(session.domain)}</span></td>
+									<td>{session.task_code || session.task_type}</td>
+									<td>Level {session.difficulty}</td>
+									<td>{session.score}</td>
+									<td>{session.accuracy}%</td>
+									<td>{session.reaction_time || 'N/A'} ms</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+		</section>
+	{/if}
+</DoctorWorkspaceShell>
+
+{#if showInterventionModal}
+	<div
+		class="modal-overlay"
+		role="button"
+		tabindex="0"
+		aria-label="Close clinical note dialog"
+		on:click={closeInterventionModal}
+		on:keydown={(event) => handleModalOverlayKeydown(event, closeInterventionModal)}
+	>
+		<div
+			class="modal-content"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Add clinical note"
+			tabindex="-1"
+			on:click|stopPropagation
+			on:keydown|stopPropagation={stopModalPropagation}
+		>
+			<div class="modal-header">
+				<h2>Add Clinical Note</h2>
+				<button class="close-btn" on:click={closeInterventionModal}>x</button>
+			</div>
+
 			<div class="modal-body">
-				<p class="modal-description">
-					Record observations, recommendations, or clinical notes about this patient's progress, behavior, or treatment.
-				</p>
-				
 				<div class="form-group">
-					<label>Note Type</label>
-					<select bind:value={interventionType}>
+					<label for="interventionType">Note Type</label>
+					<select id="interventionType" bind:value={interventionType}>
 						<option value="note">General Observation</option>
 						<option value="task_recommendation">Task Recommendation</option>
 						<option value="goal_setting">Performance Goal</option>
 						<option value="check_in">Follow-up Scheduled</option>
 					</select>
 				</div>
-				
+
 				<div class="form-group">
-					<label>Clinical Notes</label>
-					<textarea 
-						bind:value={interventionDescription}
-						placeholder="Example: Patient reports improved concentration during tasks. Recommends continuing current training regimen..."
-						rows="6"
-						required
-					></textarea>
+					<label for="interventionDescription">Clinical Notes</label>
+					<textarea id="interventionDescription" bind:value={interventionDescription} rows="6" placeholder="Record observations, recommendations, or concerns."></textarea>
 				</div>
-				
+
 				{#if interventionType === 'task_recommendation'}
 					<div class="form-group">
-						<label>Recommended Tasks (comma-separated)</label>
-						<input 
-							type="text" 
-							bind:value={suggestedTasks}
-							placeholder="e.g., digit_span, trail_making, stroop"
-						/>
+						<label for="suggestedTasks">Suggested Tasks</label>
+						<input id="suggestedTasks" type="text" bind:value={suggestedTasks} placeholder="digit_span, trail_making, stroop" />
 					</div>
 				{/if}
 			</div>
-			
+
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={closeInterventionModal}>Cancel</button>
-				<button 
-					class="btn-submit" 
-					on:click={submitIntervention}
-					disabled={!interventionDescription.trim()}
-				>
-					Save Clinical Note
-				</button>
+				<button class="outline-btn" on:click={closeInterventionModal}>Cancel</button>
+				<button class="primary-btn" disabled={!interventionDescription.trim()} on:click={submitIntervention}>Save Note</button>
 			</div>
 		</div>
 	</div>
 {/if}
 
-<!-- Focus Areas Customization Modal -->
 {#if showFocusAreasModal}
-	<div class="modal-overlay" on:click={closeFocusAreasModal}>
-		<div class="modal-content large-modal" on:click|stopPropagation>
+	<div
+		class="modal-overlay"
+		role="button"
+		tabindex="0"
+		aria-label="Close training plan dialog"
+		on:click={closeFocusAreasModal}
+		on:keydown={(event) => handleModalOverlayKeydown(event, closeFocusAreasModal)}
+	>
+		<div
+			class="modal-content large-modal"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Adjust training plan"
+			tabindex="-1"
+			on:click|stopPropagation
+			on:keydown|stopPropagation={stopModalPropagation}
+		>
 			<div class="modal-header">
-				<h2>⚙️ Adjust Training Plan</h2>
-				<button class="close-btn" on:click={closeFocusAreasModal}>×</button>
+				<h2>Adjust Training Plan</h2>
+				<button class="close-btn" on:click={closeFocusAreasModal}>x</button>
 			</div>
-			
+
 			<div class="modal-body">
-				<p class="modal-description">
-					Customize which cognitive domains the patient should focus on and adjust task difficulty levels.
-				</p>
-				
-				<h3 class="section-heading">🎯 Focus Areas - Training Priority</h3>
-				<p class="section-subheading">Organize domains by priority. Higher priority domains will appear more frequently in training sessions.</p>
-				
 				<div class="focus-customization">
-					<!-- Primary Focus -->
 					<div class="focus-category">
-						<h3 class="category-title primary-title">🔴 Primary Focus (High Priority)</h3>
-						<p class="category-description">Domains requiring the most attention and training time</p>
+						<h3 class="category-title">Primary Focus</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
-								<button
-									class="domain-btn {primaryFocusAreas.includes(domain.id) ? 'selected primary' : ''}"
-									on:click={() => toggleDomain(domain.id, 'primary')}
-								>
-									{domain.label}
-									{#if primaryFocusAreas.includes(domain.id)}✓{/if}
-								</button>
+								<button class:selected={primaryFocusAreas.includes(domain.id)} class="domain-btn primary" on:click={() => toggleDomain(domain.id, 'primary')}>{domain.label}</button>
 							{/each}
 						</div>
 					</div>
-					
-					<!-- Secondary Focus -->
+
 					<div class="focus-category">
-						<h3 class="category-title secondary-title">🟡 Secondary Focus (Medium Priority)</h3>
-						<p class="category-description">Domains for moderate training and improvement</p>
+						<h3 class="category-title">Secondary Focus</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
-								<button
-									class="domain-btn {secondaryFocusAreas.includes(domain.id) ? 'selected secondary' : ''}"
-									on:click={() => toggleDomain(domain.id, 'secondary')}
-								>
-									{domain.label}
-									{#if secondaryFocusAreas.includes(domain.id)}✓{/if}
-								</button>
+								<button class:selected={secondaryFocusAreas.includes(domain.id)} class="domain-btn secondary" on:click={() => toggleDomain(domain.id, 'secondary')}>{domain.label}</button>
 							{/each}
 						</div>
 					</div>
-					
-					<!-- Maintenance -->
+
 					<div class="focus-category">
-						<h3 class="category-title maintenance-title">🟢 Maintenance (Low Priority)</h3>
-						<p class="category-description">Domains with good performance, maintain current level</p>
+						<h3 class="category-title">Maintenance</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
-								<button
-									class="domain-btn {maintenanceAreas.includes(domain.id) ? 'selected maintenance' : ''}"
-									on:click={() => toggleDomain(domain.id, 'maintenance')}
-								>
-									{domain.label}
-									{#if maintenanceAreas.includes(domain.id)}✓{/if}
-								</button>
+								<button class:selected={maintenanceAreas.includes(domain.id)} class="domain-btn maintenance" on:click={() => toggleDomain(domain.id, 'maintenance')}>{domain.label}</button>
 							{/each}
 						</div>
 					</div>
 				</div>
-				
-				<div class="divider"></div>
-				
-				<h3 class="section-heading">⚡ Difficulty Adjustments</h3>
-				<p class="section-subheading">Adjust task difficulty for each cognitive domain (1 = easiest, 10 = hardest).</p>
-				
+
 				<div class="difficulty-grid">
 					{#each allDomains as domain}
-						<div class="difficulty-control-card">
-							<div class="domain-name">{domain.label}</div>
-							<div class="difficulty-buttons">
-								<button class="diff-btn" on:click={() => adjustDifficulty(domain.id, -1)}>−</button>
-								<span class="difficulty-value">{difficultyAdjustments[domain.id] || 5}</span>
-								<button class="diff-btn" on:click={() => adjustDifficulty(domain.id, 1)}>+</button>
-							</div>
-							<div class="difficulty-label">
-								{difficultyAdjustments[domain.id] <= 3 ? 'Easy' : difficultyAdjustments[domain.id] <= 7 ? 'Medium' : 'Hard'}
+						<div class="difficulty-card">
+							<p>{domain.label}</p>
+							<div class="difficulty-controls">
+								<button class="step-btn" on:click={() => adjustDifficulty(domain.id, -1)}>-</button>
+								<strong>{difficultyAdjustments[domain.id] || 5}</strong>
+								<button class="step-btn" on:click={() => adjustDifficulty(domain.id, 1)}>+</button>
 							</div>
 						</div>
 					{/each}
 				</div>
-				
+
 				<div class="form-group">
-					<label>Clinical Reasoning (Optional)</label>
-					<textarea 
-						bind:value={focusAreasNotes}
-						placeholder="Explain why these training adjustments are being made..."
-						rows="3"
-					></textarea>
+					<label for="focusAreasNotes">Clinical Reasoning</label>
+					<textarea id="focusAreasNotes" bind:value={focusAreasNotes} rows="4" placeholder="Explain why these adjustments are being made."></textarea>
 				</div>
 			</div>
-			
+
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={closeFocusAreasModal}>Cancel</button>
-				<button class="btn-submit" on:click={submitFocusAreas}>
-					Update Training Plan
-				</button>
+				<button class="outline-btn" on:click={closeFocusAreasModal}>Cancel</button>
+				<button class="primary-btn" on:click={submitFocusAreas}>Update Training Plan</button>
 			</div>
 		</div>
 	</div>
 {/if}
 
 <style>
-	.patient-detail {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem;
-		min-height: 100vh;
-		background: #f8f9fa;
-	}
-	
-	.header {
-		margin-bottom: 2rem;
-	}
-	
-	.header-content {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		margin-top: 1rem;
-	}
-	
-	.header-actions {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
-	}
-	
-	.btn-reports {
-		background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
-		color: white;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 600;
+	.primary-btn,
+	.outline-btn,
+	.accent-btn {
+		border-radius: 999px;
+		padding: 0.78rem 1rem;
+		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.3s;
-		font-size: 1rem;
+		transition: 180ms ease;
 	}
-	
-	.btn-reports:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(79, 195, 247, 0.3);
+
+	.primary-btn {
+		border: 1px solid #4f46e5;
+		background: #4f46e5;
+		color: #ffffff;
 	}
-	
-	.btn-note {
-		background: linear-gradient(135deg, #43a047 0%, #388e3c 100%);
-		color: white;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-		font-size: 1rem;
+
+	.outline-btn {
+		border: 1px solid #d1d5db;
+		background: #ffffff;
+		color: #111827;
 	}
-	
-	.btn-note:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(67, 160, 71, 0.3);
+
+	.accent-btn {
+		border: 1px solid #f59e0b;
+		background: #f59e0b;
+		color: #ffffff;
 	}
-	
-	.btn-training {
-		background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-		color: white;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-		font-size: 1rem;
+
+	.outline-btn.small {
+		padding: 0.6rem 0.9rem;
 	}
-	
-	.btn-training:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(255, 152, 0, 0.3);
+
+	.hero-card,
+	.summary-card,
+	.panel-card,
+	.state-card,
+	.intervention-card,
+	.concern-card,
+	.trend-card,
+	.improvement-card,
+	.modal-content,
+	.difficulty-card,
+	.focus-category {
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
 	}
-	
-	.back-btn {
-		background: #f0f0f0;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
-		cursor: pointer;
-		margin-bottom: 1rem;
-		font-size: 0.95rem;
-		transition: background 0.3s;
+
+	.hero-card,
+	.panel-card,
+	.state-card,
+	.modal-content {
+		border-radius: 26px;
+		padding: 1.25rem;
 	}
-	
-	.back-btn:hover {
-		background: #e0e0e0;
+
+	.error-state {
+		border-color: rgba(239, 68, 68, 0.25);
+		color: #b91c1c;
 	}
-	
-	h1 {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		color: #333;
-	}
-	
-	.diagnosis {
-		color: #666;
-		font-size: 1.1rem;
-		margin-bottom: 0.25rem;
-	}
-	
-	.treatment-goal {
-		color: #667eea;
-		font-style: italic;
-		font-size: 0.95rem;
-	}
-	
-	.info-box {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		background: linear-gradient(135deg, rgba(79, 195, 247, 0.1), rgba(33, 150, 243, 0.05));
-		border: 1px solid rgba(79, 195, 247, 0.3);
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		margin-bottom: 2rem;
-	}
-	
-	.info-icon {
-		font-size: 1.5rem;
-		flex-shrink: 0;
-	}
-	
-	.info-content {
-		color: #333;
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
-	
-	.overview-grid {
+
+	.hero-card {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		grid-template-columns: 1.2fr 0.8fr;
 		gap: 1rem;
-		margin-bottom: 2rem;
 	}
-	
-	.overview-card {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+	.eyebrow,
+	.panel-kicker,
+	.summary-card p,
+	.focus-label,
+	.metric-list span,
+	.hero-meta span,
+	.intervention-meta span,
+	.trend-comparison span,
+	.difficulty-card p,
+	.form-group label {
+		margin: 0;
+		font-size: 0.78rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #6b7280;
 	}
-	
-	.overview-card h3 {
-		margin-bottom: 1rem;
-		color: #333;
-		font-size: 1.1rem;
+
+	h2,
+	h3,
+	h4 {
+		margin: 0.2rem 0 0;
+		color: #111827;
 	}
-	
-	.stat-row {
+
+	.hero-copy,
+	.empty-copy,
+	.intervention-copy,
+	.concern-card p,
+	.concern-card small {
+		color: #6b7280;
+		line-height: 1.6;
+	}
+
+	.hero-meta,
+	.summary-grid,
+	.panel-grid,
+	.focus-groups,
+	.interventions-list,
+	.concern-list,
+	.trend-grid,
+	.improvement-grid,
+	.difficulty-grid {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.hero-meta {
+		align-content: start;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.hero-meta div,
+	.summary-card,
+	.difficulty-card {
+		border-radius: 20px;
+		padding: 1rem;
+		background: #f9fafb;
+	}
+
+	.hero-meta strong,
+	.summary-card strong {
+		display: block;
+		margin-top: 0.35rem;
+		font-size: 1.4rem;
+		color: #111827;
+	}
+
+	.summary-grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.panel-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.top-grid {
+		align-items: start;
+	}
+
+	.panel-heading,
+	.intervention-head,
+	.concern-head,
+	.modal-header,
+	.modal-footer,
+	.difficulty-controls {
 		display: flex;
 		justify-content: space-between;
-		padding: 0.5rem 0;
-		border-bottom: 1px solid #f0f0f0;
-	}
-	
-	.stat-row:last-child {
-		border-bottom: none;
-	}
-	
-	.focus-section {
-		display: flex;
-		flex-direction: column;
 		gap: 1rem;
+		align-items: center;
 	}
-	
-	.focus-tags {
-		margin-top: 0.5rem;
+
+	.focus-groups,
+	.intervention-meta,
+	.metric-list,
+	.score-row,
+	.domain-selection {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 0.6rem;
 	}
-	
-	.focus-tag {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.85rem;
+
+	.metric-list,
+	.intervention-meta {
+		flex-direction: column;
+	}
+
+	.metric-list div,
+	.intervention-meta div,
+	.trend-comparison,
+	.adherence-layout {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.8rem;
+	}
+
+	.metric-list.compact div {
+		grid-template-columns: 1fr auto;
+	}
+
+	.metric-list strong,
+	.intervention-meta strong,
+	.concern-head strong,
+	.trend-comparison strong,
+	.improvement-card strong,
+	.difficulty-card strong {
+		color: #111827;
+	}
+
+	.focus-tag,
+	.type-pill,
+	.status-pill,
+	.domain-pill,
+	.score-chip {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		padding: 0.32rem 0.75rem;
+		font-size: 0.8rem;
+		font-weight: 800;
 		text-transform: capitalize;
 	}
-	
+
 	.focus-tag.primary {
-		background: #fecaca;
-		color: #991b1b;
+		background: #fee2e2;
+		color: #b91c1c;
 	}
-	
+
 	.focus-tag.secondary {
 		background: #fef3c7;
-		color: #92400e;
+		color: #b45309;
 	}
-	
-	.no-data {
-		color: #999;
-		font-size: 0.9rem;
+
+	.focus-tag.maintenance {
+		background: #dcfce7;
+		color: #15803d;
 	}
-	
-	.section {
-		background: white;
-		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-		margin-bottom: 2rem;
+
+	.type-pill,
+	.domain-pill,
+	.score-chip {
+		background: #eef2ff;
+		color: #4f46e5;
 	}
-	
-	.section h2 {
-		margin-bottom: 0.5rem;
-		color: #333;
+
+	.status-pill {
+		background: #eef2ff;
+		color: #4f46e5;
 	}
-	
-	.section-subtitle {
-		color: #666;
-		font-size: 0.9rem;
-		margin-bottom: 1.5rem;
+
+	.status-pill.status-concerning {
+		background: #fee2e2;
+		color: #b91c1c;
 	}
-	
-	.baseline-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
+
+	.status-pill.status-needs_improvement {
+		background: #fef3c7;
+		color: #b45309;
 	}
-	
-	.baseline-card {
-		background: #f8f9fa;
+
+	.status-pill.status-good,
+	.status-pill.status-excellent {
+		background: #dcfce7;
+		color: #15803d;
+	}
+
+	.adherence-layout {
+		grid-template-columns: 220px 1fr;
+		align-items: center;
+	}
+
+	.adherence-score {
 		padding: 1rem;
-		border-radius: 8px;
+		border-radius: 24px;
+		background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
 		text-align: center;
 	}
-	
-	.baseline-label {
-		font-size: 0.85rem;
-		color: #666;
-		margin-bottom: 0.5rem;
-		text-transform: capitalize;
+
+	.adherence-score strong {
+		display: block;
+		font-size: 2.4rem;
+		color: #111827;
 	}
-	
-	.baseline-value {
-		font-size: 1.75rem;
-		font-weight: bold;
-		color: #667eea;
-	}
-	
-	.domains-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1rem;
-	}
-	
-	.domain-card {
-		background: #f8f9fa;
+
+	.concern-card,
+	.trend-card,
+	.improvement-card {
+		border-radius: 20px;
 		padding: 1rem;
-		border-radius: 8px;
 	}
-	
-	.domain-card h4 {
-		text-transform: capitalize;
-		margin-bottom: 0.75rem;
-		color: #333;
+
+	.concern-card.severity-high {
+		border-left: 4px solid #ef4444;
 	}
-	
-	.domain-stats div {
-		display: flex;
-		justify-content: space-between;
-		padding: 0.25rem 0;
+
+	.concern-card.severity-medium {
+		border-left: 4px solid #f59e0b;
 	}
-	
-	.sessions-table {
+
+	.concern-card.severity-low {
+		border-left: 4px solid #0ea5e9;
+	}
+
+	.trend-card.direction-upward,
+	.improvement-card.trending-up {
+		background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+	}
+
+	.trend-card.direction-downward,
+	.improvement-card.trending-down {
+		background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+	}
+
+	.trend-change {
+		margin: 0.8rem 0 0;
+		font-weight: 700;
+	}
+
+	.trend-change.positive {
+		color: #15803d;
+	}
+
+	.trend-change.negative {
+		color: #b91c1c;
+	}
+
+	.warning-note {
+		margin: 0.55rem 0 0;
+		color: #b45309;
+		font-weight: 700;
+	}
+
+	.table-wrap {
 		overflow-x: auto;
 	}
-	
+
 	table {
 		width: 100%;
 		border-collapse: collapse;
 	}
-	
-	th {
-		background: #f8f9fa;
-		padding: 0.75rem;
-		text-align: left;
-		font-weight: 600;
-		border-bottom: 2px solid #e0e0e0;
-		font-size: 0.9rem;
-	}
-	
+
+	th,
 	td {
-		padding: 0.75rem;
-		border-bottom: 1px solid #e0e0e0;
-		font-size: 0.9rem;
-	}
-	
-	tr:hover {
-		background: #f8f9fa;
-	}
-	
-	.loading, .error {
-		text-align: center;
-		padding: 3rem;
-		font-size: 1.1rem;
-	}
-	
-	.error {
-		color: #c33;
-		background: #fee;
-		border-radius: 8px;
+		padding: 0.85rem 0.75rem;
+		border-top: 1px solid #eef2f7;
+		text-align: left;
+		color: #374151;
 	}
 
-	/* Progress Monitoring Styles */
-	.progress-monitoring {
-		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-		padding: 2rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.progress-monitoring h2 {
-		margin-bottom: 1.5rem;
-		color: #333;
-	}
-
-	.alert-box {
-		background: white;
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 1.5rem;
-		border-left: 5px solid #f59e0b;
-	}
-
-	.alert-box.warning {
-		border-left-color: #f59e0b;
-		background: #fffbeb;
-	}
-
-	.alert-box h3 {
-		margin-bottom: 1rem;
-		color: #92400e;
-	}
-
-	.concerning-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.concern-item {
-		background: white;
-		padding: 1rem;
-		border-radius: 8px;
-		border-left: 4px solid #f59e0b;
-	}
-
-	.concern-item.severity-high {
-		border-left-color: #dc2626;
-		background: #fef2f2;
-	}
-
-	.concern-item.severity-medium {
-		border-left-color: #f59e0b;
-		background: #fffbeb;
-	}
-
-	.concern-item.severity-low {
-		border-left-color: #3b82f6;
-		background: #eff6ff;
-	}
-
-	.concern-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.5rem;
-	}
-
-	.concern-domain {
-		font-weight: 700;
-		text-transform: capitalize;
-		font-size: 1rem;
-	}
-
-	.concern-severity {
-		text-transform: uppercase;
-		font-size: 0.75rem;
-		font-weight: 600;
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		background: rgba(0, 0, 0, 0.1);
-	}
-
-	.concern-issue {
-		font-weight: 600;
-		color: #666;
-		margin-bottom: 0.25rem;
-		text-transform: capitalize;
-	}
-
-	.concern-details {
-		color: #888;
-		font-size: 0.9rem;
-	}
-
-	.monitoring-card {
-		background: white;
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	}
-
-	.monitoring-card h3 {
-		margin-bottom: 1.25rem;
-		color: #333;
-		font-size: 1.25rem;
-	}
-
-	.adherence-summary {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		gap: 2rem;
-		align-items: center;
-	}
-
-	.adherence-status {
-		text-align: center;
-		padding: 1.5rem;
-		border-radius: 12px;
-		min-width: 150px;
-	}
-
-	.adherence-status.status-excellent {
-		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-		color: white;
-	}
-
-	.adherence-status.status-good {
-		background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-		color: white;
-	}
-
-	.adherence-status.status-needs_improvement {
-		background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-		color: white;
-	}
-
-	.adherence-status.status-concerning {
-		background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-		color: white;
-	}
-
-	.status-label {
-		font-weight: 700;
-		font-size: 0.9rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.adherence-rate {
-		font-size: 2.5rem;
+	th {
+		font-size: 0.78rem;
 		font-weight: 800;
-	}
-
-	.adherence-stats {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: 1rem;
-	}
-
-	.stat-item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.stat-label {
-		font-size: 0.85rem;
-		color: #666;
-	}
-
-	.stat-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: #333;
-	}
-
-	.comparison-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1rem;
-	}
-
-	.comparison-card {
-		background: #f9fafb;
-		padding: 1.25rem;
-		border-radius: 10px;
-		border-left: 4px solid #e5e7eb;
-	}
-
-	.comparison-card.status-improving {
-		border-left-color: #10b981;
-		background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-	}
-
-	.comparison-card.status-declining {
-		border-left-color: #ef4444;
-		background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-	}
-
-	.comparison-card.status-stable {
-		border-left-color: #6b7280;
-	}
-
-	.comparison-card h4 {
-		text-transform: capitalize;
-		margin-bottom: 0.75rem;
-		color: #333;
-		font-size: 1rem;
-	}
-
-	.comparison-values {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 0.75rem;
-	}
-
-	.comparison-values .baseline,
-	.comparison-values .current {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.comparison-values .label {
-		font-size: 0.75rem;
-		color: #666;
-		margin-bottom: 0.25rem;
-	}
-
-	.comparison-values .value {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #333;
-	}
-
-	.comparison-values .arrow {
-		font-size: 1.5rem;
-		color: #999;
-	}
-
-	.improvement-indicator {
-		font-weight: 700;
-		font-size: 1.1rem;
-		text-align: center;
-		padding: 0.5rem;
-		border-radius: 6px;
-		margin-bottom: 0.5rem;
-	}
-
-	.improvement-indicator.positive {
-		background: #d1fae5;
-		color: #065f46;
-	}
-
-	.improvement-indicator.negative {
-		background: #fee2e2;
-		color: #991b1b;
-	}
-
-	.session-count {
-		text-align: center;
-		font-size: 0.85rem;
-		color: #666;
-	}
-
-	.trends-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1rem;
-	}
-
-	.trend-card {
-		background: #f9fafb;
-		padding: 1.25rem;
-		border-radius: 10px;
-		border-top: 3px solid #e5e7eb;
-	}
-
-	.trend-card.direction-upward {
-		border-top-color: #10b981;
-		background: linear-gradient(180deg, #ecfdf5 0%, #f9fafb 50%);
-	}
-
-	.trend-card.direction-downward {
-		border-top-color: #ef4444;
-		background: linear-gradient(180deg, #fef2f2 0%, #f9fafb 50%);
-	}
-
-	.trend-card.direction-stable {
-		border-top-color: #6b7280;
-	}
-
-	.trend-card h4 {
-		text-transform: capitalize;
-		margin-bottom: 0.75rem;
-		color: #333;
-		font-size: 1rem;
-	}
-
-	.trend-comparison {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 0.75rem;
-	}
-
-	.trend-value {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.trend-value .label {
-		font-size: 0.75rem;
-		color: #666;
-		margin-bottom: 0.25rem;
-	}
-
-	.trend-value .value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: #333;
-	}
-
-	.trend-arrow {
-		font-size: 2rem;
-	}
-
-	.trend-arrow .arrow.up {
-		color: #10b981;
-	}
-
-	.trend-arrow .arrow.down {
-		color: #ef4444;
-	}
-
-	.trend-arrow .arrow.stable {
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 		color: #6b7280;
 	}
 
-	.trend-change {
-		text-align: center;
-		font-weight: 600;
-		padding: 0.5rem;
-		border-radius: 6px;
-		margin-bottom: 0.5rem;
-	}
-
-	.trend-change.positive {
-		background: #d1fae5;
-		color: #065f46;
-	}
-
-	.trend-change.negative {
-		background: #fee2e2;
-		color: #991b1b;
-	}
-
-	.trend-warning {
-		background: #fef3c7;
-		color: #92400e;
-		text-align: center;
-		padding: 0.5rem;
-		border-radius: 6px;
-		font-weight: 600;
-		font-size: 0.85rem;
-	}
-
-	.improvements-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1rem;
-	}
-
-	.improvement-card {
-		background: #f9fafb;
-		padding: 1.25rem;
-		border-radius: 10px;
-		border: 2px solid #e5e7eb;
-	}
-
-	.improvement-card.trending-up {
-		border-color: #10b981;
-		background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-	}
-
-	.improvement-card.trending-down {
-		border-color: #ef4444;
-		background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-	}
-
-	.improvement-card h4 {
-		text-transform: capitalize;
-		margin-bottom: 0.75rem;
-		color: #333;
-		font-size: 1rem;
-	}
-
-	.improvement-summary {
-		margin-bottom: 1rem;
-	}
-
-	.avg-comparison {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.avg-comparison > div {
-		display: flex;
-		justify-content: space-between;
-	}
-
-	.avg-comparison .label {
-		color: #666;
-		font-size: 0.9rem;
-	}
-
-	.avg-comparison .value {
-		font-weight: 700;
-		color: #333;
-	}
-
-	.overall-change {
-		text-align: center;
-		font-weight: 700;
-		font-size: 1.1rem;
-		padding: 0.5rem;
-		border-radius: 6px;
-	}
-
-	.overall-change.positive {
-		background: #d1fae5;
-		color: #065f46;
-	}
-
-	.overall-change.negative {
-		background: #fee2e2;
-		color: #991b1b;
-	}
-
-	.recent-scores {
-		margin: 1rem 0 0.5rem 0;
-	}
-
-	.recent-scores .label {
-		display: block;
-		font-size: 0.85rem;
-		color: #666;
-		margin-bottom: 0.5rem;
-	}
-
-	.scores-list {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
-
-	.score-badge {
-		background: #667eea;
-		color: white;
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-weight: 600;
-		font-size: 0.9rem;
-	}
-
-	.session-total {
-		text-align: center;
-		font-size: 0.85rem;
-		color: #666;
-		margin-top: 0.5rem;
-	}
-
-
-	/* Modal Styles */
 	.modal-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0, 0, 0, 0.5);
+		inset: 0;
+		background: rgba(15, 23, 42, 0.45);
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 1rem;
 		z-index: 1000;
 	}
 
 	.modal-content {
-		background: white;
-		border-radius: 12px;
-		max-width: 600px;
-		width: 90%;
+		width: min(760px, 100%);
 		max-height: 90vh;
-		overflow-y: auto;
+		overflow: auto;
 	}
 
-	.modal-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1.5rem;
-		border-bottom: 2px solid #f0f0f0;
+	.large-modal {
+		width: min(980px, 100%);
 	}
 
-	.modal-header h2 {
-		margin: 0;
-		color: #667eea;
-		font-size: 1.5rem;
+	.close-btn,
+	.step-btn {
+		border: 1px solid #d1d5db;
+		background: #ffffff;
+		color: #111827;
+		cursor: pointer;
 	}
 
 	.close-btn {
-		background: none;
-		border: none;
-		font-size: 2rem;
-		color: #999;
-		cursor: pointer;
-		line-height: 1;
-		padding: 0;
-		width: 32px;
-		height: 32px;
-	}
-
-	.close-btn:hover {
-		color: #333;
-	}
-
-	.modal-body {
-		padding: 1.5rem;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 999px;
 	}
 
 	.form-group {
-		margin-bottom: 1.25rem;
+		display: grid;
+		gap: 0.45rem;
+		margin-bottom: 1rem;
 	}
 
-	.form-group label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-		color: #555;
-	}
-
-	.form-group select,
 	.form-group input,
+	.form-group select,
 	.form-group textarea {
 		width: 100%;
-		padding: 0.75rem;
-		border: 2px solid #e0e0e0;
-		border-radius: 8px;
-		font-size: 0.95rem;
-		font-family: inherit;
+		border: 1px solid #d1d5db;
+		border-radius: 18px;
+		padding: 0.9rem 1rem;
+		font: inherit;
+		background: #f9fafb;
+		color: #111827;
 	}
 
-	.form-group select:focus,
-	.form-group input:focus,
-	.form-group textarea:focus {
-		outline: none;
-		border-color: #667eea;
+	.focus-customization,
+	.difficulty-grid {
+		margin-bottom: 1rem;
 	}
 
-	.difficulty-controls {
-		margin-top: 0.5rem;
-	}
-
-	.difficulty-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 0.5rem;
-		border-bottom: 1px solid #f0f0f0;
-	}
-
-	.difficulty-row span:first-child {
-		text-transform: capitalize;
-		font-weight: 500;
-	}
-
-	.difficulty-buttons {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.difficulty-buttons button {
-		width: 32px;
-		height: 32px;
-		border: 2px solid #667eea;
-		background: white;
-		color: #667eea;
-		border-radius: 6px;
-		cursor: pointer;
-		font-weight: bold;
-		transition: all 0.2s;
-	}
-
-	.difficulty-buttons button:hover {
-		background: #667eea;
-		color: white;
-	}
-
-	.difficulty-buttons span {
-		min-width: 30px;
-		text-align: center;
-		font-weight: 600;
-	}
-
-	.modal-footer {
-		display: flex;
-		gap: 0.75rem;
-		padding: 1.5rem;
-		border-top: 2px solid #f0f0f0;
-	}
-
-	.btn-cancel,
-	.btn-submit {
-		flex: 1;
-		padding: 0.75rem 1.5rem;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.95rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.btn-cancel {
-		background: #e0e0e0;
-		color: #666;
-	}
-
-	.btn-cancel:hover {
-		background: #d0d0d0;
-	}
-
-	.btn-submit {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-	}
-
-	.btn-submit:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-	}
-
-	.btn-submit:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	/* Focus Areas Customization */
-	.btn-customize-focus {
-		width: 100%;
-		margin-top: 1rem;
-		padding: 0.65rem 1rem;
-		background: linear-gradient(135deg, #4fc3f7, #2196f3);
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-	}
-
-	.btn-customize-focus:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
-	}
-
-	.focus-customization {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.focus-category {
-		background: #ffffff;
-		border-radius: 12px;
-		padding: 1.5rem;
-		border: 2px solid #e0e0e0;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+	.focus-category,
+	.difficulty-card {
+		padding: 1rem;
+		border-radius: 20px;
 	}
 
 	.category-title {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.15rem;
-		font-weight: 700;
-	}
-
-	.primary-title {
-		color: #d32f2f;
-	}
-
-	.secondary-title {
-		color: #f57c00;
-	}
-
-	.maintenance-title {
-		color: #388e3c;
-	}
-
-	.category-description {
-		margin: 0 0 1rem 0;
-		font-size: 0.9rem;
-		color: #666;
-		line-height: 1.4;
-	}
-
-	.domain-selection {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
+		margin: 0 0 0.75rem;
 	}
 
 	.domain-btn {
-		padding: 0.65rem 1.25rem;
-		border-radius: 8px;
-		border: 2px solid #d0d0d0;
-		background: #f8f9fa;
-		color: #333;
+		border: 1px solid #d1d5db;
+		background: #f9fafb;
+		color: #111827;
+		border-radius: 999px;
+		padding: 0.65rem 0.95rem;
 		cursor: pointer;
-		transition: all 0.2s;
-		font-size: 0.9rem;
-		font-weight: 500;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-	}
-
-	.domain-btn:hover {
-		background: #e9ecef;
-		border-color: #999;
-		transform: translateY(-1px);
-		box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-	}
-
-	.domain-btn.selected {
 		font-weight: 700;
-		border-width: 2px;
-		color: white;
 	}
 
 	.domain-btn.selected.primary {
-		background: linear-gradient(135deg, #e53935, #c62828);
-		border-color: #b71c1c;
-		box-shadow: 0 3px 8px rgba(211, 47, 47, 0.3);
-	}
-
-	.domain-btn.selected.primary:hover {
-		background: linear-gradient(135deg, #d32f2f, #b71c1c);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
+		background: #fee2e2;
+		border-color: #ef4444;
+		color: #b91c1c;
 	}
 
 	.domain-btn.selected.secondary {
-		background: linear-gradient(135deg, #fb8c00, #f57c00);
-		border-color: #e65100;
-		box-shadow: 0 3px 8px rgba(245, 124, 0, 0.3);
-	}
-
-	.domain-btn.selected.secondary:hover {
-		background: linear-gradient(135deg, #f57c00, #e65100);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(245, 124, 0, 0.4);
+		background: #fef3c7;
+		border-color: #f59e0b;
+		color: #b45309;
 	}
 
 	.domain-btn.selected.maintenance {
-		background: linear-gradient(135deg, #43a047, #388e3c);
-		border-color: #2e7d32;
-		box-shadow: 0 3px 8px rgba(56, 142, 60, 0.3);
+		background: #dcfce7;
+		border-color: #22c55e;
+		color: #15803d;
 	}
 
-	.domain-btn.selected.maintenance:hover {
-		background: linear-gradient(135deg, #388e3c, #2e7d32);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(56, 142, 60, 0.4);
-	}
-
-	.modal-description {
-		background: #e3f2fd;
-		border-left: 4px solid #2196f3;
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
-		font-size: 0.95rem;
-		color: #1565c0;
-		line-height: 1.5;
-	}
-	
-	/* Training Plan Modal Specific */
-	.large-modal {
-		max-width: 900px;
-		max-height: 90vh;
-		overflow-y: auto;
-	}
-	
-	.section-heading {
-		color: #333;
-		font-size: 1.2rem;
-		font-weight: 700;
-		margin: 2rem 0 0.5rem 0;
-	}
-	
-	.section-heading:first-of-type {
-		margin-top: 0;
-	}
-	
-	.section-subheading {
-		color: #666;
-		font-size: 0.9rem;
-		margin: 0 0 1.5rem 0;
-		line-height: 1.4;
-	}
-	
-	.divider {
-		height: 2px;
-		background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
-		margin: 2rem 0;
-	}
-	
 	.difficulty-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-		margin-bottom: 1.5rem;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 	}
-	
-	.difficulty-control-card {
-		background: #f8f9fa;
-		border: 2px solid #e0e0e0;
-		border-radius: 10px;
-		padding: 1rem;
-		text-align: center;
+
+	.step-btn {
+		width: 2.1rem;
+		height: 2.1rem;
+		border-radius: 999px;
+		font-size: 1.1rem;
+		font-weight: 800;
 	}
-	
-	.domain-name {
-		font-weight: 600;
-		color: #333;
-		margin-bottom: 0.75rem;
-		font-size: 0.95rem;
+
+	.empty-inline {
+		color: #9ca3af;
+		font-size: 0.92rem;
 	}
-	
-	.difficulty-buttons {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 1rem;
-		margin-bottom: 0.5rem;
+
+	@media (max-width: 1100px) {
+		.hero-card,
+		.summary-grid,
+		.panel-grid,
+		.adherence-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.summary-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
-	
-	.diff-btn {
-		width: 36px;
-		height: 36px;
-		border: 2px solid #667eea;
-		background: white;
-		color: #667eea;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: bold;
-		font-size: 1.2rem;
-		transition: all 0.2s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.diff-btn:hover {
-		background: #667eea;
-		color: white;
-		transform: scale(1.1);
-	}
-	
-	.difficulty-value {
-		font-size: 1.5rem;
-		font-weight: bold;
-		color: #667eea;
-		min-width: 40px;
-	}
-	
-	.difficulty-label {
-		color: #666;
-		font-size: 0.85rem;
-		font-weight: 500;
+
+	@media (max-width: 760px) {
+		.summary-grid,
+		.panel-grid,
+		.hero-meta,
+		.metric-list div,
+		.intervention-meta div,
+		.trend-comparison,
+		.adherence-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.panel-heading,
+		.modal-header,
+		.modal-footer {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 </style>
