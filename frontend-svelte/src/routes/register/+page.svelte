@@ -19,7 +19,7 @@
 		success = '';
 		
 		// Validate common fields
-		if (!email || !password || !confirmPassword) {
+		if (!email || !password || !confirmPassword || !fullName) {
 			error = 'Please fill in all fields';
 			return;
 		}
@@ -64,7 +64,11 @@
 				}, 3000);
 			} else {
 				// Register as patient
-				await api.post('/api/auth/register', { email, password });
+				await api.post('/api/auth/register', {
+					email,
+					password,
+					full_name: fullName
+				});
 				
 				// Redirect to login after successful registration
 				goto('/login');
@@ -111,19 +115,17 @@
 		{/if}
 		
 		<form on:submit|preventDefault={handleRegister}>
-			{#if registerType === 'doctor'}
-				<div class="form-group">
-					<label for="fullName">Full Name *</label>
-					<input 
-						type="text" 
-						id="fullName" 
-						bind:value={fullName}
-						placeholder="Dr. Jane Smith"
-						disabled={loading}
-						required
-					/>
-				</div>
-			{/if}
+			<div class="form-group">
+				<label for="fullName">Full Name *</label>
+				<input 
+					type="text" 
+					id="fullName" 
+					bind:value={fullName}
+					placeholder={registerType === 'doctor' ? 'Dr. Jane Smith' : 'Jane Smith'}
+					disabled={loading}
+					required
+				/>
+			</div>
 			
 			<div class="form-group">
 				<label for="email">Email</label>

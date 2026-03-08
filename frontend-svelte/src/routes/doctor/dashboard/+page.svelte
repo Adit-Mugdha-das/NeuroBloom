@@ -176,6 +176,10 @@
 		return patients.find((patient) => patient.patient_id === patientId);
 	}
 
+	function getPatientDisplayName(patientSummary, patientDetails) {
+		return patientDetails?.full_name || patientSummary?.name || patientSummary?.email || 'Patient';
+	}
+
 	$: attentionPatients = analytics?.high_risk_patients || [];
 	$: snapshotCards = analytics
 		? [
@@ -263,7 +267,7 @@
 						<article class="attention-card risk-{patient.risk_level}">
 							<div class="attention-top">
 								<div>
-									<h3>{patient.name}</h3>
+									<h3>{getPatientDisplayName(patient, details)}</h3>
 									<p>{details?.diagnosis || patient.email}</p>
 								</div>
 								<span class="risk-badge {patient.risk_level}">{patient.risk_level}</span>

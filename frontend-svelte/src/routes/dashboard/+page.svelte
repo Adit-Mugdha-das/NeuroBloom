@@ -211,6 +211,10 @@
 		return 'Advanced';
 	}
 
+	function getDisplayName() {
+		return currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Patient';
+	}
+
 	function getPrimaryRecommendation() {
 		if (!nextTasks?.tasks?.length) return null;
 		return nextTasks.tasks.find((task) => !task.completed) || nextTasks.tasks[0];
@@ -261,7 +265,7 @@
 		</div>
 		<div class="topbar-actions">
 			{#if currentUser}
-				<span class="user-email">{currentUser.email}</span>
+				<span class="user-email">{getDisplayName()}</span>
 				<button class="ghost-btn" on:click={() => goto('/notifications')}>
 					Notifications
 					{#if unreadCount > 0}

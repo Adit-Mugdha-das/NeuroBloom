@@ -26,7 +26,11 @@ def register(user: UserCreate, session: Session = Depends(get_session)):
         if existing:
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        user_db = User(email=user.email, password_hash=hash_password(user.password))
+        user_db = User(
+            email=user.email,
+            password_hash=hash_password(user.password),
+            full_name=user.full_name
+        )
         session.add(user_db)
         session.commit()
         session.refresh(user_db)
@@ -64,7 +68,8 @@ def login(user: UserLogin, session: Session = Depends(get_session)):
             "message": "Login successful",
             "email": user_db.email,
             "id": user_db.id,
-            "role": "patient"
+            "role": "patient",
+            "full_name": user_db.full_name
         }
     except HTTPException:
         raise
