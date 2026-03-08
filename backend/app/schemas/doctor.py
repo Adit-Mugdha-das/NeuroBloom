@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from typing import List
 from datetime import datetime
 
 class DoctorCreate(BaseModel):
@@ -42,6 +43,34 @@ class DoctorInterventionCreate(BaseModel):
     intervention_type: str  # "training_plan_adjustment", "note", "recommendation"
     description: str
     intervention_data: Optional[str] = None
+
+class PrescriptionMedication(BaseModel):
+    """Structured medication or instruction item within a digital prescription."""
+    name: str
+    dosage: str
+    frequency: str
+    duration: Optional[str] = None
+    instructions: Optional[str] = None
+
+class PrescriptionCreate(BaseModel):
+    """Schema for creating a structured digital prescription."""
+    title: str
+    summary: Optional[str] = None
+    patient_instructions: str
+    clinician_notes: Optional[str] = None
+    medications: List[PrescriptionMedication] = Field(default_factory=list)
+    lifestyle_plan: List[str] = Field(default_factory=list)
+    status: str = "active"
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    review_date: Optional[datetime] = None
+    follow_up_plan: Optional[str] = None
+
+
+class PrescriptionStatusUpdate(BaseModel):
+    """Schema for retiring or reactivating an issued prescription."""
+    status: str
+    reason: Optional[str] = None
 
 class MessageCreate(BaseModel):
     """Schema for creating a message"""

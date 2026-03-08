@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, col
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
@@ -13,17 +14,138 @@ from app.models.assignment_request import AssignmentRequest, RequestStatus
 from app.models.message import Message
 from app.models.progress_report import ProgressReport
 from app.models.notification import Notification
-from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate, MessageCreate, MessageRead
+from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate, MessageCreate, MessageRead, PrescriptionCreate, PrescriptionStatusUpdate
 from app.core.config import engine
+from app.core.prescriptions import (
+    build_prescription_verification_id,
+    generate_prescription_pdf_bytes,
+    parse_prescription_data,
+    serialize_prescription_intervention,
+)
 import statistics
 import json
 import traceback
+import io
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
+PRESCRIPTION_INTERVENTION_TYPE = "digital_prescription"
 
 def get_session():
     with Session(engine) as session:
         yield session
+
+def _parse_intervention_data(value: Optional[str]):
+    return parse_prescription_data(value)
+
+def _serialize_prescription(intervention: DoctorIntervention, doctor: Optional[Doctor] = None, patient: Optional[User] = None):
+    return serialize_prescription_intervention(intervention, doctor=doctor, patient=patient)
+
+
+def _build_prescription_payload(
+    prescription: PrescriptionCreate,
+    doctor: Doctor,
+    patient: User,
+    *,
+    version_number: int = 1,
+    prescription_group_id: Optional[int] = None,
+    replaces_prescription_id: Optional[int] = None,
+    status: Optional[str] = None,
+):
+    return {
+        "title": prescription.title,
+        "summary": prescription.summary,
+        "patient_instructions": prescription.patient_instructions,
+        "clinician_notes": prescription.clinician_notes,
+        "medications": [item.model_dump() for item in prescription.medications],
+        "lifestyle_plan": [item for item in prescription.lifestyle_plan if item],
+        "status": status or prescription.status,
+        "valid_from": prescription.valid_from.isoformat() if prescription.valid_from else datetime.utcnow().isoformat(),
+        "valid_until": prescription.valid_until.isoformat() if prescription.valid_until else None,
+        "review_date": prescription.review_date.isoformat() if prescription.review_date else None,
+        "follow_up_plan": prescription.follow_up_plan,
+        "issued_by": doctor.full_name or doctor.email,
+        "diagnosis": patient.diagnosis,
+        "version_number": version_number,
+        "prescription_group_id": prescription_group_id,
+        "replaces_prescription_id": replaces_prescription_id,
+    }
+
+
+def _update_prescription_status_data(
+    intervention: DoctorIntervention,
+    status_update: PrescriptionStatusUpdate,
+):
+    data = _parse_intervention_data(intervention.intervention_data) or {}
+    next_status = (status_update.status or "").strip().lower()
+    if next_status not in {"active", "inactive", "cancelled"}:
+        raise HTTPException(status_code=400, detail="Unsupported prescription status")
+
+    data["status"] = next_status
+
+    if next_status == "active":
+        data.pop("retired_at", None)
+        data.pop("retired_reason", None)
+    else:
+        data["retired_at"] = datetime.utcnow().isoformat()
+        data["retired_reason"] = status_update.reason
+
+    intervention.intervention_data = json.dumps(data)
+    return intervention
+
+
+def _finalize_prescription_metadata(
+    intervention: DoctorIntervention,
+    session: Session,
+    *,
+    prescription_group_id: Optional[int] = None,
+):
+    data = _parse_intervention_data(intervention.intervention_data) or {}
+    changed = False
+
+    if not data.get("verification_id"):
+        data["verification_id"] = build_prescription_verification_id(intervention.id)
+        changed = True
+
+    if not data.get("prescription_group_id"):
+        data["prescription_group_id"] = prescription_group_id or intervention.id
+        changed = True
+
+    if not data.get("version_number"):
+        data["version_number"] = 1
+        changed = True
+
+    if changed:
+        intervention.intervention_data = json.dumps(data)
+        session.add(intervention)
+        session.commit()
+        session.refresh(intervention)
+
+    return intervention
+
+
+def _create_prescription_message(
+    doctor: Doctor,
+    doctor_id: int,
+    patient_id: int,
+    title: str,
+    summary_line: str,
+    version_number: int,
+):
+    subject_prefix = "Updated digital prescription" if version_number > 1 else "Digital prescription"
+    body_prefix = "has issued an updated digital prescription" if version_number > 1 else "has issued a new digital prescription"
+    return Message(
+        sender_id=int(doctor_id),
+        sender_type="doctor",
+        recipient_id=patient_id,
+        recipient_type="patient",
+        subject=f"{subject_prefix}: {title}",
+        message=(
+            f"Dr. {doctor.full_name or doctor.email} {body_prefix}.\n\n"
+            f"Summary: {summary_line}\n"
+            f"Version: {version_number}\n"
+            "Please review it in your prescriptions page."
+        )
+    )
 
 # ========== PATIENT MANAGEMENT ==========
 @router.get("/{doctor_id}/patients")
@@ -1071,6 +1193,7 @@ def get_patient_interventions(
         interventions = session.exec(
             select(DoctorIntervention)
             .where(DoctorIntervention.patient_id == patient_id)
+            .where(DoctorIntervention.intervention_type != PRESCRIPTION_INTERVENTION_TYPE)
             .order_by(col(DoctorIntervention.created_at).desc())
             .limit(limit)
         ).all()
@@ -1093,6 +1216,381 @@ def get_patient_interventions(
         raise
     except Exception as e:
         print(f"ERROR in get_patient_interventions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{doctor_id}/prescriptions")
+def get_doctor_prescription_directory(
+    doctor_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get a doctor-wide prescription directory grouped by assigned patient."""
+    try:
+        doctor = session.get(Doctor, doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+
+        assignments = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.is_active == True)
+        ).all()
+
+        patients = []
+        total_prescriptions = 0
+        active_prescriptions = 0
+
+        for assignment in assignments:
+            patient = session.get(User, assignment.patient_id)
+            if not patient:
+                continue
+
+            prescriptions = session.exec(
+                select(DoctorIntervention)
+                .where(DoctorIntervention.doctor_id == doctor_id)
+                .where(DoctorIntervention.patient_id == assignment.patient_id)
+                .where(DoctorIntervention.intervention_type == PRESCRIPTION_INTERVENTION_TYPE)
+                .order_by(col(DoctorIntervention.created_at).desc())
+            ).all()
+
+            serialized = [_serialize_prescription(item, doctor=doctor, patient=patient) for item in prescriptions]
+            latest = serialized[0] if serialized else None
+            active_count = sum(1 for item in serialized if item["status"] == "active")
+
+            total_prescriptions += len(serialized)
+            active_prescriptions += active_count
+
+            patients.append({
+                "patient_id": patient.id,
+                "full_name": patient.full_name or patient.email,
+                "email": patient.email,
+                "diagnosis": assignment.diagnosis,
+                "treatment_goal": assignment.treatment_goal,
+                "prescription_count": len(serialized),
+                "active_prescription_count": active_count,
+                "last_prescribed_at": latest["created_at"] if latest else None,
+                "latest_prescription": latest
+            })
+
+        patients.sort(key=lambda item: item["last_prescribed_at"] or datetime.min, reverse=True)
+
+        return {
+            "doctor": {
+                "id": doctor.id,
+                "full_name": doctor.full_name,
+                "specialization": doctor.specialization
+            },
+            "patients": patients,
+            "summary": {
+                "assigned_patients": len(patients),
+                "patients_with_prescriptions": sum(1 for item in patients if item["prescription_count"] > 0),
+                "total_prescriptions": total_prescriptions,
+                "active_prescriptions": active_prescriptions
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_doctor_prescription_directory: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{doctor_id}/patient/{patient_id}/prescriptions")
+def get_patient_prescriptions(
+    doctor_id: int,
+    patient_id: int,
+    session: Session = Depends(get_session)
+):
+    """Get all digital prescriptions a doctor has issued for a patient."""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+
+        prescriptions = session.exec(
+            select(DoctorIntervention)
+            .where(DoctorIntervention.doctor_id == doctor_id)
+            .where(DoctorIntervention.patient_id == patient_id)
+            .where(DoctorIntervention.intervention_type == PRESCRIPTION_INTERVENTION_TYPE)
+            .order_by(col(DoctorIntervention.created_at).desc())
+        ).all()
+
+        items = [_serialize_prescription(item, doctor=doctor, patient=patient) for item in prescriptions]
+
+        return {
+            "patient": {
+                "id": patient.id if patient else patient_id,
+                "full_name": patient.full_name if patient and patient.full_name else (patient.email if patient else "Patient"),
+                "email": patient.email if patient else None,
+                "diagnosis": assignment.diagnosis,
+                "treatment_goal": assignment.treatment_goal
+            },
+            "prescriptions": items,
+            "summary": {
+                "total": len(items),
+                "active": sum(1 for item in items if item["status"] == "active")
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_prescriptions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{doctor_id}/patient/{patient_id}/prescriptions")
+def create_digital_prescription(
+    doctor_id: int,
+    patient_id: int,
+    prescription: PrescriptionCreate,
+    session: Session = Depends(get_session)
+):
+    """Create a structured digital prescription for a patient and notify them via secure message."""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+
+        if not doctor or not patient:
+            raise HTTPException(status_code=404, detail="Doctor or patient not found")
+
+        prescription_payload = _build_prescription_payload(
+            prescription,
+            doctor,
+            patient,
+            version_number=1,
+        )
+
+        intervention = DoctorIntervention(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            intervention_type=PRESCRIPTION_INTERVENTION_TYPE,
+            description=prescription.summary or prescription.title,
+            intervention_data=json.dumps(prescription_payload)
+        )
+
+        session.add(intervention)
+
+        summary_line = prescription.summary or prescription.patient_instructions
+        message = _create_prescription_message(doctor, doctor_id, patient_id, prescription.title, summary_line, 1)
+        session.add(message)
+
+        session.commit()
+        session.refresh(intervention)
+        intervention = _finalize_prescription_metadata(intervention, session)
+
+        return {
+            "message": "Digital prescription issued successfully",
+            "prescription": _serialize_prescription(intervention, doctor=doctor, patient=patient)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in create_digital_prescription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}")
+def revise_digital_prescription(
+    doctor_id: int,
+    patient_id: int,
+    prescription_id: int,
+    prescription: PrescriptionCreate,
+    session: Session = Depends(get_session)
+):
+    """Create a revised version of an existing prescription while preserving history."""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+        existing = session.get(DoctorIntervention, prescription_id)
+
+        if not doctor or not patient or not existing:
+            raise HTTPException(status_code=404, detail="Prescription context not found")
+
+        if existing.doctor_id != doctor_id or existing.patient_id != patient_id or existing.intervention_type != PRESCRIPTION_INTERVENTION_TYPE:
+            raise HTTPException(status_code=403, detail="No access to this prescription")
+
+        existing_data = _parse_intervention_data(existing.intervention_data) or {}
+        existing_data["status"] = "revised"
+        existing.intervention_data = json.dumps(existing_data)
+        session.add(existing)
+
+        version_number = int(existing_data.get("version_number") or 1) + 1
+        prescription_group_id = existing_data.get("prescription_group_id") or existing.id
+        payload = _build_prescription_payload(
+            prescription,
+            doctor,
+            patient,
+            version_number=version_number,
+            prescription_group_id=prescription_group_id,
+            replaces_prescription_id=existing.id,
+        )
+
+        revised = DoctorIntervention(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            intervention_type=PRESCRIPTION_INTERVENTION_TYPE,
+            description=prescription.summary or prescription.title,
+            intervention_data=json.dumps(payload)
+        )
+        session.add(revised)
+
+        summary_line = prescription.summary or prescription.patient_instructions
+        session.add(_create_prescription_message(doctor, doctor_id, patient_id, prescription.title, summary_line, version_number))
+
+        session.commit()
+        session.refresh(revised)
+        revised = _finalize_prescription_metadata(revised, session, prescription_group_id=prescription_group_id)
+
+        return {
+            "message": "Prescription revision issued successfully",
+            "prescription": _serialize_prescription(revised, doctor=doctor, patient=patient)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in revise_digital_prescription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/pdf")
+def download_prescription_pdf(
+    doctor_id: int,
+    patient_id: int,
+    prescription_id: int,
+    session: Session = Depends(get_session)
+):
+    """Generate a professional PDF view for a digital prescription."""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+        intervention = session.get(DoctorIntervention, prescription_id)
+
+        if not doctor or not patient or not intervention:
+            raise HTTPException(status_code=404, detail="Prescription not found")
+
+        if intervention.doctor_id != doctor_id or intervention.patient_id != patient_id or intervention.intervention_type != PRESCRIPTION_INTERVENTION_TYPE:
+            raise HTTPException(status_code=403, detail="No access to this prescription")
+
+        intervention = _finalize_prescription_metadata(intervention, session)
+        prescription_payload = serialize_prescription_intervention(
+            intervention,
+            doctor=doctor,
+            patient=patient,
+            diagnosis=assignment.diagnosis or patient.diagnosis,
+        )
+        pdf_bytes = generate_prescription_pdf_bytes(prescription_payload)
+        filename = f"prescription-{prescription_payload['verification_id']}.pdf"
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in download_prescription_pdf: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/status")
+def update_prescription_status(
+    doctor_id: int,
+    patient_id: int,
+    prescription_id: int,
+    status_update: PrescriptionStatusUpdate,
+    session: Session = Depends(get_session)
+):
+    """Deactivate, cancel, or reactivate an issued prescription."""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        doctor = session.get(Doctor, doctor_id)
+        patient = session.get(User, patient_id)
+        intervention = session.get(DoctorIntervention, prescription_id)
+
+        if not doctor or not patient or not intervention:
+            raise HTTPException(status_code=404, detail="Prescription not found")
+
+        if intervention.doctor_id != doctor_id or intervention.patient_id != patient_id or intervention.intervention_type != PRESCRIPTION_INTERVENTION_TYPE:
+            raise HTTPException(status_code=403, detail="No access to this prescription")
+
+        intervention = _update_prescription_status_data(intervention, status_update)
+        session.add(intervention)
+
+        next_status = status_update.status.strip().lower()
+        reason_line = f"\nReason: {status_update.reason}" if status_update.reason else ""
+        session.add(
+            Message(
+                sender_id=doctor_id,
+                sender_type="doctor",
+                recipient_id=patient_id,
+                recipient_type="patient",
+                subject=f"Prescription status updated: {intervention.description}",
+                message=(
+                    f"Dr. {doctor.full_name or doctor.email} has marked your prescription as {next_status}."
+                    f"\nPrescription: {intervention.description}"
+                    f"{reason_line}"
+                    "\nPlease review the updated prescription record in your patient portal."
+                )
+            )
+        )
+
+        session.commit()
+        session.refresh(intervention)
+
+        return {
+            "message": f"Prescription marked as {next_status}",
+            "prescription": _serialize_prescription(intervention, doctor=doctor, patient=patient)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in update_prescription_status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/{doctor_id}/patient/{patient_id}/training-plan")

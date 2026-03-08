@@ -272,6 +272,7 @@
 	<svelte:fragment slot="actions">
 		<button class="outline-btn" on:click={() => goto('/doctor/patients')}>All Patients</button>
 		<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patientId}/reports`)}>Progress Reports</button>
+		<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patientId}/prescriptions`)}>Prescriptions</button>
 		<button class="primary-btn" on:click={openInterventionModal}>Add Clinical Note</button>
 		<button class="accent-btn" on:click={openFocusAreasModal}>Adjust Training Plan</button>
 	</svelte:fragment>

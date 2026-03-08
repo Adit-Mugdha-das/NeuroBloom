@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
-	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import api from '$lib/api.js';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -78,6 +78,7 @@
 						</div>
 						<div class="report-actions">
 							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}`)}>Open Patient</button>
+							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/prescriptions`)}>Prescriptions</button>
 							<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/reports`)}>Open Reports</button>
 						</div>
 					</article>

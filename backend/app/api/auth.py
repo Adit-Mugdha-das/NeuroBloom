@@ -1,16 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, col
 from typing import Optional
 from app.models.user import User
 from app.models.doctor import Doctor
 from app.models.patient_assignment import PatientAssignment
+from app.models.doctor_intervention import DoctorIntervention
 from app.models.message import Message
 from app.models.notification import Notification
 from app.schemas.user import UserCreate, UserLogin, UserRead
 from app.schemas.doctor import DoctorCreate, DoctorLogin, DoctorRead, MessageCreate
 from app.core.config import engine
+from app.core.prescriptions import generate_prescription_pdf_bytes, parse_prescription_data, serialize_prescription_intervention
 from app.core.security import hash_password, verify_password
 from datetime import datetime
+import json
+import io
 import traceback
 
 router = APIRouter()
@@ -18,6 +23,9 @@ router = APIRouter()
 def get_session():
     with Session(engine) as session:
         yield session
+
+def _parse_prescription_data(value: Optional[str]):
+    return parse_prescription_data(value)
 
 @router.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: Session = Depends(get_session)):
@@ -404,6 +412,118 @@ def get_patient_notifications(patient_id: int, session: Session = Depends(get_se
             for notification in notifications
         ]
     }
+
+@router.get("/patient/{patient_id}/prescriptions")
+def get_patient_prescriptions(patient_id: int, session: Session = Depends(get_session)):
+    """Get digital prescriptions issued by the patient's assigned doctor."""
+    try:
+        patient = session.get(User, patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            return {
+                "has_doctor": False,
+                "prescriptions": [],
+                "summary": {"total": 0, "active": 0}
+            }
+
+        doctor = session.get(Doctor, assignment.doctor_id)
+        prescriptions = session.exec(
+            select(DoctorIntervention)
+            .where(DoctorIntervention.patient_id == patient_id)
+            .where(DoctorIntervention.doctor_id == assignment.doctor_id)
+            .where(DoctorIntervention.intervention_type == "digital_prescription")
+            .order_by(col(DoctorIntervention.created_at).desc())
+        ).all()
+
+        items = []
+        for intervention in prescriptions:
+            item = serialize_prescription_intervention(
+                intervention,
+                doctor=doctor,
+                patient=patient,
+                diagnosis=patient.diagnosis,
+            )
+            if not item.get("doctor_name"):
+                item["doctor_name"] = "Assigned doctor"
+            items.append(item)
+
+        return {
+            "has_doctor": True,
+            "doctor": {
+                "id": doctor.id if doctor else assignment.doctor_id,
+                "name": doctor.full_name if doctor and doctor.full_name else "Assigned doctor",
+                "specialization": doctor.specialization if doctor else None
+            },
+            "prescriptions": items,
+            "summary": {
+                "total": len(items),
+                "active": sum(1 for item in items if item["status"] == "active")
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_patient_prescriptions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/patient/{patient_id}/prescriptions/{prescription_id}/pdf")
+def download_patient_prescription_pdf(
+    patient_id: int,
+    prescription_id: int,
+    session: Session = Depends(get_session)
+):
+    """Allow a patient to view or download an issued prescription PDF."""
+    try:
+        patient = session.get(User, patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=404, detail="No assigned doctor found")
+
+        doctor = session.get(Doctor, assignment.doctor_id)
+        intervention = session.get(DoctorIntervention, prescription_id)
+
+        if not intervention:
+            raise HTTPException(status_code=404, detail="Prescription not found")
+
+        if intervention.patient_id != patient_id or intervention.doctor_id != assignment.doctor_id or intervention.intervention_type != "digital_prescription":
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        prescription_payload = serialize_prescription_intervention(
+            intervention,
+            doctor=doctor,
+            patient=patient,
+            diagnosis=patient.diagnosis,
+        )
+        pdf_bytes = generate_prescription_pdf_bytes(prescription_payload)
+        filename = f"prescription-{prescription_payload['verification_id']}.pdf"
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in download_patient_prescription_pdf: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/patient/{patient_id}/messages/{message_id}/mark-read")
 def mark_patient_message_read(

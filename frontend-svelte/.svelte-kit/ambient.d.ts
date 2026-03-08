@@ -106,6 +106,8 @@ declare module '$env/static/private' {
 	export const USERDOMAIN_ROAMINGPROFILE: string;
 	export const USERNAME: string;
 	export const USERPROFILE: string;
+	export const VIRTUAL_ENV: string;
+	export const VIRTUAL_ENV_PROMPT: string;
 	export const VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 	export const VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 	export const VSCODE_GIT_ASKPASS_MAIN: string;
@@ -113,6 +115,8 @@ declare module '$env/static/private' {
 	export const VSCODE_GIT_IPC_HANDLE: string;
 	export const VSCODE_NONCE: string;
 	export const windir: string;
+	export const _OLD_VIRTUAL_PATH: string;
+	export const _OLD_VIRTUAL_PROMPT: string;
 }
 
 /**
@@ -222,6 +226,8 @@ declare module '$env/dynamic/private' {
 		USERDOMAIN_ROAMINGPROFILE: string;
 		USERNAME: string;
 		USERPROFILE: string;
+		VIRTUAL_ENV: string;
+		VIRTUAL_ENV_PROMPT: string;
 		VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 		VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
 		VSCODE_GIT_ASKPASS_MAIN: string;
@@ -229,6 +235,8 @@ declare module '$env/dynamic/private' {
 		VSCODE_GIT_IPC_HANDLE: string;
 		VSCODE_NONCE: string;
 		windir: string;
+		_OLD_VIRTUAL_PATH: string;
+		_OLD_VIRTUAL_PROMPT: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
 	}

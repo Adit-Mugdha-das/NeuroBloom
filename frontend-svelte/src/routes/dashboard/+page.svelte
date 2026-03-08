@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { tasks, training } from '$lib/api';
-	import api from '$lib/api.js';
+	import api, { API_BASE_URL } from '$lib/api.js';
 	import DoctorWidget from '$lib/components/DoctorWidget.svelte';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -12,6 +12,7 @@
 	let streak = null;
 	let nextTasks = null;
 	let notifications = [];
+	let prescriptionSummary = null;
 	let unreadCount = 0;
 	let loading = true;
 	let pollHandle = null;
@@ -115,6 +116,13 @@
 			} catch (error) {
 				nextTasks = null;
 			}
+
+			try {
+				const prescriptionResponse = await api.get(`/api/auth/patient/${currentUser.id}/prescriptions`);
+				prescriptionSummary = prescriptionResponse.data;
+			} catch (error) {
+				prescriptionSummary = null;
+			}
 		} catch (error) {
 			console.error('Error fetching dashboard data:', error);
 		} finally {
@@ -215,6 +223,11 @@
 		return currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Patient';
 	}
 
+	function viewLatestPrescription() {
+		if (!currentUser || !latestPrescription) return;
+		window.open(`${API_BASE_URL}/api/auth/patient/${currentUser.id}/prescriptions/${latestPrescription.id}/pdf`, '_blank', 'noopener');
+	}
+
 	function getPrimaryRecommendation() {
 		if (!nextTasks?.tasks?.length) return null;
 		return nextTasks.tasks.find((task) => !task.completed) || nextTasks.tasks[0];
@@ -237,6 +250,7 @@
 	}
 
 	$: primaryRecommendation = getPrimaryRecommendation();
+	$: latestPrescription = prescriptionSummary?.prescriptions?.[0] || null;
 	$: overviewCards = [
 		{ key: 'sessions', label: 'Total Sessions', value: stats?.total_sessions || 0, tone: 'indigo' },
 		{ key: 'domains', label: 'Active Domains', value: stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : 0, tone: 'cyan' },
@@ -396,6 +410,45 @@
 						</div>
 						<div class="recommendation-actions">
 							<button class="primary-btn" on:click={() => goto('/baseline/results')}>Review Baseline</button>
+						</div>
+					</div>
+				{/if}
+			</section>
+
+			<section class="section care-plan-section">
+				<div class="section-head">
+					<div>
+						<p class="section-kicker">Prescription Record</p>
+						<h2>Your clinician-issued medication and care plans</h2>
+					</div>
+				</div>
+
+				{#if prescriptionSummary?.has_doctor && latestPrescription}
+					<div class="care-plan-card">
+						<div class="care-plan-copy">
+							<p class="recommendation-domain">Latest prescription</p>
+							<h3>{latestPrescription.title}</h3>
+							<p class="recommendation-reason">{latestPrescription.summary || latestPrescription.patient_instructions}</p>
+							<div class="recommendation-meta">
+								<span class="meta-chip">Dr. {latestPrescription.doctor_name}</span>
+								<span class="meta-chip">Issued {formatDate(latestPrescription.created_at)}</span>
+								<span class="meta-chip">{latestPrescription.medication_count} medication item{latestPrescription.medication_count === 1 ? '' : 's'}</span>
+							</div>
+						</div>
+						<div class="recommendation-actions">
+							<button class="primary-btn" on:click={() => goto('/prescriptions')}>Open Prescriptions</button>
+							<button class="secondary-btn" on:click={viewLatestPrescription}>View Latest PDF</button>
+						</div>
+					</div>
+				{:else}
+					<div class="recommendation-card empty">
+						<div class="recommendation-copy">
+							<p class="recommendation-domain">Care documents</p>
+							<h3>No digital prescriptions yet</h3>
+							<p class="recommendation-reason">When your clinician issues a prescription or medication plan, it will appear here and in the prescriptions page.</p>
+						</div>
+						<div class="recommendation-actions">
+							<button class="primary-btn" on:click={() => goto('/prescriptions')}>Open Prescriptions</button>
 						</div>
 					</div>
 				{/if}
@@ -880,6 +933,20 @@
 		box-shadow: 0 10px 30px rgba(79, 70, 229, 0.08);
 	}
 
+	.care-plan-card {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem;
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.76);
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.75);
+		border-left: 5px solid #0f766e;
+		box-shadow: 0 10px 30px rgba(15, 118, 110, 0.08);
+	}
+
 	.recommendation-card.empty {
 		background: rgba(248, 250, 252, 0.8);
 	}
@@ -894,6 +961,12 @@
 	}
 
 	.recommendation-copy h3 {
+		margin: 0.3rem 0;
+		font-size: 1.2rem;
+		color: #111827;
+	}
+
+	.care-plan-copy h3 {
 		margin: 0.3rem 0;
 		font-size: 1.2rem;
 		color: #111827;
@@ -1054,6 +1127,7 @@
 		}
 
 		.recommendation-card,
+		.care-plan-card,
 		.topbar {
 			flex-direction: column;
 			align-items: stretch;
