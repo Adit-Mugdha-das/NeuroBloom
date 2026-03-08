@@ -31,7 +31,7 @@
 	async function loadProfile() {
 		try {
 			loading = true;
-			const response = await api.get(`/auth/patient/${userData.id}/profile`);
+			const response = await api.get(`/api/auth/patient/${userData.id}/profile`);
 			profile = response.data;
 		} catch (err) {
 			error = 'Failed to load profile';
@@ -48,8 +48,9 @@
 			message = '';
 
 			const response = await api.patch(
-				`/auth/patient/${userData.id}/consent`,
-				{ consent: !profile.consent_to_share }
+				`/api/auth/patient/${userData.id}/consent`,
+				null,
+				{ params: { consent: !profile.consent_to_share } }
 			);
 
 			profile.consent_to_share = response.data.consent_to_share;

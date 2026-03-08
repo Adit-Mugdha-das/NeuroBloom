@@ -74,8 +74,10 @@
 		try {
 			// Update user's full name if it's not set
 			if (!currentUser.full_name) {
-				await api.patch(`/api/auth/patient/${currentUser.id}/profile`, {
-					full_name: fullName.trim()
+				await api.patch(`/api/auth/patient/${currentUser.id}/profile`, null, {
+					params: {
+						full_name: fullName.trim()
+					}
 				});
 				currentUser.full_name = fullName.trim();
 			}

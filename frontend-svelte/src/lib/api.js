@@ -92,7 +92,7 @@ export const training = {
 	
 	// Submit training session results
 	submitSession: async (sessionData) => {
-		const response = await api.post('/api/training/training-session/submit', null, {
+		const response = await api.post('/api/training/training-session/submit', sessionData.raw_data || {}, {
 			params: {
 				user_id: sessionData.user_id,
 				training_plan_id: sessionData.training_plan_id,
