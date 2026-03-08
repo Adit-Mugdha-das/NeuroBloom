@@ -1,6 +1,6 @@
 <script>
-	import DevPanel from '$lib/components/DevPanel.svelte';
 	import { training } from '$lib/api';
+	import DevPanel from '$lib/components/DevPanel.svelte';
 	import { onMount } from 'svelte';
 	import '../app.css';
 

@@ -2,8 +2,8 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
-	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	
@@ -16,6 +16,7 @@
 	let newlyEarnedBadges = [];
 	let showPreTaskQuestionnaire = false;
 	let pendingTaskRoute = null;
+	const SESSION_CONTEXT_PREFIX = 'training-session-context';
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -159,11 +160,38 @@
 		return 'Expert';
 	}
 
+	function getCurrentSessionStorageKey() {
+		if (!browser || !currentUser || !trainingPlan) return null;
+		const sessionOrdinal = (trainingPlan.total_sessions || 0) + 1;
+		return `${SESSION_CONTEXT_PREFIX}:${currentUser.id}:${trainingPlan.id}:${sessionOrdinal}`;
+	}
+
+	function getStoredSessionContextValue() {
+		const storageKey = getCurrentSessionStorageKey();
+		if (!storageKey) return null;
+		return localStorage.getItem(storageKey);
+	}
+
+	function setStoredSessionContextValue(value) {
+		const storageKey = getCurrentSessionStorageKey();
+		if (!storageKey) return;
+		localStorage.setItem(storageKey, value);
+	}
+
+	function getStoredSessionContextId() {
+		const storedValue = getStoredSessionContextValue();
+		if (!storedValue || storedValue === 'skip') return null;
+
+		const contextId = Number.parseInt(storedValue, 10);
+		return Number.isInteger(contextId) && contextId > 0 ? contextId : null;
+	}
+
 	function launchTask(route, contextId = null) {
 		if (!route) return;
 
+		const activeContextId = contextId ?? getStoredSessionContextId();
 		const separator = route.includes('?') ? '&' : '?';
-		const finalRoute = contextId ? `${route}${separator}contextId=${encodeURIComponent(contextId)}` : route;
+		const finalRoute = activeContextId ? `${route}${separator}contextId=${encodeURIComponent(activeContextId)}` : route;
 		goto(finalRoute);
 	}
 
@@ -171,17 +199,30 @@
 		if (task.completed) return;
 
 		pendingTaskRoute = getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id);
+		const hasHandledQuestionnaire = !!getStoredSessionContextValue();
+		const sessionAlreadyStarted = (nextTasks?.completed_tasks || 0) > 0;
+
+		if (hasHandledQuestionnaire || sessionAlreadyStarted) {
+			launchTask(pendingTaskRoute);
+			pendingTaskRoute = null;
+			return;
+		}
+
 		showPreTaskQuestionnaire = true;
 	}
 
 	function handleQuestionnaireComplete(event) {
 		const contextId = event.detail?.contextId;
+		if (contextId) {
+			setStoredSessionContextValue(String(contextId));
+		}
 		showPreTaskQuestionnaire = false;
 		launchTask(pendingTaskRoute, contextId);
 		pendingTaskRoute = null;
 	}
 
 	function handleQuestionnaireSkip() {
+		setStoredSessionContextValue('skip');
 		showPreTaskQuestionnaire = false;
 		launchTask(pendingTaskRoute);
 		pendingTaskRoute = null;

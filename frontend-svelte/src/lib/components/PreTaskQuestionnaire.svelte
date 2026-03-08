@@ -11,19 +11,13 @@
 	// Form state
 	let fatigueLevel = 5;
 	let sleepQuality = 5;
-	let sleepHours = 7;
 	let medicationTaken = null;
 	let hoursSinceMedication = null;
-	let painLevel = null;
-	let stressLevel = 5;
 	let readinessLevel = 7;
-	let notes = '';
-	let location = 'home';
 
 	// UI state
 	let submitting = false;
 	let error = '';
-	let showOptionalFields = false;
 
 	// Get current user
 	let currentUser;
@@ -40,14 +34,14 @@
 				user_id: currentUser.id,
 				fatigue_level: fatigueLevel,
 				sleep_quality: sleepQuality,
-				sleep_hours: sleepHours,
+				sleep_hours: null,
 				medication_taken_today: medicationTaken,
 				hours_since_medication: hoursSinceMedication,
-				pain_level: painLevel,
-				stress_level: stressLevel,
+				pain_level: null,
+				stress_level: null,
 				readiness_level: readinessLevel,
-				notes: notes || null,
-				location: location
+				notes: null,
+				location: null
 			});
 
 			// Emit event with context_id
@@ -76,7 +70,7 @@
 		<div class="questionnaire-modal">
 			<div class="modal-header">
 				<h2>📋 Quick Check-In</h2>
-				<p class="subtitle">Help us understand how you're feeling today (30 seconds)</p>
+				<p class="subtitle">4 quick answers before this 4-task training session</p>
 			</div>
 
 			<div class="modal-body">
@@ -86,7 +80,7 @@
 
 				<!-- Essential Questions -->
 				<div class="question-section">
-					<h3>Essential Questions</h3>
+					<h3>Session Readiness</h3>
 
 					<!-- Fatigue Level -->
 					<div class="question-group">
@@ -124,20 +118,6 @@
 						</div>
 					</div>
 
-					<!-- Sleep Hours -->
-					<div class="question-group inline">
-						<label for="sleep-hours">Hours of Sleep</label>
-						<input
-							id="sleep-hours"
-							type="number"
-							min="0"
-							max="24"
-							step="0.5"
-							bind:value={sleepHours}
-							class="number-input"
-						/>
-					</div>
-
 					<!-- Readiness -->
 					<div class="question-group">
 						<label for="readiness-level">
@@ -155,90 +135,31 @@
 							{/each}
 						</div>
 					</div>
-				</div>
 
-				<!-- Optional Fields (Expandable) -->
-				<button class="toggle-optional" on:click={() => showOptionalFields = !showOptionalFields}>
-					{showOptionalFields ? '▼' : '▶'} Optional: Medication & Symptoms
-				</button>
-
-				{#if showOptionalFields}
-					<div class="question-section optional">
-						<!-- Medication -->
-						<div class="question-group inline">
-							<label for="medication">Took medication today?</label>
-							<select id="medication" bind:value={medicationTaken} class="select-input">
-								<option value={null}>Not sure</option>
-								<option value={true}>Yes</option>
-								<option value={false}>No</option>
-							</select>
-						</div>
-
-						{#if medicationTaken}
-							<div class="question-group inline">
-								<label for="hours-since-med">Hours since last dose</label>
-								<input
-									id="hours-since-med"
-									type="number"
-									min="0"
-									max="24"
-									step="0.5"
-									bind:value={hoursSinceMedication}
-									class="number-input"
-								/>
-							</div>
-						{/if}
-
-						<!-- Pain Level -->
-						<div class="question-group">
-							<label for="pain-level">
-								<span class="label-text">Pain Level (if any)</span>
-								<span class="label-value">{painLevel || 0}/10</span>
-							</label>
-							<div class="scale-labels">
-								<span>No Pain</span>
-								<span>Severe</span>
-							</div>
-							<input id="pain-level" type="range" min="0" max="10" bind:value={painLevel} class="slider" />
-						</div>
-
-						<!-- Stress Level -->
-						<div class="question-group">
-							<label for="stress-level">
-								<span class="label-text">Stress Level</span>
-								<span class="label-value">{stressLevel}/10</span>
-							</label>
-							<div class="scale-labels">
-								<span>Calm</span>
-								<span>Very Stressed</span>
-							</div>
-							<input id="stress-level" type="range" min="1" max="10" bind:value={stressLevel} class="slider" />
-						</div>
-
-						<!-- Location -->
-						<div class="question-group inline">
-							<label for="location">Where are you?</label>
-							<select id="location" bind:value={location} class="select-input">
-								<option value="home">Home</option>
-								<option value="work">Work</option>
-								<option value="clinic">Clinic</option>
-								<option value="other">Other</option>
-							</select>
-						</div>
-
-						<!-- Notes -->
-						<div class="question-group">
-							<label for="notes">Any notes or symptoms?</label>
-							<textarea
-								id="notes"
-								bind:value={notes}
-								placeholder="E.g., 'Felt dizzy this morning' or 'Slept well, feeling good'"
-								maxlength="500"
-								rows="3"
-							></textarea>
-						</div>
+					<div class="question-group inline">
+						<label for="medication">Medication taken today?</label>
+						<select id="medication" bind:value={medicationTaken} class="select-input">
+							<option value={null}>Not sure</option>
+							<option value={true}>Yes</option>
+							<option value={false}>No</option>
+						</select>
 					</div>
-				{/if}
+
+					{#if medicationTaken}
+						<div class="question-group inline">
+							<label for="hours-since-med">Hours since last dose</label>
+							<input
+								id="hours-since-med"
+								type="number"
+								min="0"
+								max="24"
+								step="0.5"
+								bind:value={hoursSinceMedication}
+								class="number-input"
+							/>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<div class="modal-footer">
@@ -251,7 +172,7 @@
 			</div>
 
 			<div class="privacy-note">
-				🔒 Your responses help doctors understand your patterns. All data is secure.
+				🔒 This check-in is saved once and reused across the full 4-task session.
 			</div>
 		</div>
 	</div>
@@ -314,13 +235,6 @@
 		margin-bottom: 20px;
 		text-transform: uppercase;
 		letter-spacing: 1px;
-	}
-
-	.question-section.optional {
-		background: rgba(0, 0, 0, 0.2);
-		padding: 20px;
-		border-radius: 10px;
-		margin-top: 15px;
 	}
 
 	.question-group {
@@ -429,45 +343,6 @@
 	.select-input:focus {
 		outline: none;
 		border-color: #4fc3f7;
-	}
-
-	textarea {
-		width: 100%;
-		padding: 12px;
-		border-radius: 8px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		background: rgba(255, 255, 255, 0.1);
-		color: white;
-		font-size: 14px;
-		resize: vertical;
-		font-family: inherit;
-	}
-
-	textarea:focus {
-		outline: none;
-		border-color: #4fc3f7;
-	}
-
-	textarea::placeholder {
-		color: rgba(255, 255, 255, 0.5);
-	}
-
-	.toggle-optional {
-		width: 100%;
-		padding: 12px;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		border-radius: 8px;
-		color: white;
-		cursor: pointer;
-		font-size: 14px;
-		text-align: left;
-		margin-bottom: 10px;
-		transition: background 0.2s;
-	}
-
-	.toggle-optional:hover {
-		background: rgba(255, 255, 255, 0.15);
 	}
 
 	.modal-footer {
