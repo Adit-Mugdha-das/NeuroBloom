@@ -76,8 +76,10 @@
 			reports = reportsResponse.data || [];
 
 			try {
-				const { training } = await import('$lib/api.js');
-				trendsData = await training.getTrends(patientId, 30);
+				const trendsResponse = await api.get(`/api/doctor/${userData.id}/patient/${patientId}/trends`, {
+					params: { days: 30 }
+				});
+				trendsData = trendsResponse.data;
 			} catch (requestError) {
 				console.error('Failed to load trends data:', requestError);
 			}
@@ -103,7 +105,7 @@
 			selectedReport = response.data;
 			commentaryText = selectedReport.doctor_commentary || '';
 
-			await loadReports();
+			reports = [selectedReport, ...reports.filter((report) => report.id !== selectedReport.id)];
 		} catch (requestError) {
 			error = requestError.response?.data?.detail || 'Failed to generate report';
 			console.error(requestError);
@@ -468,7 +470,7 @@
 
 		const data = selectedReport.report_data;
 		let csv = 'Progress Report\n\n';
-		csv += `Patient: ${patientInfo?.patient?.name}\n`;
+		csv += `Patient: ${patientInfo?.patient_info?.full_name || patientInfo?.patient_info?.email || 'Patient'}\n`;
 		csv += `Period: ${formatDate(selectedReport.period_start)} - ${formatDate(selectedReport.period_end)}\n`;
 		csv += `Type: ${selectedReport.period_type}\n\n`;
 
@@ -494,7 +496,7 @@
 		window.URL.revokeObjectURL(url);
 	}
 
-	$: patientLabel = patientInfo?.patient?.name || patientInfo?.patient?.email || 'Patient';
+	$: patientLabel = patientInfo?.patient_info?.full_name || patientInfo?.patient_info?.email || 'Patient';
 	$: summaryCards = selectedReport
 		? [
 				{ label: 'Total Sessions', value: selectedReport.report_data.summary.total_sessions },

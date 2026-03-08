@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlmodel import Session, select, col
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
@@ -253,6 +253,101 @@ def get_patient_overview(
         raise
     except Exception as e:
         print(f"ERROR in get_patient_overview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doctor_id}/patient/{patient_id}/trends")
+def get_doctor_patient_trends(
+    doctor_id: int,
+    patient_id: int,
+    days: int = 30,
+    session: Session = Depends(get_session)
+):
+    """Get patient performance trends for the doctor-facing report workspace"""
+    try:
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
+
+        plan = session.exec(
+            select(TrainingPlan)
+            .where(TrainingPlan.user_id == patient_id)
+            .where(TrainingPlan.is_active == True)
+        ).first()
+
+        if not plan:
+            raise HTTPException(status_code=404, detail="No active training plan")
+
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        sessions_data = session.exec(
+            select(TrainingSession)
+            .where(TrainingSession.training_plan_id == plan.id)
+            .where(TrainingSession.created_at >= cutoff_date)
+            .order_by(col(TrainingSession.created_at))
+        ).all()
+
+        trends_by_domain = {}
+        sessions_by_date = {}
+
+        for session_record in sessions_data:
+            domain = session_record.domain
+            date_key = session_record.created_at.date().isoformat()
+
+            if domain not in trends_by_domain:
+                trends_by_domain[domain] = {
+                    "domain": domain,
+                    "data_points": []
+                }
+
+            trends_by_domain[domain]["data_points"].append({
+                "date": session_record.created_at.isoformat(),
+                "score": session_record.score,
+                "accuracy": session_record.accuracy,
+                "difficulty": session_record.difficulty_level,
+                "reaction_time": session_record.average_reaction_time,
+                "errors": session_record.errors
+            })
+
+            if date_key not in sessions_by_date:
+                sessions_by_date[date_key] = {
+                    "scores": [],
+                    "accuracies": [],
+                    "difficulties": []
+                }
+
+            sessions_by_date[date_key]["scores"].append(session_record.score)
+            sessions_by_date[date_key]["accuracies"].append(session_record.accuracy)
+            sessions_by_date[date_key]["difficulties"].append(session_record.difficulty_level)
+
+        overall_trend = []
+        for date_key, metrics in sorted(sessions_by_date.items()):
+            overall_trend.append({
+                "date": date_key,
+                "avg_score": sum(metrics["scores"]) / len(metrics["scores"]),
+                "avg_accuracy": sum(metrics["accuracies"]) / len(metrics["accuracies"]),
+                "avg_difficulty": sum(metrics["difficulties"]) / len(metrics["difficulties"]),
+                "sessions_count": len(metrics["scores"])
+            })
+
+        return {
+            "user_id": patient_id,
+            "period_days": days,
+            "total_sessions": len(sessions_data),
+            "trends_by_domain": trends_by_domain,
+            "overall_trend": overall_trend,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR in get_doctor_patient_trends: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{doctor_id}/patient/{patient_id}/sessions")
@@ -1668,6 +1763,9 @@ def generate_progress_report(
 ):
     """Generate an auto-generated progress report for a patient"""
     try:
+        def safe_number(value: Optional[float], default: float = 0.0) -> float:
+            return value if value is not None else default
+
         # Verify doctor exists
         doctor = session.get(Doctor, doctor_id)
         if not doctor:
@@ -1721,19 +1819,24 @@ def generate_progress_report(
             if domain not in domain_stats:
                 domain_stats[domain] = {
                     "sessions_count": 0,
-                    "total_score": 0,
-                    "total_accuracy": 0,
-                    "total_reaction_time": 0,
+                    "total_score": 0.0,
+                    "total_accuracy": 0.0,
+                    "total_reaction_time": 0.0,
                     "scores": [],
                     "difficulties": []
                 }
             
             domain_stats[domain]["sessions_count"] += 1
-            domain_stats[domain]["total_score"] += session_record.score
-            domain_stats[domain]["total_accuracy"] += session_record.accuracy
-            domain_stats[domain]["total_reaction_time"] += session_record.average_reaction_time
-            domain_stats[domain]["scores"].append(session_record.score)
-            domain_stats[domain]["difficulties"].append(session_record.difficulty_level)
+            score = safe_number(session_record.score, 0.0)
+            accuracy = safe_number(session_record.accuracy, 0.0)
+            reaction_time = safe_number(session_record.average_reaction_time, 0.0)
+            difficulty_level = safe_number(session_record.difficulty_level, 1.0)
+
+            domain_stats[domain]["total_score"] += score
+            domain_stats[domain]["total_accuracy"] += accuracy
+            domain_stats[domain]["total_reaction_time"] += reaction_time
+            domain_stats[domain]["scores"].append(score)
+            domain_stats[domain]["difficulties"].append(difficulty_level)
             
             # Task performance
             task_key = session_record.task_code or session_record.task_type
@@ -1747,7 +1850,7 @@ def generate_progress_report(
                 }
             
             task_performance[task_key]["sessions"] += 1
-            task_performance[task_key]["scores"].append(session_record.score)
+            task_performance[task_key]["scores"].append(score)
             
             # Daily activity
             day_key = session_record.created_at.strftime("%Y-%m-%d")
@@ -1760,8 +1863,8 @@ def generate_progress_report(
                 }
             
             daily_activity[day_key]["sessions"] += 1
-            daily_activity[day_key]["total_duration"] += session_record.duration
-            daily_activity[day_key]["scores"].append(session_record.score)
+            daily_activity[day_key]["total_duration"] += safe_number(session_record.duration, 0.0)
+            daily_activity[day_key]["scores"].append(score)
         
         # Calculate averages and trends
         for domain in domain_stats:
@@ -1819,8 +1922,8 @@ def generate_progress_report(
         
         # Overall summary
         total_sessions = len(sessions_data)
-        total_duration = sum(s.duration for s in sessions_data)
-        avg_overall_score = round(sum(s.score for s in sessions_data) / total_sessions, 2) if total_sessions > 0 else 0
+        total_duration = sum(safe_number(s.duration, 0.0) for s in sessions_data)
+        avg_overall_score = round(sum(safe_number(s.score, 0.0) for s in sessions_data) / total_sessions, 2) if total_sessions > 0 else 0
         
         # Add baseline information to report
         baseline_info = None
@@ -1974,7 +2077,7 @@ def get_patient_reports(
 def update_report_commentary(
     doctor_id: int,
     report_id: int,
-    commentary: str,
+    commentary: str = Body(..., embed=True),
     session: Session = Depends(get_session)
 ):
     """Update doctor commentary on a progress report"""

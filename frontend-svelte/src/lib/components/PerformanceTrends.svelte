@@ -10,6 +10,8 @@
 	let chart = null;
 	let selectedMetric = 'score';
 	let selectedDomain = 'all';
+	const metricSelectId = 'performance-trends-metric';
+	const domainSelectId = 'performance-trends-domain';
 	
 	const metricOptions = {
 		score: { label: 'Score', color: '#667eea', unit: '%' },
@@ -25,6 +27,9 @@
 		processing_speed: 'Processing Speed',
 		visual_scanning: 'Visual Scanning'
 	};
+
+	$: availableDomains = Object.keys(trendsData?.trends_by_domain || {});
+	$: hasTrendSessions = (trendsData?.total_sessions || 0) > 0;
 	
 	$: if (trendsData && chartCanvas) {
 		updateChart();
@@ -44,7 +49,8 @@
 		
 		if (selectedDomain === 'all') {
 			// Show overall trend
-			const data = trendsData.overall_trend.map(point => ({
+			const overallTrend = trendsData.overall_trend || [];
+			const data = overallTrend.map(point => ({
 				x: point.date,
 				y: selectedMetric === 'score' ? point.avg_score :
 				   selectedMetric === 'accuracy' ? point.avg_accuracy :
@@ -63,9 +69,10 @@
 			});
 		} else {
 			// Show specific domain
-			const domainData = trendsData.trends_by_domain[selectedDomain];
+			const domainData = trendsData.trends_by_domain?.[selectedDomain];
 			if (domainData) {
-				const data = domainData.data_points.map(point => ({
+				const dataPoints = domainData.data_points || [];
+				const data = dataPoints.map(point => ({
 					x: new Date(point.date).toLocaleDateString(),
 					y: selectedMetric === 'score' ? point.score :
 					   selectedMetric === 'accuracy' ? point.accuracy :
@@ -203,16 +210,16 @@
 		
 		let data = [];
 		if (selectedDomain === 'all') {
-			data = trendsData.overall_trend.map(point => ({
+			data = (trendsData.overall_trend || []).map(point => ({
 				date: point.date,
 				score: point.avg_score,
 				accuracy: point.avg_accuracy,
 				difficulty: point.avg_difficulty
 			}));
 		} else {
-			const domainData = trendsData.trends_by_domain[selectedDomain];
+			const domainData = trendsData.trends_by_domain?.[selectedDomain];
 			if (domainData) {
-				data = domainData.data_points.map(point => ({
+				data = (domainData.data_points || []).map(point => ({
 					date: point.date,
 					domain: selectedDomain,
 					score: point.score,
@@ -235,7 +242,7 @@
 		</div>
 		
 		<div class="header-actions">
-			{#if trendsData && trendsData.total_sessions > 0}
+			{#if hasTrendSessions}
 				<button class="download-btn" on:click={handleDownloadChart} title="Download chart as image">
 					📊 Chart
 				</button>
@@ -248,8 +255,8 @@
 		<div class="controls">
 			<!-- Metric Selector -->
 			<div class="selector">
-				<label>Metric:</label>
-				<select bind:value={selectedMetric} on:change={updateChart}>
+				<label for={metricSelectId}>Metric:</label>
+				<select id={metricSelectId} bind:value={selectedMetric} on:change={updateChart}>
 					<option value="score">Score</option>
 					<option value="accuracy">Accuracy</option>
 					<option value="difficulty">Difficulty</option>
@@ -258,11 +265,11 @@
 			
 			<!-- Domain Selector -->
 			<div class="selector">
-				<label>Domain:</label>
-				<select bind:value={selectedDomain} on:change={updateChart}>
+				<label for={domainSelectId}>Domain:</label>
+				<select id={domainSelectId} bind:value={selectedDomain} on:change={updateChart}>
 					<option value="all">Overall</option>
-					{#if trendsData}
-						{#each trendsData.domains as domain}
+					{#if availableDomains.length > 0}
+						{#each availableDomains as domain}
 							<option value={domain}>{domainNames[domain]}</option>
 						{/each}
 					{/if}
@@ -272,7 +279,7 @@
 	</div>
 	
 	<div class="chart-container">
-		{#if trendsData && trendsData.total_sessions > 0}
+		{#if hasTrendSessions}
 			<canvas bind:this={chartCanvas} width="800" height="300"></canvas>
 		{:else}
 			<EmptyState 
@@ -287,7 +294,7 @@
 		{/if}
 	</div>
 	
-	{#if trendsData && trendsData.total_sessions > 0}
+	{#if hasTrendSessions}
 		<div class="stats-summary">
 			<div class="stat-item">
 				<span class="stat-label">Total Sessions</span>
@@ -299,7 +306,7 @@
 			</div>
 			<div class="stat-item">
 				<span class="stat-label">Active Domains</span>
-				<span class="stat-value">{trendsData.domains.length}</span>
+				<span class="stat-value">{availableDomains.length}</span>
 			</div>
 		</div>
 	{/if}
@@ -423,29 +430,6 @@
 	canvas {
 		max-width: 100%;
 		height: auto;
-	}
-	
-	.empty-state {
-		text-align: center;
-		padding: 3rem 2rem;
-		color: #999;
-	}
-	
-	.empty-icon {
-		font-size: 4rem;
-		margin-bottom: 1rem;
-		opacity: 0.5;
-	}
-	
-	.empty-state p {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: #666;
-	}
-	
-	.empty-state small {
-		font-size: 0.9rem;
 	}
 	
 	.stats-summary {
