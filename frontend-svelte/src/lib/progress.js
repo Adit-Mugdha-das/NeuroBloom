@@ -79,3 +79,20 @@ export function getComparisonSummary(value) {
 	if ((value || 0) > 0) return 'Improved';
 	return 'Below baseline';
 }
+
+export function getClinicalStatusLabel(value) {
+	if ((value || 0) >= 5) return 'Improving';
+	if ((value || 0) <= -5) return 'Needs Attention';
+	return 'Stable';
+}
+
+export function getClinicalStatusTone(value) {
+	if ((value || 0) >= 5) return 'improving';
+	if ((value || 0) <= -5) return 'attention';
+	return 'stable';
+}
+
+export function formatPointChange(value) {
+	if (Math.abs(value || 0) < 1) return 'No meaningful change since baseline';
+	return `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} points since baseline`;
+}

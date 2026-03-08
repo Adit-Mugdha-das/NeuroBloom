@@ -6,8 +6,9 @@
 	  calculateBaselineDifficulty,
 	  calculateOverallScore,
 	  calculateTrendDelta,
-	  formatImprovementPercentage,
-	  getComparisonSummary,
+	  formatPointChange,
+	  getClinicalStatusLabel,
+	  getClinicalStatusTone,
 	  getDomainName,
 	  getTrendLabel,
 	  getTrendTone
@@ -59,6 +60,13 @@
 	$: trendDelta = calculateTrendDelta(trendsData);
 	$: trendTone = getTrendTone(trendDelta);
 	$: comparisonEntries = Object.entries(comparisonData?.comparison || {});
+	$: baselineCards = comparisonEntries.map(([domain, values]) => ({
+		domain,
+		label: getDomainName(domain),
+		status: getClinicalStatusLabel(values.improvement),
+		tone: getClinicalStatusTone(values.improvement),
+		pointChange: formatPointChange(values.improvement)
+	}));
 	$: difficultyEntries = comparisonEntries
 		.map(([domain, values]) => {
 			const baselineDifficulty = calculateBaselineDifficulty(values.baseline);
@@ -131,16 +139,13 @@
 					</div>
 
 					<div class="comparison-list">
-						{#each comparisonEntries as [domain, values]}
-							<div class="comparison-row">
+						{#each baselineCards as card}
+							<div class="comparison-row {card.tone}">
 								<div>
-									<p class="comparison-domain">{getDomainName(domain)}</p>
-									<p class="comparison-summary">{getComparisonSummary(values.improvement_percentage)}</p>
+									<p class="comparison-domain">{card.label}</p>
+									<p class="comparison-change">{card.pointChange}</p>
 								</div>
-								<div class="comparison-metric-block">
-									<p class="comparison-value">{formatImprovementPercentage(values.improvement_percentage)}</p>
-									<p class="comparison-baseline">{values.sessions_completed} sessions completed</p>
-								</div>
+								<p class="comparison-status {card.tone}">{card.status}</p>
 							</div>
 						{/each}
 					</div>
@@ -272,8 +277,7 @@
 		color: #111827;
 	}
 
-	.comparison-summary,
-	.comparison-baseline,
+	.comparison-change,
 	.difficulty-copy {
 		margin: 0.25rem 0 0;
 		color: #64748b;
@@ -281,15 +285,40 @@
 		font-size: 0.9rem;
 	}
 
-	.comparison-metric-block {
-		text-align: right;
+	.comparison-status {
+		margin: 0;
+		padding: 0.42rem 0.78rem;
+		border-radius: 999px;
+		font-size: 0.78rem;
+		font-weight: 800;
+		white-space: nowrap;
 	}
 
-	.comparison-value {
-		margin: 0;
-		font-size: 1.05rem;
-		font-weight: 800;
-		color: #4338ca;
+	.comparison-row.improving {
+		box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.1);
+	}
+
+	.comparison-row.stable {
+		box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+	}
+
+	.comparison-row.attention {
+		box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.14);
+	}
+
+	.comparison-status.improving {
+		background: rgba(34, 197, 94, 0.14);
+		color: #15803d;
+	}
+
+	.comparison-status.stable {
+		background: rgba(148, 163, 184, 0.14);
+		color: #475569;
+	}
+
+	.comparison-status.attention {
+		background: rgba(245, 158, 11, 0.16);
+		color: #b45309;
 	}
 
 	.trend-head {
@@ -338,10 +367,6 @@
 		.comparison-row,
 		.difficulty-row {
 			flex-direction: column;
-		}
-
-		.comparison-metric-block {
-			text-align: left;
 		}
 	}
 </style>
