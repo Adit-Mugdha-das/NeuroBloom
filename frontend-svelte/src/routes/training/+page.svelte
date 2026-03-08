@@ -6,7 +6,7 @@
 	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
-	
+
 	let currentUser = null;
 	let loading = true;
 	let trainingPlan = null;
@@ -17,63 +17,55 @@
 	let showPreTaskQuestionnaire = false;
 	let pendingTaskRoute = null;
 	const SESSION_CONTEXT_PREFIX = 'training-session-context';
-	
-	user.subscribe(value => {
+
+	user.subscribe((value) => {
 		currentUser = value;
 	});
-	
+
 	onMount(() => {
 		if (!currentUser) {
 			goto('/login');
 			return;
 		}
-		
+
 		loadTrainingData();
-		
-		// Reload data when page becomes visible (e.g., when returning from a task)
+
 		if (browser) {
 			const handleVisibilityChange = () => {
 				if (!document.hidden && currentUser) {
-					console.log('Page visible again, reloading training data...');
 					loadTrainingData();
 				}
 			};
-			
+
 			document.addEventListener('visibilitychange', handleVisibilityChange);
-			
-			// Cleanup
+
 			return () => {
 				document.removeEventListener('visibilitychange', handleVisibilityChange);
 			};
 		}
 	});
-	
+
 	async function loadTrainingData() {
 		loading = true;
 		error = null;
-		
+
 		try {
-			// Load training plan
 			trainingPlan = await training.getPlan(currentUser.id);
-			
-			// Load next recommended tasks
 			nextTasks = await training.getNextTasks(currentUser.id);
-			console.log('Loaded next tasks:', nextTasks); // Debug: check task data
-			
-			// Load performance metrics
+
 			try {
 				metrics = await training.getMetrics(currentUser.id);
-			} catch (e) {
+			} catch (loadMetricsError) {
 				metrics = null;
 			}
-		} catch (err) {
-			console.error('Error loading training data:', err);
+		} catch (loadError) {
+			console.error('Error loading training data:', loadError);
 			error = 'No training plan found. Please generate one from your baseline results.';
 		} finally {
 			loading = false;
 		}
 	}
-	
+
 	function getDomainName(domain) {
 		const names = {
 			working_memory: 'Working Memory',
@@ -83,20 +75,17 @@
 			processing_speed: 'Processing Speed',
 			visual_scanning: 'Visual Scanning'
 		};
+
 		return names[domain] || domain;
 	}
-	
+
 	function getTaskRoute(taskType, domain, difficulty, planId, taskId) {
-		// Map task types to their training routes
 		const routes = {
-			// Working Memory tasks
 			n_back: '/baseline/tasks/working-memory',
 			digit_span: '/training/digit-span',
 			spatial_span: '/training/spatial-span',
 			letter_number_sequencing: '/training/letter-number-sequencing',
 			operation_span: '/training/operation-span',
-			
-			// Processing Speed tasks
 			simple_reaction: '/baseline/tasks/processing-speed',
 			reaction_time: '/baseline/tasks/processing-speed',
 			sdmt: '/training/sdmt',
@@ -104,27 +93,21 @@
 			trail_making_a: '/training/trail-making-a',
 			pattern_comparison: '/training/pattern-comparison',
 			inspection_time: '/training/inspection-time',
-			
-			// Attention tasks
 			continuous_performance: '/baseline/tasks/attention',
 			cpt: '/baseline/tasks/attention',
 			pasat: '/training/pasat',
 			stroop: '/training/stroop',
-		go_nogo: '/training/gonogo',
+			go_nogo: '/training/gonogo',
 			trail_making_b: '/training/trail-making-b',
 			wcst: '/training/wcst',
 			dccs: '/training/dccs',
 			plus_minus: '/training/plus-minus',
-			
-			// Planning tasks
 			tower_of_hanoi: '/baseline/tasks/planning',
 			tower_of_london: '/baseline/tasks/planning',
 			stockings_cambridge: '/training/stockings-of-cambridge',
 			verbal_fluency: '/training/verbal-fluency',
 			category_fluency: '/training/category-fluency',
 			twenty_questions: '/training/twenty-questions',
-			
-			// Visual Scanning tasks
 			target_search: '/baseline/tasks/visual-scanning',
 			visual_search: '/training/visual-search',
 			cancellation: '/training/cancellation-test',
@@ -135,29 +118,28 @@
 			ufov: '/training/useful-field-of-view',
 			useful_field_of_view: '/training/useful-field-of-view'
 		};
-		
+
 		const baseRoute = routes[taskType] || '/dashboard';
-		// Add training mode parameters including task_id to track which specific task in the session
 		return `${baseRoute}?training=true&planId=${planId}&difficulty=${difficulty}&taskId=${encodeURIComponent(taskId)}`;
 	}
-	
-	function getPriorityColor(priority) {
-		if (priority === 'primary') return '#f44336';
-		if (priority === 'secondary') return '#ff9800';
-		return '#4caf50';
-	}
-	
+
 	function getPriorityLabel(priority) {
-		if (priority === 'primary') return 'High Priority';
-		if (priority === 'secondary') return 'Medium Priority';
+		if (priority === 'primary') return 'Primary Focus';
+		if (priority === 'secondary') return 'Secondary Focus';
 		return 'Maintenance';
 	}
-	
+
+	function getPriorityTone(priority) {
+		if (priority === 'primary') return 'primary';
+		if (priority === 'secondary') return 'secondary';
+		return 'maintenance';
+	}
+
 	function getDifficultyLabel(difficulty) {
-		if (difficulty <= 3) return 'Easy';
-		if (difficulty <= 6) return 'Medium';
-		if (difficulty <= 8) return 'Hard';
-		return 'Expert';
+		if (difficulty <= 3) return 'Gentle';
+		if (difficulty <= 6) return 'Steady';
+		if (difficulty <= 8) return 'Focused';
+		return 'Advanced';
 	}
 
 	function getCurrentSessionStorageKey() {
@@ -227,13 +209,36 @@
 		launchTask(pendingTaskRoute);
 		pendingTaskRoute = null;
 	}
-	
+
 	function backToDashboard() {
 		goto('/dashboard');
 	}
+
+	function formatDate(dateValue) {
+		return dateValue ? new Date(dateValue).toLocaleDateString() : 'Not yet';
+	}
+
+	function getSummaryValue(key) {
+		if (key === 'total') return metrics?.total_sessions ?? trainingPlan?.total_sessions ?? 0;
+		if (key === 'completed') return trainingPlan?.total_sessions ?? Math.max((nextTasks?.session_number || 1) - 1, 0);
+		return formatDate(metrics?.last_training_date);
+	}
+
+	function getTasksByPriority(priority) {
+		return nextTasks?.tasks?.filter((task) => task.priority === priority) || [];
+	}
+
+	$: summaryCards = [
+		{ key: 'total', label: 'Total Sessions' },
+		{ key: 'completed', label: 'Sessions Completed' },
+		{ key: 'last', label: 'Last Training' }
+	];
+	$: primaryTasks = getTasksByPriority('primary');
+	$: secondaryTasks = getTasksByPriority('secondary');
+	$: maintenanceTasks = getTasksByPriority('maintenance');
 </script>
 
-<div class="container">
+<div class="training-shell">
 	{#if showPreTaskQuestionnaire}
 		<PreTaskQuestionnaire
 			showQuestionnaire={showPreTaskQuestionnaire}
@@ -242,672 +247,614 @@
 		/>
 	{/if}
 
-	<!-- Badge Notifications -->
 	{#if newlyEarnedBadges.length > 0}
 		<BadgeNotification badges={newlyEarnedBadges} />
 	{/if}
-	
-	{#if loading}
-		<div class="loading-card">
-			<p>Loading training plan...</p>
-		</div>
-	{:else if error}
-		<div class="error-card">
-			<h3>Error</h3>
-			<p>{error}</p>
-			<button class="btn-primary" on:click={() => goto('/baseline/results')}>
-				Go to Baseline Results
-			</button>
-		</div>
-	{:else if trainingPlan}
-		<div class="training-container">
-			<!-- Header -->
-			<div class="training-header">
-				<div class="header-content">
-					<div class="header-text">
-						<h1>Personalized Training Plan</h1>
-						<p class="subtitle">Adaptive cognitive training based on your baseline assessment</p>
-					</div>
-					<div class="header-actions">
-						<button class="btn-refresh" on:click={loadTrainingData} disabled={loading}>
-							{#if loading}
-								⏳ Loading...
-							{:else}
-								🔄 Refresh
-							{/if}
-						</button>
-						<button class="btn-back" on:click={backToDashboard}>← Back to Dashboard</button>
-					</div>
+
+	<div class="training-layout">
+		{#if loading}
+			<section class="state-card">
+				<p>Loading your training plan...</p>
+			</section>
+		{:else if error}
+			<section class="state-card error-card">
+				<h3>Training plan unavailable</h3>
+				<p>{error}</p>
+				<button class="primary-btn" on:click={() => goto('/baseline/results')}>Go to Baseline Results</button>
+			</section>
+		{:else if trainingPlan && nextTasks}
+			<header class="training-header glass-panel">
+				<div class="header-copy">
+					<p class="eyebrow">NeuroBloom</p>
+					<h1>Your Training Plan</h1>
+					<p class="header-subcopy">A lightweight view of today’s session, recommended tasks, and your current focus areas.</p>
 				</div>
-			</div>
-			
-			<!-- Stats Overview -->
-			{#if metrics}
-				<div class="stats-card">
-					<h3>Training Progress</h3>
-					<div class="stats-grid">
-						<div class="stat">
-							<div class="stat-value">{metrics.total_sessions}</div>
-							<div class="stat-label">Total Sessions</div>
-						</div>
-						<div class="stat">
-							<div class="stat-value">{trainingPlan.total_sessions}</div>
-							<div class="stat-label">Sessions Completed</div>
-						</div>
-						<div class="stat">
-							<div class="stat-value">
-								{metrics.last_training_date ? new Date(metrics.last_training_date).toLocaleDateString() : 'Never'}
-							</div>
-							<div class="stat-label">Last Training</div>
-						</div>
-					</div>
+				<div class="header-actions">
+					<button class="ghost-btn" on:click={loadTrainingData} disabled={loading}>
+						{#if loading}Refreshing...{:else}Refresh{/if}
+					</button>
+					<button class="secondary-btn" on:click={backToDashboard}>Back to Dashboard</button>
 				</div>
-			{/if}
-			
-			<!-- Current Training Session -->
-			<div class="session-card">
-				<div class="session-header">
-					<h3>Training Session #{nextTasks.session_number}</h3>
-					<div class="session-progress">
-						<span class="progress-text">{nextTasks.completed_tasks} / {nextTasks.total_tasks} tasks completed</span>
-						<div class="progress-bar-mini">
-							<div class="progress-fill-mini" style="width: {(nextTasks.completed_tasks / nextTasks.total_tasks) * 100}%"></div>
-						</div>
-					</div>
-				</div>
-				
-				{#if nextTasks.session_complete}
-					<div class="session-complete-banner" on:click={() => goto(`/session-summary?session=${trainingPlan.total_sessions}`)}>
-						<div class="banner-content">
-							<span class="banner-icon">🎉</span>
-							<div class="banner-text">
-								<strong>Session Complete!</strong>
-								<p>All tasks finished. Click to see your summary!</p>
-							</div>
-							<span class="banner-arrow">→</span>
-						</div>
-					</div>
-				{:else}
-					<p class="session-subtitle">Complete all {nextTasks.total_tasks} tasks to finish this session</p>
-				{/if}
-				
-				<div class="tasks-grid">
-					{#each nextTasks.tasks as task}
-						<div class="task-card {task.completed ? 'completed' : ''}" style="border-left: 4px solid {getPriorityColor(task.priority)}">
-							{#if task.completed}
-								<div class="completed-overlay">
-									<div class="checkmark">✓</div>
-									<span class="completed-label">Completed</span>
-								</div>
-							{/if}
-							
-							<div class="task-header">
-								<h4>{getDomainName(task.domain)}</h4>
-								<span class="priority-badge" style="background: {getPriorityColor(task.priority)}">
-									{getPriorityLabel(task.priority)}
-								</span>
-							</div>
-							
-							<p class="task-reason">{task.focus_reason}</p>
-							
-							<div class="task-details">
-								<div class="detail">
-									<span class="detail-label">Difficulty:</span>
-									<span class="detail-value">{getDifficultyLabel(task.difficulty)} (Level {task.difficulty}/10)</span>
-								</div>
-							</div>
-							
-							<button 
-								class="btn-start-task"
-								disabled={task.completed}
-								on:click={() => startTask(task)}
-							>
-								{task.completed ? '✓ Completed' : 'Start Training'}
-							</button>
+
+				<div class="summary-strip">
+					{#each summaryCards as card}
+						<div class="summary-item">
+							<p class="summary-label">{card.label}</p>
+							<p class="summary-value">{getSummaryValue(card.key)}</p>
 						</div>
 					{/each}
 				</div>
-			</div>
-			
-			<!-- Focus Areas -->
-			<div class="focus-card">
-				<h3>Training Focus</h3>
+			</header>
+
+			<section class="section-panel glass-panel">
+				<div class="section-head">
+					<div>
+						<p class="section-kicker">Today's Session</p>
+						<h2>Session {nextTasks.session_number}</h2>
+					</div>
+					<div class="session-progress">
+						<p class="progress-label">{nextTasks.completed_tasks} of {nextTasks.total_tasks} tasks completed</p>
+						<div class="progress-track">
+							<div class="progress-fill" style="width: {(nextTasks.completed_tasks / nextTasks.total_tasks) * 100}%"></div>
+						</div>
+					</div>
+				</div>
+
+				{#if nextTasks.session_complete}
+					<button class="session-complete-banner" on:click={() => goto(`/session-summary?session=${trainingPlan.total_sessions}`)}>
+						<div>
+							<p class="complete-kicker">Session complete</p>
+							<h3>All recommended tasks are done.</h3>
+							<p>Open your session summary to review progress and next steps.</p>
+						</div>
+						<span>View Summary</span>
+					</button>
+				{:else}
+					<p class="section-note">Your session is designed to stay focused and compact. Complete the recommended tasks below in any order.</p>
+				{/if}
+			</section>
+
+			<section class="section-panel glass-panel">
+				<div class="section-head">
+					<div>
+						<p class="section-kicker">Recommended Tasks</p>
+						<h2>Today’s actionable tasks</h2>
+					</div>
+				</div>
+
+				<div class="tasks-grid">
+					{#each nextTasks.tasks as task}
+						<article class="task-card {task.completed ? 'completed' : ''} {getPriorityTone(task.priority)}">
+							<div class="task-topline">
+								<p class="task-domain">{getDomainName(task.domain)}</p>
+								<span class="priority-pill {getPriorityTone(task.priority)}">{getPriorityLabel(task.priority)}</span>
+							</div>
+							<div class="task-meta">
+								<span>{getDifficultyLabel(task.difficulty)}</span>
+								<span>Level {task.difficulty}/10</span>
+							</div>
+							<p class="task-reason">{task.focus_reason}</p>
+							<button class="primary-btn task-btn" disabled={task.completed} on:click={() => startTask(task)}>
+								{task.completed ? 'Completed' : 'Start Task'}
+							</button>
+						</article>
+					{/each}
+				</div>
+			</section>
+
+			<section class="section-panel glass-panel">
+				<div class="section-head">
+					<div>
+						<p class="section-kicker">Focus Areas</p>
+						<h2>How today’s plan is balanced</h2>
+					</div>
+				</div>
+
 				<div class="focus-grid">
-					<div class="focus-section">
-						<h4 class="focus-title primary">Primary Focus</h4>
-						<p class="focus-desc">Your weakest areas - needs most attention</p>
-						<ul class="focus-list">
+					<div class="focus-card primary">
+						<h3>Primary Focus</h3>
+						<p>Areas needing the most support right now.</p>
+						<ul>
 							{#each trainingPlan.primary_focus as domain}
 								<li>{getDomainName(domain)}</li>
 							{/each}
 						</ul>
+						{#if primaryTasks.length > 0}
+							<div class="focus-tags">
+								{#each primaryTasks as task}
+									<span>{getDomainName(task.domain)}</span>
+								{/each}
+							</div>
+						{/if}
 					</div>
-					
-					<div class="focus-section">
-						<h4 class="focus-title secondary">Secondary Focus</h4>
-						<p class="focus-desc">Moderate areas - room for improvement</p>
-						<ul class="focus-list">
+
+					<div class="focus-card secondary">
+						<h3>Secondary Focus</h3>
+						<p>Areas with room for steady improvement.</p>
+						<ul>
 							{#each trainingPlan.secondary_focus as domain}
 								<li>{getDomainName(domain)}</li>
 							{/each}
 						</ul>
+						{#if secondaryTasks.length > 0}
+							<div class="focus-tags">
+								{#each secondaryTasks as task}
+									<span>{getDomainName(task.domain)}</span>
+								{/each}
+							</div>
+						{/if}
 					</div>
-					
-					<div class="focus-section">
-						<h4 class="focus-title maintenance">Maintenance</h4>
-						<p class="focus-desc">Your strongest areas - maintain performance</p>
-						<ul class="focus-list">
+
+					<div class="focus-card maintenance">
+						<h3>Maintenance</h3>
+						<p>Areas to keep stable while the plan adapts.</p>
+						<ul>
 							{#each trainingPlan.maintenance as domain}
 								<li>{getDomainName(domain)}</li>
 							{/each}
 						</ul>
+						{#if maintenanceTasks.length > 0}
+							<div class="focus-tags">
+								{#each maintenanceTasks as task}
+									<span>{getDomainName(task.domain)}</span>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				</div>
-			</div>
-			
-			<!-- Current Difficulty Levels -->
-			<div class="difficulty-card">
-				<h3>Current Training Difficulty</h3>
-				<div class="difficulty-bars">
-					{#each Object.entries(trainingPlan.current_difficulty) as [domain, difficulty]}
-						<div class="difficulty-row">
-							<span class="difficulty-name">{getDomainName(domain)}</span>
-							<div class="difficulty-bar-container">
-								<div 
-									class="difficulty-bar-fill" 
-									style="width: {(difficulty / 10) * 100}%"
-								></div>
-							</div>
-							<span class="difficulty-level">Level {difficulty}/10</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-		</div>
-	{/if}
+			</section>
+		{/if}
+	</div>
 </div>
 
 <style>
-	.container {
+	:global(body) {
+		background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+	}
+
+	.training-shell {
 		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		padding: 2rem;
+		background:
+			radial-gradient(circle at top left, rgba(79, 70, 229, 0.12), transparent 28%),
+			radial-gradient(circle at right top, rgba(34, 211, 238, 0.12), transparent 24%),
+			linear-gradient(135deg, #eef2ff, #e0f2fe);
+		padding: 1.5rem;
+		color: #1f2937;
 	}
-	
-	.loading-card, .error-card {
-		max-width: 600px;
+
+	.training-layout {
+		max-width: 1180px;
 		margin: 0 auto;
-		background: white;
+		display: grid;
+		gap: 1rem;
+	}
+
+	.glass-panel,
+	.state-card {
+		background: rgba(248, 250, 252, 0.84);
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(255, 255, 255, 0.72);
 		border-radius: 20px;
-		padding: 3rem;
+		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+	}
+
+	.state-card {
+		padding: 2rem;
 		text-align: center;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 	}
-	
+
 	.error-card h3 {
-		color: #f44336;
-		margin-bottom: 1rem;
+		margin: 0 0 0.75rem;
+		color: #b91c1c;
 	}
-	
-	.training-container {
-		max-width: 1200px;
-		margin: 0 auto;
+
+	.error-card p {
+		margin: 0 0 1.25rem;
+		color: #6b7280;
 	}
-	
+
 	.training-header {
-		background: white;
-		border-radius: 20px;
-		padding: 2rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+		padding: 1.4rem;
+		display: grid;
+		gap: 1.1rem;
 	}
-	
-	.header-content {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 2rem;
-		flex-wrap: wrap;
-	}
-	
-	.header-text h1 {
-		margin: 0 0 0.5rem 0;
-		color: #333;
+
+	.header-copy h1 {
+		margin: 0.2rem 0 0.4rem;
 		font-size: 2rem;
+		color: #111827;
 	}
-	
-	.header-text .subtitle {
+
+	.eyebrow,
+	.section-kicker,
+	.complete-kicker {
 		margin: 0;
-		color: #666;
-		font-size: 1rem;
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 800;
+		color: #4f46e5;
 	}
-	
+
+	.header-subcopy {
+		margin: 0;
+		max-width: 680px;
+		line-height: 1.55;
+		color: #64748b;
+	}
+
 	.header-actions {
 		display: flex;
-		gap: 1rem;
-		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
-	
-	.btn-refresh {
-		background: white;
-		color: #667eea;
-		border: 2px solid #667eea;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.3s;
-		white-space: nowrap;
-	}
-	
-	.btn-refresh:hover:not(:disabled) {
-		background: #667eea;
-		color: white;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-	}
-	
-	.btn-refresh:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	
-	.btn-back {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.3s;
-		white-space: nowrap;
-	}
-	
-	.btn-back:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-	}
-	
-	.stats-card, .session-card, .focus-card, .difficulty-card {
-		background: white;
-		border-radius: 20px;
-		padding: 2rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-	}
-	
-	.stats-card h3, .session-card h3, .focus-card h3, .difficulty-card h3 {
-		margin: 0 0 1.5rem 0;
-		color: #333;
-	}
-	
-	.stats-grid {
+
+	.summary-strip {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 2rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.9rem;
 	}
-	
-	.stat {
-		text-align: center;
+
+	.summary-item {
+		padding: 1rem;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.7);
+		border: 1px solid rgba(255, 255, 255, 0.82);
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 	}
-	
-	.stat-value {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #667eea;
+
+	.summary-label {
+		margin: 0;
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: #64748b;
 	}
-	
-	.stat-label {
-		color: #666;
-		margin-top: 0.5rem;
+
+	.summary-value {
+		margin: 0.45rem 0 0;
+		font-size: 1.45rem;
+		font-weight: 700;
+		color: #111827;
 	}
-	
-	.session-subtitle {
-		color: #666;
-		margin-bottom: 2rem;
+
+	.section-panel {
+		padding: 1.25rem;
+		display: grid;
+		gap: 1rem;
 	}
-	
-	.session-header {
+
+	.section-head {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1.5rem;
-		flex-wrap: wrap;
+		align-items: flex-start;
 		gap: 1rem;
 	}
-	
+
+	.section-head h2 {
+		margin: 0.2rem 0 0;
+		font-size: 1.3rem;
+		color: #111827;
+	}
+
 	.session-progress {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.5rem;
+		min-width: min(320px, 100%);
 	}
-	
-	.progress-text {
-		color: #667eea;
-		font-weight: 600;
-		font-size: 0.95rem;
+
+	.progress-label {
+		margin: 0 0 0.45rem;
+		text-align: right;
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: #4f46e5;
 	}
-	
-	.progress-bar-mini {
-		width: 200px;
-		height: 8px;
-		background: #e0e0e0;
-		border-radius: 10px;
+
+	.progress-track {
+		height: 10px;
+		border-radius: 999px;
+		background: rgba(148, 163, 184, 0.18);
 		overflow: hidden;
 	}
-	
-	.progress-fill-mini {
+
+	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-		transition: width 0.3s ease;
+		background: linear-gradient(90deg, #4f46e5, #22c55e);
 	}
-	
-	.session-complete-banner {
-		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-		color: white;
-		padding: 1.5rem;
-		border-radius: 15px;
-		margin-bottom: 1.5rem;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-		animation: celebrate 0.5s ease;
-	}
-	
-	.session-complete-banner:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
-	}
-	
-	.banner-content {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-	
-	.banner-icon {
-		font-size: 2.5rem;
-		animation: bounce 1s infinite;
-	}
-	
-	.banner-text {
-		flex: 1;
-		text-align: left;
-	}
-	
-	.banner-text strong {
-		display: block;
-		font-size: 1.2rem;
-		margin-bottom: 0.25rem;
-	}
-	
-	.banner-text p {
+
+	.section-note {
 		margin: 0;
-		font-size: 0.95rem;
-		opacity: 0.95;
-		font-weight: normal;
+		color: #64748b;
+		line-height: 1.55;
 	}
-	
-	.banner-arrow {
-		font-size: 1.5rem;
-		font-weight: bold;
-		animation: slideRight 1s infinite;
+
+	.session-complete-banner {
+		border: none;
+		padding: 1.1rem 1.2rem;
+		border-radius: 18px;
+		background: linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(79, 70, 229, 0.14));
+		border-left: 5px solid #22c55e;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		text-align: left;
+		cursor: pointer;
+		color: #1f2937;
 	}
-	
-	@keyframes celebrate {
-		0%, 100% { transform: scale(1); }
-		50% { transform: scale(1.02); }
+
+	.session-complete-banner h3,
+	.session-complete-banner p {
+		margin: 0;
 	}
-	
-	@keyframes bounce {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(-5px); }
+
+	.session-complete-banner h3 {
+		margin-top: 0.2rem;
+		margin-bottom: 0.3rem;
 	}
-	
-	@keyframes slideRight {
-		0%, 100% { transform: translateX(0); }
-		50% { transform: translateX(5px); }
+
+	.session-complete-banner span {
+		font-weight: 700;
+		color: #15803d;
+		white-space: nowrap;
 	}
-	
+
 	.tasks-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.9rem;
 	}
-	
+
 	.task-card {
-		background: #f8f9fa;
-		border-radius: 12px;
-		padding: 1.5rem;
-		position: relative;
-		transition: all 0.3s ease;
+		padding: 1rem;
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.74);
+		border: 1px solid rgba(255, 255, 255, 0.8);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+		border-left: 5px solid #94a3b8;
+		display: grid;
+		gap: 0.85rem;
 	}
-	
+
+	.task-card.primary {
+		border-left-color: #4f46e5;
+	}
+
+	.task-card.secondary {
+		border-left-color: #0891b2;
+	}
+
+	.task-card.maintenance {
+		border-left-color: #14b8a6;
+	}
+
 	.task-card.completed {
-		opacity: 0.7;
-		background: #e8f5e9;
+		opacity: 0.82;
+		background: rgba(236, 253, 245, 0.76);
 	}
-	
-	.completed-overlay {
-		position: absolute;
-		top: 0;
-		right: 0;
-		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-		color: white;
-		padding: 0.5rem 1rem;
-		border-radius: 0 12px 0 12px;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: 600;
-		font-size: 0.9rem;
-	}
-	
-	.checkmark {
-		font-size: 1.2rem;
-	}
-	
-	.task-header {
+
+	.task-topline {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
+		align-items: flex-start;
+		gap: 0.75rem;
 	}
-	
-	.task-header h4 {
+
+	.task-domain {
 		margin: 0;
-		color: #333;
+		font-size: 1rem;
+		font-weight: 700;
+		color: #111827;
 	}
-	
-	.priority-badge {
-		color: white;
-		padding: 0.25rem 0.75rem;
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 600;
+
+	.priority-pill {
+		padding: 0.35rem 0.7rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 700;
 	}
-	
-	.task-reason {
-		color: #666;
-		font-size: 0.9rem;
-		margin-bottom: 1rem;
+
+	.priority-pill.primary {
+		background: rgba(79, 70, 229, 0.12);
+		color: #4338ca;
 	}
-	
-	.task-details {
-		margin-bottom: 1rem;
+
+	.priority-pill.secondary {
+		background: rgba(8, 145, 178, 0.12);
+		color: #0f766e;
 	}
-	
-	.detail {
+
+	.priority-pill.maintenance {
+		background: rgba(20, 184, 166, 0.12);
+		color: #0f766e;
+	}
+
+	.task-meta {
 		display: flex;
-		justify-content: space-between;
-		padding: 0.5rem 0;
+		gap: 0.65rem;
+		flex-wrap: wrap;
 	}
-	
-	.detail-label {
-		color: #666;
-		font-weight: 600;
+
+	.task-meta span {
+		padding: 0.35rem 0.65rem;
+		border-radius: 999px;
+		background: rgba(148, 163, 184, 0.12);
+		color: #475569;
+		font-size: 0.78rem;
+		font-weight: 700;
 	}
-	
-	.detail-value {
-		color: #333;
+
+	.task-reason {
+		margin: 0;
+		line-height: 1.55;
+		color: #64748b;
+		font-size: 0.92rem;
 	}
-	
-	.btn-start-task {
-		width: 100%;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.3s;
-	}
-	
-	.btn-start-task:disabled {
-		background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-		cursor: not-allowed;
-		opacity: 0.8;
-	}
-	
-	.btn-start-task:not(:disabled):hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-	}
-	
+
 	.focus-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 2rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.9rem;
 	}
-	
-	.focus-section {
-		padding: 1.5rem;
-		background: #f8f9fa;
-		border-radius: 12px;
+
+	.focus-card {
+		padding: 1rem;
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.72);
+		border: 1px solid rgba(255, 255, 255, 0.8);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 	}
-	
-	.focus-title {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.1rem;
+
+	.focus-card.primary {
+		box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.06), 0 10px 24px rgba(79, 70, 229, 0.04);
 	}
-	
-	.focus-title.primary {
-		color: #f44336;
+
+	.focus-card.secondary {
+		box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.06), 0 10px 24px rgba(8, 145, 178, 0.04);
 	}
-	
-	.focus-title.secondary {
-		color: #ff9800;
+
+	.focus-card.maintenance {
+		box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.06), 0 10px 24px rgba(20, 184, 166, 0.04);
 	}
-	
-	.focus-title.maintenance {
-		color: #4caf50;
+
+	.focus-card h3 {
+		margin: 0 0 0.35rem;
+		font-size: 1.05rem;
+		color: #111827;
 	}
-	
-	.focus-desc {
-		color: #666;
-		font-size: 0.85rem;
-		margin-bottom: 1rem;
+
+	.focus-card p {
+		margin: 0 0 0.85rem;
+		color: #64748b;
+		font-size: 0.9rem;
+		line-height: 1.5;
 	}
-	
-	.focus-list {
+
+	.focus-card ul {
 		list-style: none;
 		padding: 0;
-	}
-	
-	.focus-list li {
-		padding: 0.5rem 0;
-		color: #333;
-		font-weight: 600;
-	}
-	
-	.difficulty-grid {
+		margin: 0;
 		display: grid;
-		gap: 1rem;
+		gap: 0.55rem;
 	}
-	
-	.difficulty-item {
-		display: grid;
-		grid-template-columns: 200px 1fr 100px;
-		align-items: center;
-		gap: 1rem;
-	}
-	
-	.difficulty-name {
-		font-weight: 600;
-		color: #333;
-	}
-	
-	.difficulty-bar {
-		height: 12px;
-		background: #e0e0e0;
-		border-radius: 6px;
-		overflow: hidden;
-	}
-	
-	.difficulty-fill {
-		height: 100%;
-		background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%);
-		transition: width 0.5s ease;
-	}
-	
-	.difficulty-level {
-		color: #666;
-		font-size: 0.9rem;
-	}
-	
-	.btn-primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		padding: 1rem 2.5rem;
+
+	.focus-card li {
+		padding: 0.6rem 0.75rem;
 		border-radius: 12px;
-		font-size: 1.1rem;
+		background: rgba(248, 250, 252, 0.86);
+		color: #1f2937;
 		font-weight: 600;
+	}
+
+	.focus-tags {
+		margin-top: 0.9rem;
+		display: flex;
+		gap: 0.45rem;
+		flex-wrap: wrap;
+	}
+
+	.focus-tags span {
+		padding: 0.35rem 0.65rem;
+		border-radius: 999px;
+		background: rgba(79, 70, 229, 0.1);
+		color: #4338ca;
+		font-size: 0.76rem;
+		font-weight: 700;
+	}
+
+	.ghost-btn,
+	.primary-btn,
+	.secondary-btn {
+		border: none;
+		border-radius: 999px;
+		padding: 0.8rem 1.15rem;
+		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.3s;
+		transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 	}
-	
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+
+	.ghost-btn {
+		background: rgba(248, 250, 252, 0.7);
+		border: 1px solid rgba(255, 255, 255, 0.8);
+		color: #374151;
 	}
-	
-	.difficulty-bars {
-		display: grid;
-		gap: 1rem;
+
+	.secondary-btn {
+		background: rgba(255, 255, 255, 0.7);
+		border: 1px solid rgba(99, 102, 241, 0.18);
+		color: #4f46e5;
 	}
-	
-	.difficulty-row {
-		display: grid;
-		grid-template-columns: 200px 1fr 100px;
-		align-items: center;
-		gap: 1rem;
+
+	.primary-btn {
+		background: linear-gradient(135deg, #4f46e5, #6366f1);
+		color: #ffffff;
+		box-shadow: 0 10px 24px rgba(79, 70, 229, 0.18);
 	}
-	
-	.difficulty-name {
-		font-weight: 600;
-		color: #333;
+
+	.task-btn {
+		width: 100%;
 	}
-	
-	.difficulty-bar-container {
-		height: 12px;
-		background: #e0e0e0;
-		border-radius: 6px;
-		overflow: hidden;
+
+	.primary-btn:disabled {
+		background: linear-gradient(135deg, #22c55e, #16a34a);
+		cursor: not-allowed;
+		box-shadow: none;
 	}
-	
-	.difficulty-bar-fill {
-		height: 100%;
-		background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%);
-		transition: width 0.5s ease;
+
+	.ghost-btn:hover:not(:disabled),
+	.primary-btn:hover:not(:disabled),
+	.secondary-btn:hover:not(:disabled) {
+		transform: translateY(-1px);
 	}
-	
-	.difficulty-level {
-		color: #666;
-		font-size: 0.9rem;
+
+	.ghost-btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	@media (max-width: 960px) {
+		.training-shell {
+			padding: 1rem;
+		}
+
+		.header-actions,
+		.section-head {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.progress-label {
+			text-align: left;
+		}
+
+		.summary-strip,
+		.tasks-grid,
+		.focus-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.training-header,
+		.section-panel,
+		.state-card {
+			padding: 1rem;
+		}
+
+		.header-copy h1 {
+			font-size: 1.65rem;
+		}
+
+		.session-complete-banner {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.ghost-btn,
+		.primary-btn,
+		.secondary-btn {
+			width: 100%;
+		}
 	}
 </style>
