@@ -74,6 +74,10 @@
 							<p class="metric-value" style="color: {getScoreColor(entry.data.average_score)}">{entry.data.average_score.toFixed(1)}</p>
 						</div>
 						<div>
+							<p class="metric-label">Accuracy</p>
+							<p class="metric-value">{entry.data.average_accuracy.toFixed(1)}%</p>
+						</div>
+						<div>
 							<p class="metric-label">Improvement</p>
 							<p class="metric-value">{entry.data.improvement > 0 ? '+' : ''}{entry.data.improvement.toFixed(1)}</p>
 						</div>
@@ -128,7 +132,7 @@
 
 	.metric-row {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 0.8rem;
 	}
 

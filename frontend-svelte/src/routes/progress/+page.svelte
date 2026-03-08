@@ -2,7 +2,16 @@
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
 	import SimpleTrendChart from '$lib/components/SimpleTrendChart.svelte';
-	import { calculateOverallScore, calculateTrendDelta, getTrendLabel, getTrendTone } from '$lib/progress';
+	import {
+	  calculateBaselineDifficulty,
+	  calculateOverallScore,
+	  calculateTrendDelta,
+	  formatImprovementPercentage,
+	  getComparisonSummary,
+	  getDomainName,
+	  getTrendLabel,
+	  getTrendTone
+	} from '$lib/progress';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -13,6 +22,7 @@
 	let streakData = null;
 	let trendsData = null;
 	let weeklySummary = null;
+	let comparisonData = null;
 
 	user.subscribe((value) => {
 		currentUser = value;
@@ -36,6 +46,7 @@
 			streakData = await training.getStreak(currentUser.id);
 			trendsData = await training.getTrends(currentUser.id, 30);
 			weeklySummary = await training.getWeeklySummary(currentUser.id);
+			comparisonData = await training.getPerformanceComparison(currentUser.id);
 		} catch (loadError) {
 			console.error('Error loading progress overview:', loadError);
 			error = 'Complete more training sessions to unlock your progress overview.';
@@ -47,6 +58,23 @@
 	$: overallScore = calculateOverallScore(metrics);
 	$: trendDelta = calculateTrendDelta(trendsData);
 	$: trendTone = getTrendTone(trendDelta);
+	$: comparisonEntries = Object.entries(comparisonData?.comparison || {});
+	$: difficultyEntries = comparisonEntries
+		.map(([domain, values]) => {
+			const baselineDifficulty = calculateBaselineDifficulty(values.baseline);
+			const currentDifficulty = metrics?.current_difficulty?.[domain] ?? baselineDifficulty;
+			const delta = currentDifficulty - baselineDifficulty;
+
+			return {
+				domain,
+				label: getDomainName(domain),
+				baselineDifficulty,
+				currentDifficulty,
+				delta
+			};
+		})
+		.filter((entry) => entry.delta !== 0)
+		.sort((left, right) => Math.abs(right.delta) - Math.abs(left.delta));
 </script>
 
 <div class="progress-panel">
@@ -61,36 +89,86 @@
 			<a class="action-link" href="/training">Start Training</a>
 		</section>
 	{:else}
-		<section class="overview-grid">
-			<article class="glass-card stat-card">
-				<p class="card-label">Weekly Summary</p>
-				<h2>{weeklySummary?.total_sessions || 0} sessions</h2>
-				<p class="card-copy">{weeklySummary?.active_days || 0} active days this week and {weeklySummary?.total_time_minutes || 0} training minutes.</p>
-			</article>
+		<div class="overview-stack">
+			<section class="summary-grid">
+				<article class="glass-card stat-card compact-card">
+					<p class="card-label">Weekly Summary</p>
+					<h2>{weeklySummary?.total_sessions || 0} sessions</h2>
+					<p class="card-copy">{weeklySummary?.active_days || 0} active days and {weeklySummary?.total_time_minutes || 0} minutes this week.</p>
+				</article>
 
-			<article class="glass-card stat-card">
-				<p class="card-label">Overall Score</p>
-				<h2>{overallScore}</h2>
-				<p class="card-copy">A simplified average across your active cognitive domains.</p>
-			</article>
+				<article class="glass-card stat-card compact-card">
+					<p class="card-label">Overall Score</p>
+					<h2>{overallScore}</h2>
+					<p class="card-copy">A simplified average across your active cognitive domains.</p>
+				</article>
 
-			<article class="glass-card stat-card">
-				<p class="card-label">Training Streak</p>
-				<h2>{streakData?.current_streak || 0} days</h2>
-				<p class="card-copy">Longest streak: {streakData?.longest_streak || 0} days.</p>
-			</article>
+				<article class="glass-card stat-card compact-card">
+					<p class="card-label">Training Streak</p>
+					<h2>{streakData?.current_streak || 0} days</h2>
+					<p class="card-copy">Longest streak: {streakData?.longest_streak || 0} days.</p>
+				</article>
 
-			<article class="glass-card trend-card {trendTone}">
-				<div class="trend-head">
-					<div>
-						<p class="card-label">Trend</p>
-						<h2>{getTrendLabel(trendDelta)}</h2>
+				<article class="glass-card trend-card compact-card {trendTone}">
+					<div class="trend-head">
+						<div>
+							<p class="card-label">Trend</p>
+							<h2>{getTrendLabel(trendDelta)}</h2>
+						</div>
+						<p class="trend-delta">{trendDelta > 0 ? '+' : ''}{trendDelta}</p>
 					</div>
-					<p class="trend-delta">{trendDelta > 0 ? '+' : ''}{trendDelta}</p>
-				</div>
-				<SimpleTrendChart points={trendsData?.overall_trend || []} />
-			</article>
-		</section>
+					<SimpleTrendChart points={trendsData?.overall_trend || []} />
+				</article>
+			</section>
+
+			<section class="detail-grid">
+				<article class="glass-card detail-card">
+					<div class="detail-head">
+						<div>
+							<p class="card-label">Improvement Since Baseline</p>
+							<h2>Cognitive improvement since baseline</h2>
+						</div>
+					</div>
+
+					<div class="comparison-list">
+						{#each comparisonEntries as [domain, values]}
+							<div class="comparison-row">
+								<div>
+									<p class="comparison-domain">{getDomainName(domain)}</p>
+									<p class="comparison-summary">{getComparisonSummary(values.improvement_percentage)}</p>
+								</div>
+								<div class="comparison-metric-block">
+									<p class="comparison-value">{formatImprovementPercentage(values.improvement_percentage)}</p>
+									<p class="comparison-baseline">{values.sessions_completed} sessions completed</p>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</article>
+
+				<article class="glass-card detail-card">
+					<div class="detail-head">
+						<div>
+							<p class="card-label">Difficulty Progress</p>
+							<h2>Training challenge since baseline</h2>
+						</div>
+					</div>
+
+					{#if difficultyEntries.length > 0}
+						<div class="difficulty-list">
+							{#each difficultyEntries.slice(0, 4) as entry}
+								<div class="difficulty-row">
+									<p class="difficulty-domain">{entry.label}</p>
+									<p class="difficulty-copy">Your training difficulty {entry.delta > 0 ? 'increased' : 'decreased'} by {Math.abs(entry.delta)} level{Math.abs(entry.delta) === 1 ? '' : 's'} since baseline.</p>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="card-copy">Your training difficulty is stable so far. As you complete more sessions, this section will update automatically.</p>
+					{/if}
+				</article>
+			</section>
+		</div>
 	{/if}
 </div>
 
@@ -99,7 +177,18 @@
 		display: grid;
 	}
 
-	.overview-grid {
+	.overview-stack {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.summary-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.detail-grid {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 1rem;
@@ -143,6 +232,66 @@
 		color: #64748b;
 	}
 
+	.compact-card {
+		min-height: 100%;
+	}
+
+	.detail-card {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.detail-head h2 {
+		margin: 0.25rem 0 0;
+		font-size: 1.25rem;
+		color: #111827;
+	}
+
+	.comparison-list,
+	.difficulty-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.comparison-row,
+	.difficulty-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: flex-start;
+		padding: 0.9rem 1rem;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.68);
+		border: 1px solid rgba(255, 255, 255, 0.82);
+	}
+
+	.comparison-domain,
+	.difficulty-domain {
+		margin: 0;
+		font-weight: 700;
+		color: #111827;
+	}
+
+	.comparison-summary,
+	.comparison-baseline,
+	.difficulty-copy {
+		margin: 0.25rem 0 0;
+		color: #64748b;
+		line-height: 1.5;
+		font-size: 0.9rem;
+	}
+
+	.comparison-metric-block {
+		text-align: right;
+	}
+
+	.comparison-value {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 800;
+		color: #4338ca;
+	}
+
 	.trend-head {
 		display: flex;
 		justify-content: space-between;
@@ -181,8 +330,18 @@
 	}
 
 	@media (max-width: 860px) {
-		.overview-grid {
+		.summary-grid,
+		.detail-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.comparison-row,
+		.difficulty-row {
+			flex-direction: column;
+		}
+
+		.comparison-metric-block {
+			text-align: left;
 		}
 	}
 </style>

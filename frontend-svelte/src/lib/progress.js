@@ -64,3 +64,18 @@ export function formatDuration(totalSeconds) {
 export function formatShortDate(dateValue) {
 	return new Date(dateValue).toLocaleDateString();
 }
+
+export function calculateBaselineDifficulty(score) {
+	return Math.max(1, Math.floor((score || 0) / 10));
+}
+
+export function formatImprovementPercentage(value) {
+	if (Math.abs(value || 0) < 1) return 'Stable';
+	return `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)}%`;
+}
+
+export function getComparisonSummary(value) {
+	if (Math.abs(value || 0) < 1) return 'Stable';
+	if ((value || 0) > 0) return 'Improved';
+	return 'Below baseline';
+}
