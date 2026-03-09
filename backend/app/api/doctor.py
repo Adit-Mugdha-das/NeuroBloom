@@ -49,6 +49,35 @@ def _participant_exists(session: Session, participant_id: int, participant_type:
     return False
 
 
+def _serialize_training_plan_constraints(training_plan: Optional[TrainingPlan]):
+    if not training_plan:
+        return None
+
+    return {
+        "max_sessions_per_day": training_plan.max_sessions_per_day,
+        "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
+        "tasks_per_session": training_plan.tasks_per_session,
+        "recommended_session_length_min_minutes": training_plan.recommended_session_length_min_minutes,
+        "recommended_session_length_max_minutes": training_plan.recommended_session_length_max_minutes,
+        "cooldown_between_sessions_minutes": training_plan.cooldown_between_sessions_minutes,
+    }
+
+
+def _validate_training_plan_constraints(training_plan: TrainingPlan):
+    if training_plan.max_sessions_per_day < 1:
+        raise HTTPException(status_code=400, detail="Max sessions per day must be at least 1")
+    if training_plan.recommended_sessions_per_week < 1:
+        raise HTTPException(status_code=400, detail="Recommended sessions per week must be at least 1")
+    if training_plan.tasks_per_session < 1:
+        raise HTTPException(status_code=400, detail="Tasks per session must be at least 1")
+    if training_plan.recommended_session_length_min_minutes < 1:
+        raise HTTPException(status_code=400, detail="Minimum session length must be at least 1 minute")
+    if training_plan.recommended_session_length_max_minutes < training_plan.recommended_session_length_min_minutes:
+        raise HTTPException(status_code=400, detail="Maximum session length must be greater than or equal to minimum session length")
+    if training_plan.cooldown_between_sessions_minutes < 0:
+        raise HTTPException(status_code=400, detail="Cooldown between sessions cannot be negative")
+
+
 def _build_prescription_payload(
     prescription: PrescriptionCreate,
     doctor: Doctor,
@@ -308,6 +337,7 @@ def get_patient_overview(
         training_plan = session.exec(
             select(TrainingPlan)
             .where(TrainingPlan.user_id == patient_id)
+            .where(TrainingPlan.is_active == True)
         ).first()
         
         # Get all training sessions
@@ -376,7 +406,9 @@ def get_patient_overview(
                 "primary": json.loads(training_plan.primary_focus) if training_plan and training_plan.primary_focus else [],
                 "secondary": json.loads(training_plan.secondary_focus) if training_plan and training_plan.secondary_focus else [],
                 "maintenance": json.loads(training_plan.maintenance) if training_plan and training_plan.maintenance else []
-            }
+            },
+            "current_difficulty": json.loads(training_plan.current_difficulty) if training_plan and training_plan.current_difficulty else {},
+            "session_constraints": _serialize_training_plan_constraints(training_plan)
         }
     
     except HTTPException:
@@ -1607,6 +1639,12 @@ def update_training_plan(
     patient_id: int,
     difficulty_adjustments: Optional[str] = None,
     performance_goals: Optional[str] = None,
+    max_sessions_per_day: Optional[int] = None,
+    recommended_sessions_per_week: Optional[int] = None,
+    tasks_per_session: Optional[int] = None,
+    recommended_session_length_min_minutes: Optional[int] = None,
+    recommended_session_length_max_minutes: Optional[int] = None,
+    cooldown_between_sessions_minutes: Optional[int] = None,
     notes: Optional[str] = None,
     session: Session = Depends(get_session)
 ):
@@ -1639,6 +1677,21 @@ def update_training_plan(
             new_adjustments = json.loads(difficulty_adjustments)
             current_diff.update(new_adjustments)
             training_plan.current_difficulty = json.dumps(current_diff)
+
+        if max_sessions_per_day is not None:
+            training_plan.max_sessions_per_day = max_sessions_per_day
+        if recommended_sessions_per_week is not None:
+            training_plan.recommended_sessions_per_week = recommended_sessions_per_week
+        if tasks_per_session is not None:
+            training_plan.tasks_per_session = tasks_per_session
+        if recommended_session_length_min_minutes is not None:
+            training_plan.recommended_session_length_min_minutes = recommended_session_length_min_minutes
+        if recommended_session_length_max_minutes is not None:
+            training_plan.recommended_session_length_max_minutes = recommended_session_length_max_minutes
+        if cooldown_between_sessions_minutes is not None:
+            training_plan.cooldown_between_sessions_minutes = cooldown_between_sessions_minutes
+
+        _validate_training_plan_constraints(training_plan)
         
         training_plan.last_updated = datetime.now(timezone.utc)
         session.add(training_plan)
@@ -1646,7 +1699,15 @@ def update_training_plan(
         # Create intervention record
         intervention_data = {
             "difficulty_adjustments": json.loads(difficulty_adjustments) if difficulty_adjustments else None,
-            "performance_goals": json.loads(performance_goals) if performance_goals else None
+            "performance_goals": json.loads(performance_goals) if performance_goals else None,
+            "session_constraints": {
+                "max_sessions_per_day": max_sessions_per_day,
+                "recommended_sessions_per_week": recommended_sessions_per_week,
+                "tasks_per_session": tasks_per_session,
+                "recommended_session_length_min_minutes": recommended_session_length_min_minutes,
+                "recommended_session_length_max_minutes": recommended_session_length_max_minutes,
+                "cooldown_between_sessions_minutes": cooldown_between_sessions_minutes,
+            }
         }
         
         intervention = DoctorIntervention(
@@ -1661,7 +1722,9 @@ def update_training_plan(
         
         return {
             "message": "Training plan updated successfully",
-            "intervention_id": intervention.id
+            "intervention_id": intervention.id,
+            "session_constraints": _serialize_training_plan_constraints(training_plan),
+            "current_difficulty": json.loads(training_plan.current_difficulty) if training_plan.current_difficulty else {}
         }
     
     except HTTPException:

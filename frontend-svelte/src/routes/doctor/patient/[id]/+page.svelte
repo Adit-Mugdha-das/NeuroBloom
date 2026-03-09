@@ -28,6 +28,12 @@
 	let secondaryFocusAreas = [];
 	let maintenanceAreas = [];
 	let focusAreasNotes = '';
+	let maxSessionsPerDay = 3;
+	let recommendedSessionsPerWeek = 7;
+	let tasksPerSession = 4;
+	let sessionLengthMinMinutes = 5;
+	let sessionLengthMaxMinutes = 10;
+	let cooldownBetweenSessionsMinutes = 30;
 
 	const allDomains = [
 		{ id: 'working_memory', label: 'Working Memory' },
@@ -135,10 +141,20 @@
 			maintenanceAreas = [...(patientData.focus_areas.maintenance || [])];
 		}
 
+		const currentDifficulty = patientData?.current_difficulty || {};
 		difficultyAdjustments = {};
 		allDomains.forEach((domain) => {
-			difficultyAdjustments[domain.id] = 5;
+			difficultyAdjustments[domain.id] = currentDifficulty[domain.id] || 5;
 		});
+
+		const constraints = patientData?.session_constraints || {};
+		maxSessionsPerDay = constraints.max_sessions_per_day || 3;
+		recommendedSessionsPerWeek = constraints.recommended_sessions_per_week || 7;
+		tasksPerSession = constraints.tasks_per_session || 4;
+		sessionLengthMinMinutes = constraints.recommended_session_length_min_minutes || 5;
+		sessionLengthMaxMinutes = constraints.recommended_session_length_max_minutes || 10;
+		cooldownBetweenSessionsMinutes = constraints.cooldown_between_sessions_minutes ?? 30;
+
 		focusAreasNotes = '';
 	}
 
@@ -181,6 +197,12 @@
 				await api.patch(`/api/doctor/${userData.id}/patient/${patientId}/training-plan`, null, {
 					params: {
 						difficulty_adjustments: JSON.stringify(difficultyAdjustments),
+						max_sessions_per_day: maxSessionsPerDay,
+						recommended_sessions_per_week: recommendedSessionsPerWeek,
+						tasks_per_session: tasksPerSession,
+						recommended_session_length_min_minutes: sessionLengthMinMinutes,
+						recommended_session_length_max_minutes: sessionLengthMaxMinutes,
+						cooldown_between_sessions_minutes: cooldownBetweenSessionsMinutes,
 						notes: focusAreasNotes || 'Difficulty levels adjusted by doctor'
 					}
 				});
@@ -253,6 +275,14 @@
 
 	$: patientName = patientData?.patient_info?.full_name || patientData?.patient_info?.email || 'Patient';
 	$: focusAreas = patientData?.focus_areas || { primary: [], secondary: [], maintenance: [] };
+	$: sessionConstraints = patientData?.session_constraints || {
+		max_sessions_per_day: 3,
+		recommended_sessions_per_week: 7,
+		tasks_per_session: 4,
+		recommended_session_length_min_minutes: 5,
+		recommended_session_length_max_minutes: 10,
+		cooldown_between_sessions_minutes: 30
+	};
 	$: summaryCards = patientData
 		? [
 				{ label: 'Total Sessions', value: patientData.training_summary.total_sessions },
@@ -384,6 +414,24 @@
 					<div><span>Average Score</span><strong>{patientData.recent_performance.avg_score}</strong></div>
 					<div><span>Average Accuracy</span><strong>{patientData.recent_performance.avg_accuracy}%</strong></div>
 					<div><span>Total Sessions Overall</span><strong>{patientData.training_summary.total_sessions}</strong></div>
+				</div>
+			</article>
+
+			<article class="panel-card">
+				<div class="panel-heading">
+					<div>
+						<p class="panel-kicker">Session Limits</p>
+						<h3>Current Pacing Rules</h3>
+					</div>
+					<button class="outline-btn small" on:click={openFocusAreasModal}>Edit Limits</button>
+				</div>
+
+				<div class="metric-list compact">
+					<div><span>Max Sessions Per Day</span><strong>{sessionConstraints.max_sessions_per_day}</strong></div>
+					<div><span>Recommended Per Week</span><strong>{sessionConstraints.recommended_sessions_per_week}</strong></div>
+					<div><span>Tasks Per Session</span><strong>{sessionConstraints.tasks_per_session}</strong></div>
+					<div><span>Session Length</span><strong>{sessionConstraints.recommended_session_length_min_minutes}-{sessionConstraints.recommended_session_length_max_minutes} min</strong></div>
+					<div><span>Cooldown</span><strong>{sessionConstraints.cooldown_between_sessions_minutes} min</strong></div>
 				</div>
 			</article>
 		</section>
@@ -701,6 +749,38 @@
 							</div>
 						</div>
 					{/each}
+				</div>
+
+				<div class="limits-grid">
+					<div class="form-group limit-card">
+						<label for="maxSessionsPerDay">Max Sessions Per Day</label>
+						<input id="maxSessionsPerDay" type="number" min="1" bind:value={maxSessionsPerDay} />
+					</div>
+
+					<div class="form-group limit-card">
+						<label for="recommendedSessionsPerWeek">Recommended Sessions Per Week</label>
+						<input id="recommendedSessionsPerWeek" type="number" min="1" bind:value={recommendedSessionsPerWeek} />
+					</div>
+
+					<div class="form-group limit-card">
+						<label for="tasksPerSession">Tasks Per Session</label>
+						<input id="tasksPerSession" type="number" min="1" bind:value={tasksPerSession} />
+					</div>
+
+					<div class="form-group limit-card">
+						<label for="sessionLengthMinMinutes">Minimum Session Length</label>
+						<input id="sessionLengthMinMinutes" type="number" min="1" bind:value={sessionLengthMinMinutes} />
+					</div>
+
+					<div class="form-group limit-card">
+						<label for="sessionLengthMaxMinutes">Maximum Session Length</label>
+						<input id="sessionLengthMaxMinutes" type="number" min="1" bind:value={sessionLengthMaxMinutes} />
+					</div>
+
+					<div class="form-group limit-card">
+						<label for="cooldownBetweenSessionsMinutes">Cooldown Between Sessions</label>
+						<input id="cooldownBetweenSessionsMinutes" type="number" min="0" bind:value={cooldownBetweenSessionsMinutes} />
+					</div>
 				</div>
 
 				<div class="form-group">
@@ -1117,8 +1197,24 @@
 	}
 
 	.focus-customization,
-	.difficulty-grid {
+	.difficulty-grid,
+	.limits-grid {
 		margin-bottom: 1rem;
+	}
+
+	.limits-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+
+	.limit-card {
+		padding: 1rem;
+		border-radius: 20px;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		margin-bottom: 0;
 	}
 
 	.focus-category,
