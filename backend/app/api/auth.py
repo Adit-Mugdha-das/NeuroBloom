@@ -27,6 +27,14 @@ def get_session():
 def _parse_prescription_data(value: Optional[str]):
     return parse_prescription_data(value)
 
+
+def _participant_exists(session: Session, participant_id: int, participant_type: str) -> bool:
+    if participant_type == "doctor":
+        return session.get(Doctor, participant_id) is not None
+    if participant_type == "patient":
+        return session.get(User, participant_id) is not None
+    return False
+
 @router.post("/register", response_model=UserRead)
 def register(user: UserCreate, session: Session = Depends(get_session)):
     try:
@@ -259,6 +267,12 @@ def send_patient_message(
         patient = session.get(User, patient_id)
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
+
+        if message_data.recipient_type not in {"doctor", "patient"}:
+            raise HTTPException(status_code=400, detail="recipient_type must be doctor or patient")
+
+        if not _participant_exists(session, message_data.recipient_id, message_data.recipient_type):
+            raise HTTPException(status_code=404, detail="Recipient not found")
         
         # Verify patient is assigned to this doctor
         if message_data.recipient_type == "doctor":
@@ -314,13 +328,14 @@ def get_patient_messages(
         
         # Build query
         query = select(Message).where(
-            (Message.sender_id == patient_id) | (Message.recipient_id == patient_id)
+            ((Message.sender_type == "patient") & (Message.sender_id == patient_id)) |
+            ((Message.recipient_type == "patient") & (Message.recipient_id == patient_id))
         )
         
         # Filter unread
         if unread_only:
             query = query.where(
-                (Message.recipient_id == patient_id) & (Message.is_read == False)
+                (Message.recipient_type == "patient") & (Message.recipient_id == patient_id) & (Message.is_read == False)
             )
         
         query = query.order_by(col(Message.created_at).desc()).limit(limit)
@@ -369,6 +384,7 @@ def get_patient_messages(
         # Count unread
         unread_count = session.exec(
             select(Message)
+            .where(Message.recipient_type == "patient")
             .where(Message.recipient_id == patient_id)
             .where(Message.is_read == False)
         ).all()
@@ -580,8 +596,8 @@ def get_patient_conversation_with_doctor(
         messages = session.exec(
             select(Message)
             .where(
-                ((Message.sender_id == patient_id) & (Message.sender_type == "patient") & (Message.recipient_id == doctor_id)) |
-                ((Message.sender_id == doctor_id) & (Message.sender_type == "doctor") & (Message.recipient_id == patient_id))
+                ((Message.sender_id == patient_id) & (Message.sender_type == "patient") & (Message.recipient_type == "doctor") & (Message.recipient_id == doctor_id)) |
+                ((Message.sender_id == doctor_id) & (Message.sender_type == "doctor") & (Message.recipient_type == "patient") & (Message.recipient_id == patient_id))
             )
             .order_by(col(Message.created_at))
         ).all()

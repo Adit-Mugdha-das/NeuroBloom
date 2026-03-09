@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 class Message(SQLModel, table=True):
     """Secure messages between doctors and patients"""
@@ -9,9 +10,9 @@ class Message(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     
     # Participants
-    sender_id: int = Field(foreign_key="user.id")  # Can be patient or doctor
+    sender_id: int  # References User.id or Doctor.id depending on sender_type
     sender_type: str  # "doctor" or "patient"
-    recipient_id: int = Field(foreign_key="user.id")  # Can be patient or doctor
+    recipient_id: int  # References User.id or Doctor.id depending on recipient_type
     recipient_type: str  # "doctor" or "patient"
     
     # Message content
