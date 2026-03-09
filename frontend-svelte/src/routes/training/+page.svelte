@@ -16,6 +16,7 @@
 	let newlyEarnedBadges = [];
 	let showPreTaskQuestionnaire = false;
 	let pendingTaskRoute = null;
+	let pacingWarning = null;
 	const SESSION_CONTEXT_PREFIX = 'training-session-context';
 
 	user.subscribe((value) => {
@@ -48,6 +49,7 @@
 	async function loadTrainingData() {
 		loading = true;
 		error = null;
+		pacingWarning = null;
 
 		try {
 			trainingPlan = await training.getPlan(currentUser.id);
@@ -142,6 +144,23 @@
 		return 'Advanced';
 	}
 
+	function formatClockTime(value) {
+		if (!value) return 'later today';
+		return new Date(value).toLocaleTimeString([], {
+			hour: 'numeric',
+			minute: '2-digit'
+		});
+	}
+
+	function formatDuration(seconds) {
+		const totalSeconds = Math.max(0, Number(seconds) || 0);
+		const minutes = Math.floor(totalSeconds / 60);
+		const remainingSeconds = totalSeconds % 60;
+		if (minutes <= 0) return `${remainingSeconds} sec`;
+		if (remainingSeconds === 0) return `${minutes} min`;
+		return `${minutes} min ${remainingSeconds} sec`;
+	}
+
 	function getCurrentSessionStorageKey() {
 		if (!browser || !currentUser || !trainingPlan) return null;
 		const sessionOrdinal = (trainingPlan.total_sessions || 0) + 1;
@@ -180,9 +199,33 @@
 	function startTask(task) {
 		if (task.completed) return;
 
+		const sessionPacing = trainingPlan?.session_pacing;
+		const sessionAlreadyStarted = !!sessionPacing?.current_session_in_progress || (nextTasks?.completed_tasks || 0) > 0;
+
+		if (!sessionAlreadyStarted && sessionPacing?.remaining_sessions_today === 0) {
+			pacingWarning = {
+				type: 'limit',
+				title: 'Daily training limit reached',
+				message: `You have already completed ${trainingPlan?.session_constraints?.max_sessions_per_day || 3} sessions today. Take a longer rest and come back tomorrow.`,
+				guidance: 'Use this time for recovery, hydration, and low-effort activities before your next training day.'
+			};
+			return;
+		}
+
+		if (!sessionAlreadyStarted && sessionPacing?.cooldown_active) {
+			pacingWarning = {
+				type: 'cooldown',
+				title: 'Cooldown still active',
+				message: `Please wait ${formatDuration(sessionPacing.cooldown_remaining_seconds)} before starting another session.`,
+				guidance: `Your next session window opens around ${formatClockTime(sessionPacing.next_session_available_at)}. Stretch, rest your eyes, and return when the cooldown ends.`
+			};
+			return;
+		}
+
+		pacingWarning = null;
+
 		pendingTaskRoute = getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id);
 		const hasHandledQuestionnaire = !!getStoredSessionContextValue();
-		const sessionAlreadyStarted = (nextTasks?.completed_tasks || 0) > 0;
 
 		if (hasHandledQuestionnaire || sessionAlreadyStarted) {
 			launchTask(pendingTaskRoute);
@@ -236,6 +279,29 @@
 	$: primaryTasks = getTasksByPriority('primary');
 	$: secondaryTasks = getTasksByPriority('secondary');
 	$: maintenanceTasks = getTasksByPriority('maintenance');
+	$: sessionConstraints = trainingPlan?.session_constraints || null;
+	$: sessionPacing = trainingPlan?.session_pacing || null;
+	$: pacingBanner = !sessionPacing
+		? null
+		: sessionPacing.current_session_in_progress
+			? {
+				kind: 'info',
+				title: 'Session in progress',
+				message: `You have ${nextTasks?.completed_tasks || 0} of ${nextTasks?.total_tasks || sessionConstraints?.tasks_per_session || 4} tasks done in this session. Finish the remaining tasks whenever you are ready.`
+			}
+			: sessionPacing.remaining_sessions_today === 0
+				? {
+					kind: 'warning',
+					title: 'Daily limit reached',
+					message: `You have completed ${sessionConstraints?.max_sessions_per_day || 3} sessions today. NeuroBloom is holding the next session until tomorrow to protect recovery.`
+				}
+				: sessionPacing.cooldown_active
+					? {
+						kind: 'warning',
+						title: 'Cooldown in effect',
+						message: `Your next session becomes available in ${formatDuration(sessionPacing.cooldown_remaining_seconds)}.`
+					}
+					: null;
 </script>
 
 <div class="training-shell">
@@ -285,6 +351,19 @@
 					{/each}
 				</div>
 			</header>
+
+			{#if pacingBanner || pacingWarning}
+				<section class="section-panel glass-panel pacing-panel {(pacingWarning?.type || pacingBanner?.kind) === 'warning' || (pacingWarning?.type || pacingBanner?.kind) === 'limit' || (pacingWarning?.type || pacingBanner?.kind) === 'cooldown' ? 'warning' : 'info'}">
+					<p class="section-kicker">Session Guidance</p>
+					<h2>{pacingWarning?.title || pacingBanner?.title}</h2>
+					<p class="section-note">{pacingWarning?.message || pacingBanner?.message}</p>
+					{#if pacingWarning?.guidance}
+						<p class="guidance-copy">{pacingWarning.guidance}</p>
+					{:else if sessionConstraints}
+						<p class="guidance-copy">Recommended pace: up to {sessionConstraints.max_sessions_per_day} sessions per day, {sessionConstraints.recommended_sessions_per_week} sessions per week, {sessionConstraints.recommended_session_length_minutes.min}-{sessionConstraints.recommended_session_length_minutes.max} minutes each, with a {sessionConstraints.cooldown_between_sessions_minutes}-minute cooldown.</p>
+					{/if}
+				</section>
+			{/if}
 
 			<section class="section-panel glass-panel">
 				<div class="section-head">
@@ -567,6 +646,23 @@
 		margin: 0;
 		color: #64748b;
 		line-height: 1.55;
+	}
+
+	.pacing-panel.warning {
+		background: linear-gradient(135deg, rgba(254, 243, 199, 0.8), rgba(255, 255, 255, 0.92));
+		border-color: rgba(245, 158, 11, 0.3);
+	}
+
+	.pacing-panel.info {
+		background: linear-gradient(135deg, rgba(224, 242, 254, 0.82), rgba(255, 255, 255, 0.92));
+		border-color: rgba(14, 165, 233, 0.26);
+	}
+
+	.guidance-copy {
+		margin: 0;
+		color: #475569;
+		line-height: 1.6;
+		font-size: 0.94rem;
 	}
 
 	.session-complete-banner {

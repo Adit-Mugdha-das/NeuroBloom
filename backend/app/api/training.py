@@ -89,12 +89,32 @@ def _build_session_pacing_status(training_plan: TrainingPlan, session: Session, 
         tasks_per_session,
     )
 
+    current_session_in_progress = len(training_plan.get_current_session_tasks_completed()) > 0
+    latest_task = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .order_by(desc(TrainingSession.created_at))
+    ).first()
+
+    cooldown_remaining_seconds = 0
+    next_session_available_at = None
+    if latest_task and not current_session_in_progress:
+        cooldown_delta = timedelta(minutes=max(training_plan.cooldown_between_sessions_minutes, 0))
+        cooldown_remaining = cooldown_delta - (now - latest_task.created_at)
+        if cooldown_remaining.total_seconds() > 0:
+            cooldown_remaining_seconds = int(cooldown_remaining.total_seconds())
+            next_session_available_at = (latest_task.created_at + cooldown_delta).isoformat()
+
     return {
         "completed_sessions_today": completed_sessions_today,
         "remaining_sessions_today": max(training_plan.max_sessions_per_day - completed_sessions_today, 0),
         "completed_sessions_this_week": completed_sessions_this_week,
         "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
         "weekly_recommendation_met": completed_sessions_this_week >= training_plan.recommended_sessions_per_week,
+        "current_session_in_progress": current_session_in_progress,
+        "cooldown_active": cooldown_remaining_seconds > 0,
+        "cooldown_remaining_seconds": cooldown_remaining_seconds,
+        "next_session_available_at": next_session_available_at,
     }
 
 
@@ -261,6 +281,10 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
             "completed_sessions_this_week": 0,
             "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
             "weekly_recommendation_met": False,
+            "current_session_in_progress": False,
+            "cooldown_active": False,
+            "cooldown_remaining_seconds": 0,
+            "next_session_available_at": None,
         },
     }
 
