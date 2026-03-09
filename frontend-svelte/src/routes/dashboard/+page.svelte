@@ -20,6 +20,7 @@
 	let notificationToast = null;
 	let latestNotificationFingerprint = null;
 	let notificationsHydrated = false;
+	let dashboardWarnings = [];
 
 	const modules = [
 		{
@@ -85,36 +86,38 @@
 
 	async function initializeDashboard() {
 		loading = true;
+		dashboardWarnings = [];
 
 		try {
-			const baselineResp = await tasks.getBaselineStatus(currentUser.id);
-			baselineStatus = baselineResp;
+			try {
+				const baselineResp = await tasks.getBaselineStatus(currentUser.id);
+				baselineStatus = baselineResp;
+			} catch (error) {
+				baselineStatus = null;
+				dashboardWarnings = [...dashboardWarnings, 'Baseline progress could not be loaded.'];
+			}
+
 			await loadNotifications();
 
 			try {
 				stats = await training.getMetrics(currentUser.id);
 			} catch (error) {
-				stats = {
-					total_sessions: 0,
-					total_tasks: 0,
-					metrics_by_domain: {},
-					last_training_date: null
-				};
+				stats = null;
+				dashboardWarnings = [...dashboardWarnings, 'Training metrics are temporarily unavailable.'];
 			}
 
 			try {
 				streak = await training.getStreak(currentUser.id);
 			} catch (error) {
-				streak = {
-					current_streak: 0,
-					longest_streak: 0
-				};
+				streak = null;
+				dashboardWarnings = [...dashboardWarnings, 'Streak information could not be loaded.'];
 			}
 
 			try {
 				nextTasks = await training.getNextTasks(currentUser.id);
 			} catch (error) {
 				nextTasks = null;
+				dashboardWarnings = [...dashboardWarnings, 'Recommendations are temporarily unavailable.'];
 			}
 
 			try {
@@ -122,9 +125,11 @@
 				prescriptionSummary = prescriptionResponse.data;
 			} catch (error) {
 				prescriptionSummary = null;
+				dashboardWarnings = [...dashboardWarnings, 'Prescription data could not be loaded.'];
 			}
 		} catch (error) {
 			console.error('Error fetching dashboard data:', error);
+			dashboardWarnings = [...dashboardWarnings, 'Dashboard data could not be fully loaded.'];
 		} finally {
 			loading = false;
 		}
@@ -252,10 +257,10 @@
 	$: primaryRecommendation = getPrimaryRecommendation();
 	$: latestPrescription = prescriptionSummary?.prescriptions?.[0] || null;
 	$: overviewCards = [
-		{ key: 'sessions', label: 'Total Sessions', value: stats?.total_sessions || 0, tone: 'indigo' },
-		{ key: 'domains', label: 'Active Domains', value: stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : 0, tone: 'cyan' },
-		{ key: 'last-training', label: 'Last Training', value: formatDate(stats?.last_training_date), tone: 'violet' },
-		{ key: 'streak', label: 'Current Streak', value: `${streak?.current_streak || 0} day${(streak?.current_streak || 0) === 1 ? '' : 's'}`, tone: 'teal' }
+		{ key: 'sessions', label: 'Total Sessions', value: stats ? stats.total_sessions : 'Unavailable', tone: 'indigo' },
+		{ key: 'domains', label: 'Active Domains', value: stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : stats ? 0 : 'Unavailable', tone: 'cyan' },
+		{ key: 'last-training', label: 'Last Training', value: stats ? formatDate(stats.last_training_date) : 'Unavailable', tone: 'violet' },
+		{ key: 'streak', label: 'Current Streak', value: streak ? `${streak.current_streak || 0} day${(streak.current_streak || 0) === 1 ? '' : 's'}` : 'Unavailable', tone: 'teal' }
 	];
 	$: encouragementMessage = getEncouragementMessage();
 </script>
@@ -299,6 +304,12 @@
 				<p>Loading your dashboard...</p>
 			</section>
 		{:else}
+			{#if dashboardWarnings.length > 0}
+				<section class="status-banner" role="status" aria-live="polite">
+					<p>Some dashboard sections could not be loaded. Please refresh or sign in again.</p>
+				</section>
+			{/if}
+
 			<section class="section hero-section">
 				<div class="section-head">
 					<div>
@@ -308,6 +319,10 @@
 					{#if baselineStatus}
 						<div class="baseline-pill">
 							Baseline: {baselineStatus.completed_count}/{baselineStatus.total_tasks}
+						</div>
+					{:else}
+						<div class="baseline-pill unavailable">
+							Baseline unavailable
 						</div>
 					{/if}
 				</div>
@@ -372,6 +387,13 @@
 							<div class="baseline-track">
 								<div class="baseline-track-fill" style="width: {(baselineStatus.completed_count / baselineStatus.total_tasks) * 100}%"></div>
 							</div>
+						</div>
+					</div>
+				{:else}
+					<div class="baseline-track-row unavailable-copy">
+						<div class="baseline-track-copy">
+							<p class="track-title">Baseline assessment progress</p>
+							<p class="track-text">Progress data is temporarily unavailable. Refresh the page to try again.</p>
 						</div>
 					</div>
 				{/if}
@@ -725,6 +747,22 @@
 		color: #6b7280;
 	}
 
+	.status-banner {
+		padding: 0 0 0.15rem;
+	}
+
+	.status-banner p {
+		margin: 0;
+		padding: 0.95rem 1rem;
+		border-radius: 16px;
+		background: rgba(254, 249, 195, 0.86);
+		border: 1px solid rgba(245, 158, 11, 0.28);
+		color: #92400e;
+		font-size: 0.94rem;
+		font-weight: 600;
+		box-shadow: 0 12px 28px rgba(146, 64, 14, 0.08);
+	}
+
 	.section-head {
 		display: flex;
 		justify-content: space-between;
@@ -746,6 +784,11 @@
 		color: #4338ca;
 		font-size: 0.82rem;
 		font-weight: 700;
+	}
+
+	.baseline-pill.unavailable {
+		background: rgba(245, 158, 11, 0.14);
+		color: #92400e;
 	}
 
 	.overview-grid {
@@ -892,6 +935,13 @@
 		grid-template-columns: minmax(220px, 1fr) 1.4fr;
 		gap: 1rem;
 		align-items: center;
+	}
+
+	.unavailable-copy {
+		padding: 1rem 1.15rem;
+		border-radius: 18px;
+		background: rgba(255, 255, 255, 0.72);
+		border: 1px dashed rgba(245, 158, 11, 0.35);
 	}
 
 	.track-title {
