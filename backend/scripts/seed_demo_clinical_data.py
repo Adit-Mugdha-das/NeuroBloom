@@ -99,6 +99,20 @@ DOCTORS = [
         specialization="Cognitive Neurology",
         institution="Dhaka Medical College Hospital, Dhaka",
     ),
+    DoctorSeed(
+        full_name="Dr. Lamiya Sultana",
+        email="dr.lamiya.sultana@gmail.com",
+        license_number="BD-MS-26411",
+        specialization="MS Clinical Care",
+        institution="Square Hospital Neurology Centre, Dhaka",
+    ),
+    DoctorSeed(
+        full_name="Dr. Sabbir Ahmed",
+        email="dr.sabbir.ahmed@gmail.com",
+        license_number="BD-RM-23384",
+        specialization="Rehabilitation Medicine",
+        institution="Evercare Hospital Dhaka, Neurology and Rehabilitation Unit",
+    ),
 ]
 
 
@@ -173,6 +187,42 @@ PATIENTS = [
             "planning": 57.0,
             "processing_speed": 39.0,
             "visual_scanning": 48.0,
+        },
+    ),
+    PatientSeed(
+        full_name="Tania Mahmuda",
+        email="tania.mahmuda@gmail.com",
+        date_of_birth="1995-06-22",
+        diagnosis="Clinically Isolated Syndrome under cognitive monitoring with recent enrollment",
+        treatment_goal="Establish a sustainable training routine and gather enough early data for a personalised cognitive trajectory.",
+        scenario="newly_enrolled",
+        session_count=3,
+        report_commentary="The patient is still early in onboarding, so interpretation should remain cautious. Initial engagement is good, but more sessions are needed before making stronger clinical conclusions.",
+        baseline_scores={
+            "working_memory": 61.0,
+            "attention": 59.0,
+            "flexibility": 63.0,
+            "planning": 65.0,
+            "processing_speed": 57.0,
+            "visual_scanning": 60.0,
+        },
+    ),
+    PatientSeed(
+        full_name="Naeem Hasan",
+        email="naeem.hasan@gmail.com",
+        date_of_birth="1982-08-09",
+        diagnosis="Relapsing-Remitting Multiple Sclerosis with sleep-related attention and processing-speed plateau",
+        treatment_goal="Improve consistency by reducing the effect of poor sleep on next-day attention and processing speed.",
+        scenario="sleep_variability",
+        session_count=5,
+        report_commentary="Performance remains broadly stable, but the strongest dips are clustering after poor sleep nights. Sleep hygiene and timing adjustments should be prioritised before pushing difficulty further.",
+        baseline_scores={
+            "working_memory": 57.0,
+            "attention": 51.0,
+            "flexibility": 55.0,
+            "planning": 59.0,
+            "processing_speed": 47.0,
+            "visual_scanning": 54.0,
         },
     ),
 ]
@@ -256,6 +306,20 @@ def baseline_test_result_payloads(patient_seed: PatientSeed) -> list[dict[str, A
         optimal_moves_ratio = 0.78
         average_reaction_time = 860
         targets_found = 24
+    elif patient_seed.scenario == "newly_enrolled":
+        working_memory_span = 5
+        commission_errors = 2
+        switch_cost = 760
+        optimal_moves_ratio = 0.71
+        average_reaction_time = 930
+        targets_found = 21
+    elif patient_seed.scenario == "sleep_variability":
+        working_memory_span = 4
+        commission_errors = 3
+        switch_cost = 840
+        optimal_moves_ratio = 0.67
+        average_reaction_time = 1015
+        targets_found = 19
     else:
         working_memory_span = 4
         commission_errors = 3
@@ -374,6 +438,26 @@ def scenario_session_values(patient: PatientSeed, session_index: int) -> dict[st
         consistency = 71 + random.uniform(-6.0, 4.0)
         fatigue_bias = 72 + (10 if session_index in {1, 4} else 0)
         difficulty_before = min(7, 4 + (session_index // 2))
+    elif patient.scenario == "newly_enrolled":
+        score = 60 + (session_index * 1.6) + random.uniform(-2.5, 2.0)
+        accuracy = 74 + (session_index * 1.5) + random.uniform(-2.0, 2.0)
+        mean_rt = 1010 - (session_index * 22) + random.uniform(-40, 35)
+        consistency = 68 + (session_index * 1.2) + random.uniform(-2.0, 2.0)
+        fatigue_bias = 88 - (session_index * 4)
+        difficulty_before = min(5, 3 + session_index)
+    elif patient.scenario == "sleep_variability":
+        score = 55 + (session_index * 0.7) + random.uniform(-4.0, 3.0)
+        if session_index in {1, 3}:
+            score -= 5
+        accuracy = 73 + random.uniform(-4.0, 3.5)
+        if session_index in {1, 3}:
+            accuracy -= 6
+        mean_rt = 1110 - (session_index * 12) + random.uniform(-70, 55)
+        if session_index in {1, 3}:
+            mean_rt += 95
+        consistency = 64 + random.uniform(-5.0, 3.0)
+        fatigue_bias = 108 + (18 if session_index in {1, 3} else 0)
+        difficulty_before = min(6, 3 + (session_index // 2))
     else:
         score = 46 + (session_index * 3.1) + random.uniform(-3.0, 2.5)
         if session_index == 0:
@@ -450,6 +534,38 @@ def session_context_values(patient: PatientSeed, session_index: int) -> dict[str
             "location": "office" if session_index == 1 else "home",
         }
 
+    if patient.scenario == "newly_enrolled":
+        return {
+            "fatigue_level": 3 + (1 if session_index == 2 else 0),
+            "sleep_quality": 7,
+            "sleep_hours": 7.0,
+            "medication_taken_today": True,
+            "hours_since_medication": 2.5,
+            "pain_level": 1,
+            "stress_level": 4,
+            "time_of_day": "morning",
+            "readiness_level": 7,
+            "notes": "Patient is still learning the training flow and asked for reassurance about task difficulty." if session_index == 0 else None,
+            "distractions_present": False,
+            "location": "home",
+        }
+
+    if patient.scenario == "sleep_variability":
+        return {
+            "fatigue_level": 5 + (2 if session_index in {1, 3} else 0),
+            "sleep_quality": 4 if session_index in {1, 3} else 6,
+            "sleep_hours": 5.0 if session_index in {1, 3} else 6.5,
+            "medication_taken_today": True,
+            "hours_since_medication": 3.0 + (session_index % 2) * 0.5,
+            "pain_level": 3,
+            "stress_level": 4 + (1 if session_index in {1, 3} else 0),
+            "time_of_day": base_time_of_day,
+            "readiness_level": 4 if session_index in {1, 3} else 6,
+            "notes": "Patient reported poor sleep due to work-related stress and noticed slower concentration." if session_index in {1, 3} else None,
+            "distractions_present": session_index == 3,
+            "location": "home",
+        }
+
     return {
         "fatigue_level": 7 + (1 if session_index in {2, 5} else 0),
         "sleep_quality": 6 + (1 if session_index >= 4 else 0),
@@ -495,6 +611,10 @@ def build_current_difficulty(initial: dict[str, int], scenario: str) -> dict[str
         bonus = 1
     elif scenario == "inconsistent_adherence":
         bonus = 0
+    elif scenario == "newly_enrolled":
+        bonus = 0
+    elif scenario == "sleep_variability":
+        bonus = 0
     else:
         bonus = 0
     return {domain: min(10, value + bonus) for domain, value in initial.items()}
@@ -507,6 +627,10 @@ def plan_progress_metrics(patient_seed: PatientSeed) -> dict[str, int]:
         return {"current_streak": 2, "longest_streak": 5, "total_training_days": 6, "last_session_gap_days": 3}
     if patient_seed.scenario == "inconsistent_adherence":
         return {"current_streak": 1, "longest_streak": 4, "total_training_days": 5, "last_session_gap_days": 4}
+    if patient_seed.scenario == "newly_enrolled":
+        return {"current_streak": 2, "longest_streak": 2, "total_training_days": 3, "last_session_gap_days": 1}
+    if patient_seed.scenario == "sleep_variability":
+        return {"current_streak": 1, "longest_streak": 3, "total_training_days": 4, "last_session_gap_days": 3}
     return {"current_streak": 3, "longest_streak": 6, "total_training_days": 6, "last_session_gap_days": 2}
 
 
@@ -517,6 +641,10 @@ def session_spacing_days(patient_seed: PatientSeed) -> int:
         return 5
     if patient_seed.scenario == "inconsistent_adherence":
         return 7
+    if patient_seed.scenario == "newly_enrolled":
+        return 3
+    if patient_seed.scenario == "sleep_variability":
+        return 6
     return 5
 
 
@@ -953,6 +1081,16 @@ def seed_intervention_note(session: Session, doctor: Doctor, patient: User, pati
                 "Record fatigue level before each session for weekly review.",
             ],
         }
+    elif patient_seed.scenario == "sleep_variability":
+        description = "Recommended sleep-focused pacing and avoiding cognitively heavy sessions after poor rest."
+        data = {
+            "summary": "Stabilise performance by improving sleep-linked consistency before raising workload.",
+            "recommendations": [
+                "Avoid late-night sessions after less than 6 hours of sleep.",
+                "Track sleep quality beside each session for two weeks.",
+                "Prioritise shorter processing-speed sessions on low-rest days.",
+            ],
+        }
     else:
         description = "Recommended adherence-focused scheduling and shorter structured sessions."
         data = {
@@ -983,14 +1121,20 @@ def seed_messages(session: Session, seeded_records: list[tuple[Doctor, User, Pat
     doctor_b, patient_b, _, _, _ = seeded_records[1]
     doctor_c, patient_c, _, _, _ = seeded_records[2]
     doctor_d, patient_d, _, _, _ = seeded_records[3]
+    doctor_e, patient_e, _, _, _ = seeded_records[4]
+    doctor_f, patient_f, _, _, _ = seeded_records[5]
     doctor_a_id = require_id(doctor_a.id, "doctor_a.id")
     doctor_b_id = require_id(doctor_b.id, "doctor_b.id")
     doctor_c_id = require_id(doctor_c.id, "doctor_c.id")
     doctor_d_id = require_id(doctor_d.id, "doctor_d.id")
+    doctor_e_id = require_id(doctor_e.id, "doctor_e.id")
+    doctor_f_id = require_id(doctor_f.id, "doctor_f.id")
     patient_a_id = require_id(patient_a.id, "patient_a.id")
     patient_b_id = require_id(patient_b.id, "patient_b.id")
     patient_c_id = require_id(patient_c.id, "patient_c.id")
     patient_d_id = require_id(patient_d.id, "patient_d.id")
+    patient_e_id = require_id(patient_e.id, "patient_e.id")
+    patient_f_id = require_id(patient_f.id, "patient_f.id")
     messages = [
         Message(
             sender_id=doctor_a_id,
@@ -1061,6 +1205,52 @@ def seed_messages(session: Session, seeded_records: list[tuple[Doctor, User, Pat
             created_at=utc_now() - timedelta(days=1),
             updated_at=utc_now() - timedelta(days=1),
         ),
+        Message(
+            sender_id=doctor_e_id,
+            sender_type="doctor",
+            recipient_id=patient_e_id,
+            recipient_type="patient",
+            subject="Welcome to NeuroBloom",
+            message="You have completed a strong first week. At this stage the priority is consistency, not pushing performance. We will review your early pattern after a few more sessions.",
+            is_read=True,
+            read_at=utc_now() - timedelta(hours=12),
+            created_at=utc_now() - timedelta(days=1),
+            updated_at=utc_now() - timedelta(hours=12),
+        ),
+        Message(
+            sender_id=patient_e_id,
+            sender_type="patient",
+            recipient_id=doctor_e_id,
+            recipient_type="doctor",
+            subject="Re: Welcome to NeuroBloom",
+            message="Thank you. The sessions feel manageable so far, and I am getting more comfortable with the task instructions.",
+            is_read=False,
+            created_at=utc_now() - timedelta(hours=10),
+            updated_at=utc_now() - timedelta(hours=10),
+        ),
+        Message(
+            sender_id=patient_f_id,
+            sender_type="patient",
+            recipient_id=doctor_f_id,
+            recipient_type="doctor",
+            subject="Sleep affecting sessions",
+            message="I noticed my slower days mostly happen after poor sleep. Should I skip the harder tasks on those mornings or continue with a shorter session?",
+            is_read=True,
+            read_at=utc_now() - timedelta(hours=6),
+            created_at=utc_now() - timedelta(hours=16),
+            updated_at=utc_now() - timedelta(hours=6),
+        ),
+        Message(
+            sender_id=doctor_f_id,
+            sender_type="doctor",
+            recipient_id=patient_f_id,
+            recipient_type="patient",
+            subject="Re: Sleep affecting sessions",
+            message="Continue, but keep the session shorter and avoid doubling up later in the day. I have added sleep tracking guidance so we can confirm the pattern more clearly.",
+            is_read=False,
+            created_at=utc_now() - timedelta(hours=4),
+            updated_at=utc_now() - timedelta(hours=4),
+        ),
     ]
     for message in messages:
         session.add(message)
@@ -1113,6 +1303,15 @@ def seed_risk_alert(session: Session, patient: User, doctor: Doctor, patient_see
             "Reaction-time variability increased over the last two weeks",
             "Evening sessions show lower readiness and slower processing speed",
         ]
+    elif patient_seed.scenario == "sleep_variability":
+        risk_score = 58
+        risk_level = "moderate"
+        alert_summary = "Sleep-related inconsistency is reducing attention and processing-speed reliability."
+        reasons = [
+            "Lowest scores cluster after shorter sleep nights",
+            "Readiness drops on mornings following poor rest",
+            "Processing speed gains have plateaued despite continued participation",
+        ]
     else:
         risk_score = 61
         risk_level = "moderate"
@@ -1148,6 +1347,7 @@ def print_summary(
     prescription_count: int,
     intervention_note_count: int,
     risk_alert_count: int,
+    message_count: int,
     message_seeded: bool,
 ) -> None:
     print("\nSynthetic demo clinical dataset created successfully.")
@@ -1170,7 +1370,7 @@ def print_summary(
     print(f"- {prescription_count} digital prescriptions")
     print(f"- {intervention_note_count} additional intervention notes")
     if message_seeded:
-        print("- 6 believable secure messages")
+        print(f"- {message_count} believable secure messages")
     else:
         print("- secure messages intentionally skipped because the current Message schema cannot safely represent doctor IDs")
     print(f"- {risk_alert_count} open risk alerts")
@@ -1211,20 +1411,25 @@ def main() -> None:
         prescription_records = [
             seed_prescription(session, seeded_records[0][0], seeded_records[0][1]),
             seed_prescription(session, seeded_records[2][0], seeded_records[2][1]),
+            seed_prescription(session, seeded_records[4][0], seeded_records[4][1]),
         ]
         intervention_notes = [
             seed_intervention_note(session, seeded_records[1][0], seeded_records[1][1], seeded_records[1][2]),
             seed_intervention_note(session, seeded_records[3][0], seeded_records[3][1], seeded_records[3][2]),
+            seed_intervention_note(session, seeded_records[5][0], seeded_records[5][1], seeded_records[5][2]),
         ]
         risk_alerts = [
             seed_risk_alert(session, seeded_records[1][1], seeded_records[1][0], seeded_records[1][2]),
             seed_risk_alert(session, seeded_records[3][1], seeded_records[3][0], seeded_records[3][2]),
+            seed_risk_alert(session, seeded_records[5][1], seeded_records[5][0], seeded_records[5][2]),
         ]
 
         message_seeded = False
+        message_count = 0
         if can_seed_doctor_patient_messages(session, [item[0] for item in seeded_records]):
             seed_messages(session, seeded_records)
             message_seeded = True
+            message_count = 10
         else:
             print("Skipping demo message seeding because the current Message model stores both doctor and patient IDs against the user table.")
 
@@ -1235,6 +1440,7 @@ def main() -> None:
             prescription_count=len(prescription_records),
             intervention_note_count=len(intervention_notes),
             risk_alert_count=len(risk_alerts),
+            message_count=message_count,
             message_seeded=message_seeded,
         )
 
