@@ -3,17 +3,25 @@ from __future__ import annotations
 import io
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.utils import simpleSplit
+from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfgen import canvas
 
 if TYPE_CHECKING:
 	from app.models.doctor import Doctor
 	from app.models.doctor_intervention import DoctorIntervention
 	from app.models.user import User
+
+
+PAGE_MARGIN = 40
+RESERVED_FOOTER_HEIGHT = 98
+FOOTER_LINE_Y = 54
+SIGNATURE_TOP_Y = 122
+LOGO_PATH = Path(__file__).resolve().parents[3] / 'frontend-svelte' / 'images' / 'logo.png'
 
 
 def parse_prescription_data(value: Optional[str]) -> Optional[dict]:
@@ -79,30 +87,133 @@ def serialize_prescription_intervention(
 	}
 
 
-def _draw_info_chip(pdf: canvas.Canvas, x: float, y: float, label: str, value: str, width: float, fill_color: str):
-	pdf.setFillColor(colors.HexColor(fill_color))
-	pdf.roundRect(x, y - 18, width, 20, 10, stroke=0, fill=1)
-	pdf.setFillColor(colors.white)
-	pdf.setFont('Helvetica-Bold', 8)
-	pdf.drawString(x + 8, y - 5, label.upper())
-	pdf.setFont('Helvetica', 8)
-	pdf.drawRightString(x + width - 8, y - 5, value[:24])
-
-
 def _draw_signature_block(pdf: canvas.Canvas, x: float, y: float, prescription: dict):
 	pdf.setStrokeColor(colors.HexColor('#cbd5e1'))
 	pdf.setFillColor(colors.HexColor('#f8fafc'))
-	pdf.roundRect(x, y - 68, 240, 60, 14, stroke=1, fill=1)
+	pdf.roundRect(x, y - 52, 240, 44, 14, stroke=1, fill=1)
 	pdf.setFillColor(colors.HexColor('#475569'))
-	pdf.setFont('Helvetica-Bold', 9)
-	pdf.drawString(x + 12, y - 18, 'Digitally Signed By')
+	pdf.setFont('Helvetica-Bold', 8)
+	pdf.drawString(x + 12, y - 16, 'Digitally Signed By')
 	pdf.setFillColor(colors.HexColor('#0f172a'))
-	pdf.setFont('Helvetica-Oblique', 15)
-	pdf.drawString(x + 12, y - 38, prescription.get('doctor_name') or 'Treating clinician')
+	pdf.setFont('Helvetica-Oblique', 13)
+	pdf.drawString(x + 12, y - 30, prescription.get('doctor_name') or 'Treating clinician')
 	pdf.setFont('Helvetica', 8)
 	pdf.setFillColor(colors.HexColor('#64748b'))
-	pdf.drawString(x + 12, y - 54, f"License {prescription.get('doctor_license_number') or 'N/A'}")
-	pdf.drawRightString(x + 228, y - 54, prescription.get('verification_id') or 'RX')
+	pdf.drawString(x + 12, y - 42, f"License {prescription.get('doctor_license_number') or 'N/A'}")
+	pdf.drawRightString(x + 228, y - 42, prescription.get('verification_id') or 'RX')
+
+
+def _measure_wrapped_lines(text: Optional[str], font_name: str, font_size: int, max_width: float):
+	content = text or '-'
+	return simpleSplit(content, font_name, font_size, max_width) or ['-']
+
+
+def _ensure_page_space(
+	pdf: canvas.Canvas,
+	y: float,
+	required_height: float,
+	width: float,
+	height: float,
+	prescription: dict,
+	page_number: int,
+):
+	if y - required_height >= PAGE_MARGIN + RESERVED_FOOTER_HEIGHT:
+		return y, page_number
+
+	pdf.showPage()
+	page_number += 1
+	return _draw_page_header(pdf, width, height, prescription, page_number), page_number
+
+
+def _draw_logo(pdf: canvas.Canvas, x: float, y: float, size: float):
+	if not LOGO_PATH.exists():
+		return False
+
+	pdf.setFillColor(colors.white)
+	pdf.roundRect(x, y - size, size, size, 14, stroke=0, fill=1)
+	pdf.drawImage(ImageReader(str(LOGO_PATH)), x + 5, y - size + 5, width=size - 10, height=size - 10, mask='auto', preserveAspectRatio=True)
+	return True
+
+
+def _draw_page_header(pdf: canvas.Canvas, width: float, height: float, prescription: dict, page_number: int) -> float:
+	brand_name = prescription.get('doctor_institution') or 'NeuroBloom Digital Clinic'
+
+	pdf.setStrokeColor(colors.HexColor('#cbd5e1'))
+	pdf.setFillColor(colors.HexColor('#0f766e'))
+
+	if page_number == 1:
+		pdf.roundRect(36, height - 108, width - 72, 56, 18, stroke=0, fill=1)
+		pdf.setFillColor(colors.HexColor('#14b8a6'))
+		pdf.circle(width - 92, height - 80, 15, stroke=0, fill=1)
+		logo_drawn = _draw_logo(pdf, 52, height - 60, 38)
+		text_x = 100 if logo_drawn else 52
+		pdf.setFillColor(colors.white)
+		pdf.setFont('Helvetica-Bold', 17)
+		pdf.drawString(text_x, height - 74, brand_name[:40])
+		pdf.setFont('Helvetica', 9)
+		pdf.drawString(text_x, height - 89, 'Digital Prescription Record')
+		pdf.drawString(text_x, height - 102, 'NeuroBloom clinical prescribing workflow')
+		return height - 128
+
+	pdf.roundRect(36, height - 76, width - 72, 28, 14, stroke=0, fill=1)
+	logo_drawn = _draw_logo(pdf, 50, height - 48, 20)
+	text_x = 82 if logo_drawn else 50
+	pdf.setFillColor(colors.white)
+	pdf.setFont('Helvetica-Bold', 11)
+	pdf.drawString(text_x, height - 60, (prescription.get('title') or 'Prescription')[:50])
+	pdf.setFont('Helvetica', 8)
+	pdf.drawRightString(width - 50, height - 60, f"Page {page_number}")
+	return height - 92
+
+
+def _draw_footer(pdf: canvas.Canvas, width: float, prescription: dict, brand_name: str):
+	pdf.line(40, FOOTER_LINE_Y, width - 40, FOOTER_LINE_Y)
+	pdf.setFont('Helvetica', 8)
+	pdf.setFillColor(colors.HexColor('#475569'))
+	pdf.drawString(40, 38, f"Digital verification: {prescription.get('verification_id')}")
+	pdf.drawRightString(width - 40, 38, f"Generated: {format_pdf_date(datetime.utcnow())}")
+
+
+def _draw_labeled_text(pdf: canvas.Canvas, label: str, value: Optional[str], x: float, y: float, max_width: float, *, bold_first_line: bool = False):
+	font_name = 'Helvetica-Bold' if bold_first_line else 'Helvetica'
+	lines = _measure_wrapped_lines(value, font_name, 10, max_width)
+	pdf.setFillColor(colors.HexColor('#111827'))
+	pdf.setFont(font_name, 10)
+	for line in lines:
+		pdf.drawString(x, y, line)
+		y -= 12
+
+	text = f"{label}: {value or '-'}"
+	lines = _measure_wrapped_lines(text, 'Helvetica', 9, max_width)
+	pdf.setFont('Helvetica', 9)
+	pdf.setFillColor(colors.HexColor('#374151'))
+	for line in lines:
+		pdf.drawString(x, y, line)
+		y -= 12
+	return y
+
+
+def _draw_key_value_text(pdf: canvas.Canvas, label: str, value: Optional[str], x: float, y: float, max_width: float):
+	text = f"{label}: {value or '-'}"
+	lines = _measure_wrapped_lines(text, 'Helvetica', 9, max_width)
+	pdf.setFont('Helvetica', 9)
+	pdf.setFillColor(colors.HexColor('#374151'))
+	for line in lines:
+		pdf.drawString(x, y, line)
+		y -= 12
+	return y
+
+
+def _draw_bullets(pdf: canvas.Canvas, items: list[str], x: float, y: float, max_width: float):
+	for item in items:
+		lines = _measure_wrapped_lines(f"- {item}", 'Helvetica', 10, max_width)
+		pdf.setFont('Helvetica', 10)
+		pdf.setFillColor(colors.HexColor('#111827'))
+		for line in lines:
+			pdf.drawString(x, y, line)
+			y -= 14
+		y -= 2
+	return y
 
 
 def _draw_wrapped_text(
@@ -128,28 +239,11 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 	buffer = io.BytesIO()
 	pdf = canvas.Canvas(buffer, pagesize=A4)
 	width, height = A4
-	y = height - 48
 	brand_name = prescription.get('doctor_institution') or 'NeuroBloom Digital Clinic'
-	status = prescription.get('status') or 'active'
-	status_label = status.replace('_', ' ').title()
-	status_color = '#0f766e' if status == 'active' else ('#b91c1c' if status == 'cancelled' else '#475569')
+	page_number = 1
 
 	pdf.setTitle(f"Prescription {prescription.get('verification_id')}")
-	pdf.setStrokeColor(colors.HexColor('#cbd5e1'))
-	pdf.setFillColor(colors.HexColor('#0f766e'))
-	pdf.roundRect(36, height - 120, width - 72, 68, 18, stroke=0, fill=1)
-	pdf.setFillColor(colors.HexColor('#14b8a6'))
-	pdf.circle(width - 92, height - 87, 18, stroke=0, fill=1)
-	pdf.setFillColor(colors.white)
-	pdf.setFillColor(colors.white)
-	pdf.setFont('Helvetica-Bold', 18)
-	pdf.drawString(52, height - 78, brand_name[:42])
-	pdf.setFont('Helvetica', 10)
-	pdf.drawString(52, height - 94, 'Digital Prescription Record')
-	pdf.drawString(52, height - 108, 'NeuroBloom clinical prescribing workflow')
-	_draw_info_chip(pdf, 360, height - 68, 'Status', status_label, 90, status_color)
-	_draw_info_chip(pdf, 456, height - 68, 'Version', f"V{prescription.get('version_number') or 1}", 72, '#1d4ed8')
-	y = height - 146
+	y = _draw_page_header(pdf, width, height, prescription, page_number)
 
 	pdf.setFillColor(colors.HexColor('#111827'))
 	pdf.setFont('Helvetica-Bold', 11)
@@ -157,33 +251,53 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 	pdf.drawString(width / 2, y, 'Patient')
 	y -= 18
 
-	pdf.setFont('Helvetica', 10)
-	pdf.drawString(40, y, prescription.get('doctor_name') or 'Treating clinician')
-	pdf.drawString(width / 2, y, prescription.get('patient_name') or 'Patient')
-	y -= 14
-	pdf.drawString(40, y, f"License: {prescription.get('doctor_license_number') or 'Not provided'}")
-	pdf.drawString(width / 2, y, f"Diagnosis: {prescription.get('diagnosis') or 'Not recorded'}")
-	y -= 14
-	pdf.drawString(40, y, f"Institution: {prescription.get('doctor_institution') or 'NeuroBloom Clinic'}")
-	pdf.drawString(width / 2, y, f"Issued: {format_pdf_date(prescription.get('created_at'))}")
-	y -= 14
-	pdf.drawString(40, y, f"Specialization: {prescription.get('doctor_specialization') or 'Clinician'}")
-	pdf.drawString(width / 2, y, f"Prescription ID: {prescription.get('verification_id')}")
-	y -= 24
+	left_x = 40
+	right_x = width / 2
+	column_width = width / 2 - 52
+	left_y = _draw_wrapped_text(
+		pdf,
+		prescription.get('doctor_name') or 'Treating clinician',
+		left_x,
+		y,
+		column_width,
+		font_name='Helvetica-Bold',
+		font_size=10,
+		leading=12,
+	)
+	left_y = _draw_key_value_text(pdf, 'License', prescription.get('doctor_license_number') or 'Not provided', left_x, left_y, column_width)
+	left_y = _draw_key_value_text(pdf, 'Institution', prescription.get('doctor_institution') or 'NeuroBloom Clinic', left_x, left_y, column_width)
+	left_y = _draw_key_value_text(pdf, 'Specialization', prescription.get('doctor_specialization') or 'Clinician', left_x, left_y, column_width)
+
+	right_y = _draw_wrapped_text(
+		pdf,
+		prescription.get('patient_name') or 'Patient',
+		right_x,
+		y,
+		column_width,
+		font_name='Helvetica-Bold',
+		font_size=10,
+		leading=12,
+	)
+	right_y = _draw_key_value_text(pdf, 'Diagnosis', prescription.get('diagnosis') or 'Not recorded', right_x, right_y, column_width)
+	right_y = _draw_key_value_text(pdf, 'Issued', format_pdf_date(prescription.get('created_at')), right_x, right_y, column_width)
+	y = min(left_y, right_y) - 12
 
 	pdf.setStrokeColor(colors.HexColor('#dbe4ee'))
 	pdf.line(40, y, width - 40, y)
-	y -= 20
+	y -= 16
 
+	y, page_number = _ensure_page_space(pdf, y, 66, width, height, prescription, page_number)
 	pdf.setFont('Helvetica-Bold', 12)
 	pdf.drawString(40, y, prescription.get('title') or 'Prescription')
-	pdf.setFont('Helvetica', 10)
-	pdf.drawRightString(width - 40, y, f"Version {prescription.get('version_number') or 1}")
 	y -= 18
 	y = _draw_wrapped_text(pdf, prescription.get('summary'), 40, y, width - 80)
 	y -= 8
 
+	status = prescription.get('status') or 'active'
+	status_label = status.replace('_', ' ').title()
+	status_color = '#0f766e' if status == 'active' else ('#b91c1c' if status == 'cancelled' else '#475569')
 	if status != 'active':
+		y, page_number = _ensure_page_space(pdf, y, 52, width, height, prescription, page_number)
 		pdf.setFillColor(colors.HexColor('#fff7ed' if status == 'inactive' else '#fef2f2'))
 		pdf.roundRect(40, y - 34, width - 80, 28, 12, stroke=0, fill=1)
 		pdf.setFillColor(colors.HexColor(status_color))
@@ -196,27 +310,32 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 
 	pdf.setFont('Helvetica-Bold', 11)
 	pdf.drawString(40, y, 'Medication Plan')
-	y -= 18
+	y -= 16
 
 	medications = prescription.get('medications') or []
 	if medications:
 		for index, medication in enumerate(medications, start=1):
+			instruction = medication.get('instructions') or 'Follow doctor instructions.'
+			instruction_lines = _measure_wrapped_lines(f"Instructions: {instruction}", 'Helvetica', 8, width - 110)
+			box_height = 34 + (len(instruction_lines) * 10)
+			y, page_number = _ensure_page_space(pdf, y, box_height + 14, width, height, prescription, page_number)
 			pdf.setFillColor(colors.HexColor('#f8fafc'))
-			pdf.roundRect(40, y - 54, width - 80, 50, 12, stroke=1, fill=1)
+			pdf.roundRect(40, y - box_height, width - 80, box_height - 4, 12, stroke=1, fill=1)
 			pdf.setFillColor(colors.HexColor('#111827'))
 			pdf.setFont('Helvetica-Bold', 10)
-			pdf.drawString(52, y - 16, f"{index}. {medication.get('name') or 'Medication'}")
+			pdf.drawString(52, y - 14, f"{index}. {medication.get('name') or 'Medication'}")
 			pdf.setFont('Helvetica', 9)
-			pdf.drawString(52, y - 30, f"Dosage: {medication.get('dosage') or '-'}")
-			pdf.drawString(190, y - 30, f"Frequency: {medication.get('frequency') or '-'}")
-			pdf.drawString(370, y - 30, f"Duration: {medication.get('duration') or '-'}")
-			instruction = medication.get('instructions') or 'Follow doctor instructions.'
-			y = _draw_wrapped_text(pdf, f"Instructions: {instruction}", 52, y - 44, width - 110, font_size=8, leading=10)
-			y -= 12
+			pdf.drawString(52, y - 26, f"Dosage: {medication.get('dosage') or '-'}")
+			pdf.drawString(190, y - 26, f"Frequency: {medication.get('frequency') or '-'}")
+			pdf.drawString(370, y - 26, f"Duration: {medication.get('duration') or '-'}")
+			y = _draw_wrapped_text(pdf, f"Instructions: {instruction}", 52, y - 38, width - 110, font_size=8, leading=10)
+			y -= 8
 	else:
+		y, page_number = _ensure_page_space(pdf, y, 36, width, height, prescription, page_number)
 		y = _draw_wrapped_text(pdf, 'No medication items were recorded. Review lifestyle plan and instructions below.', 40, y, width - 80)
 		y -= 10
 
+	y, page_number = _ensure_page_space(pdf, y, 48, width, height, prescription, page_number)
 	pdf.setFont('Helvetica-Bold', 11)
 	pdf.drawString(40, y, 'Patient Instructions')
 	y -= 16
@@ -226,15 +345,15 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 
 	lifestyle_plan = prescription.get('lifestyle_plan') or []
 	if lifestyle_plan:
+		bullet_height = sum(max(1, len(_measure_wrapped_lines(f"- {item}", 'Helvetica', 10, width - 86))) * 14 + 2 for item in lifestyle_plan)
+		y, page_number = _ensure_page_space(pdf, y, 24 + bullet_height, width, height, prescription, page_number)
 		pdf.setFont('Helvetica-Bold', 11)
 		pdf.drawString(40, y, 'Lifestyle Recommendations')
 		y -= 16
-		pdf.setFont('Helvetica', 10)
-		for item in lifestyle_plan:
-			y = _draw_wrapped_text(pdf, f"- {item}", 46, y, width - 86)
-			y -= 4
+		y = _draw_bullets(pdf, lifestyle_plan, 46, y, width - 86)
 
 	if prescription.get('follow_up_plan'):
+		y, page_number = _ensure_page_space(pdf, y, 52, width, height, prescription, page_number)
 		pdf.setFont('Helvetica-Bold', 11)
 		pdf.drawString(40, y, 'Follow-up Plan')
 		y -= 16
@@ -243,6 +362,7 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 		y -= 8
 
 	if prescription.get('clinician_notes'):
+		y, page_number = _ensure_page_space(pdf, y, 52, width, height, prescription, page_number)
 		pdf.setFont('Helvetica-Bold', 11)
 		pdf.drawString(40, y, 'Clinician Notes')
 		y -= 16
@@ -250,16 +370,9 @@ def generate_prescription_pdf_bytes(prescription: dict) -> bytes:
 		y = _draw_wrapped_text(pdf, prescription.get('clinician_notes'), 40, y, width - 80)
 		y -= 8
 
-	_draw_signature_block(pdf, 40, 90, prescription)
-
-	pdf.line(40, 96, width - 40, 96)
-	pdf.setFont('Helvetica', 9)
-	pdf.setFillColor(colors.HexColor('#475569'))
-	pdf.drawString(40, 78, 'This prescription is issued digitally and must be validated by the treating physician.')
-	pdf.drawString(40, 62, f"Digital verification: {prescription.get('verification_id')}")
-	pdf.drawRightString(width - 40, 62, f"Generated: {format_pdf_date(datetime.utcnow())}")
-	pdf.drawString(40, 44, f"Signature: {prescription.get('doctor_name') or 'Treating clinician'}")
-	pdf.drawRightString(width - 40, 44, brand_name[:38])
+	y, page_number = _ensure_page_space(pdf, y, RESERVED_FOOTER_HEIGHT - 10, width, height, prescription, page_number)
+	_draw_signature_block(pdf, 40, SIGNATURE_TOP_Y, prescription)
+	_draw_footer(pdf, width, prescription, brand_name)
 
 	pdf.save()
 	buffer.seek(0)
