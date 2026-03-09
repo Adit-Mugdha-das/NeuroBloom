@@ -16,6 +16,8 @@ from app.core.config import engine
 
 router = APIRouter()
 
+DEFAULT_SESSION_DURATION_RANGE_MINUTES = (5, 10)
+
 def get_session():
     with Session(engine) as session:
         yield session
@@ -29,6 +31,120 @@ DOMAIN_TASK_MAPPING = {
     "processing_speed": "reaction_time",
     "visual_scanning": "target_search"
 }
+
+
+def _session_window_start(day: datetime) -> datetime:
+    return day.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _count_completed_sessions(
+    session: Session,
+    user_id: int,
+    start_at: datetime,
+    end_at: datetime,
+    tasks_per_session: int
+) -> int:
+    task_count = len(session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .where(TrainingSession.created_at >= start_at)
+        .where(TrainingSession.created_at < end_at)
+    ).all())
+    return task_count // max(tasks_per_session, 1)
+
+
+def _build_session_constraints(training_plan: TrainingPlan) -> dict:
+    return {
+        "max_sessions_per_day": training_plan.max_sessions_per_day,
+        "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
+        "tasks_per_session": training_plan.tasks_per_session,
+        "recommended_session_length_minutes": {
+            "min": training_plan.recommended_session_length_min_minutes,
+            "max": training_plan.recommended_session_length_max_minutes,
+        },
+        "cooldown_between_sessions_minutes": training_plan.cooldown_between_sessions_minutes,
+    }
+
+
+def _build_session_pacing_status(training_plan: TrainingPlan, session: Session, user_id: int) -> dict:
+    now = datetime.utcnow()
+    tasks_per_session = max(training_plan.tasks_per_session, 1)
+    today_start = _session_window_start(now)
+    tomorrow_start = today_start + timedelta(days=1)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    next_week_start = week_start + timedelta(days=7)
+
+    completed_sessions_today = _count_completed_sessions(
+        session,
+        user_id,
+        today_start,
+        tomorrow_start,
+        tasks_per_session,
+    )
+    completed_sessions_this_week = _count_completed_sessions(
+        session,
+        user_id,
+        week_start,
+        next_week_start,
+        tasks_per_session,
+    )
+
+    return {
+        "completed_sessions_today": completed_sessions_today,
+        "remaining_sessions_today": max(training_plan.max_sessions_per_day - completed_sessions_today, 0),
+        "completed_sessions_this_week": completed_sessions_this_week,
+        "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
+        "weekly_recommendation_met": completed_sessions_this_week >= training_plan.recommended_sessions_per_week,
+    }
+
+
+def enforce_session_limits(training_plan: TrainingPlan, session: Session, user_id: int):
+    current_session_tasks = training_plan.get_current_session_tasks_completed()
+    if current_session_tasks:
+        return
+
+    now = datetime.utcnow()
+    tasks_per_session = max(training_plan.tasks_per_session, 1)
+    today_start = _session_window_start(now)
+    tomorrow_start = today_start + timedelta(days=1)
+    completed_sessions_today = _count_completed_sessions(
+        session,
+        user_id,
+        today_start,
+        tomorrow_start,
+        tasks_per_session,
+    )
+
+    if completed_sessions_today >= training_plan.max_sessions_per_day:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Daily training limit reached. You have already completed "
+                f"{training_plan.max_sessions_per_day} sessions today."
+            ),
+        )
+
+    latest_task = session.exec(
+        select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .order_by(desc(TrainingSession.created_at))
+    ).first()
+
+    if not latest_task:
+        return
+
+    cooldown_delta = timedelta(minutes=max(training_plan.cooldown_between_sessions_minutes, 0))
+    elapsed = now - latest_task.created_at
+    if elapsed < cooldown_delta:
+        remaining_seconds = int((cooldown_delta - elapsed).total_seconds())
+        remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Cooldown active. Please wait about {remaining_minutes} more minute(s) "
+                f"before starting another session."
+            ),
+        )
 
 @router.post("/training-plan/generate/{user_id}")
 def generate_training_plan(user_id: int, session: Session = Depends(get_session)):
@@ -137,7 +253,15 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
         "initial_difficulty": initial_difficulty,
         "current_difficulty": initial_difficulty,
         "domain_scores": domains,
-        "created_at": training_plan.created_at.isoformat()
+        "created_at": training_plan.created_at.isoformat(),
+        "session_constraints": _build_session_constraints(training_plan),
+        "session_pacing": {
+            "completed_sessions_today": 0,
+            "remaining_sessions_today": training_plan.max_sessions_per_day,
+            "completed_sessions_this_week": 0,
+            "recommended_sessions_per_week": training_plan.recommended_sessions_per_week,
+            "weekly_recommendation_met": False,
+        },
     }
 
 @router.get("/training-plan/{user_id}")
@@ -153,6 +277,8 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan found. Generate one first.")
+
+    session_pacing = _build_session_pacing_status(plan, session, user_id)
     
     return {
         "id": plan.id,
@@ -166,7 +292,9 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
         "current_difficulty": plan.get_current_difficulty(),
         "total_sessions": plan.total_sessions_completed,
         "last_session": plan.last_session_date.isoformat() if plan.last_session_date else None,
-        "created_at": plan.created_at.isoformat()
+        "created_at": plan.created_at.isoformat(),
+        "session_constraints": _build_session_constraints(plan),
+        "session_pacing": session_pacing,
     }
 
 @router.get("/training-plan/{user_id}/streak")
@@ -398,7 +526,8 @@ def submit_training_session(
         session.add(plan)  # Mark plan as modified immediately
     
     # Check if all 4 tasks in session are completed
-    session_complete = len(completed_tasks) >= 4
+    required_tasks = max(plan.tasks_per_session, 1)
+    session_complete = len(completed_tasks) >= required_tasks
     newly_earned_badges = []
     
     print(f"[DEBUG] Task completed: {task_identifier}, Completed tasks: {completed_tasks}, Session complete: {session_complete}")
@@ -858,8 +987,9 @@ def track_session_completion(
         training_plan.current_session_tasks_completed = json.dumps(completed_tasks)
         session.add(training_plan)  # Mark plan as modified
     
-    # Check if all 4 tasks in session are completed
-    session_complete = len(completed_tasks) >= 4
+    # Check if all tasks in session are completed
+    required_tasks = max(training_plan.tasks_per_session, 1)
+    session_complete = len(completed_tasks) >= required_tasks
     newly_earned_badges = []
     
     if session_complete:
@@ -877,7 +1007,7 @@ def track_session_completion(
     return {
         "session_complete": session_complete,
         "completed_tasks": len(completed_tasks),
-        "total_tasks": 4,
+        "total_tasks": required_tasks,
         "newly_earned_badges": newly_earned_badges
     }
 
@@ -971,6 +1101,8 @@ def submit_digit_span_session(
     
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = session_data.get("task_id")
@@ -1158,6 +1290,8 @@ def submit_spatial_span_session(
     
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = session_data.get("task_id")
@@ -1344,6 +1478,8 @@ def submit_letter_number_sequencing_session(
     
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = session_data.get("task_id")
@@ -1541,6 +1677,8 @@ def submit_operation_span_session(
     
     if not plan or plan.id is None:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = session_data.get("task_id")
@@ -1731,6 +1869,8 @@ def submit_sdmt_task(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Update difficulty
     current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
@@ -1885,6 +2025,8 @@ def submit_trail_making_a_task(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Update difficulty
     current_diff = json.loads(plan.current_difficulty) if isinstance(plan.current_difficulty, str) else plan.current_difficulty
@@ -2038,6 +2180,8 @@ def submit_pattern_comparison_session(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Validate plan has an id
     if plan.id is None:
@@ -2195,6 +2339,8 @@ def submit_inspection_time_session(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     if plan.id is None:
         raise HTTPException(status_code=500, detail="Invalid training plan")
@@ -2359,6 +2505,8 @@ def submit_stroop_session(
     
     if plan.id is None:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     task = StroopTask()
@@ -2524,6 +2672,8 @@ def submit_gonogo_session(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     task = GoNoGoTask()
@@ -2684,6 +2834,8 @@ def submit_flanker_session(
     
     if not plan:
         raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     task = FlankerTask()
@@ -2841,6 +2993,8 @@ def submit_pasat_session(
     
     if plan.id is None:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     task = PASATTask()
@@ -3697,6 +3851,8 @@ def submit_trail_making_b_session(
     
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = submission.session_data.get("task_id")
@@ -3886,6 +4042,8 @@ def submit_wcst_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Extract task_id for session tracking
     task_id = submission.session_data.get("task_id")
@@ -4054,6 +4212,8 @@ def submit_soc_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Get baseline
     baseline = session.exec(
@@ -4211,6 +4371,8 @@ def submit_verbal_fluency_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Get baseline
     baseline = session.exec(
@@ -4366,6 +4528,8 @@ def submit_dccs_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     session_data = request_data.get("session_data")
@@ -4511,6 +4675,8 @@ def submit_plus_minus_session(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Score the session
     session_data = request_data.get("session_data")
@@ -4663,6 +4829,8 @@ def submit_category_fluency_trial(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Get baseline
     baseline = session.exec(
@@ -4865,6 +5033,8 @@ def submit_twenty_questions_game(
         raise HTTPException(status_code=404, detail="No training plan found")
     if not plan.id:
         raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    enforce_session_limits(plan, session, user_id)
     
     # Get baseline
     baseline = session.exec(
@@ -5069,6 +5239,8 @@ def submit_cancellation_test(
     
     if not training_plan:
         raise HTTPException(status_code=404, detail="No training plan found")
+
+    enforce_session_limits(training_plan, session, user_id)
     
     # Get current difficulty from JSON
     current_difficulty_map = training_plan.get_current_difficulty()
@@ -5226,6 +5398,8 @@ def submit_visual_search_response(
     
     if not training_plan:
         raise HTTPException(status_code=404, detail="No training plan found")
+
+    enforce_session_limits(training_plan, session, user_id)
     
     # Get current difficulty from JSON
     current_difficulty_map = training_plan.get_current_difficulty()
@@ -5400,6 +5574,8 @@ def submit_mot_response(
     
     if not training_plan:
         raise HTTPException(status_code=404, detail="No training plan found")
+
+    enforce_session_limits(training_plan, session, user_id)
     
     # Get current difficulty from JSON
     current_difficulty_map = training_plan.get_current_difficulty()
@@ -5588,6 +5764,8 @@ def submit_ufov_response(
     
     if not training_plan:
         raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(training_plan, session, user_id)
     
     # Score the response
     results = score_response(trial_data, central_response, peripheral_response)

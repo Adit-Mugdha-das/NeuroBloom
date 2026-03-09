@@ -3,6 +3,14 @@ from datetime import datetime
 from typing import Optional, ClassVar
 import json
 
+
+DEFAULT_MAX_SESSIONS_PER_DAY = 3
+DEFAULT_RECOMMENDED_SESSIONS_PER_WEEK = 7
+DEFAULT_TASKS_PER_SESSION = 4
+DEFAULT_SESSION_LENGTH_MIN_MINUTES = 5
+DEFAULT_SESSION_LENGTH_MAX_MINUTES = 10
+DEFAULT_SESSION_COOLDOWN_MINUTES = 30
+
 class TrainingPlan(SQLModel, table=True):
     """
     Stores personalized training plan generated from baseline assessment.
@@ -32,6 +40,14 @@ class TrainingPlan(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_updated: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
+
+    # Session pacing defaults
+    max_sessions_per_day: int = Field(default=DEFAULT_MAX_SESSIONS_PER_DAY)
+    recommended_sessions_per_week: int = Field(default=DEFAULT_RECOMMENDED_SESSIONS_PER_WEEK)
+    tasks_per_session: int = Field(default=DEFAULT_TASKS_PER_SESSION)
+    recommended_session_length_min_minutes: int = Field(default=DEFAULT_SESSION_LENGTH_MIN_MINUTES)
+    recommended_session_length_max_minutes: int = Field(default=DEFAULT_SESSION_LENGTH_MAX_MINUTES)
+    cooldown_between_sessions_minutes: int = Field(default=DEFAULT_SESSION_COOLDOWN_MINUTES)
     
     # Progress tracking
     total_sessions_completed: int = Field(default=0)
