@@ -113,6 +113,20 @@ DOCTORS = [
         specialization="Rehabilitation Medicine",
         institution="Evercare Hospital Dhaka, Neurology and Rehabilitation Unit",
     ),
+    DoctorSeed(
+        full_name="Dr. Mehzabin Karim",
+        email="dr.mehzabin.karim@gmail.com",
+        license_number="BD-NR-27116",
+        specialization="Neurorehabilitation",
+        institution="Apollo Imperial Neurorehabilitation Clinic, Dhaka",
+    ),
+    DoctorSeed(
+        full_name="Dr. Rafid Mahmud",
+        email="dr.rafid.mahmud@gmail.com",
+        license_number="BD-BN-24607",
+        specialization="Behavioral Neurology",
+        institution="Chattogram Medical College Hospital, Neurology Unit",
+    ),
 ]
 
 
@@ -225,6 +239,42 @@ PATIENTS = [
             "visual_scanning": 54.0,
         },
     ),
+    PatientSeed(
+        full_name="Sabina Khatun",
+        email="sabina.khatun@gmail.com",
+        date_of_birth="1976-03-14",
+        diagnosis="Secondary Progressive Multiple Sclerosis with long-term training adherence and gradual executive recovery",
+        treatment_goal="Maintain long-term adherence while improving planning efficiency and preserving gains across multiple domains.",
+        scenario="long_term_engaged",
+        session_count=12,
+        report_commentary="This is a longer-term engaged patient with clear cumulative benefit. Planning and flexibility are improving gradually, and the current focus should be on maintenance with moderate progression rather than aggressive difficulty jumps.",
+        baseline_scores={
+            "working_memory": 46.0,
+            "attention": 49.0,
+            "flexibility": 43.0,
+            "planning": 41.0,
+            "processing_speed": 45.0,
+            "visual_scanning": 52.0,
+        },
+    ),
+    PatientSeed(
+        full_name="Mahmudul Bari",
+        email="mahmudul.bari@gmail.com",
+        date_of_birth="1989-12-02",
+        diagnosis="Relapsing-Remitting Multiple Sclerosis with early gains followed by a recent processing-speed and fatigue plateau",
+        treatment_goal="Break the current plateau by stabilising fatigue, reducing reaction-time variability, and restoring steady improvement in processing speed.",
+        scenario="plateau_after_improvement",
+        session_count=11,
+        report_commentary="The patient completed a substantial training block and improved early, but the last several sessions suggest a plateau with rising variability. Recovery may require pacing adjustments and closer monitoring of fatigue-linked slowing.",
+        baseline_scores={
+            "working_memory": 55.0,
+            "attention": 52.0,
+            "flexibility": 57.0,
+            "planning": 54.0,
+            "processing_speed": 44.0,
+            "visual_scanning": 56.0,
+        },
+    ),
 ]
 
 
@@ -320,6 +370,20 @@ def baseline_test_result_payloads(patient_seed: PatientSeed) -> list[dict[str, A
         optimal_moves_ratio = 0.67
         average_reaction_time = 1015
         targets_found = 19
+    elif patient_seed.scenario == "long_term_engaged":
+        working_memory_span = 5
+        commission_errors = 2
+        switch_cost = 720
+        optimal_moves_ratio = 0.74
+        average_reaction_time = 930
+        targets_found = 23
+    elif patient_seed.scenario == "plateau_after_improvement":
+        working_memory_span = 5
+        commission_errors = 3
+        switch_cost = 790
+        optimal_moves_ratio = 0.69
+        average_reaction_time = 980
+        targets_found = 20
     else:
         working_memory_span = 4
         commission_errors = 3
@@ -406,6 +470,37 @@ def build_session_trials(mean_rt: float, accuracy: float, fatigue_bias: float, s
     return trials
 
 
+def build_biomarker_snapshot(trials: list[dict[str, Any]], context: dict[str, Any]) -> dict[str, float]:
+    reaction_times = [float(trial["reaction_time"]) for trial in trials if trial.get("reaction_time")]
+    correct_count = sum(1 for trial in trials if trial.get("correct"))
+    accuracy_ratio = correct_count / len(trials) if trials else 0.0
+    mean_rt = sum(reaction_times) / len(reaction_times) if reaction_times else 0.0
+    if reaction_times and mean_rt > 0:
+        variance = sum((value - mean_rt) ** 2 for value in reaction_times) / len(reaction_times)
+        rt_cv = (variance ** 0.5) / mean_rt
+    else:
+        rt_cv = 0.0
+    first_half = reaction_times[: len(reaction_times) // 2] or reaction_times
+    second_half = reaction_times[len(reaction_times) // 2 :] or reaction_times
+    first_avg = sum(first_half) / len(first_half) if first_half else 0.0
+    second_avg = sum(second_half) / len(second_half) if second_half else 0.0
+    fatigue_slope = second_avg - first_avg
+    fatigue_level = float(context.get("fatigue_level") or 0)
+    sleep_quality = float(context.get("sleep_quality") or 0)
+    readiness_level = float(context.get("readiness_level") or 0)
+    fatigue_index = min(1.0, max(0.0, (fatigue_level / 10.0) * 0.45 + min(1.0, rt_cv * 2.4) * 0.35 + max(0.0, fatigue_slope / 180.0) * 0.2))
+    cognitive_efficiency = max(0.0, min(1.0, accuracy_ratio * 0.6 + max(0.0, 1 - (mean_rt / 1800.0)) * 0.25 + (readiness_level / 10.0) * 0.15))
+    sleep_disruption_index = min(1.0, max(0.0, (1 - (sleep_quality / 10.0)) * 0.7 + max(0.0, (7.0 - float(context.get("sleep_hours") or 0.0)) / 7.0) * 0.3))
+
+    return {
+        "fatigue_index": round(fatigue_index, 3),
+        "reaction_time_cv": round(rt_cv, 3),
+        "fatigue_slope": round(fatigue_slope, 2),
+        "cognitive_efficiency": round(cognitive_efficiency, 3),
+        "sleep_disruption_index": round(sleep_disruption_index, 3),
+    }
+
+
 def scenario_session_values(patient: PatientSeed, session_index: int) -> dict[str, float]:
     if patient.scenario == "improving":
         score = 58 + (session_index * 3.4) + random.uniform(-2.0, 2.0)
@@ -458,6 +553,28 @@ def scenario_session_values(patient: PatientSeed, session_index: int) -> dict[st
         consistency = 64 + random.uniform(-5.0, 3.0)
         fatigue_bias = 108 + (18 if session_index in {1, 3} else 0)
         difficulty_before = min(6, 3 + (session_index // 2))
+    elif patient.scenario == "long_term_engaged":
+        score = 51 + (session_index * 1.9) + random.uniform(-2.5, 2.5)
+        accuracy = 72 + (session_index * 1.1) + random.uniform(-2.5, 2.0)
+        mean_rt = 1160 - (session_index * 24) + random.uniform(-45, 45)
+        consistency = 63 + (session_index * 1.5) + random.uniform(-2.5, 2.5)
+        fatigue_bias = 92 - (session_index * 2)
+        difficulty_before = min(8, 3 + (session_index // 2))
+    elif patient.scenario == "plateau_after_improvement":
+        score = 59 + min(session_index, 5) * 1.8 + random.uniform(-3.5, 3.0)
+        if session_index >= 7:
+            score -= 3.5
+        accuracy = 76 + random.uniform(-3.5, 2.5)
+        if session_index >= 7:
+            accuracy -= 4
+        mean_rt = 1035 - min(session_index, 5) * 18 + random.uniform(-55, 55)
+        if session_index >= 7:
+            mean_rt += 85
+        consistency = 68 + random.uniform(-4.0, 3.0)
+        if session_index >= 7:
+            consistency -= 4
+        fatigue_bias = 98 + (10 if session_index >= 7 else 0)
+        difficulty_before = min(7, 4 + (session_index // 2))
     else:
         score = 46 + (session_index * 3.1) + random.uniform(-3.0, 2.5)
         if session_index == 0:
@@ -566,6 +683,38 @@ def session_context_values(patient: PatientSeed, session_index: int) -> dict[str
             "location": "home",
         }
 
+    if patient.scenario == "long_term_engaged":
+        return {
+            "fatigue_level": 4 + (1 if session_index in {5, 9} else 0),
+            "sleep_quality": 7,
+            "sleep_hours": 7.0 + (0.5 if session_index % 4 == 0 else 0.0),
+            "medication_taken_today": True,
+            "hours_since_medication": 2.5 + (session_index % 3) * 0.5,
+            "pain_level": 2,
+            "stress_level": 3 + (1 if session_index in {6, 10} else 0),
+            "time_of_day": "morning" if session_index % 3 != 1 else "afternoon",
+            "readiness_level": 7 + (1 if session_index >= 8 else 0),
+            "notes": "Patient continues to keep a structured rehabilitation routine and reports improved confidence in planning tasks." if session_index in {7, 11} else None,
+            "distractions_present": False,
+            "location": "home",
+        }
+
+    if patient.scenario == "plateau_after_improvement":
+        return {
+            "fatigue_level": 5 + (1 if session_index >= 7 else 0),
+            "sleep_quality": 6 - (1 if session_index in {8, 10} else 0),
+            "sleep_hours": 6.5 - (0.5 if session_index in {8, 10} else 0.0),
+            "medication_taken_today": True,
+            "hours_since_medication": 3.0 + (session_index % 2) * 0.5,
+            "pain_level": 3,
+            "stress_level": 4 + (1 if session_index >= 7 else 0),
+            "time_of_day": base_time_of_day,
+            "readiness_level": 6 - (1 if session_index >= 7 else 0),
+            "notes": "Patient feels progress has slowed recently and reports frustration with repeated slower sessions." if session_index in {8, 10} else None,
+            "distractions_present": session_index == 9,
+            "location": "home",
+        }
+
     return {
         "fatigue_level": 7 + (1 if session_index in {2, 5} else 0),
         "sleep_quality": 6 + (1 if session_index >= 4 else 0),
@@ -615,6 +764,10 @@ def build_current_difficulty(initial: dict[str, int], scenario: str) -> dict[str
         bonus = 0
     elif scenario == "sleep_variability":
         bonus = 0
+    elif scenario == "long_term_engaged":
+        bonus = 1
+    elif scenario == "plateau_after_improvement":
+        bonus = 0
     else:
         bonus = 0
     return {domain: min(10, value + bonus) for domain, value in initial.items()}
@@ -631,6 +784,10 @@ def plan_progress_metrics(patient_seed: PatientSeed) -> dict[str, int]:
         return {"current_streak": 2, "longest_streak": 2, "total_training_days": 3, "last_session_gap_days": 1}
     if patient_seed.scenario == "sleep_variability":
         return {"current_streak": 1, "longest_streak": 3, "total_training_days": 4, "last_session_gap_days": 3}
+    if patient_seed.scenario == "long_term_engaged":
+        return {"current_streak": 5, "longest_streak": 11, "total_training_days": 10, "last_session_gap_days": 1}
+    if patient_seed.scenario == "plateau_after_improvement":
+        return {"current_streak": 3, "longest_streak": 8, "total_training_days": 9, "last_session_gap_days": 2}
     return {"current_streak": 3, "longest_streak": 6, "total_training_days": 6, "last_session_gap_days": 2}
 
 
@@ -645,6 +802,10 @@ def session_spacing_days(patient_seed: PatientSeed) -> int:
         return 3
     if patient_seed.scenario == "sleep_variability":
         return 6
+    if patient_seed.scenario == "long_term_engaged":
+        return 3
+    if patient_seed.scenario == "plateau_after_improvement":
+        return 3
     return 5
 
 
@@ -966,16 +1127,20 @@ def seed_training_sessions(
     gap_days = session_spacing_days(patient_seed)
     start_date = utc_now() - timedelta(days=((max(1, total_sessions) - 1) * gap_days + 2))
 
-    for session_index, task in enumerate(TASK_SEQUENCE[:total_sessions]):
+    for session_index in range(total_sessions):
+        task = TASK_SEQUENCE[session_index % len(TASK_SEQUENCE)]
         values = scenario_session_values(patient_seed, session_index)
         created_at = start_date + timedelta(days=session_index * gap_days, hours=(session_index % 3) * 2)
         trials = build_session_trials(values["mean_rt"], values["accuracy"], values["fatigue_bias"], session_index + patient_id)
+        context_values = session_context_values(patient_seed, session_index)
+        biomarker_snapshot = build_biomarker_snapshot(trials, context_values)
         raw_data = {
             "task_code": task["task_code"],
             "task_type": task["task_type"],
             "score": values["score"],
             "accuracy": values["accuracy"],
             "mean_rt": values["mean_rt"],
+            "biomarker_snapshot": biomarker_snapshot,
             "trials": trials,
         }
         training_session = TrainingSession(
@@ -1006,7 +1171,7 @@ def seed_training_sessions(
             user_id=patient_id,
             training_session_id=require_id(training_session.id, "training_session.id"),
             created_at=created_at - timedelta(minutes=5),
-            **session_context_values(patient_seed, session_index),
+            **context_values,
         )
         session.add(context)
         session.commit()
@@ -1091,6 +1256,16 @@ def seed_intervention_note(session: Session, doctor: Doctor, patient: User, pati
                 "Prioritise shorter processing-speed sessions on low-rest days.",
             ],
         }
+    elif patient_seed.scenario == "plateau_after_improvement":
+        description = "Recommended plateau-focused pacing review and variability monitoring."
+        data = {
+            "summary": "Break the recent plateau by reducing overload and tightening recovery habits.",
+            "recommendations": [
+                "Keep session length consistent instead of adding extra catch-up sessions.",
+                "Review fatigue and sleep notes alongside reaction-time variability each week.",
+                "Delay further difficulty increases until speed and accuracy stabilise again.",
+            ],
+        }
     else:
         description = "Recommended adherence-focused scheduling and shorter structured sessions."
         data = {
@@ -1123,18 +1298,24 @@ def seed_messages(session: Session, seeded_records: list[tuple[Doctor, User, Pat
     doctor_d, patient_d, _, _, _ = seeded_records[3]
     doctor_e, patient_e, _, _, _ = seeded_records[4]
     doctor_f, patient_f, _, _, _ = seeded_records[5]
+    doctor_g, patient_g, _, _, _ = seeded_records[6]
+    doctor_h, patient_h, _, _, _ = seeded_records[7]
     doctor_a_id = require_id(doctor_a.id, "doctor_a.id")
     doctor_b_id = require_id(doctor_b.id, "doctor_b.id")
     doctor_c_id = require_id(doctor_c.id, "doctor_c.id")
     doctor_d_id = require_id(doctor_d.id, "doctor_d.id")
     doctor_e_id = require_id(doctor_e.id, "doctor_e.id")
     doctor_f_id = require_id(doctor_f.id, "doctor_f.id")
+    doctor_g_id = require_id(doctor_g.id, "doctor_g.id")
+    doctor_h_id = require_id(doctor_h.id, "doctor_h.id")
     patient_a_id = require_id(patient_a.id, "patient_a.id")
     patient_b_id = require_id(patient_b.id, "patient_b.id")
     patient_c_id = require_id(patient_c.id, "patient_c.id")
     patient_d_id = require_id(patient_d.id, "patient_d.id")
     patient_e_id = require_id(patient_e.id, "patient_e.id")
     patient_f_id = require_id(patient_f.id, "patient_f.id")
+    patient_g_id = require_id(patient_g.id, "patient_g.id")
+    patient_h_id = require_id(patient_h.id, "patient_h.id")
     messages = [
         Message(
             sender_id=doctor_a_id,
@@ -1251,6 +1432,52 @@ def seed_messages(session: Session, seeded_records: list[tuple[Doctor, User, Pat
             created_at=utc_now() - timedelta(hours=4),
             updated_at=utc_now() - timedelta(hours=4),
         ),
+        Message(
+            sender_id=doctor_g_id,
+            sender_type="doctor",
+            recipient_id=patient_g_id,
+            recipient_type="patient",
+            subject="Maintaining your long-term gains",
+            message="Your longer training history is showing gradual executive improvement. We will keep progression measured and focus on preserving consistency across planning and flexibility tasks.",
+            is_read=True,
+            read_at=utc_now() - timedelta(hours=18),
+            created_at=utc_now() - timedelta(days=2),
+            updated_at=utc_now() - timedelta(hours=18),
+        ),
+        Message(
+            sender_id=patient_g_id,
+            sender_type="patient",
+            recipient_id=doctor_g_id,
+            recipient_type="doctor",
+            subject="Re: Maintaining your long-term gains",
+            message="That sounds good. I feel more confident with the planning tasks now, though I still slow down when sessions run too long.",
+            is_read=False,
+            created_at=utc_now() - timedelta(hours=14),
+            updated_at=utc_now() - timedelta(hours=14),
+        ),
+        Message(
+            sender_id=patient_h_id,
+            sender_type="patient",
+            recipient_id=doctor_h_id,
+            recipient_type="doctor",
+            subject="Feeling stuck lately",
+            message="I improved at first, but the last few sessions feel flat and more tiring. Should I reduce difficulty for a week or just keep going?",
+            is_read=True,
+            read_at=utc_now() - timedelta(hours=9),
+            created_at=utc_now() - timedelta(hours=20),
+            updated_at=utc_now() - timedelta(hours=9),
+        ),
+        Message(
+            sender_id=doctor_h_id,
+            sender_type="doctor",
+            recipient_id=patient_h_id,
+            recipient_type="patient",
+            subject="Re: Feeling stuck lately",
+            message="Do not push harder for now. I want one week of steadier pacing with attention to sleep and fatigue so we can see whether the plateau reflects overload rather than lost capacity.",
+            is_read=False,
+            created_at=utc_now() - timedelta(hours=6),
+            updated_at=utc_now() - timedelta(hours=6),
+        ),
     ]
     for message in messages:
         session.add(message)
@@ -1311,6 +1538,15 @@ def seed_risk_alert(session: Session, patient: User, doctor: Doctor, patient_see
             "Lowest scores cluster after shorter sleep nights",
             "Readiness drops on mornings following poor rest",
             "Processing speed gains have plateaued despite continued participation",
+        ]
+    elif patient_seed.scenario == "plateau_after_improvement":
+        risk_score = 63
+        risk_level = "moderate"
+        alert_summary = "Recent performance plateau suggests reduced recovery despite continued engagement."
+        reasons = [
+            "Early gains were not sustained in the most recent sessions",
+            "Reaction-time variability increased after difficulty progression",
+            "Patient reports frustration and reduced confidence during slower sessions",
         ]
     else:
         risk_score = 61
@@ -1412,16 +1648,19 @@ def main() -> None:
             seed_prescription(session, seeded_records[0][0], seeded_records[0][1]),
             seed_prescription(session, seeded_records[2][0], seeded_records[2][1]),
             seed_prescription(session, seeded_records[4][0], seeded_records[4][1]),
+            seed_prescription(session, seeded_records[6][0], seeded_records[6][1]),
         ]
         intervention_notes = [
             seed_intervention_note(session, seeded_records[1][0], seeded_records[1][1], seeded_records[1][2]),
             seed_intervention_note(session, seeded_records[3][0], seeded_records[3][1], seeded_records[3][2]),
             seed_intervention_note(session, seeded_records[5][0], seeded_records[5][1], seeded_records[5][2]),
+            seed_intervention_note(session, seeded_records[7][0], seeded_records[7][1], seeded_records[7][2]),
         ]
         risk_alerts = [
             seed_risk_alert(session, seeded_records[1][1], seeded_records[1][0], seeded_records[1][2]),
             seed_risk_alert(session, seeded_records[3][1], seeded_records[3][0], seeded_records[3][2]),
             seed_risk_alert(session, seeded_records[5][1], seeded_records[5][0], seeded_records[5][2]),
+            seed_risk_alert(session, seeded_records[7][1], seeded_records[7][0], seeded_records[7][2]),
         ]
 
         message_seeded = False
@@ -1429,7 +1668,7 @@ def main() -> None:
         if can_seed_doctor_patient_messages(session, [item[0] for item in seeded_records]):
             seed_messages(session, seeded_records)
             message_seeded = True
-            message_count = 10
+            message_count = 14
         else:
             print("Skipping demo message seeding because the current Message model stores both doctor and patient IDs against the user table.")
 
