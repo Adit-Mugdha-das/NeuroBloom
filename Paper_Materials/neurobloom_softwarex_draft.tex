@@ -7,6 +7,8 @@
 
 \usepackage{amssymb}
 \usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{svg}
 \setlength{\parindent}{0pt}
 
 \journal{SoftwareX}
@@ -104,15 +106,105 @@ Several elements of NeuroBloom build on established neuropsychological practice,
 \section{Software description}
 
 \subsection{Software architecture}
-TODO
+NeuroBloom follows a role-based web architecture connecting patient, doctor, and administrative interfaces to a shared FastAPI backend and PostgreSQL data layer through SQLModel. As shown in Figure~\ref{fig:architecture}, this structure separates presentation, application services, analytics, and persistence so that task delivery, clinician review, and system governance can evolve without tightly coupling interface code to storage logic.
+
+At the interface layer, patients complete baseline and training tasks and review progress summaries; doctors access patient monitoring, reports, interventions, and training-plan controls; administrators oversee users, alerts, analytics, and operational status. The backend is organized into modular API services for authentication, baseline workflows, training tasks, doctor operations, administration, and advanced analytics. This separation supports maintainability and makes the system suitable for repeated longitudinal use rather than one-time testing.
+
+The analytics pathway is a distinct architectural element. Session-level outputs and contextual inputs are transformed into longitudinal summaries, digital biomarker-oriented measures, and review-ready indicators for doctor-facing pages and system-level dashboards. Persistent entities include users, assignments, baselines, training sessions, session context, reports, alerts, notifications, messages, and clinician interventions, allowing each completed session to remain linked to clinical context and follow-up actions.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.94\linewidth]{figure1_clinical_problem_workflow.pdf}
+\caption{Clinical problem and workflow addressed by NeuroBloom. The figure summarizes the fragmented nature of conventional follow-up and the coordinated patient--doctor--system workflow implemented in the platform.}
+\label{fig:workflow}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includesvg[width=0.98\linewidth]{figure2}
+\caption{System architecture of NeuroBloom. The platform combines role-based web interfaces, modular application services, analytics components, and a structured persistence layer for longitudinal monitoring and clinician-guided rehabilitation workflows.}
+\label{fig:architecture}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includesvg[width=0.98\linewidth]{figure3}
+\caption{Cognitive task and biomarker pipeline. Repeated task interaction and contextual questionnaire data are converted into longitudinal indicators, digital biomarker-oriented measures, and clinician-review outputs.}
+\label{fig:pipeline}
+\end{figure}
 
 \subsection{Software functionalities}
-TODO
+The principal functions of NeuroBloom can be grouped into four modules.
+
+\textbf{Patient interaction.} Patients complete baseline and training tasks covering processing speed, attention, working memory, flexibility, planning, and visual scanning. The interface also supports contextual capture before sessions and simplified progress feedback after repeated use.
+
+\textbf{Clinician review.} Doctors can inspect assigned patients, review recent sessions, access progress reports, examine biomarker-oriented summaries, record interventions, and adjust training priorities or pacing rules. This makes the software useful for supervised follow-up rather than unsupervised task completion alone.
+
+\textbf{Analytics generation.} NeuroBloom aggregates repeated sessions into adherence summaries, trend comparisons, fatigue-related measures, response-time variability indicators, and contextual correlations. These outputs support clinician-guided interpretation and exploratory digital biomarker analysis while avoiding diagnostic claims.
+
+\textbf{Administrative oversight.} Administrative users can supervise doctors and patients, monitor alerts and notifications, review platform activity, and inspect system-level performance and risk patterns. This supports governed deployment in multi-user settings.
+
+These functionalities are coordinated around the workflow in Figure~\ref{fig:workflow}, where repeated patient interaction feeds clinician interpretation and system oversight within one platform.
 
 \subsection{Sample code snippets analysis (optional)}
+This section is omitted in the present draft because the main contribution of NeuroBloom is better communicated through workflow, architecture, and interface-level descriptions than through isolated code excerpts within the SoftwareX length constraints.
 
 \section{Illustrative examples}
-TODO
+Three short examples summarize typical use of the software.
+
+\textbf{Example 1: patient-facing task use and progress review.} A patient completes a baseline or training session in the web interface and later reviews simplified progress feedback. Figure~\ref{fig:patient-ui} shows this workflow through a task-delivery screen and a progress-oriented summary screen.
+
+\textbf{Example 2: doctor-facing monitoring and intervention.} A clinician reviews assigned-patient status, inspects recent performance and adherence, accesses patient-level history, and adjusts rehabilitation focus or pacing constraints. Figure~\ref{fig:doctor-ui} shows the doctor workspace and the patient-specific review workflow used for follow-up.
+
+\textbf{Example 3: analytics and system oversight.} Longitudinal and biomarker-oriented summaries can be reviewed in analytics views, while operational monitoring and alert handling are supported through the administrative dashboard. Figure~\ref{fig:analytics-admin-ui} shows these two complementary views.
+
+\begin{figure}[!t]
+\centering
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig4part1.png}
+	\caption{Patient training or baseline page.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig4part2.png}
+	\caption{Patient progress or session summary page.}
+\end{subfigure}
+\caption{Patient-facing NeuroBloom interface.}
+\label{fig:patient-ui}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig5part1.png}
+	\caption{Clinician access to patient-level monitoring and operational summaries.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig5part2.png}
+	\caption{Patient-specific review workflow for performance interpretation and care-plan adjustment.}
+\end{subfigure}
+\caption{Doctor-facing NeuroBloom workflows for patient review and intervention management.}
+\label{fig:doctor-ui}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig6part1.png}
+	\caption{Biomarker or longitudinal analytics view.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.48\linewidth}
+	\centering
+	\includegraphics[width=\linewidth]{fig6part2.png}
+	\caption{Administrative or system oversight dashboard.}
+\end{subfigure}
+\caption{Analytics and administration views.}
+\label{fig:analytics-admin-ui}
+\end{figure}
 
 \section{Impact}
 TODO
