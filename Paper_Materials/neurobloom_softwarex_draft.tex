@@ -1,0 +1,131 @@
+%% NeuroBloom SoftwareX draft based on the original SoftwareX template.
+%% This draft currently fills the title, abstract, keywords, and
+%% Motivation and significance section while keeping the remaining
+%% template structure available for later completion.
+
+\documentclass[preprint,12pt,a4paper]{elsarticle}
+
+\usepackage{amssymb}
+\usepackage{hyperref}
+\setlength{\parindent}{0pt}
+
+\journal{SoftwareX}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{NeuroBloom: A modular digital platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis}
+
+\author[label1]{A. Author1}
+\author[label2]{A. Author2}
+\address[label1]{Author affiliation, address, email}
+\address[label2]{Author affiliation, address, email}
+
+\begin{abstract}
+NeuroBloom is a modular digital health platform developed to support longitudinal cognitive monitoring and clinician-guided rehabilitation workflows for people living with multiple sclerosis (MS). The system integrates patient-facing cognitive tasks, pre-session contextual questionnaires, digital biomarker extraction, clinician review tools, prescription and training-plan management, and administrative oversight within a role-based architecture. NeuroBloom was designed for repeated low-cost follow-up between formal clinical visits, with emphasis on observing subtle performance change over time rather than making diagnostic claims. By combining structured task execution with longitudinal analytics and coordinated patient-doctor workflows, the platform aims to support accessible and reproducible digital rehabilitation research and practice in MS care.
+\end{abstract}
+
+\begin{keyword}
+multiple sclerosis \sep digital health \sep cognitive monitoring \sep cognitive rehabilitation \sep digital biomarkers \sep clinical software
+\end{keyword}
+
+\end{frontmatter}
+
+\section*{Metadata}
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
+\hline
+\textbf{Nr.} & \textbf{Code metadata description} & \textbf{Metadata} \\
+\hline
+C1 & Current code version & TODO \\
+\hline
+C2 & Permanent link to code/repository used for this code version & TODO \\
+\hline
+C3 & Permanent link to Reproducible Capsule & TODO \\
+\hline
+C4 & Legal Code License & TODO \\
+\hline
+C5 & Code versioning system used & git \\
+\hline
+C6 & Software code languages, tools, and services used & Python, FastAPI, SQLModel, PostgreSQL, JavaScript, Svelte \\
+\hline
+C7 & Compilation requirements, operating environments \& dependencies & TODO \\
+\hline
+C8 & If available Link to developer documentation/manual & TODO \\
+\hline
+C9 & Support email for questions & TODO \\
+\hline
+\end{tabular}
+\caption{Code metadata (mandatory)}
+\label{codeMetadata}
+\end{table}
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
+\hline
+\textbf{Nr.} & \textbf{(Executable) software metadata description} & \textbf{Please fill in this column} \\
+\hline
+S1 & Current software version & TODO \\
+\hline
+S2 & Permanent link to executables of this version & TODO \\
+\hline
+S3 & Permanent link to Reproducible Capsule & TODO \\
+\hline
+S4 & Legal Software License & TODO \\
+\hline
+S5 & Computing platforms/Operating Systems & Web-based; Microsoft Windows; Linux; macOS \\
+\hline
+S6 & Installation requirements \& dependencies & TODO \\
+\hline
+S7 & If available, link to user manual - if formally published include a reference to the publication in the reference list & TODO \\
+\hline
+S8 & Support email for questions & TODO \\
+\hline
+\end{tabular}
+\caption{Software metadata (optional)}
+\label{executabelMetadata}
+\end{table}
+
+\section{Motivation and significance}
+Multiple sclerosis is a chronic neurological disease in which cognitive difficulties may emerge gradually and may not be captured adequately by isolated clinical encounters. In addition to motor and sensory symptoms, many people with MS experience changes in processing speed, attention, working memory, executive control, and cognitive fatigue. These changes often require repeated observation over time rather than one-off measurement, particularly when functional decline is subtle, fluctuating, or intertwined with contextual factors such as fatigue, sleep quality, stress, and medication timing.
+
+At the same time, longitudinal follow-up in routine practice is frequently fragmented. Formal assessments may be relatively infrequent, patient-reported experiences between visits may be poorly structured, and rehabilitation activities are often disconnected from clinician review and adjustment. In lower-resource environments, these challenges are intensified by limited access to specialized services and the practical cost of repeated evaluation. This creates a software gap: clinicians and patients need an accessible digital system that can support repeated cognitive follow-up, structured rehabilitation activity, and coordinated interpretation of longitudinal change without positioning itself as a diagnostic substitute for established neurological investigation.
+
+NeuroBloom was developed to address this gap as a modular, role-based software platform for MS-oriented cognitive monitoring and rehabilitation support. The system combines patient-facing cognitive task execution, contextual session questionnaires, longitudinal session history, clinician review dashboards, prescription and training-plan workflows, and administrative oversight. Rather than treating cognitive tasks as isolated exercises, NeuroBloom organizes them as a structured task library spanning multiple domains, including processing speed, working memory, attention, executive flexibility, planning, and visual scanning. The platform standardizes outputs such as accuracy, response speed, completion behavior, and variability across sessions so that repeated interaction data can be reviewed longitudinally.
+
+An additional motivation for the software is the growing importance of digital biomarkers in neurorehabilitation and remote monitoring research. NeuroBloom includes an analytics layer that derives behavioral indicators from task interaction data and contextual information, including fatigue-related patterns, response-time variability, and trend measures across repeated sessions. These outputs are intended to support clinician-guided interpretation and personalized rehabilitation planning, not to diagnose MS or replace MRI, laboratory testing, or specialist neurological judgment. This distinction is essential in order to keep the software scientifically useful while avoiding overclaiming clinical capability.
+
+The experimental setting for NeuroBloom is therefore a coordinated digital follow-up workflow. A patient interacts with baseline or training tasks through the patient interface, optionally providing pre-session contextual information such as fatigue or sleep quality. Performance data are stored and analyzed over time, after which a clinician can review longitudinal trends, assess adherence and task-level performance, and adjust prescriptions or training plans through the doctor portal. Administrative users support governed deployment, user management, and operational oversight. In this way, the software is designed not only for repeated patient interaction but also for integration into supervised rehabilitation and monitoring workflows.
+
+Several elements of NeuroBloom build on established neuropsychological practice, including the use of task paradigms relevant to processing speed, sustained attention, working memory, and executive function. However, the contribution of the present software is not the introduction of a new cognitive test in isolation. Instead, NeuroBloom provides a unified digital environment that links task execution, contextual capture, longitudinal analytics, clinician-guided rehabilitation, and multi-role workflow management in a single platform. This makes the software relevant to future work on accessible MS monitoring, remote rehabilitation support, digital biomarker exploration, and reproducible longitudinal cognitive follow-up in both research and practice.
+
+\section{Software description}
+
+\subsection{Software architecture}
+TODO
+
+\subsection{Software functionalities}
+TODO
+
+\subsection{Sample code snippets analysis (optional)}
+
+\section{Illustrative examples}
+TODO
+
+\section{Impact}
+TODO
+
+\section{Conclusions}
+TODO
+
+\section*{Acknowledgements}
+
+\begin{thebibliography}{00}
+
+\bibitem{} References to MS monitoring, digital biomarkers, and neuropsychological task literature should be added here before submission.
+
+\end{thebibliography}
+
+\end{document}
