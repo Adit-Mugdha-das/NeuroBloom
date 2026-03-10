@@ -1,0 +1,61 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #5F6B7A
+skinparam ArrowThickness 1.3
+skinparam packageStyle rectangle
+skinparam packageBorderColor #94A3B8
+skinparam packageBackgroundColor white
+skinparam legend {
+  BackgroundColor #F8FAFC
+  BorderColor #CBD5E1
+  FontColor #334155
+}
+skinparam rectangle {
+  BorderColor #64748B
+  FontColor #1E293B
+  RoundCorner 18
+}
+
+rectangle "Step 1\nCognitive Task Inputs" as S1 #FFFFFF {
+  rectangle "Task domains\n--\nworking memory\nprocessing speed\nattention\nflexibility\nplanning\nvisual scanning" as domains #E9EEF3
+  rectangle "Representative tasks\n--\nSDMT / PASAT / Trail Making\nN-back / Stroop / Go-NoGo\nvisual search / planning tasks" as task_examples #E9EEF3
+}
+
+rectangle "Step 2\nStandardized Session Data" as S2 #FFFFFF {
+  rectangle "Behavioral outputs\n--\nscore\naccuracy\nmean reaction time\ntrial-level responses\ncompletion behavior" as behavioral #DDF3F0
+  rectangle "Contextual inputs\n--\nfatigue / sleep / stress\npain / readiness\nmedication timing\ntime of day / location" as context #DDF3F0
+}
+
+rectangle "Step 3\nFeature Extraction" as S3 #FFFFFF {
+  rectangle "Within-session biomarkers\n--\nfatigue index\naccuracy decline\nRT increase\nperformance slope" as fatigue #F7ECD2
+  rectangle "Variability metrics\n--\nRT standard deviation\ncoefficient of variation\nMAD / IQR / range" as variability #F7ECD2
+}
+
+rectangle "Step 4\nLongitudinal Analytics" as S4 #FFFFFF {
+  rectangle "Across-session modeling\n--\nEWMA performance trends\nEWMA RT trends\nwithin-person variability\nreliable change index" as longitudinal #F6E7C8
+  rectangle "Context-performance analysis\n--\nfatigue-performance correlation\nsleep-performance correlation\nmedication timing correlation" as correlation #F6E7C8
+}
+
+rectangle "Step 5\nClinically Usable Outputs" as S5 #FFFFFF {
+  rectangle "Review outputs\n--\nprogress summaries\ndigital biomarker report\nrisk alerts / reports\ndoctor-facing interpretation" as review #EEF2F7
+}
+
+domains --> task_examples
+task_examples --> behavioral
+context --> fatigue
+behavioral --> fatigue
+behavioral --> variability
+fatigue --> longitudinal
+variability --> longitudinal
+context --> correlation
+longitudinal --> correlation
+longitudinal --> review
+correlation --> review
+
+legend bottom
+Figure focus: domain-level task data -> standardized session measures -> biomarker extraction -> longitudinal summaries
+endlegend
+@enduml
