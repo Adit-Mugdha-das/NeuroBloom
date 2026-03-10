@@ -1,0 +1,59 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #5F6B7A
+skinparam ArrowThickness 1.3
+skinparam packageStyle rectangle
+skinparam packageBorderColor #94A3B8
+skinparam packageBackgroundColor white
+skinparam legend {
+  BackgroundColor #F8FAFC
+  BorderColor #CBD5E1
+  FontColor #334155
+}
+skinparam rectangle {
+  BorderColor #64748B
+  FontColor #1E293B
+  RoundCorner 18
+}
+
+rectangle "Layer 1\nRole-based Interfaces" as L1 #FFFFFF {
+  rectangle "Patient Interface\n--\nbaseline & training tasks\nprogress/history\nprescriptions/messages" as patient #E9EEF3
+  rectangle "Doctor Portal\n--\npatient review\ndashboard & prescriptions\ntraining plans/reports" as doctor #E9EEF3
+  rectangle "Admin Portal\n--\ndoctor verification\ngovernance & notifications\naudit/export" as admin #E9EEF3
+}
+
+rectangle "Layer 2\nCore Application Services" as L2 #FFFFFF {
+  rectangle "Authentication & Role Access\n--\nlogin\nauthorization\nrole control" as auth #DDF3F0
+  rectangle "Task, Baseline & Training Services\n--\ntask execution\nbaseline assessment\ntraining session management" as tasks #DDF3F0
+  rectangle "Clinician Workflow Services\n--\npatient assignment\nprescriptions\nintervention planning\nmessaging/reports" as clinician #DDF3F0
+  rectangle "Administrative Governance Services\n--\nuser management\ndepartment/oversight\nnotifications\naudit support" as governance #DDF3F0
+}
+
+rectangle "Layers 3 & 4  |  Analytics · Monitoring · Persistence" as L34 #FFFFFF {
+  rectangle "Session Context & Digital Biomarkers\n[Layer 3]\n--\nfatigue / sleep / stress context\nresponse speed & accuracy\nvariability indicators" as biomarkers #F7ECD2
+  rectangle "Longitudinal Analytics & Reporting\n[Layer 3]\n--\ntrend analysis\nprogress summaries\nrisk alerts / reports" as trends #F7ECD2
+  database "PostgreSQL / SQLModel Data Store\n[Layer 4]\n--\nusers & roles  |  baseline records\ntraining sessions  |  session context\nplans / reports / alerts" as db #EEF2F7
+  biomarkers -[hidden]right-> trends
+  biomarkers -[hidden]down-> db
+  trends -[hidden]down-> db
+}
+
+patient --> auth
+doctor --> auth
+admin --> auth
+auth --> tasks
+auth --> clinician
+auth --> governance
+tasks --> biomarkers
+clinician --> trends
+biomarkers --> trends
+L2 --> db
+trends --> db
+
+legend bottom
+Svelte frontend | FastAPI backend | SQLModel ORM | PostgreSQL
+endlegend
+@enduml
