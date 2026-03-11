@@ -1,0 +1,84 @@
+@startuml
+top to bottom direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam ArrowColor #5F6B7A
+skinparam ArrowThickness 1.4
+skinparam defaultTextAlignment center
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam ranksep 45
+
+skinparam rectangle {
+  BorderColor #64748B
+  FontColor #1E293B
+  RoundCorner 14
+}
+
+skinparam rectangle<<ghost>> {
+  BorderColor white
+  BackgroundColor white
+  FontColor white
+  FontSize 1
+}
+
+skinparam package {
+  BorderColor #64748B
+  FontColor #1E293B
+}
+
+skinparam circle {
+  BackgroundColor #5F6B7A
+  BorderColor #5F6B7A
+}
+
+title NeuroBloom System Architecture
+
+package "Layer 1\nRole-based Interfaces" as L1 {
+  rectangle "Patient Interface\ntasks & history\nmessages" as Patient
+  rectangle "Doctor Portal\nreview & reports\nprescriptions" as Doctor
+  rectangle "Admin Portal\ngovernance\naudit & export" as Admin
+}
+
+package "Layer 2\nCore Application Services" as L2 {
+  rectangle "Authentication\nlogin & authorization\nrole control" as Auth
+  rectangle "Task & Training\nbaseline assessment\nsession management" as Task
+  rectangle "Clinician Workflow\nplanning\nreports" as Clinician
+  rectangle "Administrative Governance\nuser management\nnotifications" as Governance
+}
+
+package "Layer 3\nAnalytics & Monitoring Layer" as L3 {
+  rectangle "Context & Biomarkers\nfatigue / sleep / stress\nspeed / variability" as Biomarkers
+  rectangle "Longitudinal Analytics\ntrends & summaries\nrisk alerts" as Analytics
+}
+
+package "Layer 4\nPersistent Data Layer" as L4 {
+  database "PostgreSQL / SQLModel\nusers & sessions\nplans & reports" as DB
+}
+
+circle " " as MergeAuth
+rectangle " " <<ghost>> as EntryL2
+
+Patient --> MergeAuth
+Doctor --> MergeAuth
+Admin --> MergeAuth
+
+MergeAuth -down-> EntryL2
+EntryL2 -[hidden]down-> Auth
+
+Auth ..> Clinician
+Auth --> Task
+Auth ..> Governance
+
+Task --> Biomarkers
+Biomarkers --> Analytics
+Analytics -right-> DB
+
+Clinician -[hidden]-> Governance
+Biomarkers -[hidden]-> Analytics
+
+rectangle "Svelte | FastAPI | SQLModel | PostgreSQL" as Tech
+DB -down-> Tech
+
+@enduml
