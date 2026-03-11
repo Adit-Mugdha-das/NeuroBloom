@@ -6,9 +6,8 @@
 \documentclass[preprint,12pt,a4paper]{elsarticle}
 
 \usepackage{amssymb}
+\usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{subcaption}
-\usepackage{svg}
 \setlength{\parindent}{0pt}
 
 \journal{SoftwareX}
@@ -41,182 +40,175 @@ multiple sclerosis \sep digital health \sep cognitive monitoring \sep cognitive 
 \hline
 \textbf{Nr.} & \textbf{Code metadata description} & \textbf{Metadata} \\
 \hline
-C1 & Current code version & TODO \\
+C1 & Current code version & v1.0 \\
 \hline
-C2 & Permanent link to code/repository used for this code version & TODO \\
+C2 & Permanent link to code/repository used for this code version & \url{https://github.com/Adit-Mugdha-das/NeuroBloom} \\
 \hline
-C3 & Permanent link to Reproducible Capsule & TODO \\
+C3 & Permanent link to Reproducible Capsule & N/A \\
 \hline
-C4 & Legal Code License & TODO \\
+C4 & Legal Code License & MIT License \\
 \hline
 C5 & Code versioning system used & git \\
 \hline
 C6 & Software code languages, tools, and services used & Python, FastAPI, SQLModel, PostgreSQL, JavaScript, Svelte \\
 \hline
-C7 & Compilation requirements, operating environments \& dependencies & TODO \\
+C7 & Compilation requirements, operating environments \& dependencies & Python 3.10+, Node.js 18+, npm, PostgreSQL, modern web browser, backend dependencies including FastAPI, SQLModel, Uvicorn, and bcrypt, and frontend build tooling based on SvelteKit/Vite \\
 \hline
-C8 & If available Link to developer documentation/manual & TODO \\
+C8 & If available Link to developer documentation/manual & \url{https://github.com/Adit-Mugdha-das/NeuroBloom/blob/main/README.md} \\
 \hline
-C9 & Support email for questions & TODO \\
+C9 & Support email for questions & aditmugdhadas@gmail.com \\
 \hline
 \end{tabular}
 \caption{Code metadata (mandatory)}
 \label{codeMetadata}
 \end{table}
 
-\begin{table}[!h]
-\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
-\hline
-\textbf{Nr.} & \textbf{(Executable) software metadata description} & \textbf{Please fill in this column} \\
-\hline
-S1 & Current software version & TODO \\
-\hline
-S2 & Permanent link to executables of this version & TODO \\
-\hline
-S3 & Permanent link to Reproducible Capsule & TODO \\
-\hline
-S4 & Legal Software License & TODO \\
-\hline
-S5 & Computing platforms/Operating Systems & Web-based; Microsoft Windows; Linux; macOS \\
-\hline
-S6 & Installation requirements \& dependencies & TODO \\
-\hline
-S7 & If available, link to user manual - if formally published include a reference to the publication in the reference list & TODO \\
-\hline
-S8 & Support email for questions & TODO \\
-\hline
-\end{tabular}
-\caption{Software metadata (optional)}
-\label{executabelMetadata}
-\end{table}
-
 \section{Motivation and significance}
-Multiple sclerosis is a chronic neurological disease in which cognitive difficulties may emerge gradually and may not be captured adequately by isolated clinical encounters. In addition to motor and sensory symptoms, many people with MS experience changes in processing speed, attention, working memory, executive control, and cognitive fatigue. These changes often require repeated observation over time rather than one-off measurement, particularly when functional decline is subtle, fluctuating, or intertwined with contextual factors such as fatigue, sleep quality, stress, and medication timing.
+Multiple sclerosis is a chronic neurological disease in which cognitive difficulties may emerge gradually and may not be captured adequately by isolated clinical encounters. In addition to motor and sensory symptoms, many people with MS experience changes in processing speed, attention, working memory, executive control, and cognitive fatigue \cite{chiaravalloti2008,amato2006,rocca2015}. These changes often require repeated observation over time rather than one-off measurement, particularly when functional decline is subtle, fluctuating, or intertwined with contextual factors such as fatigue, sleep quality, stress, and medication timing \cite{amato2006,kalb2018}.
 
-At the same time, longitudinal follow-up in routine practice is frequently fragmented. Formal assessments may be relatively infrequent, patient-reported experiences between visits may be poorly structured, and rehabilitation activities are often disconnected from clinician review and adjustment. In lower-resource environments, these challenges are intensified by limited access to specialized services and the practical cost of repeated evaluation. This creates a software gap: clinicians and patients need an accessible digital system that can support repeated cognitive follow-up, structured rehabilitation activity, and coordinated interpretation of longitudinal change without positioning itself as a diagnostic substitute for established neurological investigation.
+At the same time, longitudinal follow-up in routine practice is frequently fragmented. Formal assessments may be relatively infrequent, patient-reported experiences between visits may be poorly structured, and rehabilitation activities are often disconnected from clinician review and adjustment \cite{kalb2018}. In lower-resource environments, these challenges are intensified by limited access to specialized services and the practical cost of repeated evaluation. This creates a software gap: clinicians and patients need an accessible digital system that can support repeated cognitive follow-up, structured rehabilitation activity, and coordinated interpretation of longitudinal change without positioning itself as a diagnostic substitute for established neurological investigation.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\textwidth]{figure1}
+\caption{Clinical motivation and integrated NeuroBloom workflow for repeated MS-oriented cognitive follow-up.}
+\label{fig:motivation_workflow}
+\end{figure}
 
 NeuroBloom was developed to address this gap as a modular, role-based software platform for MS-oriented cognitive monitoring and rehabilitation support. The system combines patient-facing cognitive task execution, contextual session questionnaires, longitudinal session history, clinician review dashboards, prescription and training-plan workflows, and administrative oversight. Rather than treating cognitive tasks as isolated exercises, NeuroBloom organizes them as a structured task library spanning multiple domains, including processing speed, working memory, attention, executive flexibility, planning, and visual scanning. The platform standardizes outputs such as accuracy, response speed, completion behavior, and variability across sessions so that repeated interaction data can be reviewed longitudinally.
 
-An additional motivation for the software is the growing importance of digital biomarkers in neurorehabilitation and remote monitoring research. NeuroBloom includes an analytics layer that derives behavioral indicators from task interaction data and contextual information, including fatigue-related patterns, response-time variability, and trend measures across repeated sessions. These outputs are intended to support clinician-guided interpretation and personalized rehabilitation planning, not to diagnose MS or replace MRI, laboratory testing, or specialist neurological judgment. This distinction is essential in order to keep the software scientifically useful while avoiding overclaiming clinical capability.
+An additional motivation for the software is the growing importance of digital biomarkers in neurorehabilitation and remote monitoring research \cite{insel2017,coravos2019,dorsey2017}. NeuroBloom includes an analytics layer that derives behavioral indicators from task interaction data and contextual information, including fatigue-related patterns, response-time variability, and trend measures across repeated sessions. These outputs are intended to support clinician-guided interpretation and personalized rehabilitation planning, not to diagnose MS or replace MRI, laboratory testing, or specialist neurological judgment. This distinction is essential in order to keep the software scientifically useful while avoiding overclaiming clinical capability.
 
 The experimental setting for NeuroBloom is therefore a coordinated digital follow-up workflow. A patient interacts with baseline or training tasks through the patient interface, optionally providing pre-session contextual information such as fatigue or sleep quality. Performance data are stored and analyzed over time, after which a clinician can review longitudinal trends, assess adherence and task-level performance, and adjust prescriptions or training plans through the doctor portal. Administrative users support governed deployment, user management, and operational oversight. In this way, the software is designed not only for repeated patient interaction but also for integration into supervised rehabilitation and monitoring workflows.
 
-Several elements of NeuroBloom build on established neuropsychological practice, including the use of task paradigms relevant to processing speed, sustained attention, working memory, and executive function. However, the contribution of the present software is not the introduction of a new cognitive test in isolation. Instead, NeuroBloom provides a unified digital environment that links task execution, contextual capture, longitudinal analytics, clinician-guided rehabilitation, and multi-role workflow management in a single platform. This makes the software relevant to future work on accessible MS monitoring, remote rehabilitation support, digital biomarker exploration, and reproducible longitudinal cognitive follow-up in both research and practice.
+Several elements of NeuroBloom build on established neuropsychological practice, including the use of task paradigms relevant to processing speed, sustained attention, working memory, and executive function \cite{benedict2012,kalb2018}. However, the contribution of the present software is not the introduction of a new cognitive test in isolation. Instead, NeuroBloom provides a unified digital environment that links task execution, contextual capture, longitudinal analytics, clinician-guided rehabilitation, and multi-role workflow management in a single platform. This makes the software relevant to future work on accessible MS monitoring, remote rehabilitation support, digital biomarker exploration, and reproducible longitudinal cognitive follow-up in both research and practice.
 
 \section{Software description}
 
+NeuroBloom is implemented as a modular, web-based software platform that combines role-specific interaction, structured cognitive task delivery, longitudinal data capture, and clinician-oriented review within a unified workflow. At system level, the software connects patient-facing task execution, doctor-facing monitoring and intervention support, administrative oversight, and an analytics component that transforms repeated session records into longitudinal summaries and behavioral indicators. This design was chosen to support supervised cognitive follow-up in MS while keeping the platform extensible for additional task modules, reporting components, and future research-oriented analytics.
+
 \subsection{Software architecture}
-NeuroBloom follows a role-based web architecture connecting patient, doctor, and administrative interfaces to a shared FastAPI backend and PostgreSQL data layer through SQLModel. As shown in Figure~\ref{fig:architecture}, this structure separates presentation, application services, analytics, and persistence so that task delivery, clinician review, and system governance can evolve without tightly coupling interface code to storage logic.
+NeuroBloom follows a modular, role-based architecture designed to support repeated cognitive follow-up, clinician-guided rehabilitation, and governed multi-user deployment within a single web platform. The system is organized around three primary interface contexts---patient, doctor, and administrator---that share a common backend and persistent data model while exposing role-appropriate workflows. This structure allows patient interaction, clinician supervision, and operational oversight to remain integrated without collapsing their responsibilities into a single interface.
 
-At the interface layer, patients complete baseline and training tasks and review progress summaries; doctors access patient monitoring, reports, interventions, and training-plan controls; administrators oversee users, alerts, analytics, and operational status. The backend is organized into modular API services for authentication, baseline workflows, training tasks, doctor operations, administration, and advanced analytics. This separation supports maintainability and makes the system suitable for repeated longitudinal use rather than one-time testing.
-
-The analytics pathway is a distinct architectural element. Session-level outputs and contextual inputs are transformed into longitudinal summaries, digital biomarker-oriented measures, and review-ready indicators for doctor-facing pages and system-level dashboards. Persistent entities include users, assignments, baselines, training sessions, session context, reports, alerts, notifications, messages, and clinician interventions, allowing each completed session to remain linked to clinical context and follow-up actions.
+At implementation level, the software combines a Svelte-based frontend with a FastAPI backend and a structured persistence layer built around SQLModel and PostgreSQL. The frontend provides role-specific pages for task execution, progress review, patient management, analytics, and administration, while the backend exposes application services for authentication, baseline and training workflows, reporting, messaging, notifications, and doctor-admin coordination. The resulting layered design separates user interaction from service logic and data storage, which simplifies maintenance and supports extension of the platform as new task modules or workflow components are added.
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=0.94\linewidth]{figure1_clinical_problem_workflow.pdf}
-\caption{Clinical problem and workflow addressed by NeuroBloom. The figure summarizes the fragmented nature of conventional follow-up and the coordinated patient--doctor--system workflow implemented in the platform.}
-\label{fig:workflow}
+\includegraphics[width=\textwidth]{figure2}
+\caption{Role-based system architecture of NeuroBloom, showing interface, service, analytics, and persistence layers.}
+\label{fig:system_architecture}
 \end{figure}
+
+Within this architecture, data flow begins when a patient performs baseline or training activities and, when applicable, submits contextual information such as fatigue, sleep quality, stress, or medication timing. These records are transferred through backend services that manage session creation, task submission, longitudinal history, and controlled access for clinician and administrator views. Persisted session data include performance summaries such as score, accuracy, response time, completion behavior, and associated contextual variables, allowing repeated observations to be reviewed over time rather than as isolated task results.
+
+An analytics component is layered on top of these stored session records to transform repeated interaction data into longitudinal summaries and behavioral indicators. Rather than operating as a standalone diagnostic engine, this component functions as a computational monitoring pipeline that aggregates task outputs, derives variability and fatigue-related measures, evaluates change across repeated sessions, and returns interpretable summaries for clinician-facing review. The processing sequence from cognitive task interaction to biomarker-oriented and longitudinal outputs is illustrated in Fig.~\ref{fig:biomarker_pipeline}.
 
 \begin{figure}[!t]
 \centering
-\includesvg[width=0.98\linewidth]{figure2}
-\caption{System architecture of NeuroBloom. The platform combines role-based web interfaces, modular application services, analytics components, and a structured persistence layer for longitudinal monitoring and clinician-guided rehabilitation workflows.}
-\label{fig:architecture}
+\includegraphics[width=\textwidth]{figure3}
+\caption{Analytics pipeline linking task interaction and contextual capture to longitudinal summaries and biomarker-oriented outputs.}
+\label{fig:biomarker_pipeline}
 \end{figure}
 
-\begin{figure}[!t]
-\centering
-\includesvg[width=0.98\linewidth]{figure3}
-\caption{Cognitive task and biomarker pipeline. Repeated task interaction and contextual questionnaire data are converted into longitudinal indicators, digital biomarker-oriented measures, and clinician-review outputs.}
-\label{fig:pipeline}
-\end{figure}
+This separation between interface layer, application services, analytics processing, and persistence is important for both software quality and research utility. It supports controlled role-based access, reuse of shared data structures across workflows, and incremental extension of the platform without redesigning the full system. In the context of MS-oriented monitoring and rehabilitation support, the architecture therefore serves not only as an implementation choice but also as a basis for reproducible longitudinal data capture and coordinated clinician-patient interaction.
 
 \subsection{Software functionalities}
-The principal functions of NeuroBloom can be grouped into four modules.
+\paragraph{Patient interaction and session execution}
+NeuroBloom provides a patient-facing workflow for repeated baseline and training activity across multiple sessions rather than one-time task use. Patients can complete structured cognitive activities, view session progress, and optionally submit pre-session contextual information such as fatigue or sleep quality before task execution. In this way, the software supports adherence-oriented longitudinal use while preserving a simple interaction flow for repeated home or clinic-based follow-up.
 
-\textbf{Patient interaction.} Patients complete baseline and training tasks covering processing speed, attention, working memory, flexibility, planning, and visual scanning. The interface also supports contextual capture before sessions and simplified progress feedback after repeated use.
+\paragraph{Cognitive task framework}
+The task framework organizes cognitive activities as a modular library spanning domains such as processing speed, attention, working memory, executive flexibility, planning, and visual scanning. Although individual tasks differ in presentation and interaction style, they are integrated into a common session model that standardizes outputs including score, accuracy, response speed, completion behavior, and difficulty-linked progression. This allows heterogeneous task designs to contribute to a shared longitudinal record instead of remaining isolated task-specific measurements.
 
-\textbf{Clinician review.} Doctors can inspect assigned patients, review recent sessions, access progress reports, examine biomarker-oriented summaries, record interventions, and adjust training priorities or pacing rules. This makes the software useful for supervised follow-up rather than unsupervised task completion alone.
+\begin{figure}[!t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig4part1}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig4part2}
+\end{minipage}
+\caption{Patient-facing workflow, showing repeated task interaction and progress-oriented session use.}
+\label{fig:patient_workflow}
+\end{figure}
 
-\textbf{Analytics generation.} NeuroBloom aggregates repeated sessions into adherence summaries, trend comparisons, fatigue-related measures, response-time variability indicators, and contextual correlations. These outputs support clinician-guided interpretation and exploratory digital biomarker analysis while avoiding diagnostic claims.
+\paragraph{Longitudinal analytics and digital biomarkers}
+Beyond raw task completion, the platform supports repeated-session monitoring through summary analytics derived from accumulated performance and contextual records. These outputs include longitudinal trend summaries, fatigue-related patterns, response-time variability, and related indicators that help characterize change across time at patient level. Their purpose within NeuroBloom is to support progression-aware monitoring and clinician interpretation of rehabilitation-relevant performance change rather than to provide diagnostic conclusions.
 
-\textbf{Administrative oversight.} Administrative users can supervise doctors and patients, monitor alerts and notifications, review platform activity, and inspect system-level performance and risk patterns. This supports governed deployment in multi-user settings.
+\paragraph{Doctor-facing clinical workflow}
+The clinician-facing functionality connects repeated patient interaction data to supervised review and intervention. Doctors can inspect patient histories, assess adherence and recent performance, review biomarker-oriented summaries and trend information, generate or review progress reports, and adjust training plans or prescriptions in response to observed change. By linking monitoring outputs to concrete clinical workflow actions, the software supports iterative rehabilitation management rather than passive data display alone.
 
-These functionalities are coordinated around the workflow in Figure~\ref{fig:workflow}, where repeated patient interaction feeds clinician interpretation and system oversight within one platform.
+\begin{figure}[!t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig5part1}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig5part2}
+\end{minipage}
+\caption{Doctor-facing workflow, combining patient review, longitudinal monitoring, and intervention-oriented decision support.}
+\label{fig:doctor_workflow}
+\end{figure}
 
-\subsection{Sample code snippets analysis (optional)}
-This section is omitted in the present draft because the main contribution of NeuroBloom is better communicated through workflow, architecture, and interface-level descriptions than through isolated code excerpts within the SoftwareX length constraints.
+\paragraph{Administrative oversight and governance}
+NeuroBloom also includes administrative functionality for governed deployment and operational supervision in a multi-user setting. Administrative users can review system-level activity, monitor engagement and alert-oriented summaries, manage user and role relationships, and maintain controlled oversight of the platform as a coordinated service rather than a standalone task interface. This administrative layer is important because the software is intended to function as a managed rehabilitation and monitoring environment involving patients, clinicians, and institutional oversight.
+
+\begin{figure}[!t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig6part1}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{fig6part2}
+\end{minipage}
+\caption{Administrative workflow, showing system-level monitoring, governance, and operational oversight functions.}
+\label{fig:admin_workflow}
+\end{figure}
 
 \section{Illustrative examples}
-Three short examples summarize typical use of the software.
-
-\textbf{Example 1: patient-facing task use and progress review.} A patient completes a baseline or training session in the web interface and later reviews simplified progress feedback. Figure~\ref{fig:patient-ui} shows this workflow through a task-delivery screen and a progress-oriented summary screen.
-
-\textbf{Example 2: doctor-facing monitoring and intervention.} A clinician reviews assigned-patient status, inspects recent performance and adherence, accesses patient-level history, and adjusts rehabilitation focus or pacing constraints. Figure~\ref{fig:doctor-ui} shows the doctor workspace and the patient-specific review workflow used for follow-up.
-
-\textbf{Example 3: analytics and system oversight.} Longitudinal and biomarker-oriented summaries can be reviewed in analytics views, while operational monitoring and alert handling are supported through the administrative dashboard. Figure~\ref{fig:analytics-admin-ui} shows these two complementary views.
-
-\begin{figure}[!t]
-\centering
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig4part1.png}
-	\caption{Patient training or baseline page.}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig4part2.png}
-	\caption{Patient progress or session summary page.}
-\end{subfigure}
-\caption{Patient-facing NeuroBloom interface.}
-\label{fig:patient-ui}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig5part1.png}
-	\caption{Clinician access to patient-level monitoring and operational summaries.}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig5part2.png}
-	\caption{Patient-specific review workflow for performance interpretation and care-plan adjustment.}
-\end{subfigure}
-\caption{Doctor-facing NeuroBloom workflows for patient review and intervention management.}
-\label{fig:doctor-ui}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig6part1.png}
-	\caption{Biomarker or longitudinal analytics view.}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-	\centering
-	\includegraphics[width=\linewidth]{fig6part2.png}
-	\caption{Administrative or system oversight dashboard.}
-\end{subfigure}
-\caption{Analytics and administration views.}
-\label{fig:analytics-admin-ui}
-\end{figure}
+To better demonstrate the major functions of the software, a supplementary video is provided showing the end-to-end operation of NeuroBloom. The video presents the principal patient, doctor, and administrative workflows and complements Figs.~\ref{fig:patient_workflow}--\ref{fig:admin_workflow} by illustrating how the main modules described in this article are used in practice.
 
 \section{Impact}
-TODO
+NeuroBloom contributes a research-oriented software environment for longitudinal cognitive monitoring and rehabilitation-related data collection in multiple sclerosis. By combining repeated task execution, contextual self-report capture, and persistent session history within a unified platform, the system supports structured investigation of behavioral change over time rather than isolated one-time measurement. This makes the software relevant for studies examining digital behavioral indicators, repeated cognitive interaction, and the role of contextual factors such as fatigue or sleep quality in longitudinal performance analysis \cite{insel2017,coravos2019}.
+
+The platform also has practical value for MS-oriented follow-up between formal clinical encounters. By linking patient-side task activity with doctor-facing review tools, longitudinal summaries, and progress-oriented reporting, NeuroBloom supports repeated low-cost monitoring and clinician-guided rehabilitation workflows without positioning itself as a diagnostic substitute for established neurological assessment. In this setting, its free-of-cost software model further reduces barriers to access and use, particularly where frequent specialist review may be difficult or resource-constrained.
+
+From a software perspective, NeuroBloom provides a modular and extensible architecture that integrates cognitive task delivery, contextual data capture, analytics, and multi-role workflow management within a single system. This design supports reuse of the platform as a digital research and deployment framework, allowing additional task modules, analytics components, and reporting workflows to be incorporated without restructuring the core architecture. NeuroBloom is therefore intended not only as an MS-oriented monitoring application, but also as reusable software infrastructure for longitudinal cognitive and rehabilitation-oriented digital health research.
 
 \section{Conclusions}
-TODO
+NeuroBloom is a modular digital platform designed to support longitudinal cognitive monitoring and clinician-guided rehabilitation workflows in multiple sclerosis. By integrating patient-facing cognitive tasks, contextual data capture, longitudinal analytics, doctor-oriented review tools, and administrative oversight within a single system, the software addresses an important gap between repeated cognitive follow-up and coordinated workflow support. Its contribution lies not in proposing a standalone diagnostic instrument, but in providing reusable software infrastructure for structured monitoring, rehabilitation-oriented review, and digital biomarker exploration. Future work may extend the platform through broader deployment, additional task modules, expanded analytics, and further evaluation in research and supervised clinical settings.
 
 \section*{Acknowledgements}
+TODO
+
+\section*{Declaration of Generative AI and AI-assisted technologies in the writing process}
+AI-assisted tools were used in a limited manner to support LaTeX syntax and document formatting during manuscript preparation. All scientific content, software descriptions, interpretations, and final wording were reviewed and finalized by the authors.
+
+\section*{Declaration of competing interest}
+TODO
 
 \begin{thebibliography}{00}
 
-\bibitem{} References to MS monitoring, digital biomarkers, and neuropsychological task literature should be added here before submission.
+\bibitem{chiaravalloti2008} N.D. Chiaravalloti, J. DeLuca, Cognitive impairment in multiple sclerosis, Lancet Neurol. 7 (2008) 1139--1151.
+
+\bibitem{amato2006} M.P. Amato, V. Zipoli, E. Portaccio, Multiple sclerosis-related cognitive changes: a review of cross-sectional and longitudinal studies, J. Neurol. Sci. 245 (2006) 41--46.
+
+\bibitem{rocca2015} M.A. Rocca, M.P. Amato, N. De Stefano, et al., Clinical and imaging assessment of cognitive dysfunction in multiple sclerosis, Lancet Neurol. 14 (2015) 302--317.
+
+\bibitem{kalb2018} R. Kalb, T. Beier, R.H.B. Benedict, et al., Recommendations for cognitive screening and management in multiple sclerosis care, Mult. Scler. J. 24 (2018) 1665--1680.
+
+\bibitem{benedict2012} R.H.B. Benedict, M.P. Amato, J. Boringa, et al., Brief International Cognitive Assessment for Multiple Sclerosis (BICAMS): international standards for validation, BMC Neurol. 12 (2012) 55.
+
+\bibitem{insel2017} T.R. Insel, Digital phenotyping: technology for a new science of behavior, JAMA 318 (2017) 1215--1216.
+
+\bibitem{coravos2019} A. Coravos, S. Khozin, K.D. Mandl, Developing and adopting safe and effective digital biomarkers to improve patient outcomes, npj Digit. Med. 2 (2019) 14.
+
+\bibitem{dorsey2017} E.R. Dorsey, S. Papapetropoulos, M. Xiong, K. Kieburtz, The first frontier: digital biomarkers for neurodegenerative disorders, Digit. Biomark. 1 (2017) 6--13.
 
 \end{thebibliography}
 
