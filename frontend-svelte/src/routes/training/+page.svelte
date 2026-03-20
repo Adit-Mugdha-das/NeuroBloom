@@ -84,6 +84,7 @@
 	function getTaskRoute(taskType, domain, difficulty, planId, taskId) {
 		const routes = {
 			n_back: '/baseline/tasks/working-memory',
+			dual_n_back: '/training/dual-n-back',
 			digit_span: '/training/digit-span',
 			spatial_span: '/training/spatial-span',
 			letter_number_sequencing: '/training/letter-number-sequencing',

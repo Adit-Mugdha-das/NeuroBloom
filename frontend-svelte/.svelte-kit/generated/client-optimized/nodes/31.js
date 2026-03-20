@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/doctor/prescriptions/+page.svelte";

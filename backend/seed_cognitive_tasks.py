@@ -91,6 +91,21 @@ def seed_cognitive_tasks():
             "cognitive_load": "high",
             "instructions": "Solve math problems while remembering letters. Example: 2+3=5? Remember F → 4+2=7? Remember Q → Recall: F, Q"
         },
+        {
+            "task_code": "dual_n_back",
+            "domain": "working_memory",
+            "task_name": "Dual N-Back",
+            "description": "Track visual positions and spoken letters, marking matches from N steps back",
+            "clinical_validation": "Clinically grounded extension of N-Back with dual-modality working memory load. Builds on established N-Back paradigms used in cognitive training and MS-related working memory research.",
+            "is_baseline_task": False,
+            "difficulty_min": 1,
+            "difficulty_max": 10,
+            "estimated_duration_seconds": 210,
+            "requires_audio": True,
+            "requires_keyboard": True,
+            "cognitive_load": "high",
+            "instructions": "Watch the highlighted square and listen to the spoken letter. Mark whether the visual position and/or letter match the one shown N steps earlier."
+        },
         
         # ============================================
         # PROCESSING SPEED DOMAIN

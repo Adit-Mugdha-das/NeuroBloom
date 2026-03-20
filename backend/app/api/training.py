@@ -1804,6 +1804,173 @@ def submit_operation_span_session(
 
 
 # ============================================================================
+# Dual N-Back - Dual-modality working memory training
+# ============================================================================
+
+@router.post("/tasks/dual-n-back/generate/{user_id}")
+def generate_dual_n_back_session(
+    user_id: int,
+    difficulty: int = 5,
+    num_trials: int = 4,
+    session: Session = Depends(get_session)
+):
+    """
+    Generate Dual N-Back task session.
+
+    Returns trial streams combining visual positions and auditory letter cues.
+    """
+    from app.services.dual_n_back_task import DualNBackTask
+
+    if not 1 <= difficulty <= 10:
+        raise HTTPException(status_code=400, detail="Difficulty must be between 1 and 10")
+
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+
+    trials = DualNBackTask.generate_session(difficulty, num_trials)
+    max_n_level = max(trial["n_level"] for trial in trials) if trials else 1
+
+    return {
+        "task_code": "dual_n_back",
+        "domain": "working_memory",
+        "difficulty": difficulty,
+        "num_trials": num_trials,
+        "trials": trials,
+        "instructions": {
+            "title": "Dual N-Back",
+            "description": "Track a visual square and a spoken letter at the same time.",
+            "task": "Press the visual and audio match controls when the current item matches the one shown N steps back.",
+            "n_level": max_n_level,
+            "controls": {
+                "visual": "V key or Visual Match button",
+                "audio": "A key or Audio Match button"
+            },
+            "tips": [
+                "You do not need to respond during the first few warm-up items before N-back comparison starts.",
+                "Visual and audio matches can happen separately or together.",
+                "Prioritize accuracy first, then speed once the pattern feels familiar.",
+                "The task adapts to your performance across rounds."
+            ]
+        }
+    }
+
+
+@router.post("/tasks/dual-n-back/submit/{user_id}")
+def submit_dual_n_back_session(
+    user_id: int,
+    session_data: dict,
+    session: Session = Depends(get_session)
+):
+    """
+    Submit completed Dual N-Back session and save results.
+    """
+    from app.services.dual_n_back_task import DualNBackTask
+
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if not plan or plan.id is None:
+        raise HTTPException(status_code=404, detail="No active training plan found")
+
+    enforce_session_limits(plan, session, user_id)
+
+    task_id = session_data.get("task_id")
+    submitted_trials = session_data.get("trials", [])
+    scored_trials = []
+
+    for submitted_trial in submitted_trials:
+        metrics = DualNBackTask.score_trial(submitted_trial)
+        scored_trials.append({**submitted_trial, "metrics": metrics})
+
+    metrics = DualNBackTask.calculate_session_metrics(scored_trials)
+    avg_rt = DualNBackTask.calculate_average_reaction_time(scored_trials)
+
+    difficulty = session_data.get("difficulty", 5)
+    score = metrics["score"]
+    false_alarm_pressure = max(metrics["visual_false_alarm_rate"], metrics["audio_false_alarm_rate"])
+
+    if score >= DualNBackTask.ADVANCE_THRESHOLD and false_alarm_pressure <= 22:
+        new_difficulty = min(difficulty + 1, 10)
+        adaptation_reason = (
+            f"Increased difficulty (score {score:.1f} >= {DualNBackTask.ADVANCE_THRESHOLD} with controlled false alarms)"
+        )
+    elif score < DualNBackTask.REGRESS_THRESHOLD:
+        new_difficulty = max(difficulty - 1, 1)
+        adaptation_reason = f"Decreased difficulty (score {score:.1f} < {DualNBackTask.REGRESS_THRESHOLD})"
+    else:
+        new_difficulty = difficulty
+        adaptation_reason = f"Maintained difficulty (score {score:.1f} within target range)"
+
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="working_memory",
+        task_type="dual_n_back",
+        task_code="dual_n_back",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=avg_rt,
+        consistency=metrics["consistency"],
+        errors=metrics["total_decisions"] - metrics["correct_decisions"],
+        difficulty_level=new_difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=new_difficulty,
+        duration=session_data.get("duration_seconds", 0),
+        raw_data=json.dumps({
+            "trials": scored_trials,
+            "metrics": metrics
+        }),
+        adaptation_reason=adaptation_reason,
+        completed=True
+    )
+
+    session.add(training_session)
+
+    current_difficulty = json.loads(plan.current_difficulty)
+    current_difficulty["working_memory"] = new_difficulty
+    plan.current_difficulty = json.dumps(current_difficulty)
+    plan.last_updated = datetime.utcnow()
+
+    session.add(plan)
+
+    session_info = track_session_completion(plan, "working_memory", session, user_id, task_id)
+
+    session.commit()
+    session.refresh(training_session)
+    session.refresh(plan)
+
+    return {
+        "success": True,
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": new_difficulty,
+        "adaptation_reason": adaptation_reason,
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"],
+        "performance_summary": {
+            "score": metrics["score"],
+            "accuracy": metrics["accuracy"],
+            "visual_accuracy": metrics["visual_accuracy"],
+            "audio_accuracy": metrics["audio_accuracy"],
+            "dual_accuracy": metrics["dual_accuracy"],
+            "n_level": metrics["n_level"]
+        }
+    }
+
+
+# ============================================================================
 # SDMT (Symbol Digit Modalities Test) - GOLD STANDARD for MS
 # ============================================================================
 

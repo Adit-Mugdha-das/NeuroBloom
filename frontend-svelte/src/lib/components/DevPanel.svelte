@@ -31,6 +31,7 @@
 	const taskRoutes = {
 		// Working Memory
 		'n_back': '/baseline/tasks/working-memory',
+		'dual-n-back': '/training/dual-n-back',
 		'digit-span': '/training/digit-span',
 		'spatial-span': '/training/spatial-span',
 		'letter-number-sequencing': '/training/letter-number-sequencing',
@@ -72,6 +73,7 @@
 	const tasksByDomain = {
 		'Working Memory': [
 			{ name: 'N-Back Test', code: 'n_back' },
+			{ name: 'Dual N-Back', code: 'dual-n-back' },
 			{ name: 'Digit Span', code: 'digit-span' },
 			{ name: 'Spatial Span', code: 'spatial-span' },
 			{ name: 'Letter-Number Sequencing', code: 'letter-number-sequencing' },

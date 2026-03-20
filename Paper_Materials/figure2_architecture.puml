@@ -79,6 +79,6 @@ Clinician -[hidden]-> Governance
 Biomarkers -[hidden]-> Analytics
 
 rectangle "Svelte | FastAPI | SQLModel | PostgreSQL" as Tech
-DB -down-> Tech
+DB -[hidden]down-> Tech
 
 @enduml
