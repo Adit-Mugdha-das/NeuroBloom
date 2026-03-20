@@ -279,6 +279,21 @@ def seed_cognitive_tasks():
             "cognitive_load": "medium",
             "instructions": "Report the direction of the CENTER arrow only. Ignore the surrounding arrows."
         },
+        {
+            "task_code": "sart",
+            "domain": "attention",
+            "task_name": "Sustained Attention to Response Task (SART)",
+            "description": "Respond to frequent digits and withhold to the rare target digit",
+            "clinical_validation": "Clinically grounded sustained-attention and vigilance task measuring lapses, inhibitory failures, and fatigue-sensitive response control.",
+            "is_baseline_task": False,
+            "difficulty_min": 1,
+            "difficulty_max": 10,
+            "estimated_duration_seconds": 120,
+            "requires_audio": False,
+            "requires_keyboard": True,
+            "cognitive_load": "medium",
+            "instructions": "Press SPACE for every digit except the rare target digit. When the target appears, do not press."
+        },
         
         # ============================================
         # FLEXIBILITY DOMAIN
