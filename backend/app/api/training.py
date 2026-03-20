@@ -2617,6 +2617,138 @@ def submit_inspection_time_session(
 
 
 # ============================================================================
+# CHOICE REACTION TIME - Processing Speed (Decision speed)
+# ============================================================================
+
+@router.post("/tasks/choice-reaction-time/generate/{user_id}")
+def generate_choice_reaction_time_session(
+    user_id: int,
+    difficulty: Optional[int] = None,
+    session: Session = Depends(get_session)
+):
+    """Generate a Choice Reaction Time session."""
+    from app.services.choice_reaction_time_task import ChoiceReactionTimeTask
+
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+
+    if difficulty is None:
+        current_difficulty = plan.current_difficulty
+        if isinstance(current_difficulty, str):
+            current_difficulty = json.loads(current_difficulty)
+        difficulty = current_difficulty.get("processing_speed", 5)
+
+    difficulty_level: int = difficulty if isinstance(difficulty, int) else 5
+    difficulty_level = max(1, min(10, difficulty_level))
+
+    session_data = ChoiceReactionTimeTask.generate_session(difficulty_level)
+
+    return {
+        "task_code": "choice_reaction_time",
+        "domain": "processing_speed",
+        "session": session_data,
+        "difficulty": difficulty_level,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/choice-reaction-time/submit/{user_id}")
+def submit_choice_reaction_time_session(
+    user_id: int,
+    request_data: dict,
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Choice Reaction Time session."""
+    from app.services.choice_reaction_time_task import ChoiceReactionTimeTask
+
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses", [])
+    task_id = request_data.get("task_id")
+
+    if difficulty is None or session_data is None:
+        raise HTTPException(status_code=400, detail="difficulty and session_data are required")
+    if not isinstance(responses, list):
+        raise HTTPException(status_code=400, detail="responses must be a list")
+
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active training plan")
+
+    enforce_session_limits(plan, session, user_id)
+
+    if plan.id is None:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    results = ChoiceReactionTimeTask.score_session(session_data, responses)
+    metrics = results["metrics"]
+    total_duration_ms = sum(float(response.get("reaction_time", 0) or 0) for response in responses)
+    duration_seconds = max(1, int(total_duration_ms / 1000)) if responses else 1
+
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=plan.id,
+        domain="processing_speed",
+        task_type="choice_reaction_time",
+        task_code="choice_reaction_time",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=metrics["average_reaction_time"],
+        consistency=metrics["consistency"],
+        errors=metrics["total_trials"] - metrics["correct_count"],
+        difficulty_level=difficulty,
+        difficulty_before=difficulty,
+        difficulty_after=results["difficulty_adjustment"],
+        duration=duration_seconds,
+        raw_data=json.dumps({
+            "session_data": session_data,
+            "responses": responses,
+            "scored_trials": results["scored_trials"],
+            "processing_speed": metrics["processing_speed"],
+            "decision_efficiency": metrics["decision_efficiency"],
+        }),
+        adaptation_reason=results["adaptation_reason"]
+    )
+
+    session.add(training_session)
+
+    current_difficulty = plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+
+    current_difficulty["processing_speed"] = results["difficulty_adjustment"]
+    plan.current_difficulty = json.dumps(current_difficulty)
+
+    session_info = track_session_completion(plan, "processing_speed", session, user_id, task_id)
+
+    session.commit()
+    session.refresh(training_session)
+
+    return {
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": results["difficulty_adjustment"],
+        "adaptation_reason": results["adaptation_reason"],
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
+    }
+
+
+# ============================================================================
 # STROOP COLOR-WORD TEST - Attention (Classic Inhibitory Control)
 # ============================================================================
 

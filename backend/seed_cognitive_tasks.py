@@ -185,6 +185,21 @@ def seed_cognitive_tasks():
             "cognitive_load": "low",
             "instructions": "Two lines flash briefly. Indicate which line was longer (left or right)."
         },
+        {
+            "task_code": "choice_reaction_time",
+            "domain": "processing_speed",
+            "task_name": "Choice Reaction Time",
+            "description": "Identify one of several stimuli and press the matching response as quickly as possible",
+            "clinical_validation": "Clinically grounded decision-speed task extending simple reaction time with stimulus discrimination and response selection demands.",
+            "is_baseline_task": False,
+            "difficulty_min": 1,
+            "difficulty_max": 10,
+            "estimated_duration_seconds": 100,
+            "requires_audio": False,
+            "requires_keyboard": True,
+            "cognitive_load": "medium",
+            "instructions": "Watch the symbol that appears in the center and press the matching key or button immediately."
+        },
         
         # ============================================
         # ATTENTION DOMAIN

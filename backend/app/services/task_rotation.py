@@ -26,10 +26,12 @@ class TaskRotationService:
         'processing_speed': {
             'strategy': 'weighted',  # SDMT more frequent (gold standard)
             'weights': {
-                'simple_reaction': 0.25,
-                'sdmt': 0.40,  # Prioritize SDMT when implemented
-                'trails_a': 0.20,
-                'pattern_comparison': 0.15
+                'simple_reaction': 0.20,
+                'sdmt': 0.32,  # Prioritize SDMT when implemented
+                'trails_a': 0.16,
+                'pattern_comparison': 0.12,
+                'inspection_time': 0.08,
+                'choice_reaction_time': 0.12
             },
             'exclude_last_n': 1
         },
