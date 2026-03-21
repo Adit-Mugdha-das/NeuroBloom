@@ -359,6 +359,21 @@ def seed_cognitive_tasks():
             "instructions": "Sort cards by the dimension shown (COLOR or SHAPE)."
         },
         {
+            "task_code": "rule_shift",
+            "domain": "flexibility",
+            "task_name": "Rule Shift",
+            "description": "Follow one sorting rule for a short run, then adapt when the active rule changes",
+            "clinical_validation": "Clinically grounded set-shifting task measuring adaptation, rule maintenance, and perseverative responding with lower frustration than WCST.",
+            "is_baseline_task": False,
+            "difficulty_min": 1,
+            "difficulty_max": 10,
+            "estimated_duration_seconds": 150,
+            "requires_audio": False,
+            "requires_keyboard": True,
+            "cognitive_load": "medium",
+            "instructions": "Choose left or right based on the active rule. Shift quickly when the rule changes."
+        },
+        {
             "task_code": "plus_minus",
             "domain": "flexibility",
             "task_name": "Plus-Minus Task",
