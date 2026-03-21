@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -68,7 +69,11 @@
 			loading = false;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load training session. Please ensure the backend server is running and you have completed baseline assessment.');
+			alert(
+				t(
+					'Failed to load training session. Please ensure backend server is running and you have completed baseline assessment.'
+				)
+			);
 			loading = false;
 		}
 	}
@@ -77,38 +82,50 @@
 		phase = 'instructions';
 	}
 
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function formatMilliseconds(value) {
+		if ($locale === 'bn') {
+			return `${formatNumber(value, $locale)} মিলিসেকেন্ড`;
+		}
+
+		return `${formatNumber(value, $locale)}ms`;
+	}
+
 	function startPractice() {
 		// Create practice trials (4 Go, 2 No-Go)
 		practiceTrials = [
 			{
 				trial_type: 'go',
 				stimulus: sessionData.go_stimulus,
-				hint: 'Press SPACEBAR when you see this!'
+				hint: t('Press SPACEBAR when you see this!')
 			},
 			{
 				trial_type: 'go',
 				stimulus: sessionData.go_stimulus,
-				hint: 'Quick! Press SPACEBAR again'
+				hint: t('Quick! Press SPACEBAR again')
 			},
 			{
 				trial_type: 'nogo',
 				stimulus: sessionData.nogo_stimulus,
-				hint: 'DON\'T PRESS! Just wait.'
+				hint: t('DON\'T PRESS! Just wait.')
 			},
 			{
 				trial_type: 'go',
 				stimulus: sessionData.go_stimulus,
-				hint: 'Press SPACEBAR - be ready!'
+				hint: t('Press SPACEBAR - be ready!')
 			},
 			{
 				trial_type: 'nogo',
 				stimulus: sessionData.nogo_stimulus,
-				hint: 'Remember: Don\'t press for this one!'
+				hint: t('Remember: Don\'t press for this one!')
 			},
 			{
 				trial_type: 'go',
 				stimulus: sessionData.go_stimulus,
-				hint: 'Last practice - press SPACEBAR!'
+				hint: t('Last practice - press SPACEBAR!')
 			}
 		];
 
@@ -155,24 +172,24 @@
 				const rt = Date.now() - startTime;
 				practiceFeedback = {
 					type: 'success',
-					message: `✓ Correct! Response time: ${rt}ms. ${trial.hint}`
+					message: `✓ ${t('Correct!')} ${t('Response time')}: ${formatMilliseconds(rt)}. ${trial.hint}`
 				};
 			} else {
 				practiceFeedback = {
 					type: 'success',
-					message: `✓ Perfect! You successfully withheld your response. ${trial.hint}`
+					message: `✓ ${t('Perfect! You successfully withheld your response.')} ${trial.hint}`
 				};
 			}
 		} else {
 			if (trial.trial_type === 'go') {
 				practiceFeedback = {
 					type: 'error',
-					message: `✗ You should have pressed SPACEBAR. ${trial.hint}`
+					message: `✗ ${t('You should have pressed SPACEBAR.')} ${trial.hint}`
 				};
 			} else {
 				practiceFeedback = {
 					type: 'error',
-					message: `✗ You pressed when you shouldn't have! ${trial.hint}`
+					message: `✗ ${t("You pressed when you shouldn't have!")} ${trial.hint}`
 				};
 			}
 		}
@@ -292,6 +309,7 @@
 			showResults = true;
 		} catch (error) {
 			console.error('Error submitting session:', error);
+			alert(t('Failed to submit results. Please try again.'));
 		}
 	}
 

@@ -3,6 +3,7 @@
 	import { tasks, training } from '$lib/api';
 	import api, { API_BASE_URL } from '$lib/api.js';
 	import DoctorWidget from '$lib/components/DoctorWidget.svelte';
+	import { formatNumber, locale, translateText } from '$lib/i18n';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -64,6 +65,22 @@
 	const unsubscribe = user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function dayLabel(value) {
+		const count = Number(value) || 0;
+		if ($locale === 'bn') {
+			return `${n(count)} দিন`;
+		}
+		return `${count} day${count === 1 ? '' : 's'}`;
+	}
 
 	onMount(() => {
 		if (!currentUser) {
@@ -200,28 +217,37 @@
 	}
 
 	function formatDate(dateValue) {
-		return dateValue ? new Date(dateValue).toLocaleDateString() : 'Not yet';
+		if (!dateValue) {
+			return $locale === 'bn' ? 'এখনও নয়' : 'Not yet';
+		}
+
+		return new Date(dateValue).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US');
 	}
 
 	function getDomainName(domain) {
 		const names = {
-			working_memory: 'Working Memory',
-			attention: 'Attention',
-			flexibility: 'Cognitive Flexibility',
-			planning: 'Planning',
-			processing_speed: 'Processing Speed',
-			visual_scanning: 'Visual Scanning'
+			working_memory: t('Working Memory'),
+			attention: t('Attention'),
+			flexibility: t('Cognitive Flexibility'),
+			planning: t('Planning'),
+			processing_speed: t('Processing Speed'),
+			visual_scanning: t('Visual Scanning')
 		};
 
-		return names[domain] || 'Training';
+		return names[domain] || t('Training');
 	}
 
 	function getDifficultyLabel(difficulty) {
-		if (!difficulty) return 'Gentle';
-		if (difficulty <= 3) return 'Gentle';
-		if (difficulty <= 6) return 'Steady';
-		if (difficulty <= 8) return 'Focused';
-		return 'Advanced';
+		if (!difficulty || difficulty <= 3) {
+			return $locale === 'bn' ? 'সহজ' : 'Gentle';
+		}
+		if (difficulty <= 6) {
+			return $locale === 'bn' ? 'স্থিতিশীল' : 'Steady';
+		}
+		if (difficulty <= 8) {
+			return $locale === 'bn' ? 'মনোযোগী' : 'Focused';
+		}
+		return $locale === 'bn' ? 'উন্নত' : 'Advanced';
 	}
 
 	function getDisplayName() {
@@ -244,23 +270,31 @@
 
 	function getEncouragementMessage() {
 		if (primaryRecommendation?.domain) {
+			if ($locale === 'bn') {
+				return `দারুণ অগ্রগতি! আপনি এই সপ্তাহে ${getDomainName(primaryRecommendation.domain)} আরও শক্তিশালী করছেন।`;
+			}
 			return `Great progress! You're improving your ${getDomainName(primaryRecommendation.domain).toLowerCase()} this week.`;
 		}
 
 		if ((streak?.current_streak || 0) > 0) {
+			if ($locale === 'bn') {
+				return `দারুণ অগ্রগতি! আপনি টানা ${n(streak.current_streak)} দিন নিয়মিত থেকেছেন।`;
+			}
 			return `Great progress! You've stayed consistent for ${streak.current_streak} day${streak.current_streak === 1 ? '' : 's'}.`;
 		}
 
-		return 'Great progress! Each training session helps build a clearer picture of your cognitive health.';
+		return $locale === 'bn'
+			? 'দারুণ অগ্রগতি! প্রতিটি ট্রেনিং সেশন আপনার কগনিটিভ স্বাস্থ্যের আরও পরিষ্কার চিত্র গড়ে তুলতে সাহায্য করে।'
+			: 'Great progress! Each training session helps build a clearer picture of your cognitive health.';
 	}
 
 	$: primaryRecommendation = getPrimaryRecommendation();
 	$: latestPrescription = prescriptionSummary?.prescriptions?.[0] || null;
 	$: overviewCards = [
-		{ key: 'sessions', label: 'Total Sessions', value: stats ? stats.total_sessions : 'Unavailable', tone: 'indigo' },
-		{ key: 'domains', label: 'Active Domains', value: stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : stats ? 0 : 'Unavailable', tone: 'cyan' },
-		{ key: 'last-training', label: 'Last Training', value: stats ? formatDate(stats.last_training_date) : 'Unavailable', tone: 'violet' },
-		{ key: 'streak', label: 'Current Streak', value: streak ? `${streak.current_streak || 0} day${(streak.current_streak || 0) === 1 ? '' : 's'}` : 'Unavailable', tone: 'teal' }
+		{ key: 'sessions', label: t('Total Sessions'), value: stats ? n(stats.total_sessions) : t('Unavailable'), tone: 'indigo' },
+		{ key: 'domains', label: t('Active Domains'), value: stats?.metrics_by_domain ? n(Object.keys(stats.metrics_by_domain).length) : stats ? n(0) : t('Unavailable'), tone: 'cyan' },
+		{ key: 'last-training', label: t('Last Training'), value: stats ? formatDate(stats.last_training_date) : t('Unavailable'), tone: 'violet' },
+		{ key: 'streak', label: t('Current Streak'), value: streak ? dayLabel(streak.current_streak || 0) : t('Unavailable'), tone: 'teal' }
 	];
 	$: encouragementMessage = getEncouragementMessage();
 </script>
@@ -411,11 +445,19 @@
 					<div class="recommendation-card">
 						<div class="recommendation-copy">
 							<p class="recommendation-domain">{getDomainName(primaryRecommendation.domain)}</p>
-							<h3>{primaryRecommendation.task_name || 'Recommended training task'}</h3>
-							<p class="recommendation-reason">{primaryRecommendation.focus_reason}</p>
+							<h3>{translateText(primaryRecommendation.task_name || 'Recommended training task', $locale)}</h3>
+							<p class="recommendation-reason">{translateText(primaryRecommendation.focus_reason, $locale)}</p>
 							<div class="recommendation-meta">
-								<span class="meta-chip">{getDifficultyLabel(primaryRecommendation.difficulty)} challenge</span>
-								<span class="meta-chip">Level {primaryRecommendation.difficulty}/10</span>
+								<span class="meta-chip">
+									{$locale === 'bn'
+										? `${getDifficultyLabel(primaryRecommendation.difficulty)} স্তর`
+										: `${getDifficultyLabel(primaryRecommendation.difficulty)} challenge`}
+								</span>
+								<span class="meta-chip">
+									{$locale === 'bn'
+										? `লেভেল ${n(primaryRecommendation.difficulty)}/${n(10)}`
+										: `Level ${primaryRecommendation.difficulty}/10`}
+								</span>
 							</div>
 						</div>
 						<div class="recommendation-actions">
@@ -453,7 +495,11 @@
 							<p class="recommendation-reason">{latestPrescription.summary || latestPrescription.patient_instructions}</p>
 							<div class="recommendation-meta">
 								<span class="meta-chip">Dr. {latestPrescription.doctor_name}</span>
-								<span class="meta-chip">Issued {formatDate(latestPrescription.created_at)}</span>
+								<span class="meta-chip">
+									{$locale === 'bn'
+										? `ইস্যু করা হয়েছে ${formatDate(latestPrescription.created_at)}`
+										: `Issued ${formatDate(latestPrescription.created_at)}`}
+								</span>
 								<span class="meta-chip">{latestPrescription.medication_count} medication item{latestPrescription.medication_count === 1 ? '' : 's'}</span>
 							</div>
 						</div>

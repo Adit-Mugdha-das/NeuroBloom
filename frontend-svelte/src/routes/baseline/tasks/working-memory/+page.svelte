@@ -2,6 +2,13 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
+	import {
+		formatNumber,
+		formatPercent,
+		localizeStimulusSymbol,
+		locale,
+		translateText
+	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -40,6 +47,92 @@
 			goto('/login');
 		}
 	});
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, options);
+	}
+
+	function stimulus(value) {
+		return localizeStimulusSymbol(value, $locale);
+	}
+
+	function nBackLabel(value = nBackLevel) {
+		return $locale === 'bn' ? `${n(value)}-ব্যাক` : `${value}-Back`;
+	}
+
+	function stepAgoText(value = nBackLevel) {
+		if ($locale === 'bn') {
+			return `${n(value)} ধাপ আগে`;
+		}
+
+		return `${value} step${value > 1 ? 's' : ''} ago`;
+	}
+
+	function stepBackText(value = nBackLevel) {
+		if ($locale === 'bn') {
+			return `${n(value)} ধাপ আগে`;
+		}
+
+		return `${value} step${value > 1 ? 's' : ''} back`;
+	}
+
+	function previousPositionsText(value = nBackLevel) {
+		if ($locale === 'bn') {
+			return `${n(value)} অবস্থান আগের`;
+		}
+
+		return `${value} position${value > 1 ? 's' : ''} earlier`;
+	}
+
+	function completedTasksText() {
+		if ($locale === 'bn') {
+			return `${n(completedTasksCount)} / ${n(totalTasksCount)} টি টাস্ক সম্পন্ন হয়েছে`;
+		}
+
+		return `${completedTasksCount} / ${totalTasksCount} tasks completed`;
+	}
+
+	function remainingTasksText() {
+		const remainingTasks = totalTasksCount - completedTasksCount;
+
+		if ($locale === 'bn') {
+			return `বাকি ${n(remainingTasks)}টি টাস্ক সম্পন্ন করুন`;
+		}
+
+		return `Continue to complete remaining ${remainingTasks} task${remainingTasks > 1 ? 's' : ''}`;
+	}
+
+	function reactionTimeText(value) {
+		if ($locale === 'bn') {
+			return `${n(value)} মি.সে.`;
+		}
+
+		return `${Math.round(Number(value))}ms`;
+	}
+
+	function secondsText(value) {
+		if ($locale === 'bn') {
+			return `${n(value)} সেকেন্ড`;
+		}
+
+		return `${value} seconds`;
+	}
+
+	function upgradeMessage(nextLevel) {
+		if ($locale === 'bn') {
+			return `অসাধারণ পারফরম্যান্স! আপনি ${nBackLabel(nextLevel)} চ্যালেঞ্জের জন্য প্রস্তুত!`;
+		}
+
+		return `Outstanding performance! You're ready for ${nextLevel}-Back challenge!`;
+	}
 	
 	onMount(() => {
 		// Check if user came from training page
@@ -201,96 +294,131 @@
 	}
 </script>
 
-<div class="test-container">
+<div class="test-container" data-localize-skip>
 	{#if stage === 'intro'}
 		<div class="test-card">
-			<h1>🧠 Working Memory Test</h1>
+			<h1>🧠 {t('Working Memory Test')}</h1>
 			<h2 style="color: #764ba2; font-size: 1.5rem; margin-bottom: 2rem; font-weight: 600;">
-				{nBackLevel}-Back Task
+				{nBackLabel()} {t('Task')}
 			</h2>
 			
 			<div class="instructions">
 				<div class="instruction-header">
-					<h3>📋 How It Works:</h3>
+					<h3>📋 {t('How It Works:')}</h3>
 				</div>
 				
 				<div class="instruction-steps">
 					<div class="step">
-						<div class="step-number">1</div>
+						<div class="step-number">{n(1)}</div>
 						<div class="step-content">
-							<p>You'll see <strong>letters</strong> appear one at a time on screen</p>
+							<p>{t("You'll see letters appear one at a time on screen")}</p>
 						</div>
 					</div>
 					
 					<div class="step">
-						<div class="step-number">2</div>
+						<div class="step-number">{n(2)}</div>
 						<div class="step-content">
-							<p>Each letter stays for <strong>2 seconds</strong></p>
+							<p>{t('Each letter stays for 2 seconds')}</p>
 						</div>
 					</div>
 					
 					<div class="step">
-						<div class="step-number">3</div>
+						<div class="step-number">{n(3)}</div>
 						<div class="step-content">
-							<p>Click <strong class="match-btn">✓ Match</strong> if the current letter is the <strong>same</strong> as the letter from <strong>{nBackLevel} step{nBackLevel > 1 ? 's' : ''} ago</strong></p>
+							<p>
+								{#if $locale === 'bn'}
+									{`বর্তমান অক্ষরটি ${stepAgoText()} আগের অক্ষরের মতো হলে `}
+									<strong class="match-btn">✓ {t('Match')}</strong>
+									{' চাপুন'}
+								{:else}
+									{`Click `}
+									<strong class="match-btn">✓ {t('Match')}</strong>
+									{` if the current letter is the same as the letter from ${stepAgoText()}`}
+								{/if}
+							</p>
 						</div>
 					</div>
 					
 					<div class="step">
-						<div class="step-number">4</div>
+						<div class="step-number">{n(4)}</div>
 						<div class="step-content">
-							<p>Click <strong class="no-match-btn">✗ No Match</strong> if it's different</p>
+							<p>
+								{#if $locale === 'bn'}
+									{`ভিন্ন হলে `}
+									<strong class="no-match-btn">✗ {t('No Match')}</strong>
+									{' চাপুন'}
+								{:else}
+									{`Click `}
+									<strong class="no-match-btn">✗ {t('No Match')}</strong>
+									{` if it's different`}
+								{/if}
+							</p>
 						</div>
 					</div>
 				</div>
 				
 				<div class="example-box">
-					<h4>💡 Example for {nBackLevel}-Back:</h4>
+					<h4>💡 {t('Example for')} {nBackLabel()}:</h4>
 					<div class="sequence-display">
 						<div class="sequence-item">
-							<span class="letter-demo">A</span>
-							<span class="position">Position 1</span>
+							<span class="letter-demo">{stimulus('A')}</span>
+							<span class="position">{t('Position')} {n(1)}</span>
 						</div>
 						<div class="arrow">→</div>
 						<div class="sequence-item">
-							<span class="letter-demo">B</span>
-							<span class="position">Position 2</span>
+							<span class="letter-demo">{stimulus('B')}</span>
+							<span class="position">{t('Position')} {n(2)}</span>
 						</div>
 						<div class="arrow">→</div>
 						<div class="sequence-item highlight">
-							<span class="letter-demo">A</span>
-							<span class="position">Position 3</span>
-							<span class="match-indicator">✓ MATCH!</span>
+							<span class="letter-demo">{stimulus('A')}</span>
+							<span class="position">{t('Position')} {n(3)}</span>
+							<span class="match-indicator">✓ {t('MATCH!')}</span>
 						</div>
 					</div>
 					<p class="example-explanation">
-						At position 3, you see <strong>A</strong> again. Looking back {nBackLevel} step{nBackLevel > 1 ? 's' : ''}, 
-						you also saw <strong>A</strong> → Click <strong class="match-btn">Match</strong>!
+						{#if $locale === 'bn'}
+							{`অবস্থান ${n(3)}-এ আপনি আবার `}
+							<strong>{stimulus('A')}</strong>
+							{` দেখছেন। ${stepAgoText()} তাকালে আগেও `}
+							<strong>{stimulus('A')}</strong>
+							{` ছিল, তাই `}
+							<strong class="match-btn">{t('Match')}</strong>
+							{' চাপুন!'}
+						{:else}
+							{`At position 3, you see `}
+							<strong>{stimulus('A')}</strong>
+							{` again. Looking back ${nBackLevel} step${nBackLevel > 1 ? 's' : ''}, you also saw `}
+							<strong>{stimulus('A')}</strong>
+							{` → Click `}
+							<strong class="match-btn">{t('Match')}</strong>
+							{`!`}
+						{/if}
 					</p>
 				</div>
 				
 				<div class="test-info">
 					<div class="info-item">
-						<span class="info-label">Total Trials:</span>
-						<span class="info-value">{totalTrials} letters</span>
+						<span class="info-label">{t('Total Trials:')}</span>
+						<span class="info-value">{n(totalTrials)} {t('letters')}</span>
 					</div>
 					<div class="info-item">
-						<span class="info-label">Difficulty:</span>
-						<span class="info-value">{nBackLevel}-Back</span>
+						<span class="info-label">{t('Difficulty:')}</span>
+						<span class="info-value">{nBackLabel()}</span>
 					</div>
 					<div class="info-item">
-						<span class="info-label">Time per Letter:</span>
-						<span class="info-value">2 seconds</span>
+						<span class="info-label">{t('Time per Letter:')}</span>
+						<span class="info-value">{secondsText(2)}</span>
 					</div>
 				</div>
 			</div>
 			
 			<div class="button-group">
 				<button class="btn-primary btn-large" on:click={startTest}>
-					🚀 Start Test
+					🚀 {t('Start Test')}
 				</button>
 				<button class="btn-secondary" on:click={backToDashboard}>
-					← Back to Dashboard
+					← {t('Back to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -302,15 +430,19 @@
 			</div>
 			
 			<div class="timer">
-				Trial {currentTrial + 1} of {totalTrials}
+				{t('Trial')} {n(currentTrial + 1)} {t('of')} {n(totalTrials)}
 			</div>
 			
 			<div class="task-reminder">
-				Does this letter match the one from <strong>{nBackLevel} step{nBackLevel > 1 ? 's' : ''} back</strong>?
+				{#if $locale === 'bn'}
+					{'এই অক্ষরটি কি '}<strong>{stepBackText()}</strong>{' অক্ষরের সাথে মেলে?'}
+				{:else}
+					{t('Does this letter match the one from')} <strong>{stepBackText()}</strong>?
+				{/if}
 			</div>
 			
 			<div class="word-display">
-				{currentLetter}
+				{stimulus(currentLetter)}
 			</div>
 			
 			<div class="button-group">
@@ -319,55 +451,59 @@
 					on:click={() => handleResponse(true)}
 				>
 					<span class="btn-icon">✓</span>
-					<span class="btn-text">Match</span>
+					<span class="btn-text">{t('Match')}</span>
 				</button>
 				<button 
 					class="btn-secondary btn-no-match" 
 					on:click={() => handleResponse(false)}
 				>
 					<span class="btn-icon">✗</span>
-					<span class="btn-text">No Match</span>
+					<span class="btn-text">{t('No Match')}</span>
 				</button>
 			</div>
 			
 			<div class="help-text">
-				Remember: Compare with the letter {nBackLevel} position{nBackLevel > 1 ? 's' : ''} earlier
+				{#if $locale === 'bn'}
+					{`মনে রাখুন: ${previousPositionsText()} অক্ষরের সাথে তুলনা করুন`}
+				{:else}
+					{t('Remember:')} {previousPositionsText()}
+				{/if}
 			</div>
 		</div>
 	
 	{:else if stage === 'results'}
 		<div class="test-card">
-			<h1>🎉 Test Complete!</h1>
+			<h1>🎉 {t('Test Complete!')}</h1>
 			
 			{#if isTrainingMode}
 				<div class="training-progress-banner">
-					<p class="progress-label">Training Progress:</p>
-					<p class="progress-value">{completedTasksCount} / {totalTasksCount} tasks completed</p>
+					<p class="progress-label">{t('Training Progress:')}</p>
+					<p class="progress-value">{completedTasksText()}</p>
 					{#if sessionComplete}
 						<div class="session-complete-msg">
-							🎊 Session Complete! All tasks finished!
+							🎊 {t('Session Complete! All tasks finished!')}
 						</div>
 					{:else}
 						<div class="session-incomplete-msg">
-							Continue to complete remaining {totalTasksCount - completedTasksCount} task{totalTasksCount - completedTasksCount > 1 ? 's' : ''}
+							{remainingTasksText()}
 						</div>
 					{/if}
 				</div>
 			{/if}
 			
 			<div class="score-display">
-				{accuracy.toFixed(1)}%
+				{pct(accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
 			</div>
 			
 			<div class="performance-label">
 				{#if accuracy >= 90}
-					<span class="badge excellent">🌟 Excellent!</span>
+					<span class="badge excellent">🌟 {t('Excellent!')}</span>
 				{:else if accuracy >= 75}
-					<span class="badge good">👍 Good Job!</span>
+					<span class="badge good">👍 {t('Good Job!')}</span>
 				{:else if accuracy >= 60}
-					<span class="badge fair">👌 Fair</span>
+					<span class="badge fair">👌 {t('Fair')}</span>
 				{:else}
-					<span class="badge needs-practice">💪 Keep Practicing!</span>
+					<span class="badge needs-practice">💪 {t('Keep Practicing!')}</span>
 				{/if}
 			</div>
 			
@@ -375,49 +511,49 @@
 				<div class="result-item">
 					<span class="result-icon">✓</span>
 					<div class="result-info">
-						<span class="result-label">Correct Hits</span>
-						<strong class="result-value">{correctHits}</strong>
+						<span class="result-label">{t('Correct Hits')}</span>
+						<strong class="result-value">{n(correctHits)}</strong>
 					</div>
 				</div>
 				<div class="result-item">
 					<span class="result-icon">⊘</span>
 					<div class="result-info">
-						<span class="result-label">Misses</span>
-						<strong class="result-value">{misses}</strong>
+						<span class="result-label">{t('Misses')}</span>
+						<strong class="result-value">{n(misses)}</strong>
 					</div>
 				</div>
 				<div class="result-item">
 					<span class="result-icon">⚠</span>
 					<div class="result-info">
-						<span class="result-label">False Alarms</span>
-						<strong class="result-value">{falseAlarms}</strong>
+						<span class="result-label">{t('False Alarms')}</span>
+						<strong class="result-value">{n(falseAlarms)}</strong>
 					</div>
 				</div>
 				<div class="result-item">
 					<span class="result-icon">⚡</span>
 					<div class="result-info">
-						<span class="result-label">Avg Reaction Time</span>
-						<strong class="result-value">{meanRT.toFixed(0)}ms</strong>
+						<span class="result-label">{t('Avg Reaction Time')}</span>
+						<strong class="result-value">{reactionTimeText(meanRT.toFixed(0))}</strong>
 					</div>
 				</div>
 				<div class="result-item">
 					<span class="result-icon">🎯</span>
 					<div class="result-info">
-						<span class="result-label">Difficulty Level</span>
-						<strong class="result-value">{nBackLevel}-Back</strong>
+						<span class="result-label">{t('Difficulty Level')}</span>
+						<strong class="result-value">{nBackLabel()}</strong>
 					</div>
 				</div>
 			</div>
 			
 			{#if accuracy > 80 && nBackLevel < 3}
 				<div class="upgrade-notice">
-					<p>🚀 Outstanding performance! You're ready for {nBackLevel + 1}-Back challenge!</p>
+					<p>🚀 {upgradeMessage(nBackLevel + 1)}</p>
 				</div>
 			{/if}
 			
 			<div class="button-group">
 				<button class="btn-primary btn-large" on:click={backToDashboard}>
-					✓ Done - Back to Dashboard
+					✓ {t('Done - Back to Dashboard')}
 				</button>
 			</div>
 		</div>

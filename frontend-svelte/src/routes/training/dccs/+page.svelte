@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -34,6 +35,151 @@
 	user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, options);
+	}
+
+	function accuracyLabel(value) {
+		return pct(Number(value) || 0, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	}
+
+	function durationMsLabel(value) {
+		const roundedValue = Number.isFinite(Number(value)) ? Math.round(Number(value)) : 0;
+		return $locale === 'bn' ? `${n(roundedValue)} মি.সে.` : `${roundedValue}ms`;
+	}
+
+	function signedDurationLabel(value) {
+		const roundedValue = Number.isFinite(Number(value)) ? Math.round(Number(value)) : 0;
+		const prefix = roundedValue >= 0 ? '+' : '';
+		return $locale === 'bn'
+			? `${prefix}${n(roundedValue)} মি.সে.`
+			: `${prefix}${roundedValue}ms`;
+	}
+
+	function levelLabel(value = difficulty, max = 10) {
+		return $locale === 'bn' ? `লেভেল ${n(value)} / ${n(max)}` : `Level ${value} / ${max}`;
+	}
+
+	function ruleName(rule) {
+		if (rule === 'color') return $locale === 'bn' ? 'রঙ' : 'COLOR';
+		if (rule === 'shape') return $locale === 'bn' ? 'আকৃতি' : 'SHAPE';
+		if (rule === 'size') return $locale === 'bn' ? 'আকার' : 'SIZE';
+		if (rule === 'varies') return $locale === 'bn' ? 'পরিবর্তিত হবে' : 'VARIES';
+		return t(rule || '');
+	}
+
+	function sizeLabel(size) {
+		if (size === 'small') return $locale === 'bn' ? 'ছোট' : 'small';
+		if (size === 'large') return $locale === 'bn' ? 'বড়' : 'large';
+		return t(size || '');
+	}
+
+	function cueInstruction(rule) {
+		if ($locale === 'bn') {
+			return `${ruleName(rule)} অনুযায়ী সাজান`;
+		}
+		return `Sort by ${ruleName(rule)}`;
+	}
+
+	function phaseRule(index) {
+		if (index === 1) return sessionData?.config?.phase1_dimension || 'color';
+		if (index === 2) return sessionData?.config?.phase2_dimension || 'shape';
+		return 'varies';
+	}
+
+	function ruleExample(rule) {
+		if ($locale === 'bn') {
+			if (rule === 'color') return 'লাল কার্ড এক স্তূপে যাবে, নীল অন্য স্তূপে';
+			if (rule === 'shape') return 'বৃত্ত এক স্তূপে যাবে, তারা অন্য স্তূপে';
+			if (rule === 'size') return 'বড় কার্ড এক স্তূপে যাবে, ছোট অন্য স্তূপে';
+			return '';
+		}
+
+		if (rule === 'color') return 'red cards go to one pile, blue to another';
+		if (rule === 'shape') return 'circles go to one pile, stars to another';
+		if (rule === 'size') return 'large cards go to one pile, small to another';
+		return '';
+	}
+
+	function phaseOverview(index) {
+		const rule = phaseRule(index);
+		if ($locale === 'bn') {
+			return `${cueInstruction(rule)} (${ruleExample(rule)})`;
+		}
+		return `${cueInstruction(rule)} (e.g., ${ruleExample(rule)})`;
+	}
+
+	function phaseInstructionLabel(phaseData = currentPhase) {
+		if (!phaseData) return '';
+		if (phaseData.name === 'mixed') {
+			return t('Follow the cue on each trial');
+		}
+		return cueInstruction(phaseData.rule);
+	}
+
+	function phaseTitle(value) {
+		const phaseNumber = Number(value);
+		if (phaseNumber === 1) return $locale === 'bn' ? `ধাপ ${n(1)}: ${cueInstruction(phaseRule(1))}` : `Phase 1: ${cueInstruction(phaseRule(1))}`;
+		if (phaseNumber === 2) return $locale === 'bn' ? `ধাপ ${n(2)}: ${cueInstruction(phaseRule(2))}` : `Phase 2: ${cueInstruction(phaseRule(2))}`;
+		if (phaseNumber === 3) return t('Phase 3: Mixed Sorting');
+		return $locale === 'bn' ? `ধাপ ${n(phaseNumber)}` : `Phase ${phaseNumber}`;
+	}
+
+	function phaseProgressLabel(current, total) {
+		return $locale === 'bn' ? `ধাপ ${n(current)} / ${n(total)}` : `Phase ${current} of ${total}`;
+	}
+
+	function trialProgressLabel(current, total) {
+		return $locale === 'bn' ? `ট্রায়াল ${n(current)} / ${n(total)}` : `Trial ${current} / ${total}`;
+	}
+
+	function difficultyDescription() {
+		const cueDuration = sessionData?.config?.cue_duration_ms || 0;
+		if ($locale === 'bn') {
+			if (difficulty <= 4) {
+				return `প্রাথমিক স্তর: রঙ ও আকৃতি অনুযায়ী সাজানো, ${durationMsLabel(cueDuration)} সংকেত`;
+			}
+			if (difficulty <= 7) {
+				return `মধ্যম স্তর: আকারের মাত্রা যোগ হয়েছে, ${durationMsLabel(cueDuration)} সংকেত`;
+			}
+			return `উন্নত স্তর: সব মাত্রা সক্রিয়, দ্রুত ${durationMsLabel(cueDuration)} সংকেত`;
+		}
+
+		if (difficulty <= 4) {
+			return `Basic: Color & Shape sorting, ${cueDuration}ms cues`;
+		}
+		if (difficulty <= 7) {
+			return `Intermediate: Added size dimension, ${cueDuration}ms cues`;
+		}
+		return `Advanced: All dimensions, rapid ${cueDuration}ms cues`;
+	}
+
+	function transitionMessage() {
+		if (currentPhaseIndex === 1) {
+			if ($locale === 'bn') {
+				return `এখন ${ruleName(phaseRule(1))} নয়, ${ruleName(phaseRule(2))} অনুযায়ী সাজান। ${ruleExample(phaseRule(2))}।`;
+			}
+			return `Now switch to ${cueInstruction(phaseRule(2)).toLowerCase()} instead of ${ruleName(phaseRule(1)).toLowerCase()}. ${ruleExample(phaseRule(2))[0].toUpperCase()}${ruleExample(phaseRule(2)).slice(1)}.`;
+		}
+
+		if (currentPhaseIndex === 2) {
+			if ($locale === 'bn') {
+				return `এবার প্রতিটি ট্রায়ালের আগে দেখানো সংকেত লক্ষ্য করুন। সেখানে ${ruleName(phaseRule(1))} নাকি ${ruleName(phaseRule(2))} অনুযায়ী সাজাতে হবে, তা বলা থাকবে।`;
+			}
+			return `In this phase, a cue will tell you which rule to use. Pay attention to whether it says "${ruleName(phaseRule(1))}" or "${ruleName(phaseRule(2))}".`;
+		}
+
+		return '';
+	}
 
 	async function loadSession() {
 		try {
@@ -108,7 +254,7 @@
 		if (trial && trial.cue_shown) {
 			// Show cue for mixed phase
 			showCue = true;
-			cueText = `Sort by ${trial.rule.toUpperCase()}`;
+			cueText = cueInstruction(trial.rule);
 			
 			// Hide cue after duration
 			setTimeout(() => {
@@ -248,82 +394,81 @@
 	<div style="background: white; padding: 30px; border-radius: 10px; margin: 0 auto; max-width: 1000px;">
 		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;">
 			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">
-				Dimensional Change Card Sort (DCCS)
+				{t('Dimensional Change Card Sort (DCCS)')}
 			</h1>
 			<DifficultyBadge difficulty={5} domain="Cognitive Flexibility" />
 		</div>
 
 		{#if loading}
 			<div style="text-align: center; padding: 40px;">
-				<p style="font-size: 18px; color: #666;">Loading...</p>
+				<p style="font-size: 18px; color: #666;">{t('Loading...')}</p>
 			</div>
 		{:else if error}
 			<div style="background: #fee; border: 2px solid #fcc; padding: 20px; border-radius: 8px;">
-				<p style="color: #c33; margin-bottom: 10px;">Error: {error}</p>
+				<p style="color: #c33; margin-bottom: 10px;">{t('Error:')} {error}</p>
 				<button on:click={loadSession} style="padding: 10px 20px; background: #c33; color: white; border: none; border-radius: 5px; cursor: pointer;">
-					Retry
+					{t('Retry')}
 				</button>
 			</div>
 		{:else if phase === 'intro'}
 			<div>
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">
-					Cognitive Flexibility Assessment
+					{t('Cognitive Flexibility Assessment')}
 				</h2>
 				
 				<p style="font-size: 16px; color: #555; margin-bottom: 15px;">
-					The Dimensional Change Card Sort (DCCS) measures your ability to:
+					{t('The Dimensional Change Card Sort (DCCS) measures your ability to:')}
 				</p>
 				
 				<ul style="margin-left: 30px; margin-bottom: 20px; color: #555;">
-					<li style="margin-bottom: 8px;">Switch between different sorting rules</li>
-					<li style="margin-bottom: 8px;">Adapt to changing task demands</li>
-					<li style="margin-bottom: 8px;">Maintain focus during rule changes</li>
-					<li style="margin-bottom: 8px;">Inhibit previous responses</li>
+					<li style="margin-bottom: 8px;">{t('Switch between different sorting rules')}</li>
+					<li style="margin-bottom: 8px;">{t('Adapt to changing task demands')}</li>
+					<li style="margin-bottom: 8px;">{t('Maintain focus during rule changes')}</li>
+					<li style="margin-bottom: 8px;">{t('Inhibit previous responses')}</li>
 				</ul>
 
 				<div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin-bottom: 20px;">
 					<h3 style="font-size: 18px; font-weight: 600; margin-bottom: 10px; color: #1e40af;">
-						How It Works
+						{t('How It Works')}
 					</h3>
 					<p style="font-size: 14px; color: #555; margin-bottom: 8px;">
-						<strong>Phase 1:</strong> Sort cards by COLOR (e.g., red cards go to one pile, blue to another)
+						<strong>{t('Phase')} {n(1)}:</strong> {phaseOverview(1)}
 					</p>
 					<p style="font-size: 14px; color: #555; margin-bottom: 8px;">
-						<strong>Phase 2:</strong> Sort cards by SHAPE (e.g., circles go to one pile, stars to another)
+						<strong>{t('Phase')} {n(2)}:</strong> {phaseOverview(2)}
 					</p>
 					<p style="font-size: 14px; color: #555;">
-						<strong>Phase 3:</strong> Mixed sorting - a cue will tell you which rule to use on each trial
+						<strong>{t('Phase')} {n(3)}:</strong>
+						{$locale === 'bn'
+							? `মিশ্র বাছাই - প্রতিটি ট্রায়ালে সংকেত বলে দেবে ${ruleName(phaseRule(1))} নাকি ${ruleName(phaseRule(2))} অনুযায়ী সাজাতে হবে`
+							: `Mixed sorting - a cue will tell you whether to sort by ${ruleName(phaseRule(1)).toLowerCase()} or ${ruleName(phaseRule(2)).toLowerCase()}`}
 					</p>
 				</div>
 
 				<div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px;">
 					<h3 style="font-size: 18px; font-weight: 600; margin-bottom: 10px; color: #92400e;">
-						Instructions
+						{t('Instructions')}
 					</h3>
 					<ul style="margin-left: 20px; color: #555;">
-						<li style="margin-bottom: 8px;">Click on the target card that matches the test card</li>
-						<li style="margin-bottom: 8px;">In Phase 3, pay attention to the cue shown before each card</li>
-						<li style="margin-bottom: 8px;">Work as quickly and accurately as possible</li>
-						<li style="margin-bottom: 8px;">Total trials: {sessionData ? sessionData.total_trials : '40'}</li>
+						<li style="margin-bottom: 8px;">{t('Click on the target card that matches the test card')}</li>
+						<li style="margin-bottom: 8px;">{t('In Phase 3, pay attention to the cue shown before each card')}</li>
+						<li style="margin-bottom: 8px;">{t('Work as quickly and accurately as possible')}</li>
+						<li style="margin-bottom: 8px;">{t('Total Trials:')} {n(sessionData ? sessionData.total_trials : 40)}</li>
 					</ul>
 				</div>
 
 				<div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
 					<p style="font-size: 14px; color: #0c4a6e; margin-bottom: 8px;">
-						<strong>Current Difficulty:</strong> Level {difficulty} / 10
+						<strong>{t('Current Difficulty:')}</strong> {levelLabel()}
 					</p>
 					<p style="font-size: 13px; color: #0369a1;">
-						{#if difficulty <= 4}
-							Basic: Color & Shape sorting, {sessionData?.config.cue_duration_ms || 1500}ms cues
-						{:else if difficulty <= 7}
-							Intermediate: Added size dimension, {sessionData?.config.cue_duration_ms || 800}ms cues
-						{:else}
-							Advanced: All dimensions, rapid {sessionData?.config.cue_duration_ms || 400}ms cues
-						{/if}
+						{difficultyDescription()}
 					</p>
 					{#if baselineFlexibility !== null && baselineFlexibility !== undefined}
 						<p style="font-size: 12px; color: #0369a1; margin-top: 8px;">
-							Based on your flexibility baseline: {baselineFlexibility.toFixed(0)}/100
+							{$locale === 'bn'
+								? `আপনার ফ্লেক্সিবিলিটি বেসলাইন: ${n(baselineFlexibility.toFixed(0))}/${n(100)}`
+								: `Based on your flexibility baseline: ${baselineFlexibility.toFixed(0)}/100`}
 						</p>
 					{/if}
 				</div>
@@ -331,33 +476,23 @@
 				<button 
 					on:click={startTask} 
 					style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-					Start Test
+					{t('Start Test')}
 				</button>
 			</div>
 		{:else if phase === 'phase-transition'}
 			<div style="text-align: center; padding: 40px;">
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #333;">
-					{#if currentPhaseIndex === 1}
-						Phase 2: Sort by Shape
-					{:else if currentPhaseIndex === 2}
-						Phase 3: Mixed Sorting
-					{/if}
+					{phaseTitle(currentPhaseIndex + 1)}
 				</h2>
 				
 				<p style="font-size: 16px; color: #555; margin-bottom: 30px;">
-					{#if currentPhaseIndex === 1}
-						Now switch to sorting by <strong>SHAPE</strong> instead of color.<br/>
-						Circles go to one pile, stars to the other.
-					{:else if currentPhaseIndex === 2}
-						In this phase, a <strong>CUE</strong> will tell you which rule to use.<br/>
-						Pay attention to whether it says "COLOR" or "SHAPE".
-					{/if}
+					{transitionMessage()}
 				</p>
 
 				<button 
 					on:click={continueToNextPhase} 
 					style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-					Continue
+					{t('Continue')}
 				</button>
 			</div>
 		{:else if phase === 'task'}
@@ -371,8 +506,8 @@
 					<!-- Progress -->
 					<div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
 						<div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-							<span style="font-size: 14px; color: #666;">Phase {phaseNum} of 3</span>
-							<span style="font-size: 14px; color: #666;">Trial {trialNum} / {totalTrials}</span>
+							<span style="font-size: 14px; color: #666;">{phaseProgressLabel(phaseNum, 3)}</span>
+							<span style="font-size: 14px; color: #666;">{trialProgressLabel(trialNum, totalTrials)}</span>
 						</div>
 						<div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
 							<div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: {(trialNum / totalTrials) * 100}%; transition: width 0.3s;"></div>
@@ -382,7 +517,7 @@
 					<!-- Current Rule Instruction -->
 					<div style="text-align: center; margin-bottom: 30px;">
 						<h2 style="font-size: 22px; font-weight: 600; color: #333; margin-bottom: 10px;">
-							{currentPhase.instruction}
+							{phaseInstructionLabel(currentPhase)}
 						</h2>
 						{#if showCue}
 							<div style="background: #fef3c7; border: 3px solid #f59e0b; padding: 15px 30px; border-radius: 8px; display: inline-block; animation: pulse 0.5s;">
@@ -395,12 +530,12 @@
 
 					<!-- Test Card -->
 					<div style="text-align: center; margin-bottom: 40px;">
-						<p style="font-size: 16px; color: #666; margin-bottom: 15px;">Which target matches this card?</p>
+						<p style="font-size: 16px; color: #666; margin-bottom: 15px;">{t('Which target matches this card?')}</p>
 						<div style="display: inline-block; padding: 20px; background: #f9fafb; border: 2px solid #d1d5db; border-radius: 10px;">
 							{@html renderCard(trial.card, 100)}
 							{#if sessionData.config.use_size_dimension && trial.card.size}
 								<p style="font-size: 14px; color: #666; margin-top: 10px;">
-									Size: {trial.card.size}
+									{$locale === 'bn' ? `আকার: ${sizeLabel(trial.card.size)}` : `Size: ${sizeLabel(trial.card.size)}`}
 								</p>
 							{/if}
 						</div>
@@ -409,7 +544,7 @@
 					<!-- Target Cards -->
 					<div style="text-align: center;">
 						<p style="font-size: 16px; color: #666; margin-bottom: 15px; font-weight: 600;">
-							Click a target:
+							{t('Click a target:')}
 						</p>
 						<div style="display: flex; justify-content: center; gap: 40px;">
 							{#each sessionData.target_cards as target}
@@ -421,7 +556,7 @@
 									{@html renderCard(target, 100)}
 									{#if sessionData.config.use_size_dimension && target.size}
 										<p style="font-size: 14px; color: #666; margin-top: 10px;">
-											Size: {target.size}
+											{$locale === 'bn' ? `আকার: ${sizeLabel(target.size)}` : `Size: ${sizeLabel(target.size)}`}
 										</p>
 									{/if}
 								</button>
@@ -433,17 +568,17 @@
 		{:else if phase === 'results'}
 			<div>
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #333;">
-					Test Complete!
+					{t('Test Complete!')}
 				</h2>
 
 				<!-- Overall Score -->
 				<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px; text-align: center;">
-					<p style="color: white; font-size: 18px; margin-bottom: 10px;">Your Score</p>
+					<p style="color: white; font-size: 18px; margin-bottom: 10px;">{t('Your Score')}</p>
 					<p style="color: white; font-size: 48px; font-weight: bold; margin: 0;">
-						{results.score}
+						{n(results.score)}
 					</p>
 					<p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: 10px;">
-					Accuracy: {((results.accuracy || 0) * 100).toFixed(1)}%
+					{t('Accuracy')}: {accuracyLabel(results.accuracy)}
 					</p>
 				</div>
 
@@ -453,26 +588,26 @@
 				{#if results.phases.phase1}
 				<div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
 					<h3 style="font-size: 16px; font-weight: 600; color: #1e40af; margin-bottom: 10px;">
-						Phase 1: Pre-Switch
+						{t('Phase 1: Pre-Switch')}
 					</h3>
 					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-						Accuracy: {((results.phases.phase1.accuracy || 0) * 100).toFixed(1)}%
+						{t('Accuracy')}: {accuracyLabel(results.phases.phase1.accuracy)}
 					</p>
 					<p style="font-size: 14px; color: #555;">
-						Avg RT: {(results.phases.phase1.mean_rt || 0).toFixed(0)}ms
+						{t('Avg RT:')} {durationMsLabel(results.phases.phase1.mean_rt)}
 					</p>
 				</div>
 				{/if}
 {#if results.phases.phase2}
 				<div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #10b981;">
 					<h3 style="font-size: 16px; font-weight: 600; color: #065f46; margin-bottom: 10px;">
-						Phase 2: Post-Switch
+						{t('Phase 2: Post-Switch')}
 					</h3>
 					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-						Accuracy: {((results.phases.phase2.accuracy || 0) * 100).toFixed(1)}%
+						{t('Accuracy')}: {accuracyLabel(results.phases.phase2.accuracy)}
 					</p>
 					<p style="font-size: 14px; color: #555;">
-						Avg RT: {(results.phases.phase2.mean_rt || 0).toFixed(0)}ms
+						{t('Avg RT:')} {durationMsLabel(results.phases.phase2.mean_rt)}
 					</p>
 				</div>
 				{/if}
@@ -480,13 +615,13 @@
 {#if results.phases.phase3}
 				<div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b;">
 					<h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 10px;">
-						Phase 3: Mixed
+						{t('Phase 3: Mixed')}
 					</h3>
 					<p style="font-size: 14px; color: #555; margin-bottom: 5px;">
-						Accuracy: {((results.phases.phase3.accuracy || 0) * 100).toFixed(1)}%
+						{t('Accuracy')}: {accuracyLabel(results.phases.phase3.accuracy)}
 					</p>
 					<p style="font-size: 14px; color: #555;">
-						Avg RT: {(results.phases.phase3.mean_rt || 0).toFixed(0)}ms
+						{t('Avg RT:')} {durationMsLabel(results.phases.phase3.mean_rt)}
 					</p>
 				</div>
 				{/if}
@@ -497,25 +632,25 @@
 			{#if results.switch_cost !== undefined}
 			<div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
 				<h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 15px;">
-					Key Metrics
+					{t('Key Metrics')}
 				</h3>
 				<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
 					<div>
-						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Switch Cost</p>
+						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">{t('Switch Cost')}</p>
 						<p style="font-size: 20px; font-weight: 600; color: #667eea;">
-							{results.switch_cost >= 0 ? '+' : ''}{(results.switch_cost || 0).toFixed(0)}ms
+							{signedDurationLabel(results.switch_cost)}
 						</p>
 						<p style="font-size: 12px; color: #888;">
-							Time penalty for switching rules
+							{t('Time penalty for switching rules')}
 						</p>
 					</div>
 					<div>
-						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">Perseverative Errors</p>
+						<p style="font-size: 14px; color: #666; margin-bottom: 5px;">{t('Perseverative Errors')}</p>
 						<p style="font-size: 20px; font-weight: 600; color: #f59e0b;">
-							{results.perseverative_errors || 0}
+							{n(results.perseverative_errors || 0)}
 						</p>
 						<p style="font-size: 12px; color: #888;">
-							Times you used the old rule
+							{t('Times you used the old rule')}
 						</p>
 					</div>
 				</div>
@@ -526,12 +661,12 @@
 					<button 
 						on:click={() => goto('/dashboard')} 
 						style="flex: 1; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-						Return to Dashboard
+						{t('Return to Dashboard')}
 					</button>
 					<button 
 						on:click={() => goto('/training')} 
 						style="flex: 1; padding: 15px; background: white; color: #667eea; border: 2px solid #667eea; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-						Next Task
+						{t('Next Task')}
 					</button>
 				</div>
 			</div>

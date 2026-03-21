@@ -1,4 +1,6 @@
 <script>
+	import { formatNumber, locale, translateText } from '$lib/i18n';
+
 	export let difficulty = 5;
 	export let domain = '';
 
@@ -9,15 +11,18 @@
 		return 'Expert';
 	}
 
-	$: label = getDifficultyLabel(difficulty);
+	$: label = translateText(getDifficultyLabel(difficulty), $locale);
+	$: domainLabel = domain ? translateText(domain, $locale) : '';
+	$: difficultyLabel = translateText('Level', $locale);
+	$: displayDifficulty = formatNumber(difficulty, $locale);
 </script>
 
 <div class="difficulty-badge">
 	{#if domain}
-		<span class="domain-label">{domain}</span>
+		<span class="domain-label">{domainLabel}</span>
 		<span class="separator">•</span>
 	{/if}
-	<span class="level-text">Level {difficulty}</span>
+	<span class="level-text">{difficultyLabel} {displayDifficulty}</span>
 	<span class="level-label">({label})</span>
 </div>
 

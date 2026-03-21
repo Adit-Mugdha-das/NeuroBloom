@@ -127,7 +127,7 @@
 
 		try {
 			// Ensure difficulty is a valid number between 1-10
-			const validDifficulty = Math.max(1, Math.min(10, parseInt(selectedDifficulty) || 5));
+			const validDifficulty = Math.max(1, Math.min(10, Number(selectedDifficulty) || 5));
 
 			console.log('🎮 DevPanel - Launching task:', {
 				taskCode,
@@ -965,39 +965,6 @@
 		line-height: 1.3;
 	}
 	
-	.domain-tabs {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-		padding-bottom: 1rem;
-		border-bottom: 2px solid #e0e0e0;
-	}
-	
-	.domain-tab {
-		padding: 0.4rem 0.8rem;
-		background: white;
-		border: 1px solid #e0e0e0;
-		border-radius: 6px;
-		cursor: pointer;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: #666;
-		transition: all 0.2s;
-		white-space: nowrap;
-	}
-	
-	.domain-tab:hover {
-		border-color: #667eea;
-		color: #667eea;
-	}
-	
-	.domain-tab.active {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border-color: #667eea;
-	}
-	
 	.tasks-list::-webkit-scrollbar {
 		width: 6px;
 	}
@@ -1014,29 +981,6 @@
 	
 	.tasks-list::-webkit-scrollbar-thumb:hover {
 		background: #764ba2;
-	}
-	
-	.domain-section {
-		margin-bottom: 1rem;
-	}
-	
-	.domain-section:last-child {
-		margin-bottom: 0;
-	}
-	
-	.domain-section h5 {
-		margin: 0 0 0.5rem 0;
-		color: #667eea;
-		font-size: 0.9rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-	
-	.task-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 0.5rem;
 	}
 	
 	/* Removed duplicate - task-btn styles are above */

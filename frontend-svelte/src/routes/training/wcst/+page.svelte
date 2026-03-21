@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -42,6 +43,71 @@
 	user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, options);
+	}
+
+	function levelLabel(value = difficulty, max = 10) {
+		return $locale === 'bn' ? `লেভেল ${n(value)}/${n(max)}` : `Level ${value}/${max}`;
+	}
+
+	function scoreLabel(value, max = 100) {
+		return $locale === 'bn' ? `${n(value)}/${n(max)}` : `${value}/${max}`;
+	}
+
+	function durationMsLabel(value) {
+		const roundedValue = Number.isFinite(Number(value)) ? Math.round(Number(value)) : 0;
+		return $locale === 'bn' ? `${n(roundedValue)} মি.সে.` : `${roundedValue}ms`;
+	}
+
+	function percentFromWhole(value, options = {}) {
+		return pct((Number(value) || 0) / 100, options);
+	}
+
+	function ruleName(rule = currentRule) {
+		if (rule === 'color') return $locale === 'bn' ? 'রঙ' : 'COLOR';
+		if (rule === 'shape') return $locale === 'bn' ? 'আকৃতি' : 'SHAPE';
+		if (rule === 'number') return $locale === 'bn' ? 'সংখ্যা' : 'NUMBER';
+		return t(rule || '');
+	}
+
+	function ruleInstructionLabel(rule = currentRule) {
+		if ($locale === 'bn') {
+			return `নিয়ম: ${ruleName(rule)} অনুযায়ী সাজান`;
+		}
+		return `Rule: Sort by ${ruleName(rule)}`;
+	}
+
+	function practiceModeLabel() {
+		if ($locale === 'bn') {
+			return `অনুশীলন মোড - ট্রায়াল ${n(currentPracticeIndex + 1)} / ${n(practiceTrials.length)}`;
+		}
+		return `Practice Mode - Trial ${currentPracticeIndex + 1} / ${practiceTrials.length}`;
+	}
+
+	function trialProgressLabel(current, total) {
+		if ($locale === 'bn') {
+			return `ট্রায়াল ${n(current)} / ${n(total)}`;
+		}
+		return `Trial ${current} / ${total}`;
+	}
+
+	function cardMetaLabel(card) {
+		return `${t(card.color)} ${t(card.shape)}`;
+	}
+
+	function symbolCountLabel(count) {
+		return `${n(count)} ${count === 1 ? t('symbol') : t('symbols')}`;
+	}
 
 	function generatePracticeTrials() {
 		const colors = ['red', 'blue', 'green', 'yellow'];
@@ -118,7 +184,7 @@
 			const targetCard = sessionData.target_cards[pileIndex];
 			const isCorrect = trialCard[currentRule] === targetCard[currentRule];
 			feedbackType = isCorrect ? 'correct' : 'wrong';
-			feedbackMessage = isCorrect ? 'Correct!' : 'Wrong!';
+			feedbackMessage = isCorrect ? t('Correct!') : t('Wrong!');
 			showFeedback = true;
 
 			setTimeout(() => {
@@ -148,7 +214,7 @@
 
 		// Show feedback - CRITICAL for WCST to function
 		feedbackType = isCorrect ? 'correct' : 'wrong';
-		feedbackMessage = isCorrect ? 'Correct!' : 'Wrong!';
+		feedbackMessage = isCorrect ? t('Correct!') : t('Wrong!');
 		showFeedback = true;
 
 		// Check for rule change using sliding window approach
@@ -247,84 +313,81 @@
 <div class="container">
 	<div style="background: white; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 1000px;">
 		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;">
-			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">Wisconsin Card Sorting Test</h1>
+			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">{t('Wisconsin Card Sorting Test')}</h1>
 			<DifficultyBadge difficulty={5} domain="Cognitive Flexibility" />
 		</div>
 
 		{#if loading}
 			<div style="text-align: center; padding: 40px;">
-				<p style="font-size: 18px; color: #666;">Loading...</p>
+				<p style="font-size: 18px; color: #666;">{t('Loading...')}</p>
 			</div>
 		{:else if error}
 			<div style="background: #fee; border: 2px solid #fcc; padding: 20px; border-radius: 8px;">
-				<p style="color: #c33; margin-bottom: 10px;">Error: {error}</p>
+				<p style="color: #c33; margin-bottom: 10px;">{t('Error:')} {error}</p>
 				<button on:click={loadSession} style="padding: 10px 20px; background: #c33; color: white; border: none; border-radius: 5px; cursor: pointer;">
-					Retry
+					{t('Retry')}
 				</button>
 			</div>
 		{:else if phase === 'intro'}
 			<div>
-				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">Executive Function Assessment</h2>
+				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">{t('Executive Function Assessment')}</h2>
 				
 				<p style="font-size: 16px; color: #555; margin-bottom: 15px;">
-					The Wisconsin Card Sorting Test (WCST) measures your ability to:
+					{t('The Wisconsin Card Sorting Test (WCST) measures your ability to:')}
 				</p>
 				
 				<ul style="margin-left: 30px; margin-bottom: 20px; color: #555;">
-					<li style="margin-bottom: 8px;"><strong>Shift mental sets</strong> - Adapt when rules change</li>
-					<li style="margin-bottom: 8px;"><strong>Learn from feedback</strong> - Use "Correct" or "Wrong" cues</li>
-					<li style="margin-bottom: 8px;"><strong>Maintain strategies</strong> - Stick with a rule once discovered</li>
-					<li style="margin-bottom: 8px;"><strong>Recognize patterns</strong> - Identify sorting rules quickly</li>
+					<li style="margin-bottom: 8px;"><strong>{t('Shift mental sets')}</strong> - {t('Adapt when rules change')}</li>
+					<li style="margin-bottom: 8px;"><strong>{t('Learn from feedback')}</strong> - {t('Use "Correct" or "Wrong" cues')}</li>
+					<li style="margin-bottom: 8px;"><strong>{t('Maintain strategies')}</strong> - {t('Stick with a rule once discovered')}</li>
+					<li style="margin-bottom: 8px;"><strong>{t('Recognize patterns')}</strong> - {t('Identify sorting rules quickly')}</li>
 				</ul>
 
 				<div style="background: #e6f3ff; border: 2px solid #99ccff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-					<h3 style="font-weight: 600; color: #0066cc; margin-bottom: 8px;">How It Works:</h3>
+					<h3 style="font-weight: 600; color: #0066cc; margin-bottom: 8px;">{t('How It Works:')}</h3>
 					<p style="color: #0066cc;">
-						You'll see a card with a color, shape, and number of symbols. Sort it into one of
-						four piles by clicking a target card. The sorting rule (color, shape, or number)
-						will change without warning. Use the feedback to discover the current rule.
+						{t("You'll see a card with a color, shape, and number of symbols. Sort it into one of four piles by clicking a target card. The sorting rule (color, shape, or number) will change without warning. Use the feedback to discover the current rule.")}
 					</p>
 				</div>
 
 				<p style="color: #666; margin-bottom: 20px;">
-					<strong>Current Difficulty:</strong> Level {difficulty}/10
+					<strong>{t('Current Difficulty:')}</strong> {levelLabel()}
 				</p>
 
 				<button
 					on:click={() => (phase = 'instructions')}
 					style="width: 100%; padding: 15px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
 				>
-					Continue to Instructions
+					{t('Continue to Instructions')}
 				</button>
 			</div>
 		{:else if phase === 'instructions'}
 			<div>
-				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">Instructions</h2>
+				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">{t('Instructions')}</h2>
 
 				<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-					<h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">🎯 Your Task:</h3>
+					<h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">🎯 {t('Your Task:')}</h3>
 					<p style="color: #555;">
-						Sort each card by clicking one of the four target cards at the top. You'll get
-						feedback on whether your sort was "Correct" or "Wrong".
+						{t('Sort each card by clicking one of the four target cards at the top. You\'ll get feedback on whether your sort was "Correct" or "Wrong".')}
 					</p>
 				</div>
 
 				<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-					<h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">🔄 The Rules:</h3>
-					<p style="color: #555; margin-bottom: 8px;">Cards can be sorted by:</p>
+					<h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">🔄 {t('The Rules:')}</h3>
+					<p style="color: #555; margin-bottom: 8px;">{t('Cards can be sorted by:')}</p>
 					<ul style="margin-left: 30px; color: #555;">
-						<li><strong>Color</strong> - Match the card color</li>
-						<li><strong>Shape</strong> - Match the shape type</li>
-						<li><strong>Number</strong> - Match the number of symbols</li>
+						<li><strong>{t('Color')}</strong> - {t('Match the card color')}</li>
+						<li><strong>{t('Shape')}</strong> - {t('Match the shape type')}</li>
+						<li><strong>{t('Number')}</strong> - {t('Match the number of symbols')}</li>
 					</ul>
 				</div>
 
 				<div style="background: #fff3e0; border: 2px solid #ffcc80; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-					<h3 style="font-weight: 600; color: #e65100; margin-bottom: 8px;">⚠️ Important:</h3>
+					<h3 style="font-weight: 600; color: #e65100; margin-bottom: 8px;">⚠️ {t('Important:')}</h3>
 					<ul style="margin-left: 30px; color: #e65100;">
-						<li>The rule will <strong>change without warning</strong> during the test</li>
-						<li>When you get multiple "Wrong" responses, the rule has likely changed</li>
-						<li>Don't get stuck on a rule that's no longer working</li>
+						<li>{t('The rule will change without warning during the test')}</li>
+						<li>{t('When you get multiple "Wrong" responses, the rule has likely changed')}</li>
+						<li>{t("Don't get stuck on a rule that's no longer working")}</li>
 					</ul>
 				</div>
 
@@ -332,17 +395,19 @@
 					on:click={startPractice}
 					style="width: 100%; padding: 15px; background: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
 				>
-					Start Practice Round (12 trials)
+					{$locale === 'bn'
+						? `অনুশীলনী রাউন্ড শুরু করুন (${n(practiceTrials.length)} ট্রায়াল)`
+						: `Start Practice Round (${practiceTrials.length} trials)`}
 				</button>
 			</div>
 		{:else if phase === 'practice'}
 			<div>
 				<div style="text-align: center; margin-bottom: 20px;">
-					<p style="color: #666;">Practice Mode - Trial {currentPracticeIndex + 1} / {practiceTrials.length}</p>
-					<p style="color: #0066cc; font-size: 14px; margin-top: 5px;">Rule: Sort by COLOR</p>
+					<p style="color: #666;">{practiceModeLabel()}</p>
+					<p style="color: #0066cc; font-size: 14px; margin-top: 5px;">{ruleInstructionLabel()}</p>
 				</div>
 
-				<p style="text-align: center; color: #666; margin-bottom: 10px;">Click a target card to sort:</p>
+				<p style="text-align: center; color: #666; margin-bottom: 10px;">{t('Click a target card to sort:')}</p>
 				<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px;">
 					{#each sessionData.target_cards as card, index}
 						<button
@@ -366,15 +431,15 @@
 								{/each}
 							</div>
 							<div style="font-size: 11px; color: #888; text-align: center;">
-								<div>{card.color} {card.shape}</div>
-								<div>{card.number} symbol{card.number > 1 ? 's' : ''}</div>
+								<div>{cardMetaLabel(card)}</div>
+								<div>{symbolCountLabel(card.number)}</div>
 							</div>
 						</button>
 					{/each}
 				</div>
 
 				{#if currentPracticeIndex < practiceTrials.length}
-					<p style="text-align: center; color: #666; margin-bottom: 10px;">Card to sort:</p>
+					<p style="text-align: center; color: #666; margin-bottom: 10px;">{t('Card to sort:')}</p>
 					<div style="text-align: center; margin-bottom: 20px;">
 						<div style="display: inline-block; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 3px solid #42a5f5; border-radius: 10px; padding: 25px;">
 							<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 10px;">
@@ -393,7 +458,7 @@
 								{/each}
 							</div>
 							<div style="font-size: 12px; color: #666; text-align: center;">
-								<div>{practiceTrials[currentPracticeIndex].color} {practiceTrials[currentPracticeIndex].shape}</div>
+								<div>{cardMetaLabel(practiceTrials[currentPracticeIndex])}</div>
 							</div>
 						</div>
 					</div>
@@ -407,17 +472,17 @@
 			</div>
 		{:else if phase === 'instructions-test'}
 			<div>
-				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #2e7d32;">✓ Practice Complete!</h2>
+				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #2e7d32;">✓ {t('Practice Complete!')}</h2>
 				<p style="color: #555; margin-bottom: 15px;">
-					Good! You've completed the practice round. Now you're ready for the actual test.
+					{t("Good! You've completed the practice round. Now you're ready for the actual test.")}
 				</p>
 
 				<div style="background: #fff3e0; border: 2px solid #ffcc80; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-					<h3 style="font-weight: 600; color: #e65100; margin-bottom: 8px;">In the Real Test:</h3>
+					<h3 style="font-weight: 600; color: #e65100; margin-bottom: 8px;">{t('In the Real Test:')}</h3>
 					<ul style="margin-left: 30px; color: #e65100;">
-						<li>The rule will NOT be shown</li>
-						<li>The rule will CHANGE after you get several correct sorts</li>
-						<li>You must discover the rule from the feedback</li>
+						<li>{t('The rule will NOT be shown')}</li>
+						<li>{t('The rule will CHANGE after you get several correct sorts')}</li>
+						<li>{t('You must discover the rule from the feedback')}</li>
 					</ul>
 				</div>
 
@@ -425,19 +490,21 @@
 					on:click={startTest}
 					style="width: 100%; padding: 15px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
 				>
-					Begin Test ({sessionData.trial_cards.length} trials)
+					{$locale === 'bn'
+						? `পরীক্ষা শুরু করুন (${n(sessionData.trial_cards.length)} ট্রায়াল)`
+						: `Begin Test (${sessionData.trial_cards.length} trials)`}
 				</button>
 			</div>
 		{:else if phase === 'test'}
 			<div>
 				<div style="text-align: center; margin-bottom: 15px;">
-					<p style="color: #666;">Trial {currentTrialIndex + 1} / {sessionData.trial_cards.length}</p>
+					<p style="color: #666;">{trialProgressLabel(currentTrialIndex + 1, sessionData.trial_cards.length)}</p>
 					<div style="background: #ddd; height: 8px; border-radius: 4px; margin: 10px auto; max-width: 400px;">
 						<div style="background: #0066cc; height: 8px; border-radius: 4px; width: {(currentTrialIndex / sessionData.trial_cards.length) * 100}%;"></div>
 					</div>
 				</div>
 
-				<p style="text-align: center; color: #666; margin-bottom: 10px;">Click a target card to sort:</p>
+				<p style="text-align: center; color: #666; margin-bottom: 10px;">{t('Click a target card to sort:')}</p>
 				<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px;">
 					{#each sessionData.target_cards as card, index}
 						<button
@@ -460,14 +527,14 @@
 								{/each}
 							</div>
 							<div style="font-size: 11px; color: #888; text-align: center;">
-								<div>{card.color} {card.shape}</div>
+								<div>{cardMetaLabel(card)}</div>
 							</div>
 						</button>
 					{/each}
 				</div>
 
 				{#if currentTrialIndex < sessionData.trial_cards.length}
-					<p style="text-align: center; color: #666; margin-bottom: 10px;">Card to sort:</p>
+					<p style="text-align: center; color: #666; margin-bottom: 10px;">{t('Card to sort:')}</p>
 					<div style="text-align: center;">
 						<div style="display: inline-block; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 3px solid #42a5f5; border-radius: 10px; padding: 25px;">
 							<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 10px;">
@@ -486,7 +553,7 @@
 								{/each}
 							</div>
 							<div style="font-size: 12px; color: #666; text-align: center;">
-								<div>{sessionData.trial_cards[currentTrialIndex].color} {sessionData.trial_cards[currentTrialIndex].shape}</div>
+								<div>{cardMetaLabel(sessionData.trial_cards[currentTrialIndex])}</div>
 							</div>
 						</div>
 					</div>
@@ -501,35 +568,35 @@
 			</div>
 		{:else if phase === 'results'}
 			<div>
-				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #2e7d32;">✓ Test Complete!</h2>
+				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #2e7d32;">✓ {t('Test Complete!')}</h2>
 
 				<div style="padding: 25px; border-radius: 10px; text-align: center; margin-bottom: 20px; background: {results.performance_category === 'Excellent' ? '#fff9c4' : results.performance_category === 'Good' ? '#c8e6c9' : results.performance_category === 'Fair' ? '#bbdefb' : '#e0e0e0'}; border: 3px solid {results.performance_category === 'Excellent' ? '#fdd835' : results.performance_category === 'Good' ? '#66bb6a' : results.performance_category === 'Fair' ? '#42a5f5' : '#9e9e9e'};">
-					<h3 style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">{results.performance_category}</h3>
-					<p style="font-size: 20px;">Score: {results.score}/100</p>
+					<h3 style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">{t(results.performance_category)}</h3>
+					<p style="font-size: 20px;">{t('Score')}: {scoreLabel(results.score)}</p>
 				</div>
 
 				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
 					<div style="background: #e3f2fd; border: 2px solid #42a5f5; padding: 15px; border-radius: 8px;">
-						<p style="color: #1976d2; font-weight: 600; margin-bottom: 5px;">Categories</p>
-						<p style="font-size: 28px; font-weight: bold; color: #1565c0;">{results.categories_achieved}</p>
+						<p style="color: #1976d2; font-weight: 600; margin-bottom: 5px;">{t('Categories')}</p>
+						<p style="font-size: 28px; font-weight: bold; color: #1565c0;">{n(results.categories_achieved)}</p>
 					</div>
 					<div style="background: #f3e5f5; border: 2px solid #ab47bc; padding: 15px; border-radius: 8px;">
-						<p style="color: #7b1fa2; font-weight: 600; margin-bottom: 5px;">Accuracy</p>
-						<p style="font-size: 28px; font-weight: bold; color: #6a1b9a;">{results.accuracy}%</p>
+						<p style="color: #7b1fa2; font-weight: 600; margin-bottom: 5px;">{t('Accuracy')}</p>
+						<p style="font-size: 28px; font-weight: bold; color: #6a1b9a;">{percentFromWhole(results.accuracy, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</p>
 					</div>
 					<div style="background: #ffebee; border: 2px solid #ef5350; padding: 15px; border-radius: 8px;">
-						<p style="color: #c62828; font-weight: 600; margin-bottom: 5px;">Total Errors</p>
-						<p style="font-size: 28px; font-weight: bold; color: #b71c1c;">{results.total_errors}</p>
+						<p style="color: #c62828; font-weight: 600; margin-bottom: 5px;">{t('Total Errors')}</p>
+						<p style="font-size: 28px; font-weight: bold; color: #b71c1c;">{n(results.total_errors)}</p>
 					</div>
 					<div style="background: #e8f5e9; border: 2px solid #66bb6a; padding: 15px; border-radius: 8px;">
-						<p style="color: #2e7d32; font-weight: 600; margin-bottom: 5px;">Avg Time</p>
-						<p style="font-size: 28px; font-weight: bold; color: #1b5e20;">{results.average_response_time}ms</p>
+						<p style="color: #2e7d32; font-weight: 600; margin-bottom: 5px;">{t('Avg Time')}</p>
+						<p style="font-size: 28px; font-weight: bold; color: #1b5e20;">{durationMsLabel(results.average_response_time)}</p>
 					</div>
 				</div>
 
 				<div style="background: #f5f5f5; border: 2px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-					<p style="font-weight: 600; color: #333; margin-bottom: 10px;">Clinical Interpretation:</p>
-					<p style="color: #555;">{results.feedback}</p>
+					<p style="font-weight: 600; color: #333; margin-bottom: 10px;">{t('Clinical Interpretation:')}</p>
+					<p style="color: #555;">{t(results.feedback)}</p>
 				</div>
 
 				{#if newBadges && newBadges.length > 0}
@@ -543,13 +610,13 @@
 						on:click={() => goto('/dashboard')}
 						style="padding: 15px; background: #666; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
 					>
-						Dashboard
+						{t('Dashboard')}
 					</button>
 					<button
 						on:click={() => goto('/progress')}
 						style="padding: 15px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;"
 					>
-						View Progress
+						{t('View Progress')}
 					</button>
 				</div>
 			</div>

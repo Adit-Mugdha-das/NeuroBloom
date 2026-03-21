@@ -1,7 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import api from '$lib/api.js';
+	import { locale, translateText } from '$lib/i18n';
 	import { clearUser, setUser } from '$lib/stores';
+	import { get } from 'svelte/store';
 	import { onMount } from 'svelte';
 	
 	let email = '';
@@ -12,7 +15,9 @@
 	
 	// Clear any existing session when visiting login page
 	onMount(() => {
-		clearUser();
+		if (get(page).url.searchParams.get('reset') === '1') {
+			clearUser();
+		}
 	});
 	
 	async function handleLogin() {
@@ -63,6 +68,16 @@ const endpoint = loginType === 'doctor'
 			loading = false;
 		}
 	}
+
+	function getLoginButtonLabel(type, activeLocale) {
+		if (type === 'doctor') return translateText('Login as Doctor', activeLocale);
+		if (type === 'admin') return translateText('Login as Admin', activeLocale);
+		return translateText('Login as Patient', activeLocale);
+	}
+
+	$: loginButtonLabel = loading
+		? translateText('Logging in...', $locale)
+		: getLoginButtonLabel(loginType, $locale);
 </script>
 
 <div class="auth-container">
@@ -78,7 +93,7 @@ const endpoint = loginType === 'doctor'
 				on:click={() => loginType = 'patient'}
 				disabled={loading}
 			>
-				👤 Patient
+				👤 {translateText('Patient', $locale)}
 			</button>
 			<button 
 				type="button"
@@ -86,7 +101,7 @@ const endpoint = loginType === 'doctor'
 				on:click={() => loginType = 'doctor'}
 				disabled={loading}
 			>
-				👨‍⚕️ Doctor
+				👨‍⚕️ {translateText('Doctor', $locale)}
 			</button>
 		<button 
 			type="button"
@@ -94,7 +109,7 @@ const endpoint = loginType === 'doctor'
 			on:click={() => loginType = 'admin'}
 			disabled={loading}
 		>
-			🏥 Admin
+			🏥 {translateText('Admin', $locale)}
 		</button>
 		</div>
 		
@@ -126,12 +141,13 @@ const endpoint = loginType === 'doctor'
 			</div>
 			
 			<button type="submit" class="btn" disabled={loading}>
-				{loading ? 'Logging in...' : `Login as ${loginType === 'doctor' ? 'Doctor' : loginType === 'admin' ? 'Admin' : 'Patient'}`}
+				{loginButtonLabel}
 			</button>
 		</form>
 		
 		<div class="auth-link">
-			Don't have an account? <a href="/register">Register here</a>
+			{translateText("Don't have an account?", $locale)}
+			<a href="/register">{translateText('Register here', $locale)}</a>
 		</div>
 	</div>
 </div>

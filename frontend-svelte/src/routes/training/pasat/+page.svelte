@@ -2,6 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import {
+		formatNumber,
+		formatPercent,
+		localizeDigitInput,
+		locale,
+		normalizeLocalizedDigits,
+		translateText
+	} from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -47,6 +55,108 @@
 	user.subscribe(value => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function digitsLabel(count) {
+		return $locale === 'bn' ? `${n(count)}টি অঙ্ক` : `${count} digits`;
+	}
+
+	function secondsLabel(value) {
+		return $locale === 'bn' ? `${n(value)} সেকেন্ড` : `${value} seconds`;
+	}
+
+	function intervalLabel(value) {
+		return $locale === 'bn' ? `${n(value)} সেকেন্ড পরপর` : `${value}s intervals`;
+	}
+
+	function millisecondsLabel(value) {
+		return $locale === 'bn' ? `${n(value)} মি.সে.` : `${value}ms`;
+	}
+
+	function localizedDigit(value) {
+		return n(value);
+	}
+
+	function numericFieldValue(value) {
+		return localizeDigitInput(value, $locale);
+	}
+
+	function performanceLevelLabel(value) {
+		return t(value);
+	}
+
+	function paceChangeLabel(type, before, after) {
+		if ($locale === 'bn') {
+			if (type === 'increase') {
+				return `পরের সেশনে গতি বাড়বে: ${n(before)} → ${n(after)}`;
+			}
+
+			if (type === 'decrease') {
+				return `পরের সেশনে গতি কমবে: ${n(before)} → ${n(after)}`;
+			}
+
+			return `পরের সেশন ${n(after)} লেভেলেই থাকবে`;
+		}
+
+		if (type === 'increase') {
+			return `Pace increased: ${before} → ${after}`;
+		}
+
+		if (type === 'decrease') {
+			return `Pace slowed: ${before} → ${after}`;
+		}
+
+		return `Pace maintained at level ${after}`;
+	}
+
+	function interpretationText() {
+		if (!results?.metrics) return '';
+
+		if ($locale === 'bn') {
+			if (results.metrics.accuracy >= 85) {
+				return `অসাধারণ টেকসই মনোযোগ! আপনি ${secondsLabel(results.metrics.interval_seconds)} গতিতেও মনোযোগ ও নির্ভুলতা ধরে রাখতে পেরেছেন। এটি শক্তিশালী ওয়ার্কিং মেমোরি ও মনোযোগের সক্ষমতা দেখায়।`;
+			}
+
+			if (results.metrics.accuracy >= 70) {
+				return 'এই চ্যালেঞ্জিং টাস্কে আপনার পারফরম্যান্স ভালো। সময়ের চাপের মধ্যেও আপনি মনোযোগ ধরে রাখতে পারছেন। নিয়মিত অনুশীলনে টেকসই মনোযোগ আরও উন্নত হবে।';
+			}
+
+			if (results.metrics.accuracy >= 55) {
+				return 'পারফরম্যান্স মোটামুটি। PASAT সবচেয়ে কঠিন কগনিটিভ পরীক্ষাগুলোর একটি। আপনার মনোযোগ ও ওয়ার্কিং মেমোরি কাজ করছে, তবে নিয়মিত অনুশীলনে আরও উন্নতি সম্ভব।';
+			}
+
+			return 'PASAT বিশেষ করে দ্রুত গতিতে খুবই কঠিন। আপনার মস্তিষ্ক মনোযোগ ধরে রাখা ও মানসিক হিসাব একসঙ্গে করার চেষ্টা করছে। নিয়মিত অনুশীলনে এই ক্ষমতা আরও বাড়বে।';
+		}
+
+		if (results.metrics.accuracy >= 85) {
+			return `Excellent sustained attention! You maintained focus and accuracy at a ${results.metrics.interval_seconds}s pace. This indicates strong working memory and attention capacity.`;
+		}
+
+		if (results.metrics.accuracy >= 70) {
+			return "Good performance on this challenging task. You're maintaining attention well under time pressure. Continued practice will further improve your sustained attention.";
+		}
+
+		if (results.metrics.accuracy >= 55) {
+			return 'Fair performance. PASAT is one of the most demanding cognitive tests. Your attention and working memory are functioning, with room for improvement through regular practice.';
+		}
+
+		return 'PASAT is extremely challenging, especially at faster paces. Your brain is working hard to maintain attention and perform mental calculations. Regular practice will help build sustained attention capacity.';
+	}
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -275,8 +385,10 @@
 	}
 
 	// Input validation - only allow numeric characters
-	function validateNumericInput() {
-		userAnswer = userAnswer.replace(/[^0-9]/g, '');
+	function validateNumericInput(event) {
+		const nextValue = normalizeLocalizedDigits(event.currentTarget.value).replace(/[^0-9]/g, '');
+		userAnswer = nextValue;
+		event.currentTarget.value = numericFieldValue(nextValue);
 	}
 
 	// Reactive calculations
@@ -290,156 +402,164 @@
 
 <svelte:window on:keypress={handleKeyPress} />
 
-<div class="task-container">
+<div class="task-container" data-localize-skip>
 	{#if loading}
 		<div class="loading-state">
 			<div class="spinner"></div>
-			<p>Loading task...</p>
+			<p>{t('Loading task...')}</p>
 		</div>
 	{:else if error}
 		<div class="error-state">
-			<h2>⚠️ Error</h2>
-			<p>{error}</p>
-			<button on:click={returnToDashboard}>Return to Dashboard</button>
+			<h2>⚠️ {t('Error')}</h2>
+			<p>{t(error)}</p>
+			<button on:click={returnToDashboard}>{t('Return to Dashboard')}</button>
 		</div>
 	{:else if showInstructions}
 		<div class="instructions-panel">
 			<div class="task-header">
 				<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-					<h1>🎯 PASAT (Paced Auditory Serial Addition Test)</h1>
+					<h1>🎯 {t('PASAT (Paced Auditory Serial Addition Test)')}</h1>
 					<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
 				</div>
-				<p class="task-subtitle">MS Gold Standard Attention Assessment</p>
-				<div class="gold-standard-badge">⭐⭐⭐⭐⭐ CLINICAL GOLD STANDARD</div>
+				<p class="task-subtitle">{t('MS Gold Standard Attention Assessment')}</p>
+				<div class="gold-standard-badge">⭐⭐⭐⭐⭐ {t('CLINICAL GOLD STANDARD')}</div>
 			</div>
 
 			<div class="clinical-context">
-				<h3>📋 About This Task</h3>
-				<p>PASAT is the most widely used cognitive test in MS research and clinical trials. It measures sustained attention, working memory, and processing speed under time pressure.</p>
+				<h3>📋 {t('About This Task')}</h3>
+				<p>{t('PASAT is the most widely used cognitive test in MS research and clinical trials. It measures sustained attention, working memory, and processing speed under time pressure.')}</p>
 				
 				<div class="ms-benefits">
-					<h4>✨ Why PASAT is Critical for MS</h4>
+					<h4>✨ {t('Why PASAT is Critical for MS')}</h4>
 					<ul>
-						<li><strong>Historical Standard:</strong> Used in MS trials for decades</li>
-						<li><strong>Sustained Attention:</strong> Tracks attention over extended periods</li>
-						<li><strong>Lesion Correlation:</strong> Performance correlates with brain lesion burden</li>
-						<li><strong>Functional Predictor:</strong> Relates to real-world cognitive abilities</li>
+						<li><strong>{t('Historical Standard:')}</strong> {t('Used in MS trials for decades')}</li>
+						<li><strong>{t('Sustained Attention:')}</strong> {t('Tracks attention over extended periods')}</li>
+						<li><strong>{t('Lesion Correlation:')}</strong> {t('Performance correlates with brain lesion burden')}</li>
+						<li><strong>{t('Functional Predictor:')}</strong> {t('Relates to real-world cognitive abilities')}</li>
 					</ul>
 				</div>
 
 				<div class="research-note">
-					<strong>Research Foundation:</strong> Gronwall, 1977 - Paced Auditory Serial-Addition Task. Extensively validated in MS populations worldwide.
+					<strong>{t('Research Foundation:')}</strong> {t('Gronwall, 1977 - Paced Auditory Serial-Addition Task. Extensively validated in MS populations worldwide.')}
 				</div>
 			</div>
 
 			<div class="how-it-works">
-				<h3>🎯 How It Works</h3>
+				<h3>🎯 {t('How It Works')}</h3>
 				<div class="pasat-example">
-					<div class="example-header">Example:</div>
+					<div class="example-header">{t('Example:')}</div>
 					<div class="example-sequence">
 						<div class="example-step">
-							<div class="digit-display">3</div>
-							<div class="action">(Remember this)</div>
+							<div class="digit-display">{localizedDigit(3)}</div>
+							<div class="action">({t('Remember this')})</div>
 						</div>
 						<div class="arrow">→</div>
 						<div class="example-step">
-							<div class="digit-display">5</div>
-							<div class="action">Answer: <strong>8</strong></div>
-							<div class="explanation">(3 + 5 = 8)</div>
+							<div class="digit-display">{localizedDigit(5)}</div>
+							<div class="action">{t('Answer:')} <strong>{localizedDigit(8)}</strong></div>
+							<div class="explanation">({localizedDigit(3)} + {localizedDigit(5)} = {localizedDigit(8)})</div>
 						</div>
 						<div class="arrow">→</div>
 						<div class="example-step">
-							<div class="digit-display">2</div>
-							<div class="action">Answer: <strong>7</strong></div>
-							<div class="explanation">(5 + 2 = 7)</div>
+							<div class="digit-display">{localizedDigit(2)}</div>
+							<div class="action">{t('Answer:')} <strong>{localizedDigit(7)}</strong></div>
+							<div class="explanation">({localizedDigit(5)} + {localizedDigit(2)} = {localizedDigit(7)})</div>
 						</div>
 						<div class="arrow">→</div>
 						<div class="example-step">
-							<div class="digit-display">9</div>
-							<div class="action">Answer: <strong>11</strong></div>
-							<div class="explanation">(2 + 9 = 11)</div>
+							<div class="digit-display">{localizedDigit(9)}</div>
+							<div class="action">{t('Answer:')} <strong>{localizedDigit(11)}</strong></div>
+							<div class="explanation">({localizedDigit(2)} + {localizedDigit(9)} = {localizedDigit(11)})</div>
 						</div>
 					</div>
 				</div>
 
 				<div class="key-rule">
-					<strong>⚠️ KEY RULE:</strong> Add each NEW digit to the PREVIOUS digit. Ignore the running total!
+					<strong>⚠️ {t('KEY RULE:')}</strong> {t('Add each NEW digit to the PREVIOUS digit. Ignore the running total!')}
 				</div>
 
 				<div class="instruction-steps">
 					<div class="step">
-						<span class="step-number">1</span>
+						<span class="step-number">{n(1)}</span>
 						<div class="step-content">
-							<h4>See the Digit</h4>
-							<p>A single digit (1-9) appears on screen</p>
+							<h4>{t('See the Digit')}</h4>
+							<p>{t('A single digit (1-9) appears on screen')}</p>
 						</div>
 					</div>
 					<div class="step">
-						<span class="step-number">2</span>
+						<span class="step-number">{n(2)}</span>
 						<div class="step-content">
-							<h4>Add to Previous</h4>
-							<p>Add this digit to the one you just saw (not the answer you gave!)</p>
+							<h4>{t('Add to Previous')}</h4>
+							<p>{t('Add this digit to the one you just saw (not the answer you gave!)')}</p>
 						</div>
 					</div>
 					<div class="step">
-						<span class="step-number">3</span>
+						<span class="step-number">{n(3)}</span>
 						<div class="step-content">
-							<h4>Type Your Answer</h4>
-							<p>Enter the sum and press Enter before the next digit appears</p>
+							<h4>{t('Type Your Answer')}</h4>
+							<p>{t('Enter the sum and press Enter before the next digit appears')}</p>
 						</div>
 					</div>
 					<div class="step">
-						<span class="step-number">4</span>
+						<span class="step-number">{n(4)}</span>
 						<div class="step-content">
-							<h4>Maintain Pace</h4>
-							<p>Keep going! Digits appear every {sessionData?.config?.interval_seconds || 3} seconds</p>
+							<h4>{t('Maintain Pace')}</h4>
+							<p>
+								{$locale === 'bn'
+									? `চালিয়ে যান! প্রতি ${secondsLabel(sessionData?.config?.interval_seconds || 3)} পরপর নতুন অঙ্ক দেখাবে।`
+									: `Keep going! Digits appear every ${sessionData?.config?.interval_seconds || 3} seconds`}
+							</p>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			<div class="instruction-tips">
-				<h3>💡 Tips for Success</h3>
+				<h3>💡 {t('Tips for Success')}</h3>
 				<ul>
-					<li><strong>Focus on the previous digit</strong> - not your last answer</li>
-					<li><strong>Don't try to keep a running total</strong> - that's not the task</li>
-					<li><strong>Speed matters</strong> - try to answer before the next digit</li>
-					<li><strong>If you miss one, keep going</strong> - don't get discouraged</li>
-					<li><strong>Stay calm</strong> - this is challenging even for healthy adults</li>
-					<li><strong>It's okay to skip</strong> - better to wait for the next digit than lose track</li>
+					<li><strong>{t('Focus on the previous digit')}</strong> - {t('not your last answer')}</li>
+					<li><strong>{t("Don't try to keep a running total")}</strong> - {t("that's not the task")}</li>
+					<li><strong>{t('Speed matters')}</strong> - {t('try to answer before the next digit')}</li>
+					<li><strong>{t('If you miss one, keep going')}</strong> - {t("don't get discouraged")}</li>
+					<li><strong>{t('Stay calm')}</strong> - {t('this is challenging even for healthy adults')}</li>
+					<li><strong>{t("It's okay to skip")}</strong> - {t('better to wait for the next digit than lose track')}</li>
 				</ul>
 			</div>
 
 			<div class="difficulty-info">
-				<h4>📊 Your Current Pace</h4>
-				<p><strong>{sessionData?.config?.interval_seconds || 3} seconds</strong> between digits</p>
-				<p class="difficulty-description">{sessionData?.config?.description || 'Standard PASAT-3'}</p>
+				<h4>📊 {t('Your Current Pace')}</h4>
+				<p><strong>{secondsLabel(sessionData?.config?.interval_seconds || 3)}</strong> {t('between digits')}</p>
+				<p class="difficulty-description">{t(sessionData?.config?.description || 'Standard PASAT-3')}</p>
 			</div>
 
 			<div class="action-buttons">
 				<button class="primary-btn" on:click={startPractice}>
-					Start Practice (4 digits)
+					{t('Start Practice (4 digits)')}
 				</button>
 				<button class="help-btn" on:click={() => showHelp = true}>
-					📖 More Information
+					📖 {t('More Information')}
 				</button>
 			</div>
 		</div>
 	{:else if showPractice}
 		<div class="practice-panel">
-			<h2>🎓 Practice Mode</h2>
-			<p class="practice-intro">Let's practice with 4 digits. Take your time to understand the pattern.</p>
+			<h2>🎓 {t('Practice Mode')}</h2>
+			<p class="practice-intro">{t("Let's practice with 4 digits. Take your time to understand the pattern.")}</p>
 			
 			{#if !practiceComplete}
 				<div class="practice-display">
 					<div class="digit-card">
-						<div class="current-digit">{currentDigit}</div>
+						<div class="current-digit">{localizedDigit(currentDigit)}</div>
 						{#if practiceIndex === 0}
-							<div class="hint-text">First digit - just remember it!</div>
+							<div class="hint-text">{t('First digit - just remember it!')}</div>
 						{:else if practiceIndex === 1}
-							<div class="hint-text">Add this digit to the previous one: {practicePrevious} + {currentDigit} = ?</div>
+							<div class="hint-text">
+								{$locale === 'bn'
+									? `এই অঙ্কটি আগেরটির সঙ্গে যোগ করুন: ${localizedDigit(practicePrevious)} + ${localizedDigit(currentDigit)} = ?`
+									: `Add this digit to the previous one: ${practicePrevious} + ${currentDigit} = ?`}
+							</div>
 						{:else}
-							<div class="hint-text">Add to the previous digit (remember it!)</div>
+							<div class="hint-text">{t('Add to the previous digit (remember it!)')}</div>
 						{/if}
 					</div>
 
@@ -449,25 +569,29 @@
 								type="text"
 								inputmode="numeric"
 								pattern="[0-9]*"
-								bind:value={userAnswer}
+								value={numericFieldValue(userAnswer)}
 								on:input={validateNumericInput}
-								placeholder="Type your answer"
+								placeholder={t('Type your answer')}
 								autofocus
 								class="answer-input"
 							/>
 							<button class="submit-btn" on:click={handlePracticeAnswer}>
-								Submit Answer
+								{t('Submit Answer')}
 							</button>
 						</div>
 					{/if}
 				</div>
 			{:else}
 				<div class="practice-complete">
-					<h3>✅ Practice Complete!</h3>
-					<p>Great! Now you understand the task. The real test will have {sessionData.total_trials} digits.</p>
-					<p><strong>Remember:</strong> Add each new digit to the previous digit, not to your running total!</p>
+					<h3>✅ {t('Practice Complete!')}</h3>
+					<p>
+						{$locale === 'bn'
+							? `দারুণ! এখন আপনি টাস্কটি বুঝে গেছেন। আসল পরীক্ষায় ${digitsLabel(sessionData.total_trials)} থাকবে।`
+							: `Great! Now you understand the task. The real test will have ${sessionData.total_trials} digits.`}
+					</p>
+					<p><strong>{t('Remember:')}</strong> {t('Add each new digit to the previous digit, not to your running total!')}</p>
 					<button class="primary-btn" on:click={startTest}>
-						Start Actual Test ({sessionData.total_trials} digits)
+						{t(`Start Actual Test (${sessionData.total_trials} digits)`)}
 					</button>
 				</div>
 			{/if}
@@ -477,12 +601,12 @@
 			<div class="test-header">
 				<div class="progress-info">
 					<div class="trials-remaining">
-						<span class="remaining-label">Digits Remaining</span>
-						<span class="remaining-value">{trialsRemaining}</span>
+						<span class="remaining-label">{t('Digits Remaining')}</span>
+						<span class="remaining-value">{n(trialsRemaining)}</span>
 					</div>
 					<div class="pace-info">
-						<span class="info-label">Pace</span>
-						<span class="info-value">{sessionData.interval_seconds}s intervals</span>
+						<span class="info-label">{t('Pace')}</span>
+						<span class="info-value">{intervalLabel(sessionData.interval_seconds)}</span>
 					</div>
 				</div>
 				<div class="progress-bar">
@@ -492,7 +616,7 @@
 
 			<div class="test-display">
 				<div class="digit-card large">
-					<div class="current-digit-large">{currentDigit}</div>
+					<div class="current-digit-large">{localizedDigit(currentDigit)}</div>
 				</div>
 
 				{#if waitingForAnswer}
@@ -501,21 +625,21 @@
 							type="text"
 							inputmode="numeric"
 							pattern="[0-9]*"
-							bind:value={userAnswer}
+							value={numericFieldValue(userAnswer)}
 							on:input={validateNumericInput}
-							placeholder="Enter sum"
+							placeholder={t('Enter sum')}
 							autofocus
 							class="answer-input large"
 						/>
 						<button class="submit-btn" on:click={handleAnswerSubmit}>
-							Submit (Enter)
+							{t('Submit (Enter)')}
 						</button>
 					</div>
 				{/if}
 
 				{#if !waitingForAnswer && currentTrialIndex > 0 && currentTrialIndex < sessionData.total_trials}
 					<div class="waiting-message">
-						<p>Next digit coming...</p>
+						<p>{t('Next digit coming...')}</p>
 					</div>
 				{/if}
 			</div>
@@ -523,99 +647,103 @@
 	{:else if showResults}
 		<div class="results-panel">
 			<div class="results-header">
-				<h2>📊 PASAT Results</h2>
+				<h2>📊 {t('PASAT Results')}</h2>
 				<div class="performance-badge {results.metrics.performance_level.toLowerCase().replace(' ', '-')}">
-					{results.metrics.performance_level}
+					{performanceLevelLabel(results.metrics.performance_level)}
 				</div>
 			</div>
 
 			<div class="metrics-grid">
 				<div class="metric-card primary">
 					<div class="metric-icon">🎯</div>
-					<div class="metric-value">{results.metrics.accuracy}%</div>
-					<div class="metric-label">Accuracy</div>
-					<div class="metric-detail">{results.metrics.correct_count}/{results.metrics.total_trials} correct</div>
+					<div class="metric-value">{pct(results.metrics.accuracy, { maximumFractionDigits: 0 })}</div>
+					<div class="metric-label">{t('Accuracy')}</div>
+					<div class="metric-detail">
+						{$locale === 'bn'
+							? `${n(results.metrics.correct_count)}/${n(results.metrics.total_trials)} সঠিক`
+							: `${results.metrics.correct_count}/${results.metrics.total_trials} correct`}
+					</div>
 				</div>
 
 				<div class="metric-card">
 					<div class="metric-icon">⚡</div>
-					<div class="metric-value">{results.metrics.sustained_attention}%</div>
-					<div class="metric-label">Sustained Attention</div>
-					<div class="metric-detail">Performance in final third</div>
+					<div class="metric-value">{pct(results.metrics.sustained_attention, { maximumFractionDigits: 0 })}</div>
+					<div class="metric-label">{t('Sustained Attention')}</div>
+					<div class="metric-detail">{t('Performance in final third')}</div>
 				</div>
 
 				<div class="metric-card">
 					<div class="metric-icon">⏱️</div>
-					<div class="metric-value">{results.metrics.average_reaction_time}ms</div>
-					<div class="metric-label">Avg Response Time</div>
-					<div class="metric-detail">Per digit</div>
+					<div class="metric-value">{millisecondsLabel(results.metrics.average_reaction_time)}</div>
+					<div class="metric-label">{t('Avg Response Time')}</div>
+					<div class="metric-detail">{t('Per digit')}</div>
 				</div>
 
 				<div class="metric-card">
 					<div class="metric-icon">📈</div>
-					<div class="metric-value">{results.metrics.consistency}%</div>
-					<div class="metric-label">Consistency</div>
-					<div class="metric-detail">Response stability</div>
+					<div class="metric-value">{pct(results.metrics.consistency, { maximumFractionDigits: 0 })}</div>
+					<div class="metric-label">{t('Consistency')}</div>
+					<div class="metric-detail">{t('Response stability')}</div>
 				</div>
 			</div>
 
 			{#if results.metrics.fatigue_effect > 15}
 				<div class="fatigue-notice">
-					<h4>⚠️ Fatigue Detected</h4>
-					<p>Your performance decreased {results.metrics.fatigue_effect.toFixed(1)}% from start to finish. This is normal for PASAT - it's a demanding task! Consider taking breaks between sessions.</p>
+					<h4>⚠️ {t('Fatigue Detected')}</h4>
+					<p>
+						{$locale === 'bn'
+							? `শুরু থেকে শেষ পর্যন্ত আপনার পারফরম্যান্স ${pct(results.metrics.fatigue_effect)} কমেছে। PASAT-এর মতো কঠিন টাস্কে এটি স্বাভাবিক। সেশনগুলোর মাঝে একটু বিরতি নিলে ভালো হবে।`
+							: `Your performance decreased ${results.metrics.fatigue_effect.toFixed(1)}% from start to finish. This is normal for PASAT - it's a demanding task! Consider taking breaks between sessions.`}
+					</p>
 				</div>
 			{/if}
 
 			<div class="interpretation-section">
-				<h3>🧠 What This Means</h3>
-				<p class="interpretation-text">
-					{#if results.metrics.accuracy >= 85}
-						Excellent sustained attention! You maintained focus and accuracy at a {results.metrics.interval_seconds}s pace. This indicates strong working memory and attention capacity.
-					{:else if results.metrics.accuracy >= 70}
-						Good performance on this challenging task. You're maintaining attention well under time pressure. Continued practice will further improve your sustained attention.
-					{:else if results.metrics.accuracy >= 55}
-						Fair performance. PASAT is one of the most demanding cognitive tests. Your attention and working memory are functioning, with room for improvement through regular practice.
-					{:else}
-						PASAT is extremely challenging, especially at faster paces. Your brain is working hard to maintain attention and perform mental calculations. Regular practice will help build sustained attention capacity.
-					{/if}
-				</p>
+				<h3>🧠 {t('What This Means')}</h3>
+				<p class="interpretation-text">{interpretationText()}</p>
 
 				<div class="pasat-context">
-					<h4>Understanding PASAT Performance</h4>
+					<h4>{t('Understanding PASAT Performance')}</h4>
 					<ul>
-						<li><strong>Gold Standard Test:</strong> Most widely used MS cognitive assessment</li>
-						<li><strong>Dual Task:</strong> Requires both working memory and sustained attention</li>
-						<li><strong>Time Pressure:</strong> Paced presentation adds processing speed demands</li>
-						<li><strong>MS Research:</strong> Performance correlates with brain lesion burden</li>
-						<li><strong>Training Effect:</strong> Regular practice improves sustained attention capacity</li>
+						<li><strong>{t('Gold Standard Test:')}</strong> {t('Most widely used MS cognitive assessment')}</li>
+						<li><strong>{t('Dual Task:')}</strong> {t('Requires both working memory and sustained attention')}</li>
+						<li><strong>{t('Time Pressure:')}</strong> {t('Paced presentation adds processing speed demands')}</li>
+						<li><strong>{t('MS Research:')}</strong> {t('Performance correlates with brain lesion burden')}</li>
+						<li><strong>{t('Training Effect:')}</strong> {t('Regular practice improves sustained attention capacity')}</li>
 					</ul>
 				</div>
 			</div>
 
 			{#if results.adaptation_reason}
 				<div class="adaptation-info">
-					<h4>📊 Next Session</h4>
-					<p>{results.adaptation_reason}</p>
+					<h4>📊 {t('Next Session')}</h4>
+					<p>{t(results.adaptation_reason)}</p>
 					{#if results.difficulty_after > results.difficulty_before}
-						<p class="difficulty-change increase">Pace increased: {results.difficulty_before} → {results.difficulty_after}</p>
+						<p class="difficulty-change increase">
+							{paceChangeLabel('increase', results.difficulty_before, results.difficulty_after)}
+						</p>
 					{:else if results.difficulty_after < results.difficulty_before}
-						<p class="difficulty-change decrease">Pace slowed: {results.difficulty_before} → {results.difficulty_after}</p>
+						<p class="difficulty-change decrease">
+							{paceChangeLabel('decrease', results.difficulty_before, results.difficulty_after)}
+						</p>
 					{:else}
-						<p class="difficulty-change same">Pace maintained at level {results.difficulty_after}</p>
+						<p class="difficulty-change same">
+							{paceChangeLabel('same', results.difficulty_before, results.difficulty_after)}
+						</p>
 					{/if}
 				</div>
 			{/if}
 
 			{#if results.new_badges && results.new_badges.length > 0}
 				<div class="new-badges">
-					<h3>🏆 New Badges Earned!</h3>
+					<h3>🏆 {t('New Badges Earned!')}</h3>
 					<div class="badge-list">
 						{#each results.new_badges as badge}
 							<div class="badge-item">
 								<span class="badge-icon">{badge.icon}</span>
 								<div class="badge-info">
-									<div class="badge-name">{badge.name}</div>
-									<div class="badge-description">{badge.description}</div>
+									<div class="badge-name">{t(badge.name)}</div>
+									<div class="badge-description">{t(badge.description)}</div>
 								</div>
 							</div>
 						{/each}
@@ -625,7 +753,7 @@
 
 			<div class="action-buttons">
 				<button class="primary-btn" on:click={returnToDashboard}>
-					Return to Dashboard
+					{t('Return to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -636,65 +764,65 @@
 	<div class="modal-overlay" on:click={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="button" tabindex="0">
 		<div class="modal-content" on:click|stopPropagation on:keydown role="dialog" tabindex="-1">
 			<div class="modal-header">
-				<h2>📖 PASAT - Detailed Information</h2>
+				<h2>📖 {t('PASAT - Detailed Information')}</h2>
 				<button class="close-btn" on:click={() => showHelp = false}>✕</button>
 			</div>
 			
 			<div class="modal-body">
 				<section>
-					<h3>What is PASAT?</h3>
-					<p>The Paced Auditory Serial Addition Test is the most widely used cognitive measure in MS clinical trials and research. It assesses sustained attention, working memory, and information processing speed simultaneously.</p>
+					<h3>{t('What is PASAT?')}</h3>
+					<p>{t('The Paced Auditory Serial Addition Test is the most widely used cognitive measure in MS clinical trials and research. It assesses sustained attention, working memory, and information processing speed simultaneously.')}</p>
 				</section>
 
 				<section>
-					<h3>Why is it the MS Gold Standard?</h3>
+					<h3>{t('Why is it the MS Gold Standard?')}</h3>
 					<ul>
-						<li><strong>Historical Use:</strong> Decades of MS research and clinical trials</li>
-						<li><strong>Sensitivity:</strong> Detects subtle cognitive changes in MS</li>
-						<li><strong>Correlation:</strong> Scores relate to brain lesion burden and disability</li>
-						<li><strong>Predictive Value:</strong> Performance predicts real-world functioning</li>
-						<li><strong>Standardized:</strong> Well-established norms and procedures</li>
+						<li><strong>{t('Historical Use:')}</strong> {t('Decades of MS research and clinical trials')}</li>
+						<li><strong>{t('Sensitivity:')}</strong> {t('Detects subtle cognitive changes in MS')}</li>
+						<li><strong>{t('Correlation:')}</strong> {t('Scores relate to brain lesion burden and disability')}</li>
+						<li><strong>{t('Predictive Value:')}</strong> {t('Performance predicts real-world functioning')}</li>
+						<li><strong>{t('Standardized:')}</strong> {t('Well-established norms and procedures')}</li>
 					</ul>
 				</section>
 
 				<section>
-					<h3>Common Challenges</h3>
+					<h3>{t('Common Challenges')}</h3>
 					<ul>
-						<li><strong>Confusion:</strong> Adding to previous digit vs. running total</li>
-						<li><strong>Pace:</strong> Time pressure can cause anxiety</li>
-						<li><strong>Fatigue:</strong> Performance often decreases over duration</li>
-						<li><strong>Recovery:</strong> Hard to get back on track after mistakes</li>
+						<li><strong>{t('Confusion:')}</strong> {t('Adding to previous digit vs. running total')}</li>
+						<li><strong>{t('Pace:')}</strong> {t('Time pressure can cause anxiety')}</li>
+						<li><strong>{t('Fatigue:')}</strong> {t('Performance often decreases over duration')}</li>
+						<li><strong>{t('Recovery:')}</strong> {t('Hard to get back on track after mistakes')}</li>
 					</ul>
 				</section>
 
 				<section>
-					<h3>Strategies for Success</h3>
+					<h3>{t('Strategies for Success')}</h3>
 					<ol>
-						<li><strong>Forget Your Answer:</strong> After you answer, only remember the digit you just saw</li>
-						<li><strong>Don't Keep Totals:</strong> Ignore all running sums - just focus on the last two digits</li>
-						<li><strong>Stay Calm:</strong> If you miss one, reset with the next digit</li>
-						<li><strong>Use Visualization:</strong> Picture the two numbers side by side</li>
-						<li><strong>Practice Pace:</strong> Get comfortable with the rhythm</li>
-						<li><strong>Accept Mistakes:</strong> Even healthy adults struggle - it's designed to be hard</li>
+						<li><strong>{t('Forget Your Answer:')}</strong> {t('After you answer, only remember the digit you just saw')}</li>
+						<li><strong>{t("Don't Keep Totals:")}</strong> {t('Ignore all running sums - just focus on the last two digits')}</li>
+						<li><strong>{t('Stay Calm:')}</strong> {t('If you miss one, reset with the next digit')}</li>
+						<li><strong>{t('Use Visualization:')}</strong> {t('Picture the two numbers side by side')}</li>
+						<li><strong>{t('Practice Pace:')}</strong> {t('Get comfortable with the rhythm')}</li>
+						<li><strong>{t('Accept Mistakes:')}</strong> {t("Even healthy adults struggle - it's designed to be hard")}</li>
 					</ol>
 				</section>
 
 				<section>
-					<h3>PASAT Variants</h3>
-					<p><strong>PASAT-4:</strong> 4-second intervals (easier, what we start with)</p>
-					<p><strong>PASAT-3:</strong> 3-second intervals (standard clinical version)</p>
-					<p><strong>PASAT-2:</strong> 2-second intervals (very challenging)</p>
-					<p><strong>Visual PASAT:</strong> Numbers shown visually (less stressful than audio-only)</p>
+					<h3>{t('PASAT Variants')}</h3>
+					<p><strong>{t('PASAT-4:')}</strong> {t('4-second intervals (easier, what we start with)')}</p>
+					<p><strong>{t('PASAT-3:')}</strong> {t('3-second intervals (standard clinical version)')}</p>
+					<p><strong>{t('PASAT-2:')}</strong> {t('2-second intervals (very challenging)')}</p>
+					<p><strong>{t('Visual PASAT:')}</strong> {t('Numbers shown visually (less stressful than audio-only)')}</p>
 				</section>
 
 				<section>
-					<h3>MS Research Applications</h3>
-					<p>PASAT is included in major MS cognitive batteries (MACFIMS, BRB-N) and has been used in thousands of clinical trials to measure cognitive outcomes and treatment effects.</p>
+					<h3>{t('MS Research Applications')}</h3>
+					<p>{t('PASAT is included in major MS cognitive batteries (MACFIMS, BRB-N) and has been used in thousands of clinical trials to measure cognitive outcomes and treatment effects.')}</p>
 				</section>
 			</div>
 
 			<div class="modal-footer">
-				<button class="primary-btn" on:click={() => showHelp = false}>Got It!</button>
+				<button class="primary-btn" on:click={() => showHelp = false}>{t('Got It!')}</button>
 			</div>
 		</div>
 	</div>

@@ -29,8 +29,6 @@ declare module '$env/static/private' {
 	export const ALLUSERSPROFILE: string;
 	export const APPDATA: string;
 	export const APPLICATION_INSIGHTS_NO_STATSBEAT: string;
-	export const ChocolateyInstall: string;
-	export const ChocolateyLastPathUpdate: string;
 	export const CHROME_CRASHPAD_PIPE_NAME: string;
 	export const CODEX_INTERNAL_ORIGINATOR_OVERRIDE: string;
 	export const CODEX_SANDBOX_NETWORK_DISABLED: string;
@@ -50,7 +48,6 @@ declare module '$env/static/private' {
 	export const HOMEDRIVE: string;
 	export const HOMEPATH: string;
 	export const INIT_CWD: string;
-	export const JAVA_HOME: string;
 	export const LOCALAPPDATA: string;
 	export const LOGONSERVER: string;
 	export const NODE: string;
@@ -91,6 +88,7 @@ declare module '$env/static/private' {
 	export const PUBLIC: string;
 	export const RUST_LOG: string;
 	export const SESSIONNAME: string;
+	export const SynaProgDir: string;
 	export const SystemDrive: string;
 	export const SystemRoot: string;
 	export const TEMP: string;
@@ -140,8 +138,6 @@ declare module '$env/dynamic/private' {
 		ALLUSERSPROFILE: string;
 		APPDATA: string;
 		APPLICATION_INSIGHTS_NO_STATSBEAT: string;
-		ChocolateyInstall: string;
-		ChocolateyLastPathUpdate: string;
 		CHROME_CRASHPAD_PIPE_NAME: string;
 		CODEX_INTERNAL_ORIGINATOR_OVERRIDE: string;
 		CODEX_SANDBOX_NETWORK_DISABLED: string;
@@ -161,7 +157,6 @@ declare module '$env/dynamic/private' {
 		HOMEDRIVE: string;
 		HOMEPATH: string;
 		INIT_CWD: string;
-		JAVA_HOME: string;
 		LOCALAPPDATA: string;
 		LOGONSERVER: string;
 		NODE: string;
@@ -202,6 +197,7 @@ declare module '$env/dynamic/private' {
 		PUBLIC: string;
 		RUST_LOG: string;
 		SESSIONNAME: string;
+		SynaProgDir: string;
 		SystemDrive: string;
 		SystemRoot: string;
 		TEMP: string;

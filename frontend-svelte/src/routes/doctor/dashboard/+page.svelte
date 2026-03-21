@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
+	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
@@ -234,6 +235,14 @@
 			<p>{error}</p>
 		</section>
 	{:else}
+		<section class="panel-section">
+			<LanguagePreferencePanel
+				title="Language Preference"
+				description="Set the clinician workspace language for dashboards, notifications, and task-facing copy."
+				compact={true}
+			/>
+		</section>
+
 		<section class="snapshot-grid">
 			{#each snapshotCards as card}
 				<article class="snapshot-card tone-{card.tone}">

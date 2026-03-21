@@ -4,6 +4,49 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<style>
+			html[data-locale-pending='true'] body {
+				visibility: hidden;
+			}
+		</style>
+		<script>
+			(() => {
+				const DEFAULT_LOCALE = 'en';
+				const STORAGE_KEY = 'preferred-locale';
+				const root = document.documentElement;
+				let locale = DEFAULT_LOCALE;
+
+				try {
+					const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+					const preferredLocale = storedUser?.preferences?.language;
+					if (preferredLocale === 'en' || preferredLocale === 'bn') {
+						locale = preferredLocale;
+					} else {
+						const storedLocale = localStorage.getItem(STORAGE_KEY);
+						if (storedLocale === 'en' || storedLocale === 'bn') {
+							locale = storedLocale;
+						}
+					}
+				} catch (_error) {
+					locale = DEFAULT_LOCALE;
+				}
+
+				root.lang = locale === 'bn' ? 'bn-BD' : 'en';
+				root.dataset.locale = locale;
+				root.dataset.localeBoot = locale;
+
+				if (locale === 'bn') {
+					root.dataset.localePending = 'true';
+					window.setTimeout(() => {
+						if (root.dataset.localePending === 'true') {
+							root.dataset.localePending = 'false';
+						}
+					}, 4000);
+				}
+
+				window.__NB_LOCALE__ = locale;
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

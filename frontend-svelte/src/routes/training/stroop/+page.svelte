@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -86,6 +87,14 @@
 		phase = 'instructions';
 	}
 
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function getDisplayColorLabel(color) {
+		return translateText(String(color ?? '').toUpperCase(), $locale);
+	}
+
 	function startPractice() {
 		if (!sessionData || !sessionData.colors) {
 			alert('Session data not loaded. Please refresh the page.');
@@ -102,14 +111,14 @@
 				display_color: colors[0],
 				word_text: null,
 				correct_answer: colors[0],
-				hint: 'Just click the color of the patch. No word to distract you!'
+				hint: t('Just click the color of the patch. No word to distract you!')
 			},
 			{
 				condition: 'baseline',
 				display_color: colors[1],
 				word_text: null,
 				correct_answer: colors[1],
-				hint: 'Simple color identification - nice and easy.'
+				hint: t('Simple color identification - nice and easy.')
 			},
 			// Congruent trials
 			{
@@ -117,14 +126,14 @@
 				display_color: colors[2],
 				word_text: colors[2].toUpperCase(),
 				correct_answer: colors[2],
-				hint: 'The word matches the color - easy!'
+				hint: t('The word matches the color - easy!')
 			},
 			{
 				condition: 'congruent',
 				display_color: colors[3],
 				word_text: colors[3].toUpperCase(),
 				correct_answer: colors[3],
-				hint: 'Word and color agree - this is the easy condition.'
+				hint: t('Word and color agree - this is the easy condition.')
 			},
 			// Incongruent trials (THE CHALLENGE)
 			{
@@ -132,14 +141,17 @@
 				display_color: colors[0],
 				word_text: colors[1].toUpperCase(),
 				correct_answer: colors[0],
-				hint: `Ignore the word "${colors[1].toUpperCase()}" - answer the INK COLOR!`
+				hint:
+					$locale === 'bn'
+						? `"${getDisplayColorLabel(colors[1])}" শব্দটি উপেক্ষা করুন, কালির রঙ বলুন!`
+						: `Ignore the word "${colors[1].toUpperCase()}" - answer the INK COLOR!`
 			},
 			{
 				condition: 'incongruent',
 				display_color: colors[2],
 				word_text: colors[3].toUpperCase(),
 				correct_answer: colors[2],
-				hint: `Don't read the word! Focus on the color of the ink.`
+				hint: t("Don't read the word! Focus on the color of the ink.")
 			}
 		];
 
@@ -155,12 +167,15 @@
 		if (correct) {
 			practiceFeedback = {
 				type: 'success',
-				message: 'Correct! ' + trial.hint
+				message: `${t('Correct!')} ${trial.hint}`
 			};
 		} else {
 			practiceFeedback = {
 				type: 'error',
-				message: `Not quite. The correct answer was "${trial.correct_answer}". ${trial.hint}`
+				message:
+					$locale === 'bn'
+						? `পুরো ঠিক হয়নি। সঠিক উত্তর ছিল "${getDisplayColorLabel(trial.correct_answer)}"। ${trial.hint}`
+						: `Not quite. The correct answer was "${trial.correct_answer}". ${trial.hint}`
 			};
 		}
 
@@ -284,9 +299,11 @@
 	$: trialsRemaining = sessionData ? sessionData.trials.length - currentTrial : 0;
 
 	// Current condition name
-	$: conditionName = currentTrialData?.condition === 'baseline' ? 'Color Patches'
-		: currentTrialData?.condition === 'congruent' ? 'Matching Words'
-		: 'Conflicting Words';
+	$: conditionName = currentTrialData?.condition === 'baseline'
+		? translateText('Color Patches', $locale)
+		: currentTrialData?.condition === 'congruent'
+			? translateText('Matching Words', $locale)
+			: translateText('Conflicting Words', $locale);
 
 	// Performance badge color
 	$: performanceBadgeColor = metrics?.performance_level === 'Excellent' ? 'from-green-500 to-emerald-600'
