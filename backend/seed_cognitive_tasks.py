@@ -517,6 +517,21 @@ def seed_cognitive_tasks():
             "instructions": "Find the target item. Feature search: target pops out. Conjunction search: requires careful scanning."
         },
         {
+            "task_code": "landmark_task",
+            "domain": "visual_scanning",
+            "task_name": "Landmark Task",
+            "description": "Judge whether a line is bisected evenly or whether the left or right segment is longer",
+            "clinical_validation": "Clinically validated visual attention and spatial-bias task sensitive to midpoint judgment and lateralized attention imbalance.",
+            "is_baseline_task": False,
+            "difficulty_min": 1,
+            "difficulty_max": 10,
+            "estimated_duration_seconds": 135,
+            "requires_audio": False,
+            "requires_keyboard": True,
+            "cognitive_load": "medium",
+            "instructions": "Decide whether the left side is longer, the line is evenly bisected, or the right side is longer."
+        },
+        {
             "task_code": "multiple_object_tracking",
             "domain": "visual_scanning",
             "task_name": "Multiple Object Tracking (MOT)",

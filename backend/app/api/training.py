@@ -5747,6 +5747,145 @@ def submit_twenty_questions_game(
 
 
 # ============================================================================
+# LANDMARK TASK ENDPOINTS
+# ============================================================================
+
+@router.post("/tasks/landmark-task/generate/{user_id}")
+def generate_landmark_task_session(
+    user_id: int,
+    difficulty: Optional[int] = None,
+    session: Session = Depends(get_session)
+):
+    """Generate a Landmark Task session."""
+    from app.services.landmark_task import LandmarkTask
+
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+
+    if difficulty is None:
+        current_difficulty = training_plan.current_difficulty
+        if isinstance(current_difficulty, str):
+            current_difficulty = json.loads(current_difficulty)
+        if current_difficulty is None:
+            current_difficulty = {}
+        difficulty = current_difficulty.get("visual_scanning", 5)
+
+    difficulty_level = difficulty if isinstance(difficulty, int) else 5
+    difficulty_level = max(1, min(10, difficulty_level))
+    session_data = LandmarkTask.generate_session(difficulty_level)
+
+    return {
+        "task_code": "landmark_task",
+        "domain": "visual_scanning",
+        "session_data": session_data,
+        "difficulty": difficulty_level,
+        "user_id": user_id
+    }
+
+
+@router.post("/tasks/landmark-task/submit/{user_id}")
+def submit_landmark_task_session(
+    user_id: int,
+    request_data: dict = Body(...),
+    session: Session = Depends(get_session)
+):
+    """Submit and score a Landmark Task session."""
+    from app.services.landmark_task import LandmarkTask
+
+    difficulty = request_data.get("difficulty")
+    session_data = request_data.get("session_data")
+    responses = request_data.get("responses", [])
+    task_id = request_data.get("task_id")
+
+    if difficulty is None or session_data is None:
+        raise HTTPException(status_code=400, detail="difficulty and session_data are required")
+    if not isinstance(responses, list):
+        raise HTTPException(status_code=400, detail="responses must be a list")
+
+    training_plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .order_by(desc(TrainingPlan.created_at))
+    ).first()
+
+    if not training_plan:
+        raise HTTPException(status_code=404, detail="No training plan found")
+
+    enforce_session_limits(training_plan, session, user_id)
+
+    if training_plan.id is None:
+        raise HTTPException(status_code=500, detail="Invalid training plan")
+
+    results = LandmarkTask.score_session(session_data, responses)
+    metrics = results["metrics"]
+    total_duration_ms = sum(float(response.get("reaction_time_ms", 0) or 0) for response in responses)
+    duration_seconds = max(1, int(total_duration_ms / 1000)) if responses else 1
+
+    training_session = TrainingSession(
+        user_id=user_id,
+        training_plan_id=training_plan.id,
+        domain="visual_scanning",
+        task_type="landmark_task",
+        task_code="landmark_task",
+        score=metrics["score"],
+        accuracy=metrics["accuracy"],
+        average_reaction_time=metrics["average_reaction_time"],
+        consistency=metrics["consistency"],
+        errors=metrics["total_trials"] - metrics["correct_count"],
+        duration=duration_seconds,
+        difficulty_level=results["difficulty_adjustment"],
+        difficulty_before=difficulty,
+        difficulty_after=results["difficulty_adjustment"],
+        raw_data=json.dumps({
+            "session_data": session_data,
+            "responses": responses,
+            "scored_trials": results["scored_trials"],
+            "offset_accuracy": metrics["offset_accuracy"],
+            "centered_accuracy": metrics["centered_accuracy"],
+            "spatial_bias_index": metrics["spatial_bias_index"],
+            "left_bias_errors": metrics["left_bias_errors"],
+            "right_bias_errors": metrics["right_bias_errors"],
+            "center_misses": metrics["center_misses"],
+        }),
+        adaptation_reason=results["adaptation_reason"]
+    )
+
+    session.add(training_session)
+
+    current_difficulty = training_plan.current_difficulty
+    if isinstance(current_difficulty, str):
+        current_difficulty = json.loads(current_difficulty)
+    if current_difficulty is None:
+        current_difficulty = {}
+
+    current_difficulty["visual_scanning"] = results["difficulty_adjustment"]
+    training_plan.current_difficulty = json.dumps(current_difficulty)
+
+    session_info = track_session_completion(training_plan, "visual_scanning", session, user_id, task_id)
+
+    session.commit()
+    session.refresh(training_session)
+
+    return {
+        "session_id": training_session.id,
+        "metrics": metrics,
+        "difficulty_before": difficulty,
+        "difficulty_after": results["difficulty_adjustment"],
+        "adaptation_reason": results["adaptation_reason"],
+        "new_badges": session_info["newly_earned_badges"],
+        "session_complete": session_info["session_complete"],
+        "completed_tasks": session_info["completed_tasks"],
+        "total_tasks": session_info["total_tasks"]
+    }
+
+
+# ============================================================================
 # CANCELLATION TEST ENDPOINTS
 # ============================================================================
 
