@@ -570,6 +570,30 @@ export const EXACT_TRANSLATIONS = {
 	'Span': 'স্প্যান'
 };
 
+Object.assign(EXACT_TRANSLATIONS, {
+	'Loading Category Fluency Task...': 'ক্যাটাগরি ফ্লুয়েন্সি টাস্ক লোড হচ্ছে...',
+	'You can submit as many words as you can think of': 'আপনি যত শব্দ মনে আসে ততগুলো জমা দিতে পারবেন',
+	'Duplicate words will be automatically filtered out': 'একই শব্দ একাধিকবার দিলে তা স্বয়ংক্রিয়ভাবে বাদ যাবে',
+	'You have 60 seconds to complete the task': 'টাস্কটি শেষ করতে আপনার ৬০ সেকেন্ড সময় আছে',
+	'No words submitted yet. Start typing!': 'এখনও কোনো শব্দ জমা হয়নি। লেখা শুরু করুন!',
+	'Loading Operation Span Task...': 'অপারেশন স্প্যান টাস্ক লোড হচ্ছে...',
+	'Great work on completing your Digit Span training': 'ডিজিট স্প্যান ট্রেনিং সম্পন্ন করার জন্য দারুণ কাজ করেছেন',
+	'Mark visual and audio matches before the next cue arrives.': 'পরের সংকেত আসার আগে দৃশ্যমান ও শ্রাব্য মিলগুলো চিহ্নিত করুন।',
+	'Keep your eyes on the grid center and let peripheral motion guide you.': 'চোখ গ্রিডের মাঝখানে রাখুন এবং চারপাশের নড়াচড়া থেকে ধারণা নিন।',
+	'Respond only when you are confident. False alarms make the task harder fast.': 'নিশ্চিত হলে তবেই সাড়া দিন। ভুল সাড়া দিলে টাস্ক দ্রুত কঠিন হয়ে যায়।',
+	'Use a steady internal rhythm rather than trying to rush each cue.': 'প্রতিটি সংকেতে তাড়াহুড়া না করে নিজের মধ্যে একটি স্থির ছন্দ ধরে রাখুন।',
+	'no responses needed until enough items have appeared.': 'যথেষ্ট আইটেম দেখা না দেওয়া পর্যন্ত কোনো সাড়া দেওয়ার প্রয়োজন নেই।',
+	'press both controls if both the position and letter repeat.': 'অবস্থান ও অক্ষর দুটিই মিললে দুইটি কন্ট্রোলই চাপুন।',
+	'if speech synthesis is blocked by the browser, the task still runs but the audio load is reduced.': 'ব্রাউজার যদি স্পিচ সিন্থেসিস আটকে দেয়, তবুও টাস্ক চলবে, তবে অডিও অংশ সীমিত থাকবে।',
+	'Perfect! You successfully withheld your response.': 'দারুণ! আপনি ঠিকভাবে সাড়া থামিয়ে রাখতে পেরেছেন।',
+	'You should have pressed SPACEBAR.': 'এখানে আপনার স্পেসবার চাপা উচিত ছিল।',
+	"You pressed when you shouldn't have!": 'এখানে আপনার চাপা উচিত ছিল না!',
+	'Add each NEW digit to the PREVIOUS digit. Ignore the running total!': 'প্রতিটি নতুন অঙ্ককে আগের অঙ্কের সঙ্গে যোগ করুন। চলমান মোটকে উপেক্ষা করুন!',
+	'Add this digit to the one you just saw (not the answer you gave!)': 'এই অঙ্কটিকে ঠিক আগের দেখা অঙ্কের সঙ্গে যোগ করুন, আপনার দেওয়া উত্তরের সঙ্গে নয়!',
+	'Add each new digit to the previous digit, not to your running total!': 'প্রতিটি নতুন অঙ্ককে আগের অঙ্কের সঙ্গে যোগ করুন, চলমান মোটের সঙ্গে নয়!',
+	"Sort each card by clicking one of the four target cards at the top. You'll get feedback on whether your sort was \"Correct\" or \"Wrong\".": 'উপরে থাকা চারটি টার্গেট কার্ডের একটিতে ক্লিক করে প্রতিটি কার্ড সাজান। আপনার সাজানোটি "সঠিক" না "ভুল" তা সঙ্গে সঙ্গে জানানো হবে।'
+});
+
 export const PHRASE_TRANSLATIONS = {
 	'Interface language': 'ইন্টারফেস ভাষা',
 	'How It Works': 'কীভাবে কাজ করে',

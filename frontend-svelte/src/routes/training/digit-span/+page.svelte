@@ -322,7 +322,7 @@
 </script>
 
 
-<div class="digit-span-container">
+<div class="digit-span-container" data-localize-skip>
 	{#if currentState === STATE_LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if currentState === STATE_INSTRUCTIONS}

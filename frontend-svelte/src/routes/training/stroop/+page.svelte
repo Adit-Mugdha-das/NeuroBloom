@@ -312,7 +312,7 @@
 		: 'from-gray-500 to-gray-600';
 </script>
 
-<div class="stroop-container">
+<div class="stroop-container" data-localize-skip>
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>

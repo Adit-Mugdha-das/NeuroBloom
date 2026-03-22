@@ -84,6 +84,12 @@
 		return $locale === 'bn' ? `${n(value)} সেকেন্ড পরপর` : `${value}s intervals`;
 	}
 
+	function actualTestButtonLabel(total) {
+		return $locale === 'bn'
+			? `আসল পরীক্ষা শুরু করুন (${digitsLabel(total)})`
+			: `Start Actual Test (${total} digits)`;
+	}
+
 	function millisecondsLabel(value) {
 		return $locale === 'bn' ? `${n(value)} মি.সে.` : `${value}ms`;
 	}
@@ -591,7 +597,7 @@
 					</p>
 					<p><strong>{t('Remember:')}</strong> {t('Add each new digit to the previous digit, not to your running total!')}</p>
 					<button class="primary-btn" on:click={startTest}>
-						{t(`Start Actual Test (${sessionData.total_trials} digits)`)}
+						{actualTestButtonLabel(sessionData.total_trials)}
 					</button>
 				</div>
 			{/if}

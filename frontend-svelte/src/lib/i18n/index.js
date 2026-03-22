@@ -157,6 +157,15 @@ export function setLocale(nextLocale, options = {}) {
 	return normalizedLocale;
 }
 
+export function localeText(variants, targetLocale = getLocale()) {
+	if (typeof variants === 'string') {
+		return variants;
+	}
+
+	const normalizedLocale = normalizeLocale(targetLocale);
+	return variants?.[normalizedLocale] ?? variants?.en ?? variants?.bn ?? '';
+}
+
 function preserveWhitespace(originalText, translatedText) {
 	const leadingWhitespace = originalText.match(/^\s*/u)?.[0] ?? '';
 	const trailingWhitespace = originalText.match(/\s*$/u)?.[0] ?? '';
@@ -270,6 +279,11 @@ function countLatinWords(text) {
 	return [...text.matchAll(/\b[A-Za-z][A-Za-z'-]*\b/gu)].length;
 }
 
+function shouldUsePhraseFallback(text) {
+	const latinWordCount = countLatinWords(text);
+	return latinWordCount > 0 && latinWordCount <= 8 && text.length <= 80;
+}
+
 function shouldUseWordFallback(text) {
 	const latinWordCount = countLatinWords(text);
 	return latinWordCount > 0 && latinWordCount <= 4 && text.length <= 48;
@@ -337,7 +351,9 @@ function translateBangla(input) {
 		return preserveWhitespace(input, protectedInput.restore(toBanglaDigits(translatedPattern)));
 	}
 
-	const phraseTranslated = applyPhraseTranslation(normalizedText);
+	const phraseTranslated = shouldUsePhraseFallback(normalizedText)
+		? applyPhraseTranslation(normalizedText)
+		: normalizedText;
 	const wordTranslated = shouldUseWordFallback(normalizedText)
 		? applyWordTranslation(phraseTranslated)
 		: phraseTranslated;

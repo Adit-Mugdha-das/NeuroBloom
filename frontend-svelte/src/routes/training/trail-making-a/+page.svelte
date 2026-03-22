@@ -404,7 +404,7 @@
 	}
 </script>
 
-<div class="tmt-container">
+<div class="tmt-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>

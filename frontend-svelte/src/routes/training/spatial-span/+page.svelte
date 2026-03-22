@@ -261,7 +261,7 @@
 	}
 </script>
 
-<div class="spatial-span-container">
+<div class="spatial-span-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>

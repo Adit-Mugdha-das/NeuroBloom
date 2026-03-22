@@ -363,7 +363,7 @@
 			: 0;
 </script>
 
-<div class="dual-n-back-page">
+<div class="dual-n-back-page" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}

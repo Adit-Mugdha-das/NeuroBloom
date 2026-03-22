@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { formatNumber, locale, translateText } from '$lib/i18n';
+	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -70,8 +70,9 @@
 		} catch (error) {
 			console.error('Error loading session:', error);
 			alert(
-				t(
-					'Failed to load training session. Please ensure backend server is running and you have completed baseline assessment.'
+				lt(
+					'Failed to load training session. Please ensure the backend server is running and you have completed the baseline assessment.',
+					'ট্রেনিং সেশন লোড করা যায়নি। ব্যাকএন্ড সার্ভার চালু আছে কি না এবং বেসলাইন মূল্যায়ন সম্পন্ন হয়েছে কি না নিশ্চিত করুন।'
 				)
 			);
 			loading = false;
@@ -86,48 +87,188 @@
 		return translateText(text, $locale);
 	}
 
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function msText(value) {
+		return $locale === 'bn' ? `${n(value)} মিলিসেকেন্ড` : `${n(value)} ms`;
+	}
+
 	function formatMilliseconds(value) {
 		if ($locale === 'bn') {
-			return `${formatNumber(value, $locale)} মিলিসেকেন্ড`;
+			return `${n(value)} মিলিসেকেন্ড`;
 		}
 
-		return `${formatNumber(value, $locale)}ms`;
+		return `${n(value)}ms`;
+	}
+
+	function performanceLevelLabel(level) {
+		switch (level) {
+			case 'Excellent':
+				return lt('Excellent', 'চমৎকার');
+			case 'Good':
+				return lt('Good', 'ভালো');
+			case 'Fair':
+				return lt('Fair', 'মোটামুটি');
+			case 'Needs Improvement':
+				return lt('Needs Improvement', 'উন্নতির সুযোগ আছে');
+			default:
+				return t(level || 'Performance');
+		}
+	}
+
+	function practiceTrialLabel(current, total) {
+		return lt(`Practice Trial ${n(current)} of ${n(total)}`, `অনুশীলনী ট্রায়াল ${n(current)} / ${n(total)}`);
+	}
+
+	function trialLabel(current, total) {
+		return lt(`Trial ${n(current)} of ${n(total)}`, `ট্রায়াল ${n(current)} / ${n(total)}`);
+	}
+
+	function remainingTrialsLabel(count) {
+		return lt(`${n(count)} remaining`, `${n(count)}টি বাকি`);
+	}
+
+	function localizedPracticeHint(trial) {
+		if (!trial?.hint) return '';
+		return lt(trial.hint.en, trial.hint.bn);
+	}
+
+	function practiceSuccessMessage(rt, trial) {
+		if (trial.trial_type === 'go') {
+			return lt(
+				`Correct! Response time: ${msText(rt)}. ${localizedPracticeHint(trial)}`,
+				`সঠিক! প্রতিক্রিয়ার সময়: ${msText(rt)}। ${localizedPracticeHint(trial)}`
+			);
+		}
+
+		return lt(
+			`Perfect! You successfully withheld your response. ${localizedPracticeHint(trial)}`,
+			`দারুণ! আপনি ঠিকভাবে সাড়া থামিয়ে রাখতে পেরেছেন। ${localizedPracticeHint(trial)}`
+		);
+	}
+
+	function practiceErrorMessage(trial) {
+		if (trial.trial_type === 'go') {
+			return lt(
+				`You should have pressed SPACEBAR. ${localizedPracticeHint(trial)}`,
+				`এখানে আপনার স্পেসবার চাপা উচিত ছিল। ${localizedPracticeHint(trial)}`
+			);
+		}
+
+		return lt(
+			`You pressed when you should not have. ${localizedPracticeHint(trial)}`,
+			`এখানে আপনার চাপা উচিত ছিল না। ${localizedPracticeHint(trial)}`
+		);
+	}
+
+	function buildPracticeTrials() {
+		return [
+			{
+				trial_type: 'go',
+				stimulus: sessionData.go_stimulus,
+				hint: {
+					en: 'Press SPACEBAR when you see this.',
+					bn: 'এটি দেখলে স্পেসবার চাপুন।'
+				}
+			},
+			{
+				trial_type: 'go',
+				stimulus: sessionData.go_stimulus,
+				hint: {
+					en: 'Quick, press SPACEBAR again.',
+					bn: 'দ্রুত আবার স্পেসবার চাপুন।'
+				}
+			},
+			{
+				trial_type: 'nogo',
+				stimulus: sessionData.nogo_stimulus,
+				hint: {
+					en: 'Do not press. Just wait.',
+					bn: 'চাপবেন না, শুধু অপেক্ষা করুন।'
+				}
+			},
+			{
+				trial_type: 'go',
+				stimulus: sessionData.go_stimulus,
+				hint: {
+					en: 'Be ready and press SPACEBAR.',
+					bn: 'প্রস্তুত থাকুন এবং স্পেসবার চাপুন।'
+				}
+			},
+			{
+				trial_type: 'nogo',
+				stimulus: sessionData.nogo_stimulus,
+				hint: {
+					en: 'Remember, do not press for this one.',
+					bn: 'মনে রাখুন, এটি দেখলে চাপবেন না।'
+				}
+			},
+			{
+				trial_type: 'go',
+				stimulus: sessionData.go_stimulus,
+				hint: {
+					en: 'Final practice, press SPACEBAR.',
+					bn: 'শেষ অনুশীলন, স্পেসবার চাপুন।'
+				}
+			}
+		];
+	}
+
+	function resultsSummaryText() {
+		const nogoAccuracy = Number(metrics?.nogo_accuracy || 0);
+		const goSpeed = Number(metrics?.go_mean_rt || 0);
+		const dPrime = Number(metrics?.d_prime || 0);
+
+		if (nogoAccuracy >= 90 && dPrime >= 2 && goSpeed < 450) {
+			return lt(
+				'Excellent inhibitory control and selective attention throughout the task.',
+				'পুরো টাস্ক জুড়ে আপনার প্রতিক্রিয়া নিয়ন্ত্রণ ও নির্বাচিত মনোযোগ চমৎকার ছিল।'
+			);
+		}
+
+		if (nogoAccuracy >= 75 && dPrime >= 1) {
+			return lt(
+				'You maintained solid control with generally reliable attention and inhibition.',
+				'আপনি ভালো নিয়ন্ত্রণ ধরে রাখতে পেরেছেন এবং মনোযোগ ও প্রতিক্রিয়া থামিয়ে রাখার দক্ষতা মোটের উপর নির্ভরযোগ্য ছিল।'
+			);
+		}
+
+		if (nogoAccuracy >= 60) {
+			return lt(
+				'Your performance was workable, but impulse control and consistency can still improve with practice.',
+				'আপনার পারফরম্যান্স গ্রহণযোগ্য ছিল, তবে অনুশীলনের মাধ্যমে আবেগ সংযম ও ধারাবাহিকতা আরও উন্নত হতে পারে।'
+			);
+		}
+
+		return lt(
+			'This session was challenging, which suggests inhibitory control needs more structured practice.',
+			'এই সেশনটি আপনার জন্য কঠিন ছিল, যা ইঙ্গিত করে প্রতিক্রিয়া নিয়ন্ত্রণ আরও অনুশীলন চায়।'
+		);
+	}
+
+	function difficultyChangeText(before, after) {
+		return lt(
+			`Difficulty adjusted: Level ${n(before)} -> Level ${n(after)}`,
+			`কঠিনতা সমন্বয় করা হয়েছে: লেভেল ${n(before)} -> লেভেল ${n(after)}`
+		);
 	}
 
 	function startPractice() {
-		// Create practice trials (4 Go, 2 No-Go)
-		practiceTrials = [
-			{
-				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
-				hint: t('Press SPACEBAR when you see this!')
-			},
-			{
-				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
-				hint: t('Quick! Press SPACEBAR again')
-			},
-			{
-				trial_type: 'nogo',
-				stimulus: sessionData.nogo_stimulus,
-				hint: t('DON\'T PRESS! Just wait.')
-			},
-			{
-				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
-				hint: t('Press SPACEBAR - be ready!')
-			},
-			{
-				trial_type: 'nogo',
-				stimulus: sessionData.nogo_stimulus,
-				hint: t('Remember: Don\'t press for this one!')
-			},
-			{
-				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
-				hint: t('Last practice - press SPACEBAR!')
-			}
-		];
+		practiceTrials = buildPracticeTrials();
 
 		currentPractice = 0;
 		practiceFeedback = null;
@@ -160,7 +301,7 @@
 		}, 2000); // 2 seconds for practice
 	}
 
-	function handlePracticeResponse(didRespond) {
+	function legacyHandlePracticeResponse(didRespond) {
 		clearTimeout(stimulusTimeout);
 		
 		const trial = practiceTrials[currentPractice];
@@ -197,6 +338,42 @@
 		showStimulus = false;
 
 		// Auto-advance after showing feedback
+		setTimeout(() => {
+			practiceFeedback = null;
+			currentPractice++;
+			showNextPracticeTrial();
+		}, 2000);
+	}
+
+	function handlePracticeResponse(didRespond) {
+		clearTimeout(stimulusTimeout);
+
+		const trial = practiceTrials[currentPractice];
+		const correct = (trial.trial_type === 'go' && didRespond) ||
+			(trial.trial_type === 'nogo' && !didRespond);
+
+		if (correct) {
+			if (trial.trial_type === 'go') {
+				const rt = Date.now() - startTime;
+				practiceFeedback = {
+					type: 'success',
+					message: `✓ ${practiceSuccessMessage(rt, trial)}`
+				};
+			} else {
+				practiceFeedback = {
+					type: 'success',
+					message: `✓ ${practiceSuccessMessage(0, trial)}`
+				};
+			}
+		} else {
+			practiceFeedback = {
+				type: 'error',
+				message: `✗ ${practiceErrorMessage(trial)}`
+			};
+		}
+
+		showStimulus = false;
+
 		setTimeout(() => {
 			practiceFeedback = null;
 			currentPractice++;
@@ -309,7 +486,7 @@
 			showResults = true;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert(t('Failed to submit results. Please try again.'));
+			alert(lt('Failed to submit results. Please try again.', 'ফলাফল জমা দেওয়া যায়নি। আবার চেষ্টা করুন।'));
 		}
 	}
 
@@ -330,109 +507,113 @@
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<div class="gonogo-container">
+<div class="gonogo-container" data-localize-skip>
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading task...</p>
+			<p>{lt('Loading task...', 'টাস্ক লোড হচ্ছে...')}</p>
 		</div>
 	{:else if phase === 'intro'}
 		<!-- Introduction Screen -->
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>⚡ Go/No-Go Task</h1>
+				<h1>{lt('Go/No-Go Task', 'গো/নো-গো টাস্ক')}</h1>
 				<DifficultyBadge {difficulty} domain="Attention" />
 			</div>
-			<div class="classic-badge">Response Inhibition & Impulse Control Test</div>
+			<div class="classic-badge">{lt('Response Inhibition & Impulse Control Assessment', 'প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযম মূল্যায়ন')}</div>
 			
 			<div class="instruction-card">
 				<div class="task-header">
-					<h2>💡 Your Mission: Respond Fast, But Not Always!</h2>
+					<h2>{lt('Your Mission: Respond Fast, But Not Always!', 'আপনার লক্ষ্য: দ্রুত সাড়া দিন, তবে সবসময় নয়')}</h2>
 				</div>
 				
 				<p class="importance">
-					This task measures your ability to <strong>control impulses</strong> - a critical executive function. 
-					You'll need to respond quickly to targets while <strong>withholding responses</strong> to non-targets.
+					{@html lt(
+						'This task measures your ability to <strong>control impulses</strong>, a critical executive function. You need to respond quickly to targets while <strong>withholding responses</strong> to non-targets.',
+						'এই টাস্কটি আপনার <strong>আবেগ সংযম</strong> ও প্রতিক্রিয়া নিয়ন্ত্রণের ক্ষমতা মাপে, যা নির্বাহী কার্যকারিতার একটি গুরুত্বপূর্ণ অংশ। এখানে লক্ষ্যবস্তু দেখলে দ্রুত সাড়া দিতে হবে, আর অ-লক্ষ্যবস্তু দেখলে <strong>প্রতিক্রিয়া থামিয়ে রাখতে</strong> হবে।'
+					)}
 				</p>
 				
 				<!-- Visual Examples -->
 				<div class="stimulus-examples">
 					<div class="example-card go-card">
-						<div class="example-label">GO Trial (75%)</div>
+						<div class="example-label">{lt('GO Trial (75%)', 'গো ট্রায়াল (৭৫%)')}</div>
 						<div class="stimulus-display go-stimulus">{sessionData.go_stimulus}</div>
-						<div class="example-action">✓ PRESS SPACEBAR</div>
-						<div class="example-note">Respond as quickly as possible!</div>
+						<div class="example-action">{lt('PRESS SPACEBAR', 'স্পেসবার চাপুন')}</div>
+						<div class="example-note">{lt('Respond as quickly as possible.', 'যত দ্রুত সম্ভব সাড়া দিন।')}</div>
 					</div>
 					
 					<div class="example-card nogo-card">
-						<div class="example-label">NO-GO Trial (25%)</div>
+						<div class="example-label">{lt('NO-GO Trial (25%)', 'নো-গো ট্রায়াল (২৫%)')}</div>
 						<div class="stimulus-display nogo-stimulus">{sessionData.nogo_stimulus}</div>
-						<div class="example-action">✋ DON'T PRESS</div>
-						<div class="example-note">Resist the urge to respond!</div>
+						<div class="example-action">{lt("DON'T PRESS", 'চাপবেন না')}</div>
+						<div class="example-note">{lt('Resist the urge to respond.', 'সাড়া দেওয়ার তাড়না থামিয়ে রাখুন।')}</div>
 					</div>
 				</div>
 				
 				<div class="rule-box">
-					<strong>⚡ The Challenge:</strong>
-					Most trials require a response, creating a habit. You must <strong>inhibit</strong> this automatic 
-					response when you see the NO-GO stimulus. This tests impulse control!
+					<strong>{lt('The Challenge:', 'মূল চ্যালেঞ্জ:')}</strong>
+					{lt(
+						'Most trials require a response, so a response habit quickly builds up. When the NO-GO stimulus appears, you must inhibit that automatic response. This directly tests impulse control.',
+						'বেশিরভাগ ট্রায়ালে সাড়া দিতে হয়, তাই খুব দ্রুত একটি অভ্যাস তৈরি হয়। কিন্তু নো-গো উদ্দীপক দেখলে সেই স্বয়ংক্রিয় প্রতিক্রিয়াটিই থামিয়ে রাখতে হবে। এখানেই আপনার আবেগ সংযম ও প্রতিক্রিয়া নিয়ন্ত্রণ যাচাই হয়।'
+					)}
 				</div>
 				
 				<!-- Two Column Layout -->
 				<div class="info-grid">
 					<div class="info-section">
-						<h3>📋 What You'll Do</h3>
+						<h3>{lt("What You'll Do", 'আপনি কী করবেন')}</h3>
 						<div class="steps-list">
 							<div class="step-item">
 								<span class="step-num">1</span>
 								<div class="step-text">
-									<strong>Watch the screen</strong>
-									<span>Stimuli appear briefly</span>
+									<strong>{lt('Watch the screen', 'স্ক্রিনে নজর রাখুন')}</strong>
+									<span>{lt('Stimuli appear briefly.', 'উদ্দীপক খুব অল্প সময়ের জন্য দেখা যাবে।')}</span>
 								</div>
 							</div>
 							<div class="step-item">
 								<span class="step-num">2</span>
 								<div class="step-text">
-									<strong>Identify quickly</strong>
-									<span>Is it GO or NO-GO?</span>
+									<strong>{lt('Identify quickly', 'দ্রুত চিহ্নিত করুন')}</strong>
+									<span>{lt('Decide whether it is GO or NO-GO.', 'এটি গো নাকি নো-গো তা ঠিক করুন।')}</span>
 								</div>
 							</div>
 							<div class="step-item">
 								<span class="step-num">3</span>
 								<div class="step-text">
-									<strong>Respond or withhold</strong>
-									<span>Press or don't press</span>
+									<strong>{lt('Respond or withhold', 'সাড়া দিন বা থামিয়ে রাখুন')}</strong>
+									<span>{lt("Press or don't press.", 'চাপুন বা চাপা থেকে বিরত থাকুন।')}</span>
 								</div>
 							</div>
 						</div>
 					</div>
 					
 					<div class="info-section">
-						<h3>💪 What It Measures</h3>
+						<h3>{lt('What It Measures', 'এটি কী মাপে')}</h3>
 						<div class="measures-list">
-							<div class="measure-item">✓ <strong>Response Speed:</strong> Go trial reaction time</div>
-							<div class="measure-item">✓ <strong>Impulse Control:</strong> No-Go accuracy</div>
-							<div class="measure-item">✓ <strong>Sustained Attention:</strong> Consistency</div>
-							<div class="measure-item">✓ <strong>Executive Function:</strong> Inhibition ability</div>
+							<div class="measure-item">{lt('Response Speed:', 'প্রতিক্রিয়ার গতি:')} {lt('Go trial reaction time', 'গো ট্রায়ালে প্রতিক্রিয়ার সময়')}</div>
+							<div class="measure-item">{lt('Impulse Control:', 'আবেগ সংযম:')} {lt('No-Go accuracy', 'নো-গো নির্ভুলতা')}</div>
+							<div class="measure-item">{lt('Sustained Attention:', 'টেকসই মনোযোগ:')} {lt('Consistency', 'ধারাবাহিকতা')}</div>
+							<div class="measure-item">{lt('Executive Function:', 'নির্বাহী কার্যকারিতা:')} {lt('Inhibition ability', 'প্রতিক্রিয়া থামিয়ে রাখার দক্ষতা')}</div>
 						</div>
 					</div>
 				</div>
 				
 				<!-- Clinical Context -->
 				<div class="clinical-info">
-					<h3>📚 Clinical Significance</h3>
+					<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>🎯 Standard Test:</strong> Used in ADHD, frontal lobe, and MS assessment
+							<strong>{lt('Standard Test:', 'স্ট্যান্ডার্ড মূল্যায়ন:')}</strong> {lt('Used in ADHD, frontal lobe, and MS assessment', 'ADHD, ফ্রন্টাল লোব এবং MS মূল্যায়নে ব্যবহৃত হয়')}
 						</div>
 						<div class="clinical-item">
-							<strong>🧠 Brain Regions:</strong> Tests prefrontal cortex function
+							<strong>{lt('Brain Regions:', 'মস্তিষ্কের অংশ:')}</strong> {lt('Tests prefrontal cortex function', 'প্রিফ্রন্টাল কর্টেক্সের কার্যকারিতা মাপে')}
 						</div>
 						<div class="clinical-item">
-							<strong>🏥 MS Relevance:</strong> Sensitive to attention deficits and executive dysfunction
+							<strong>{lt('MS Relevance:', 'MS-এ প্রাসঙ্গিকতা:')}</strong> {lt('Sensitive to attention deficits and executive dysfunction', 'মনোযোগ ঘাটতি ও নির্বাহী কার্যকারিতার সমস্যার প্রতি সংবেদনশীল')}
 						</div>
 						<div class="clinical-item">
-							<strong>📈 Training Benefits:</strong> Improves real-world impulse control
+							<strong>{lt('Training Benefits:', 'অনুশীলনের উপকার:')}</strong> {lt('Improves real-world impulse control', 'বাস্তব জীবনের আবেগ সংযম উন্নত করতে সহায়তা করে')}
 						</div>
 					</div>
 				</div>
@@ -440,10 +621,10 @@
 			
 			<div class="button-group">
 				<button class="start-button" on:click={startInstructions}>
-					Begin Task
+					{lt('Start Task', 'টাস্ক শুরু করুন')}
 				</button>
 				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					Back to Dashboard
+					{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
 				</button>
 			</div>
 		</div>
@@ -451,20 +632,20 @@
 	{:else if phase === 'instructions'}
 		<!-- Quick Instructions -->
 		<div class="quick-instructions">
-			<h2>Quick Instructions</h2>
+			<h2>{lt('Quick Instructions', 'দ্রুত নির্দেশনা')}</h2>
 
 			<div class="key-reminder">
-				<div class="key-icon">SPACEBAR</div>
-				<p>Press <strong>SPACEBAR</strong> when you see: <span class="inline-stimulus">{sessionData.go_stimulus}</span></p>
-				<p><strong>DON'T PRESS</strong> when you see: <span class="inline-stimulus nogo">{sessionData.nogo_stimulus}</span></p>
+				<div class="key-icon">{lt('SPACEBAR', 'স্পেসবার')}</div>
+				<p>{@html lt(`Press <strong>SPACEBAR</strong> when you see: <span class="inline-stimulus">${sessionData.go_stimulus}</span>`, `এটি দেখলে <strong>স্পেসবার</strong> চাপুন: <span class="inline-stimulus">${sessionData.go_stimulus}</span>`)}</p>
+				<p>{@html lt(`<strong>DON'T PRESS</strong> when you see: <span class="inline-stimulus nogo">${sessionData.nogo_stimulus}</span>`, `এটি দেখলে <strong>চাপবেন না</strong>: <span class="inline-stimulus nogo">${sessionData.nogo_stimulus}</span>`)}</p>
 			</div>
 
 			<div class="instructions-flow">
 				<div class="flow-step">
 					<div class="flow-number">1</div>
 					<div class="flow-content">
-						<p class="flow-title">Stimulus Appears</p>
-						<p class="flow-desc">A symbol flashes on screen briefly</p>
+						<p class="flow-title">{lt('Stimulus Appears', 'উদ্দীপক দেখা যায়')}</p>
+						<p class="flow-desc">{lt('A symbol flashes on screen briefly.', 'একটি চিহ্ন অল্প সময়ের জন্য স্ক্রিনে দেখা যায়।')}</p>
 					</div>
 				</div>
 
@@ -473,8 +654,8 @@
 				<div class="flow-step">
 					<div class="flow-number">2</div>
 					<div class="flow-content">
-						<p class="flow-title">Identify It</p>
-						<p class="flow-desc">Is it GO or NO-GO?</p>
+						<p class="flow-title">{lt('Identify It', 'চিনে নিন')}</p>
+						<p class="flow-desc">{lt('Is it GO or NO-GO?', 'এটি গো নাকি নো-গো?')}</p>
 					</div>
 				</div>
 
@@ -483,26 +664,26 @@
 				<div class="flow-step">
 					<div class="flow-number">3</div>
 					<div class="flow-content">
-						<p class="flow-title">Respond or Wait</p>
-						<p class="flow-desc">Press SPACEBAR or withhold</p>
+						<p class="flow-title">{lt('Respond or Wait', 'সাড়া দিন বা অপেক্ষা করুন')}</p>
+						<p class="flow-desc">{lt('Press SPACEBAR or withhold.', 'স্পেসবার চাপুন অথবা সাড়া থামিয়ে রাখুন।')}</p>
 					</div>
 				</div>
 			</div>
 
 			<div class="tips-box">
-				<h3>💡 Success Tips</h3>
+				<h3>{lt('Success Tips', 'সফল হওয়ার টিপস')}</h3>
 				<ul>
-					<li><strong>Stay focused</strong> - Stimuli appear quickly</li>
-					<li><strong>Be ready</strong> - Most trials are GO trials</li>
-					<li><strong>Control impulses</strong> - Resist pressing on NO-GO trials</li>
-					<li><strong>Speed matters</strong> - Respond quickly to GO trials</li>
+					<li>{@html lt('<strong>Stay focused</strong> - Stimuli appear quickly', '<strong>মনোযোগ ধরে রাখুন</strong> - উদ্দীপক দ্রুত দেখা যায়')}</li>
+					<li>{@html lt('<strong>Be ready</strong> - Most trials are GO trials', '<strong>প্রস্তুত থাকুন</strong> - বেশিরভাগ ট্রায়ালই গো ট্রায়াল')}</li>
+					<li>{@html lt('<strong>Control impulses</strong> - Resist pressing on NO-GO trials', '<strong>আবেগ সংযম রাখুন</strong> - নো-গো ট্রায়ালে চাপা থেকে বিরত থাকুন')}</li>
+					<li>{@html lt('<strong>Speed matters</strong> - Respond quickly to GO trials', '<strong>গতি গুরুত্বপূর্ণ</strong> - গো ট্রায়ালে দ্রুত সাড়া দিন')}</li>
 				</ul>
 			</div>
 
 			<div class="practice-prompt">
-				<p>Let's practice with 6 trials to get comfortable...</p>
+				<p>{lt("Let's practice with 6 trials to get comfortable...", 'স্বচ্ছন্দ হতে আগে ৬টি অনুশীলনী ট্রায়াল করা যাক...')}</p>
 				<button class="start-button" on:click={startPractice}>
-					Start Practice
+					{lt('Start Practice', 'অনুশীলন শুরু করুন')}
 				</button>
 			</div>
 		</div>
@@ -511,8 +692,8 @@
 		<!-- Practice Trials -->
 		<div class="trial-screen">
 			<div class="trial-header">
-				<h2>Practice Trial {currentPractice + 1} of {practiceTrials.length}</h2>
-				<p class="instruction-reminder">Press SPACEBAR for GO ({sessionData.go_stimulus}), withhold for NO-GO ({sessionData.nogo_stimulus})</p>
+				<h2>{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>
+				<p class="instruction-reminder">{lt(`Press SPACEBAR for GO (${sessionData.go_stimulus}), withhold for NO-GO (${sessionData.nogo_stimulus})`, `গো (${sessionData.go_stimulus}) দেখলে স্পেসবার চাপুন, নো-গো (${sessionData.nogo_stimulus}) দেখলে সাড়া থামিয়ে রাখুন`)}</p>
 			</div>
 
 			<!-- Stimulus Display -->
@@ -540,9 +721,9 @@
 			<!-- Progress Header -->
 			<div class="progress-header">
 				<div class="progress-top">
-					<h2>Trial {currentTrial + 1} of {sessionData.trials.length}</h2>
+					<h2>{trialLabel(currentTrial + 1, sessionData.trials.length)}</h2>
 					<div class="progress-badges">
-						<span class="badge-remaining">{trialsRemaining} remaining</span>
+						<span class="badge-remaining">{remainingTrialsLabel(trialsRemaining)}</span>
 					</div>
 				</div>
 				<div class="progress-bar-container">
@@ -562,7 +743,7 @@
 			</div>
 
 			<div class="reminder-text">
-				Press SPACEBAR for {sessionData.go_stimulus} | Don't press for {sessionData.nogo_stimulus}
+				{lt(`Press SPACEBAR for ${sessionData.go_stimulus} | Don't press for ${sessionData.nogo_stimulus}`, `${sessionData.go_stimulus} দেখলে স্পেসবার চাপুন | ${sessionData.nogo_stimulus} দেখলে চাপবেন না`)}
 			</div>
 		</div>
 
@@ -570,9 +751,9 @@
 		<!-- Results Screen -->
 		<div class="results-container">
 			<div class="results-header">
-				<h2>Go/No-Go Task Complete!</h2>
+				<h2>{lt('Go/No-Go Task Complete!', 'গো/নো-গো টাস্ক সম্পন্ন হয়েছে')}</h2>
 				<div class="performance-badge {performanceBadgeColor}">
-					{metrics.performance_level}
+					{performanceLevelLabel(metrics.performance_level)}
 				</div>
 			</div>
 
@@ -580,104 +761,104 @@
 			<div class="metrics-grid">
 				<!-- Overall Accuracy -->
 				<div class="metric-card accuracy-card">
-					<div class="metric-label">Overall Accuracy</div>
-					<div class="metric-value">{metrics.overall_accuracy.toFixed(1)}%</div>
-					<div class="metric-detail">{metrics.total_correct}/{metrics.total_trials} correct</div>
+					<div class="metric-label">{lt('Overall Accuracy', 'সামগ্রিক নির্ভুলতা')}</div>
+					<div class="metric-value">{pct(metrics.overall_accuracy || 0)}</div>
+					<div class="metric-detail">{n(metrics.total_correct || 0)}/{n(metrics.total_trials || 0)} {lt('correct', 'সঠিক')}</div>
 				</div>
 
 				<!-- Go Trial Speed -->
 				<div class="metric-card speed-card">
-					<div class="metric-label">Go Trial Speed</div>
-					<div class="metric-value">{metrics.go_mean_rt.toFixed(0)} ms</div>
-					<div class="metric-detail">Processing speed</div>
+					<div class="metric-label">{lt('Go Trial Speed', 'গো ট্রায়ালের গতি')}</div>
+					<div class="metric-value">{msText(metrics.go_mean_rt || 0)}</div>
+					<div class="metric-detail">{lt('Processing speed', 'প্রসেসিং গতি')}</div>
 				</div>
 
 				<!-- No-Go Accuracy -->
 				<div class="metric-card inhibition-card">
-					<div class="metric-label">Inhibition Control</div>
-					<div class="metric-value">{metrics.nogo_accuracy.toFixed(1)}%</div>
-					<div class="metric-detail">No-Go accuracy</div>
+					<div class="metric-label">{lt('Inhibition Control', 'প্রতিক্রিয়া নিয়ন্ত্রণ')}</div>
+					<div class="metric-value">{pct(metrics.nogo_accuracy || 0)}</div>
+					<div class="metric-detail">{lt('No-Go accuracy', 'নো-গো নির্ভুলতা')}</div>
 				</div>
 
 				<!-- d-prime -->
 				<div class="metric-card dprime-card">
-					<div class="metric-label">d-prime (Sensitivity)</div>
-					<div class="metric-value">{metrics.d_prime.toFixed(2)}</div>
-					<div class="metric-detail">Signal detection</div>
+					<div class="metric-label">{lt('d-prime (Sensitivity)', 'ডি-প্রাইম (সংবেদনশীলতা)')}</div>
+					<div class="metric-value">{n((metrics.d_prime || 0).toFixed(2), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+					<div class="metric-detail">{lt('Signal detection', 'সংকেত শনাক্তকরণ')}</div>
 				</div>
 			</div>
 
 			<!-- Trial Type Breakdown -->
 			<div class="breakdown-section">
-				<h3>Performance by Trial Type</h3>
+				<h3>{lt('Performance by Trial Type', 'ট্রায়ালভেদে পারফরম্যান্স')}</h3>
 				<div class="breakdown-grid">
 					<!-- Go Trials -->
 					<div class="breakdown-card go-card">
-						<p class="breakdown-title">GO Trials ({sessionData.go_trials} trials)</p>
-						<p class="breakdown-stat">Hits: <span>{metrics.go_hits}</span></p>
-						<p class="breakdown-stat">Misses: <span>{metrics.go_misses}</span></p>
-						<p class="breakdown-stat">Accuracy: <span>{metrics.go_accuracy.toFixed(1)}%</span></p>
-						<p class="breakdown-stat">Mean RT: <span>{metrics.go_mean_rt.toFixed(0)} ms</span></p>
-						<p class="breakdown-note">Tests processing speed & attention</p>
+						<p class="breakdown-title">{lt(`GO Trials (${n(sessionData.go_trials)} trials)`, `গো ট্রায়াল (${n(sessionData.go_trials)}টি)` )}</p>
+						<p class="breakdown-stat">{lt('Hits:', 'সঠিক সাড়া:')} <span>{n(metrics.go_hits || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Misses:', 'মিস:')} <span>{n(metrics.go_misses || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics.go_accuracy || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Mean RT:', 'গড় প্রতিক্রিয়ার সময়:')} <span>{msText(metrics.go_mean_rt || 0)}</span></p>
+						<p class="breakdown-note">{lt('Tests processing speed and attention', 'প্রসেসিং গতি ও মনোযোগ মাপে')}</p>
 					</div>
 
 					<!-- No-Go Trials -->
 					<div class="breakdown-card nogo-card">
-						<p class="breakdown-title">NO-GO Trials ({sessionData.nogo_trials} trials)</p>
-						<p class="breakdown-stat">Correct Withholds: <span>{metrics.nogo_correct}</span></p>
-						<p class="breakdown-stat">Commission Errors: <span class="error-count">{metrics.nogo_commission_errors}</span></p>
-						<p class="breakdown-stat">Accuracy: <span>{metrics.nogo_accuracy.toFixed(1)}%</span></p>
-						<p class="breakdown-stat">Hit Rate: <span>{metrics.hit_rate.toFixed(1)}%</span></p>
-						<p class="breakdown-note success">Tests impulse control & inhibition</p>
+						<p class="breakdown-title">{lt(`NO-GO Trials (${n(sessionData.nogo_trials)} trials)`, `নো-গো ট্রায়াল (${n(sessionData.nogo_trials)}টি)` )}</p>
+						<p class="breakdown-stat">{lt('Correct Withholds:', 'সফল বিরত থাকা:')} <span>{n(metrics.nogo_correct || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Commission Errors:', 'ভুল চাপা:')} <span class="error-count">{n(metrics.nogo_commission_errors || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics.nogo_accuracy || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Hit Rate:', 'হিট রেট:')} <span>{pct(metrics.hit_rate || 0)}</span></p>
+						<p class="breakdown-note success">{lt('Tests impulse control and inhibition', 'আবেগ সংযম ও প্রতিক্রিয়া নিয়ন্ত্রণ মাপে')}</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- Interpretation -->
 			<div class="interpretation-section">
-				<h3>What This Means</h3>
-				<p class="feedback-text">{metrics.feedback}</p>
+				<h3>{lt('What This Means', 'এর অর্থ কী')}</h3>
+				<p class="feedback-text">{resultsSummaryText()}</p>
 				
 				<div class="insights-list">
 					{#if metrics.nogo_accuracy >= 90}
 						<p class="insight success">
-							✓ <strong>Excellent inhibitory control:</strong> You successfully withheld responses on NO-GO trials
+							{@html lt('<strong>Excellent inhibitory control:</strong> You successfully withheld responses on NO-GO trials.', '<strong>চমৎকার প্রতিক্রিয়া নিয়ন্ত্রণ:</strong> আপনি নো-গো ট্রায়ালে সাড়া থামিয়ে রাখতে পেরেছেন।')}
 						</p>
 					{:else if metrics.nogo_accuracy >= 75}
 						<p class="insight good">
-							✓ <strong>Good impulse control:</strong> Managing inhibition effectively
+							{@html lt('<strong>Good impulse control:</strong> Managing inhibition effectively.', '<strong>ভালো আবেগ সংযম:</strong> আপনি বেশ কার্যকরভাবে প্রতিক্রিয়া নিয়ন্ত্রণ করেছেন।')}
 						</p>
 					{:else if metrics.nogo_accuracy >= 60}
 						<p class="insight moderate">
-							⚡ <strong>Moderate inhibition:</strong> Room for improvement in impulse control
+							{@html lt('<strong>Moderate inhibition:</strong> There is room to improve impulse control.', '<strong>মাঝারি নিয়ন্ত্রণ:</strong> আবেগ সংযমে আরও উন্নতির সুযোগ আছে।')}
 						</p>
 					{:else}
 						<p class="insight high">
-							⚡ <strong>Challenging inhibition:</strong> Practice will strengthen impulse control
+							{@html lt('<strong>Challenging inhibition:</strong> Practice will strengthen impulse control.', '<strong>চ্যালেঞ্জিং নিয়ন্ত্রণ:</strong> অনুশীলন এই দক্ষতাকে আরও শক্তিশালী করবে।')}
 						</p>
 					{/if}
 
 					{#if metrics.go_mean_rt < 400}
 						<p class="insight success">
-							✓ <strong>Fast processing speed:</strong> Quick reactions to GO trials
+							{@html lt('<strong>Fast processing speed:</strong> Quick reactions to GO trials.', '<strong>দ্রুত প্রসেসিং গতি:</strong> গো ট্রায়ালে আপনার প্রতিক্রিয়া দ্রুত ছিল।')}
 						</p>
 					{:else if metrics.go_mean_rt < 600}
 						<p class="insight good">
-							✓ <strong>Good response speed:</strong> Adequate processing time
+							{@html lt('<strong>Good response speed:</strong> Adequate processing time.', '<strong>ভালো প্রতিক্রিয়ার গতি:</strong> আপনার প্রসেসিং সময় যথাযথ ছিল।')}
 						</p>
 					{:else}
 						<p class="insight moderate">
-							⚡ <strong>Slower responses:</strong> Practice can improve speed
+							{@html lt('<strong>Slower responses:</strong> Practice can improve speed.', '<strong>তুলনামূলক ধীর প্রতিক্রিয়া:</strong> অনুশীলন গতি বাড়াতে সাহায্য করবে।')}
 						</p>
 					{/if}
 
 					{#if metrics.d_prime >= 2.0}
 						<p class="insight success">
-							✓ <strong>High sensitivity:</strong> Excellent discrimination between GO and NO-GO
+							{@html lt('<strong>High sensitivity:</strong> Excellent discrimination between GO and NO-GO.', '<strong>উচ্চ সংবেদনশীলতা:</strong> আপনি গো ও নো-গো উদ্দীপক খুব ভালোভাবে আলাদা করতে পেরেছেন।')}
 						</p>
 					{:else if metrics.d_prime >= 1.0}
 						<p class="insight good">
-							✓ <strong>Good discrimination:</strong> Solid signal detection ability
+							{@html lt('<strong>Good discrimination:</strong> Solid signal detection ability.', '<strong>ভালো পার্থক্য নির্ণয়:</strong> আপনার সংকেত শনাক্তকরণ ক্ষমতা নির্ভরযোগ্য ছিল।')}
 						</p>
 					{/if}
 				</div>
@@ -685,23 +866,19 @@
 
 			<!-- Clinical Context -->
 			<div class="clinical-context">
-				<h3>About the Go/No-Go Task</h3>
+				<h3>{lt('About the Go/No-Go Task', 'গো/নো-গো টাস্ক সম্পর্কে')}</h3>
 				<div class="clinical-content">
 					<p>
-						<strong>Response Inhibition</strong> is a core executive function that allows you to control 
-						impulsive responses. This task measures your ability to withhold prepotent (automatic) responses.
+						{@html lt('<strong>Response Inhibition</strong> is a core executive function that allows you to control impulsive responses. This task measures your ability to withhold prepotent (automatic) responses.', '<strong>প্রতিক্রিয়া নিয়ন্ত্রণ</strong> হলো একটি মৌলিক নির্বাহী দক্ষতা, যা আপনাকে হঠাৎ করে সাড়া দেওয়ার প্রবণতা নিয়ন্ত্রণ করতে সাহায্য করে। এই টাস্কটি আপনার স্বয়ংক্রিয় প্রতিক্রিয়া থামিয়ে রাখার ক্ষমতা মাপে।')}
 					</p>
 					<p>
-						<strong>For MS:</strong> Go/No-Go tasks are sensitive to frontal lobe dysfunction and attention 
-						deficits. Regular practice can strengthen inhibitory control circuits in the prefrontal cortex.
+						{@html lt('<strong>For MS:</strong> Go/No-Go tasks are sensitive to frontal lobe dysfunction and attention deficits. Regular practice can strengthen inhibitory control circuits in the prefrontal cortex.', '<strong>MS-এর ক্ষেত্রে:</strong> গো/নো-গো টাস্ক ফ্রন্টাল লোবের সমস্যা ও মনোযোগ ঘাটতি শনাক্ত করতে সংবেদনশীল। নিয়মিত অনুশীলন প্রিফ্রন্টাল কর্টেক্সের নিয়ন্ত্রণমূলক সার্কিটকে শক্তিশালী করতে সাহায্য করতে পারে।')}
 					</p>
 					<p>
-						<strong>Real-World Impact:</strong> Better impulse control relates to improved decision-making, 
-						safer driving, and better emotional regulation in daily life.
+						{@html lt('<strong>Real-World Impact:</strong> Better impulse control relates to improved decision-making, safer driving, and better emotional regulation in daily life.', '<strong>বাস্তব জীবনের প্রভাব:</strong> ভালো আবেগ সংযম মানে উন্নত সিদ্ধান্ত নেওয়া, নিরাপদ চালনা, এবং দৈনন্দিন জীবনে ভালো আবেগ নিয়ন্ত্রণ।')}
 					</p>
 					<p>
-						<strong>d-prime (d'):</strong> This signal detection metric measures your ability to discriminate 
-						between targets and non-targets, independent of response bias. Higher values indicate better discrimination.
+						{@html lt('<strong>d-prime (d\')</strong> measures how accurately you distinguish between targets and non-targets without being overly biased toward pressing or withholding. Higher values indicate better discrimination.', '<strong>d-prime (d\')</strong> দেখায় আপনি লক্ষ্যবস্তু ও অ-লক্ষ্যবস্তুকে কতটা নির্ভুলভাবে আলাদা করতে পারছেন, অতিরিক্ত চাপা বা না-চাপার পক্ষপাত ছাড়াই। মান যত বেশি, পার্থক্য ধরার ক্ষমতা তত ভালো।')}
 					</p>
 				</div>
 			</div>
@@ -710,7 +887,7 @@
 			{#if metrics.difficulty_after !== difficulty}
 				<div class="difficulty-change">
 					<p>
-						<strong>Difficulty Adjusted:</strong> Level {difficulty} → Level {metrics.difficulty_after}
+						<strong>{difficultyChangeText(difficulty, metrics.difficulty_after)}</strong>
 					</p>
 				</div>
 			{/if}
@@ -718,7 +895,7 @@
 			<!-- New Badges -->
 			{#if newBadges.length > 0}
 				<div class="badges-section">
-					<h3>New Badges Earned!</h3>
+					<h3>{lt('New Badges Earned!', 'নতুন ব্যাজ অর্জিত হয়েছে')}</h3>
 					<BadgeNotification badges={newBadges} />
 				</div>
 			{/if}
@@ -726,7 +903,7 @@
 			<!-- Actions -->
 			<div class="results-actions">
 				<button on:click={returnToDashboard} class="return-button">
-					Return to Dashboard
+					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
 				</button>
 			</div>
 		</div>
@@ -734,60 +911,59 @@
 
 	<!-- Help Button -->
 	{#if phase !== 'results'}
-		<button on:click={() => showHelp = true} class="help-button" aria-label="Help">
+		<button on:click={() => showHelp = true} class="help-button" aria-label={lt('Help', 'সহায়তা')}>
 			?
 		</button>
 	{/if}
 
 	<!-- Help Modal -->
 	{#if showHelp}
-		<div class="modal-overlay" on:click={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="button" aria-label="Close help dialog" tabindex="0">
+		<div class="modal-overlay" on:click={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="button" aria-label={lt('Close help dialog', 'সহায়তা ডায়ালগ বন্ধ করুন')} tabindex="0">
 			<div class="modal-content" on:click|stopPropagation on:keydown={(e) => e.stopPropagation()} role="document" tabindex="0">
-				<h2 class="modal-title">Go/No-Go Task Help</h2>
+				<h2 class="modal-title">{lt('Go/No-Go Task Help', 'গো/নো-গো টাস্ক সহায়তা')}</h2>
 
 				<div class="help-sections">
 					<div class="help-section">
-						<h3>What is the Go/No-Go Task?</h3>
+						<h3>{lt('What is the Go/No-Go Task?', 'গো/নো-গো টাস্ক কী?')}</h3>
 						<p>
-							A widely-used test of response inhibition and impulse control. It measures your ability to 
-							suppress automatic responses when appropriate.
+							{lt('A widely-used test of response inhibition and impulse control. It measures your ability to suppress automatic responses when appropriate.', 'এটি প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযমের বহুল ব্যবহৃত একটি পরীক্ষা। উপযুক্ত সময়ে স্বয়ংক্রিয় প্রতিক্রিয়া থামিয়ে রাখার ক্ষমতা এতে মূল্যায়ন করা হয়।')}
 						</p>
 					</div>
 
 					<div class="help-section">
-						<h3>Why Is It Used in MS?</h3>
+						<h3>{lt('Why Is It Used in MS?', 'MS-এ এটি কেন ব্যবহার করা হয়?')}</h3>
 						<ul>
-							<li>Tests executive function and frontal lobe integrity</li>
-							<li>Measures sustained attention and vigilance</li>
-							<li>Sensitive to cognitive slowing and inhibition deficits</li>
-							<li>Predicts real-world functional outcomes</li>
+							<li>{lt('Tests executive function and frontal lobe integrity', 'নির্বাহী কার্যকারিতা ও ফ্রন্টাল লোবের সক্ষমতা যাচাই করে')}</li>
+							<li>{lt('Measures sustained attention and vigilance', 'টেকসই মনোযোগ ও সতর্কতা মাপে')}</li>
+							<li>{lt('Sensitive to cognitive slowing and inhibition deficits', 'জ্ঞানগত ধীরগতি ও নিয়ন্ত্রণ ঘাটতির প্রতি সংবেদনশীল')}</li>
+							<li>{lt('Predicts real-world functional outcomes', 'বাস্তব জীবনের কার্যকারিতার ইঙ্গিত দেয়')}</li>
 						</ul>
 					</div>
 
 					<div class="help-section">
-						<h3>Understanding Your Metrics</h3>
+						<h3>{lt('Understanding Your Metrics', 'আপনার সূচকগুলো বুঝে নিন')}</h3>
 						<div class="metrics-explain">
-							<p><strong>Go Trial Speed:</strong> How quickly you respond to target stimuli</p>
-							<p><strong>No-Go Accuracy:</strong> Your ability to withhold inappropriate responses</p>
-							<p><strong>Commission Errors:</strong> False alarms - pressing when you shouldn't</p>
-							<p><strong>d-prime:</strong> Signal detection sensitivity - higher is better</p>
+							<p>{@html lt('<strong>Go Trial Speed:</strong> How quickly you respond to target stimuli.', '<strong>গো ট্রায়ালের গতি:</strong> লক্ষ্যবস্তু দেখলে আপনি কত দ্রুত সাড়া দেন।')}</p>
+							<p>{@html lt('<strong>No-Go Accuracy:</strong> Your ability to withhold inappropriate responses.', '<strong>নো-গো নির্ভুলতা:</strong> অপ্রয়োজনীয় সাড়া থামিয়ে রাখার সক্ষমতা।')}</p>
+							<p>{@html lt('<strong>Commission Errors:</strong> False alarms when you press by mistake.', '<strong>ভুল চাপা:</strong> যেখানে চাপা উচিত ছিল না, সেখানে ভুল করে চাপা।')}</p>
+							<p>{@html lt('<strong>d-prime:</strong> Signal detection sensitivity, where higher is better.', '<strong>d-prime:</strong> সংকেত আলাদা করে ধরার সংবেদনশীলতা, যেখানে বেশি মান ভালো।')}</p>
 						</div>
 					</div>
 
 					<div class="help-section">
-						<h3>Tips for Success</h3>
+						<h3>{lt('Tips for Success', 'ভালো করার টিপস')}</h3>
 						<ul>
-							<li>Keep your finger ready over SPACEBAR</li>
-							<li>Focus on the center of the screen</li>
-							<li>Don't anticipate - wait to see the stimulus</li>
-							<li>Resist the urge to press on NO-GO trials</li>
-							<li>Stay alert throughout - consistency matters</li>
+							<li>{lt('Keep your finger ready over SPACEBAR', 'স্পেসবারের ওপর আঙুল প্রস্তুত রাখুন')}</li>
+							<li>{lt('Focus on the center of the screen', 'স্ক্রিনের মাঝখানে মনোযোগ রাখুন')}</li>
+							<li>{lt("Don't anticipate, wait to see the stimulus", 'আগাম অনুমান না করে উদ্দীপক দেখার জন্য অপেক্ষা করুন')}</li>
+							<li>{lt('Resist the urge to press on NO-GO trials', 'নো-গো ট্রায়ালে চাপার তাড়না সামলান')}</li>
+							<li>{lt('Stay alert throughout, consistency matters', 'শুরু থেকে শেষ পর্যন্ত সতর্ক থাকুন, ধারাবাহিকতা গুরুত্বপূর্ণ')}</li>
 						</ul>
 					</div>
 				</div>
 
 				<button on:click={() => showHelp = false} class="modal-close-btn">
-					Close
+					{lt('Close', 'বন্ধ করুন')}
 				</button>
 			</div>
 		</div>

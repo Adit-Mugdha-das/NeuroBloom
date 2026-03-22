@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -41,6 +42,192 @@
 		currentUser = value;
 	});
 
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function msText(value) {
+		const rounded = Math.round(Number(value) || 0);
+		return $locale === 'bn' ? `${n(rounded)} মি.সে.` : `${rounded} ms`;
+	}
+
+	function performanceLevelLabel(level) {
+		const labels = {
+			Excellent: lt('Excellent', 'অসাধারণ'),
+			Good: lt('Good', 'ভালো'),
+			Fair: lt('Fair', 'মোটামুটি'),
+			Poor: lt('Needs Practice', 'আরও অনুশীলন দরকার')
+		};
+
+		return labels[level] || t(level);
+	}
+
+	function directionLabel(direction) {
+		return direction === 'right' ? lt('RIGHT →', 'ডানে →') : lt('LEFT ←', 'বামে ←');
+	}
+
+	function shortDirection(direction) {
+		return direction === 'right' ? lt('right', 'ডান') : lt('left', 'বাম');
+	}
+
+	function practiceTrialLabel(current, total) {
+		return $locale === 'bn'
+			? `অনুশীলনী ট্রায়াল ${n(current)} / ${n(total)}`
+			: `Practice Trial ${current} of ${total}`;
+	}
+
+	function trialLabel(current, total) {
+		return $locale === 'bn' ? `ট্রায়াল ${n(current)} / ${n(total)}` : `Trial ${current} of ${total}`;
+	}
+
+	function remainingTrialsLabel(count) {
+		return $locale === 'bn' ? `${n(count)}টি বাকি` : `${count} remaining`;
+	}
+
+	function localizedHint(trial) {
+		return localeText(trial?.hint, $locale);
+	}
+
+	function practiceSuccessMessage(rt, trial) {
+		return $locale === 'bn'
+			? `✓ সঠিক! প্রতিক্রিয়ার সময়: ${msText(rt)}। ${localizedHint(trial)}`
+			: `✓ Correct! Response time: ${rt}ms. ${localizedHint(trial)}`;
+	}
+
+	function practiceErrorMessage(trial) {
+		return $locale === 'bn'
+			? `✗ ভুল দিক! মাঝের তীরটি ছিল ${directionLabel(trial.direction)}। ${localizedHint(trial)}`
+			: `✗ Wrong direction! CENTER arrow pointed ${directionLabel(trial.direction)}. ${localizedHint(trial)}`;
+	}
+
+	function practiceCompleteMessage() {
+		return lt("✓ Practice complete! You're ready for the real test.", '✓ অনুশীলন শেষ! এখন আপনি আসল পরীক্ষার জন্য প্রস্তুত।');
+	}
+
+	function slowResponseMessage() {
+		return lt('⏱️ Too slow! Try to respond faster.', '⏱️ একটু দেরি হয়ে গেছে! আরও দ্রুত সাড়া দেওয়ার চেষ্টা করুন।');
+	}
+
+	function resultsSummaryText() {
+		const conflictEffect = Number(metrics?.conflict_effect || 0);
+		const accuracy = Number(metrics?.overall_accuracy || 0);
+
+		if ($locale === 'bn') {
+			if (accuracy >= 90 && conflictEffect < 100) {
+				return 'চমৎকার নির্বাচিত মনোযোগ! বিভ্রান্তিকর সংকেত থাকলেও আপনি খুব ভালোভাবে সঠিক দিক চিনতে পেরেছেন।';
+			}
+
+			if (accuracy >= 80 && conflictEffect < 150) {
+				return 'ভালো পারফরম্যান্স। আপনার মনোযোগ ও দ্বন্দ্ব সামলানোর ক্ষমতা স্থিতিশীল আছে, তবে আরও অনুশীলনে গতি ও নিয়ন্ত্রণ দুটোই উন্নত হবে।';
+			}
+
+			return 'এই টাস্কটি বিভ্রান্তির মাঝেও সঠিক সংকেতে মনোযোগ ধরে রাখার ক্ষমতা মাপে। নিয়মিত অনুশীলনে প্রাসঙ্গিক তথ্য বেছে নেওয়ার দক্ষতা আরও ভালো হবে।';
+		}
+
+		if (accuracy >= 90 && conflictEffect < 100) {
+			return 'Excellent selective attention! You handled conflicting arrows with strong control and accuracy.';
+		}
+
+		if (accuracy >= 80 && conflictEffect < 150) {
+			return 'Good performance. Your attention and conflict control are solid, with room to become even faster and more consistent.';
+		}
+
+		return 'This task measures how well you focus on relevant information when distractions compete for attention. Practice will help strengthen that control.';
+	}
+
+	function buildPracticeTrials() {
+		return [
+			{
+				trial_type: 'congruent',
+				direction: 'right',
+				flanker_count: 2,
+				hint: {
+					en: 'Easy! All arrows point right →',
+					bn: 'সহজ! সব তীর ডানে →'
+				}
+			},
+			{
+				trial_type: 'congruent',
+				direction: 'left',
+				flanker_count: 2,
+				hint: {
+					en: 'All arrows point left ←',
+					bn: 'সব তীর বামে ←'
+				}
+			},
+			{
+				trial_type: 'incongruent',
+				direction: 'right',
+				flanker_count: 2,
+				hint: {
+					en: 'Focus on the CENTER arrow only! →',
+					bn: 'শুধু মাঝের তীরটিতে মন দিন! →'
+				}
+			},
+			{
+				trial_type: 'congruent',
+				direction: 'right',
+				flanker_count: 2,
+				hint: {
+					en: 'Congruent again - quick!',
+					bn: 'আবার সঙ্গত ট্রায়াল - দ্রুত সাড়া দিন!'
+				}
+			},
+			{
+				trial_type: 'incongruent',
+				direction: 'left',
+				flanker_count: 2,
+				hint: {
+					en: 'Ignore distractors - CENTER is ←',
+					bn: 'বিভ্রান্তি উপেক্ষা করুন - মাঝের তীরটি ←'
+				}
+			},
+			{
+				trial_type: 'congruent',
+				direction: 'left',
+				flanker_count: 2,
+				hint: {
+					en: 'All matching, press quickly',
+					bn: 'সব একই দিকে - দ্রুত চাপুন'
+				}
+			},
+			{
+				trial_type: 'incongruent',
+				direction: 'right',
+				flanker_count: 2,
+				hint: {
+					en: 'Hard! Flankers mislead you',
+					bn: 'কঠিন! পাশের তীরগুলো আপনাকে বিভ্রান্ত করবে'
+				}
+			},
+			{
+				trial_type: 'incongruent',
+				direction: 'left',
+				flanker_count: 2,
+				hint: {
+					en: 'Last one - stay focused on CENTER',
+					bn: 'শেষটি - মাঝের তীরেই মন রাখুন'
+				}
+			}
+		];
+	}
+
 	onMount(async () => {
 		if (!currentUser) {
 			goto('/login');
@@ -59,7 +246,11 @@
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				throw new Error(`Failed to load session: ${response.status} - ${errorText}`);
+				throw new Error(
+					$locale === 'bn'
+						? `সেশন লোড করা যায়নি: ${response.status} - ${errorText}`
+						: `Failed to load session: ${response.status} - ${errorText}`
+				);
 			}
 
 			const data = await response.json();
@@ -68,7 +259,12 @@
 			loading = false;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load training session. Please ensure the backend server is running and you have completed baseline assessment.');
+			alert(
+				lt(
+					'Failed to load training session. Please ensure the backend server is running and you have completed baseline assessment.',
+					'ট্রেনিং সেশন লোড করা যায়নি। অনুগ্রহ করে নিশ্চিত করুন ব্যাকএন্ড সার্ভার চালু আছে এবং আপনি বেসলাইন মূল্যায়ন সম্পন্ন করেছেন।'
+				)
+			);
 			loading = false;
 		}
 	}
@@ -78,57 +274,7 @@
 	}
 
 	function startPractice() {
-		// Create practice trials (8 trials: 4 congruent, 4 incongruent)
-		practiceTrials = [
-			{
-				trial_type: 'congruent',
-				direction: 'right',
-				flanker_count: 2,
-				hint: 'Easy! All arrows point right →'
-			},
-			{
-				trial_type: 'congruent',
-				direction: 'left',
-				flanker_count: 2,
-				hint: 'All arrows point left ←'
-			},
-			{
-				trial_type: 'incongruent',
-				direction: 'right',
-				flanker_count: 2,
-				hint: 'Focus on the CENTER arrow only! →'
-			},
-			{
-				trial_type: 'congruent',
-				direction: 'right',
-				flanker_count: 2,
-				hint: 'Congruent again - quick!'
-			},
-			{
-				trial_type: 'incongruent',
-				direction: 'left',
-				flanker_count: 2,
-				hint: 'Ignore distractors - CENTER is ←'
-			},
-			{
-				trial_type: 'congruent',
-				direction: 'left',
-				flanker_count: 2,
-				hint: 'All matching, press quickly'
-			},
-			{
-				trial_type: 'incongruent',
-				direction: 'right',
-				flanker_count: 2,
-				hint: 'Hard! Flankers mislead you'
-			},
-			{
-				trial_type: 'incongruent',
-				direction: 'left',
-				flanker_count: 2,
-				hint: 'Last one - stay focused on CENTER'
-			}
-		];
+		practiceTrials = buildPracticeTrials();
 
 		currentPractice = 0;
 		practiceFeedback = null;
@@ -144,7 +290,7 @@
 			// Practice complete
 			practiceFeedback = {
 				type: 'success',
-				message: '✓ Practice complete! You\'re ready for the real test.'
+				message: practiceCompleteMessage()
 			};
 			setTimeout(() => {
 				startTest();
@@ -161,7 +307,7 @@
 			if (!responded) {
 				practiceFeedback = {
 					type: 'warning',
-					message: '⏱️ Too slow! Try to respond faster.'
+					message: slowResponseMessage()
 				};
 				showStimulus = false;
 				setTimeout(() => {
@@ -186,12 +332,12 @@
 		if (correct) {
 			practiceFeedback = {
 				type: 'success',
-				message: `✓ Correct! Response time: ${rt}ms. ${trial.hint}`
+				message: practiceSuccessMessage(rt, trial)
 			};
 		} else {
 			practiceFeedback = {
 				type: 'error',
-				message: `✗ Wrong direction! CENTER arrow pointed ${trial.direction === 'right' ? 'RIGHT →' : 'LEFT ←'}. ${trial.hint}`
+				message: practiceErrorMessage(trial)
 			};
 		}
 
@@ -319,7 +465,7 @@
 			showResults = true;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results. Please try again.');
+			alert(lt('Failed to submit results. Please try again.', 'ফলাফল জমা দেওয়া যায়নি। আবার চেষ্টা করুন।'));
 		}
 	}
 
@@ -365,123 +511,134 @@
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<div class="flanker-container">
+<div class="flanker-container" data-localize-skip>
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading task...</p>
+			<p>{lt('Loading task...', 'টাস্ক লোড হচ্ছে...')}</p>
 		</div>
 	{:else if phase === 'intro'}
 		<!-- Introduction Screen -->
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>⚡ Flanker Task</h1>
+				<h1>⚡ {lt('Flanker Task', 'ফ্ল্যাঙ্কার টাস্ক')}</h1>
 				<DifficultyBadge {difficulty} domain="Attention" />
 			</div>
-			<div class="classic-badge">Selective Attention & Conflict Resolution Test</div>
+			<div class="classic-badge">{lt('Selective Attention & Conflict Resolution Test', 'নির্বাচিত মনোযোগ ও দ্বন্দ্ব সামলানোর পরীক্ষা')}</div>
 			
 			<div class="instruction-card">
 				<div class="task-header">
-					<h2>🎯 Your Mission: Focus on the Center!</h2>
+					<h2>🎯 {lt('Your Mission: Focus on the Center!', 'আপনার কাজ: মাঝের তীরটিতে মন দিন!')}</h2>
 				</div>
 				
 				<p class="importance">
-					This task measures your ability to <strong>selectively attend</strong> to relevant information 
-					while <strong>ignoring distractions</strong> - a key cognitive skill tested in the Attention Networks Test (ANT).
+					{@html lt(
+						'This task measures your ability to <strong>selectively attend</strong> to relevant information while <strong>ignoring distractions</strong> - a key cognitive skill tested in the Attention Networks Test (ANT).',
+						'এই টাস্কটি প্রাসঙ্গিক তথ্যের দিকে <strong>নির্বাচিতভাবে মন দেওয়া</strong> এবং <strong>বিভ্রান্তি উপেক্ষা করা</strong> - এই গুরুত্বপূর্ণ কগনিটিভ দক্ষতা মাপে, যা মনোযোগ নেটওয়ার্ক পরীক্ষা (ANT)-এ ব্যবহৃত হয়।'
+					)}
 				</p>
 				
 				<!-- Visual Examples -->
 				<div class="stimulus-examples">
 					<div class="example-card congruent-card">
-						<div class="example-label">Congruent Trial (Easy)</div>
+						<div class="example-label">{lt('Congruent Trial (Easy)', 'সঙ্গত ট্রায়াল (সহজ)')}</div>
 						<div class="arrow-display">→ → → → →</div>
-						<div class="example-action">✓ All arrows match</div>
-						<div class="example-note">CENTER arrow: <strong>RIGHT →</strong></div>
+						<div class="example-action">✓ {lt('All arrows match', 'সব তীর একই দিকে')}</div>
+						<div class="example-note">
+							{lt('CENTER arrow:', 'মাঝের তীর:')} <strong>{directionLabel('right')}</strong>
+						</div>
 					</div>
 					
 					<div class="example-card incongruent-card">
-						<div class="example-label">Incongruent Trial (Hard)</div>
+						<div class="example-label">{lt('Incongruent Trial (Hard)', 'অসঙ্গত ট্রায়াল (কঠিন)')}</div>
 						<div class="arrow-display conflict">← ← → ← ←</div>
-						<div class="example-action">⚠️ Flankers mislead!</div>
-						<div class="example-note">CENTER arrow: <strong>RIGHT →</strong> (ignore the rest!)</div>
+						<div class="example-action">⚠️ {lt('Flankers mislead!', 'পাশের তীরগুলো বিভ্রান্ত করবে!')}</div>
+						<div class="example-note">
+							{lt('CENTER arrow:', 'মাঝের তীর:')} <strong>{directionLabel('right')}</strong>
+							{lt(' (ignore the rest!)', ' (বাকিগুলো উপেক্ষা করুন!)')}
+						</div>
 					</div>
 				</div>
 				
 				<div class="rule-box">
-					<strong>⚡ The Challenge:</strong>
-					You'll see arrows on the screen. <strong>Always report the direction of the CENTER arrow only!</strong>
-					Surrounding "flanker" arrows will sometimes point the opposite direction to test your ability to 
-					focus and resist distraction.
+					<strong>⚡ {lt('The Challenge:', 'চ্যালেঞ্জ:')}</strong>
+					{#if $locale === 'bn'}
+						স্ক্রিনে কয়েকটি তীর দেখা যাবে। <strong>সবসময় শুধু মাঝের তীরের দিকটাই বলুন।</strong>
+						চারপাশের তীরগুলো কখনও উল্টো দিকে থাকবে, যাতে আপনার মনোযোগ ধরে রাখা ও বিভ্রান্তি প্রতিরোধের ক্ষমতা মাপা যায়।
+					{:else}
+						You'll see arrows on the screen. <strong>Always report the direction of the CENTER arrow only!</strong>
+						Surrounding "flanker" arrows will sometimes point the opposite direction to test your ability to focus and resist distraction.
+					{/if}
 				</div>
 				
 				<!-- Two Column Layout -->
 				<div class="info-grid">
 					<div class="info-section">
-						<h3>📋 What You'll Do</h3>
+						<h3>📋 {lt("What You'll Do", 'আপনি কী করবেন')}</h3>
 						<div class="steps-list">
 							<div class="step-item">
-								<span class="step-num">1</span>
+								<span class="step-num">{n(1)}</span>
 								<div class="step-text">
-									<strong>Watch for arrows</strong>
-									<span>They appear briefly</span>
+									<strong>{lt('Watch for arrows', 'তীরচিহ্ন দেখুন')}</strong>
+									<span>{lt('They appear briefly', 'এগুলো খুব অল্প সময়ের জন্য দেখা যায়')}</span>
 								</div>
 							</div>
 							<div class="step-item">
-								<span class="step-num">2</span>
+								<span class="step-num">{n(2)}</span>
 								<div class="step-text">
-									<strong>Focus on CENTER</strong>
-									<span>Ignore surrounding arrows</span>
+									<strong>{lt('Focus on CENTER', 'মাঝের তীরটিতে মন দিন')}</strong>
+									<span>{lt('Ignore surrounding arrows', 'চারপাশের তীরগুলো উপেক্ষা করুন')}</span>
 								</div>
 							</div>
 							<div class="step-item">
-								<span class="step-num">3</span>
+								<span class="step-num">{n(3)}</span>
 								<div class="step-text">
-									<strong>Press arrow key</strong>
-									<span>← or → to match center</span>
+									<strong>{lt('Press arrow key', 'তীরের কী চাপুন')}</strong>
+									<span>{lt('← or → to match center', 'মাঝের তীরের দিক মিলিয়ে ← বা → চাপুন')}</span>
 								</div>
 							</div>
 						</div>
 					</div>
 					
 					<div class="info-section">
-						<h3>💪 What It Measures</h3>
+						<h3>💪 {lt('What It Measures', 'এটি কী মাপে')}</h3>
 						<div class="measures-list">
-							<div class="measure-item">✓ <strong>Selective Attention:</strong> Focusing ability</div>
-							<div class="measure-item">✓ <strong>Conflict Resolution:</strong> Ignoring distractors</div>
-							<div class="measure-item">✓ <strong>Interference Control:</strong> Resistance to misleading info</div>
-							<div class="measure-item">✓ <strong>Processing Speed:</strong> Quick decision-making</div>
+							<div class="measure-item">✓ <strong>{lt('Selective Attention:', 'নির্বাচিত মনোযোগ:')}</strong> {lt('Focusing ability', 'মন স্থির রেখে লক্ষ্য বেছে নেওয়ার ক্ষমতা')}</div>
+							<div class="measure-item">✓ <strong>{lt('Conflict Resolution:', 'দ্বন্দ্ব সামলানো:')}</strong> {lt('Ignoring distractors', 'বিভ্রান্তিকর সংকেত উপেক্ষা করা')}</div>
+							<div class="measure-item">✓ <strong>{lt('Interference Control:', 'হস্তক্ষেপ নিয়ন্ত্রণ:')}</strong> {lt('Resistance to misleading info', 'ভুলপথে নেওয়া তথ্য প্রতিরোধ করার ক্ষমতা')}</div>
+							<div class="measure-item">✓ <strong>{lt('Processing Speed:', 'প্রক্রিয়াকরণের গতি:')}</strong> {lt('Quick decision-making', 'দ্রুত ও সঠিক সিদ্ধান্ত নেওয়ার ক্ষমতা')}</div>
 						</div>
 					</div>
 				</div>
 				
 				<!-- Clinical Context -->
 				<div class="clinical-info">
-					<h3>📚 Clinical Significance</h3>
+					<h3>📚 {lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>🎯 Standard Test:</strong> Attention Networks Test (Eriksen & Eriksen, 1974)
+							<strong>🎯 {lt('Standard Test:', 'মানক পরীক্ষা:')}</strong> {lt('Attention Networks Test', 'মনোযোগ নেটওয়ার্ক পরীক্ষা')} (Eriksen & Eriksen, {n(1974)})
 						</div>
 						<div class="clinical-item">
-							<strong>🧠 Brain Regions:</strong> Tests anterior cingulate cortex & executive control
+							<strong>🧠 {lt('Brain Regions:', 'মস্তিষ্কের অঞ্চল:')}</strong> {lt('Tests anterior cingulate cortex & executive control', 'অ্যান্টেরিয়র সিংগুলেট কর্টেক্স ও নির্বাহী নিয়ন্ত্রণ নেটওয়ার্কের কার্যকারিতা মাপে')}
 						</div>
 						<div class="clinical-item">
-							<strong>🏥 MS Relevance:</strong> Measures selective attention deficits common in MS
+							<strong>🏥 {lt('MS Relevance:', 'MS-এ গুরুত্ব:')}</strong> {lt('Measures selective attention deficits common in MS', 'MS-এ সাধারণ নির্বাচিত মনোযোগ ঘাটতি মাপে')}
 						</div>
 						<div class="clinical-item">
-							<strong>📈 Key Metric:</strong> Conflict Effect = slower RT on incongruent trials
+							<strong>📈 {lt('Key Metric:', 'মূল সূচক:')}</strong> {lt('Conflict Effect = slower RT on incongruent trials', 'কনফ্লিক্ট ইফেক্ট = অসঙ্গত ট্রায়ালে ধীর প্রতিক্রিয়ার সময়')}
 						</div>
 					</div>
 				</div>
 				
 				<!-- Controls -->
 				<div class="controls-info">
-					<h3>🎮 Controls</h3>
+					<h3>🎮 {lt('Controls', 'নিয়ন্ত্রণ')}</h3>
 					<div class="key-bindings">
 						<div class="key-bind">
-							<kbd>←</kbd> or <kbd>A</kbd> = Left arrow
+							<kbd>←</kbd> {lt('or', 'অথবা')} <kbd>A</kbd> = {lt('Left arrow', 'বাম তীর')}
 						</div>
 						<div class="key-bind">
-							<kbd>→</kbd> or <kbd>D</kbd> = Right arrow
+							<kbd>→</kbd> {lt('or', 'অথবা')} <kbd>D</kbd> = {lt('Right arrow', 'ডান তীর')}
 						</div>
 					</div>
 				</div>
@@ -489,10 +646,10 @@
 			
 			<div class="button-group">
 				<button class="start-button" on:click={startInstructions}>
-					Begin Task
+					{lt('Begin Task', 'টাস্ক শুরু করুন')}
 				</button>
 				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					Back to Dashboard
+					{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
 				</button>
 			</div>
 		</div>
@@ -500,49 +657,54 @@
 	{:else if phase === 'instructions'}
 		<!-- Quick Instructions -->
 		<div class="quick-instructions">
-			<h2>Quick Instructions</h2>
+			<h2>{lt('Quick Instructions', 'দ্রুত নির্দেশনা')}</h2>
 
 			<div class="key-reminder">
 				<div class="key-display">
 					<kbd class="key-large">←</kbd>
-					<span class="key-label">Left Arrow</span>
+					<span class="key-label">{lt('Left Arrow', 'বাম তীর')}</span>
 				</div>
 				<div class="key-display">
 					<kbd class="key-large">→</kbd>
-					<span class="key-label">Right Arrow</span>
+					<span class="key-label">{lt('Right Arrow', 'ডান তীর')}</span>
 				</div>
 			</div>
 
 			<div class="task-rule">
-				<p class="rule-emphasis">Press the arrow key matching the <strong>CENTER arrow direction</strong> only!</p>
+				<p class="rule-emphasis">
+					{@html lt(
+						'Press the arrow key matching the <strong>CENTER arrow direction</strong> only!',
+						'শুধু <strong>মাঝের তীরের দিক</strong> মিলিয়ে সংশ্লিষ্ট কী চাপুন!'
+					)}
+				</p>
 			</div>
 
 			<div class="instructions-flow">
 				<div class="flow-step">
-					<div class="flow-number">1</div>
+					<div class="flow-number">{n(1)}</div>
 					<div class="flow-content">
-						<p class="flow-title">Arrows Appear</p>
-						<p class="flow-desc">5 arrows flash briefly</p>
+						<p class="flow-title">{lt('Arrows Appear', 'তীরচিহ্ন দেখা যায়')}</p>
+						<p class="flow-desc">{lt('5 arrows flash briefly', '৫টি তীর অল্প সময়ের জন্য দেখা যায়')}</p>
 					</div>
 				</div>
 
 				<div class="flow-arrow">→</div>
 
 				<div class="flow-step">
-					<div class="flow-number">2</div>
+					<div class="flow-number">{n(2)}</div>
 					<div class="flow-content">
-						<p class="flow-title">Focus on Center</p>
-						<p class="flow-desc">Ignore outer flankers</p>
+						<p class="flow-title">{lt('Focus on Center', 'মাঝের তীরে মন দিন')}</p>
+						<p class="flow-desc">{lt('Ignore outer flankers', 'বাইরের তীরগুলো উপেক্ষা করুন')}</p>
 					</div>
 				</div>
 
 				<div class="flow-arrow">→</div>
 
 				<div class="flow-step">
-					<div class="flow-number">3</div>
+					<div class="flow-number">{n(3)}</div>
 					<div class="flow-content">
-						<p class="flow-title">Press Arrow Key</p>
-						<p class="flow-desc">Match center direction</p>
+						<p class="flow-title">{lt('Press Arrow Key', 'তীরের কী চাপুন')}</p>
+						<p class="flow-desc">{lt('Match center direction', 'মাঝের তীরের দিক মিলিয়ে চাপুন')}</p>
 					</div>
 				</div>
 			</div>
@@ -550,28 +712,28 @@
 			<div class="example-reminder">
 				<div class="example-row">
 					<div class="example-stimulus">→ → → → →</div>
-					<div class="example-answer">Press <kbd>→</kbd> (Easy - all match)</div>
+					<div class="example-answer">{lt('Press', 'চাপুন')} <kbd>→</kbd> {lt('(Easy - all match)', '(সহজ - সব একই দিকে)')}</div>
 				</div>
 				<div class="example-row conflict">
 					<div class="example-stimulus">← ← → ← ←</div>
-					<div class="example-answer">Press <kbd>→</kbd> (Hard - center is right!)</div>
+					<div class="example-answer">{lt('Press', 'চাপুন')} <kbd>→</kbd> {lt('(Hard - center is right!)', '(কঠিন - মাঝের তীরটি ডানে!)')}</div>
 				</div>
 			</div>
 
 			<div class="tips-box">
-				<h3>💡 Success Tips</h3>
+				<h3>💡 {lt('Success Tips', 'ভালো করার উপায়')}</h3>
 				<ul>
-					<li><strong>Focus your eyes</strong> on the center of the screen</li>
-					<li><strong>Ignore flankers</strong> - they're designed to mislead you</li>
-					<li><strong>Respond quickly</strong> - but accuracy matters more than speed</li>
-					<li><strong>Stay consistent</strong> - maintain attention throughout</li>
+					<li><strong>{lt('Focus your eyes', 'চোখ মাঝখানে রাখুন')}</strong> {lt('on the center of the screen', 'স্ক্রিনের কেন্দ্রের দিকে')}</li>
+					<li><strong>{lt('Ignore flankers', 'পাশের তীরগুলো উপেক্ষা করুন')}</strong> - {lt("they're designed to mislead you", 'এগুলো ইচ্ছাকৃতভাবে আপনাকে বিভ্রান্ত করবে')}</li>
+					<li><strong>{lt('Respond quickly', 'দ্রুত সাড়া দিন')}</strong> - {lt('but accuracy matters more than speed', 'তবে গতি নয়, আগে সঠিকতা')}</li>
+					<li><strong>{lt('Stay consistent', 'ধারাবাহিক থাকুন')}</strong> - {lt('maintain attention throughout', 'পুরো সময় মনোযোগ ধরে রাখুন')}</li>
 				</ul>
 			</div>
 
 			<div class="practice-prompt">
-				<p>Let's practice with 8 trials to get comfortable...</p>
+				<p>{lt("Let's practice with 8 trials to get comfortable...", 'স্বচ্ছন্দ হতে ৮টি অনুশীলনী ট্রায়াল করি...')}</p>
 				<button class="start-button" on:click={startPractice}>
-					Start Practice
+					{lt('Start Practice', 'অনুশীলন শুরু করুন')}
 				</button>
 			</div>
 		</div>
@@ -580,8 +742,8 @@
 		<!-- Practice Trials -->
 		<div class="trial-screen">
 			<div class="trial-header">
-				<h2>Practice Trial {currentPractice + 1} of {practiceTrials.length}</h2>
-				<p class="instruction-reminder">Press ← or → to match the CENTER arrow direction</p>
+				<h2>{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>
+				<p class="instruction-reminder">{lt('Press ← or → to match the CENTER arrow direction', 'মাঝের তীরের দিক মিলিয়ে ← বা → চাপুন')}</p>
 			</div>
 
 			<!-- Stimulus Display -->
@@ -609,9 +771,9 @@
 			<!-- Progress Header -->
 			<div class="progress-header">
 				<div class="progress-top">
-					<h2>Trial {currentTrial + 1} of {sessionData.trials.length}</h2>
+					<h2>{trialLabel(currentTrial + 1, sessionData.trials.length)}</h2>
 					<div class="progress-badges">
-						<span class="badge-remaining">{trialsRemaining} remaining</span>
+						<span class="badge-remaining">{remainingTrialsLabel(trialsRemaining)}</span>
 					</div>
 				</div>
 				<div class="progress-bar-container">
@@ -631,7 +793,7 @@
 			</div>
 
 			<div class="reminder-text">
-				Focus on CENTER arrow only | ← or → keys
+				{lt('Focus on CENTER arrow only | ← or → keys', 'শুধু মাঝের তীরে মন দিন | ← বা → কী ব্যবহার করুন')}
 			</div>
 		</div>
 
@@ -644,9 +806,9 @@
 			{/if}
 
 			<div class="results-header">
-				<h2>Flanker Task Complete!</h2>
+				<h2>{lt('Flanker Task Complete!', 'ফ্ল্যাঙ্কার টাস্ক সম্পন্ন!')}</h2>
 				<div class="performance-badge {performanceBadgeColor}">
-					{metrics?.performance_level || 'Good'}
+					{performanceLevelLabel(metrics?.performance_level || 'Good')}
 				</div>
 			</div>
 
@@ -654,77 +816,91 @@
 			<div class="metrics-grid">
 				<!-- Overall Accuracy -->
 				<div class="metric-card accuracy-card">
-					<div class="metric-label">Overall Accuracy</div>
-					<div class="metric-value">{(metrics?.overall_accuracy || 0).toFixed(1)}%</div>
-					<div class="metric-detail">{metrics?.total_correct || 0}/{metrics?.total_trials || 0} correct</div>
+					<div class="metric-label">{lt('Overall Accuracy', 'সামগ্রিক নির্ভুলতা')}</div>
+					<div class="metric-value">{pct(metrics?.overall_accuracy || 0)}</div>
+					<div class="metric-detail">
+						{$locale === 'bn'
+							? `${n(metrics?.total_correct || 0)}/${n(metrics?.total_trials || 0)} সঠিক`
+							: `${metrics?.total_correct || 0}/${metrics?.total_trials || 0} correct`}
+					</div>
 				</div>
 
 				<!-- Mean RT -->
 				<div class="metric-card speed-card">
-					<div class="metric-label">Mean Reaction Time</div>
-					<div class="metric-value">{(metrics?.mean_rt || 0).toFixed(0)} ms</div>
-					<div class="metric-detail">Overall speed</div>
+					<div class="metric-label">{lt('Mean Reaction Time', 'গড় প্রতিক্রিয়ার সময়')}</div>
+					<div class="metric-value">{msText(metrics?.mean_rt || 0)}</div>
+					<div class="metric-detail">{lt('Overall speed', 'মোট গতি')}</div>
 				</div>
 
 				<!-- Conflict Effect -->
 				<div class="metric-card conflict-card">
-					<div class="metric-label">⚠️ Conflict Effect</div>
-					<div class="metric-value">{(metrics?.conflict_effect || 0).toFixed(0)} ms</div>
-					<div class="metric-detail">Interference cost</div>
+					<div class="metric-label">⚠️ {lt('Conflict Effect', 'কনফ্লিক্ট ইফেক্ট')}</div>
+					<div class="metric-value">{msText(metrics?.conflict_effect || 0)}</div>
+					<div class="metric-detail">{lt('Interference cost', 'বিভ্রান্তির খরচ')}</div>
 				</div>
 
 				<!-- Selective Attention Score -->
 				<div class="metric-card attention-card">
-					<div class="metric-label">Selective Attention</div>
-					<div class="metric-value">{(metrics?.selective_attention_score || 0).toFixed(1)}</div>
-					<div class="metric-detail">Lower = better focus</div>
+					<div class="metric-label">{lt('Selective Attention', 'নির্বাচিত মনোযোগ')}</div>
+					<div class="metric-value">{n((metrics?.selective_attention_score || 0).toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
+					<div class="metric-detail">{lt('Lower = better focus', 'যত কম, মনোযোগ তত ভালো')}</div>
 				</div>
 			</div>
 
 			<!-- Trial Type Breakdown -->
 			<div class="breakdown-section">
-				<h3>Performance by Trial Type</h3>
+				<h3>{lt('Performance by Trial Type', 'ট্রায়ালভিত্তিক পারফরম্যান্স')}</h3>
 				<div class="breakdown-grid">
 					<!-- Congruent Trials -->
 					<div class="breakdown-card congruent-card">
-						<p class="breakdown-title">Congruent Trials (Easy)</p>
-						<p class="breakdown-subtitle">All arrows point same direction</p>
-						<p class="breakdown-stat">Accuracy: <span>{(metrics?.congruent_accuracy || 0).toFixed(1)}%</span></p>
-						<p class="breakdown-stat">Mean RT: <span>{(metrics?.congruent_mean_rt || 0).toFixed(0)} ms</span></p>
-						<p class="breakdown-stat">Correct: <span>{metrics?.congruent_correct || 0}/{metrics?.congruent_trials || 0}</span></p>
-						<p class="breakdown-note">Tests baseline processing speed</p>
+						<p class="breakdown-title">{lt('Congruent Trials (Easy)', 'সঙ্গত ট্রায়াল (সহজ)')}</p>
+						<p class="breakdown-subtitle">{lt('All arrows point same direction', 'সব তীর একই দিকে থাকে')}</p>
+						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics?.congruent_accuracy || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Mean RT:', 'গড় RT:')} <span>{msText(metrics?.congruent_mean_rt || 0)}</span></p>
+						<p class="breakdown-stat">
+							{lt('Correct:', 'সঠিক:')}
+							<span>{n(metrics?.congruent_correct || 0)}/{n(metrics?.congruent_trials || 0)}</span>
+						</p>
+						<p class="breakdown-note">{lt('Tests baseline processing speed', 'মৌলিক প্রক্রিয়াকরণের গতি মাপে')}</p>
 					</div>
 
 					<!-- Incongruent Trials -->
 					<div class="breakdown-card incongruent-card">
-						<p class="breakdown-title">Incongruent Trials (Hard)</p>
-						<p class="breakdown-subtitle">Flankers point opposite direction</p>
-						<p class="breakdown-stat">Accuracy: <span>{(metrics?.incongruent_accuracy || 0).toFixed(1)}%</span></p>
-						<p class="breakdown-stat">Mean RT: <span>{(metrics?.incongruent_mean_rt || 0).toFixed(0)} ms</span></p>
-						<p class="breakdown-stat">Correct: <span>{metrics?.incongruent_correct || 0}/{metrics?.incongruent_trials || 0}</span></p>
-						<p class="breakdown-note highlight">Tests selective attention & conflict resolution</p>
+						<p class="breakdown-title">{lt('Incongruent Trials (Hard)', 'অসঙ্গত ট্রায়াল (কঠিন)')}</p>
+						<p class="breakdown-subtitle">{lt('Flankers point opposite direction', 'পাশের তীরগুলো উল্টো দিকে থাকে')}</p>
+						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics?.incongruent_accuracy || 0)}</span></p>
+						<p class="breakdown-stat">{lt('Mean RT:', 'গড় RT:')} <span>{msText(metrics?.incongruent_mean_rt || 0)}</span></p>
+						<p class="breakdown-stat">
+							{lt('Correct:', 'সঠিক:')}
+							<span>{n(metrics?.incongruent_correct || 0)}/{n(metrics?.incongruent_trials || 0)}</span>
+						</p>
+						<p class="breakdown-note highlight">{lt('Tests selective attention & conflict resolution', 'নির্বাচিত মনোযোগ ও দ্বন্দ্ব সামলানোর ক্ষমতা মাপে')}</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- Interference Analysis -->
 			<div class="interference-section">
-				<h3>🎯 Interference Analysis</h3>
+				<h3>🎯 {lt('Interference Analysis', 'বিভ্রান্তি বিশ্লেষণ')}</h3>
 				<div class="interference-grid">
 					<div class="interference-card">
-						<p class="interference-label">Conflict Effect</p>
-						<p class="interference-value">{(metrics?.conflict_effect || 0).toFixed(0)} ms</p>
+						<p class="interference-label">{lt('Conflict Effect', 'কনফ্লিক্ট ইফেক্ট')}</p>
+						<p class="interference-value">{msText(metrics?.conflict_effect || 0)}</p>
 						<p class="interference-desc">
-							How much slower you are on incongruent trials. 
-							Lower = better selective attention!
+							{lt(
+								'How much slower you are on incongruent trials. Lower = better selective attention!',
+								'অসঙ্গত ট্রায়ালে আপনি কতটা ধীর হয়েছেন তা বোঝায়। যত কম, নির্বাচিত মনোযোগ তত ভালো!'
+							)}
 						</p>
 					</div>
 					<div class="interference-card">
-						<p class="interference-label">Interference Error Rate</p>
-						<p class="interference-value">{(metrics?.interference_error_rate || 0).toFixed(1)}%</p>
+						<p class="interference-label">{lt('Interference Error Rate', 'বিভ্রান্তিজনিত ভুলের হার')}</p>
+						<p class="interference-value">{pct(metrics?.interference_error_rate || 0)}</p>
 						<p class="interference-desc">
-							Percentage of errors caused by distraction. 
-							Lower = stronger focus!
+							{lt(
+								'Percentage of errors caused by distraction. Lower = stronger focus!',
+								'বিভ্রান্তির কারণে কত শতাংশ ভুল হয়েছে তা দেখায়। যত কম, মনোযোগ তত শক্তিশালী!'
+							)}
 						</p>
 					</div>
 				</div>
@@ -732,38 +908,38 @@
 
 			<!-- Interpretation -->
 			<div class="interpretation-section">
-				<h3>What This Means</h3>
-				<p class="feedback-text">{metrics?.feedback || 'Great effort on this task!'}</p>
+				<h3>{lt('What This Means', 'এর অর্থ কী')}</h3>
+				<p class="feedback-text">{resultsSummaryText()}</p>
 				
 				<div class="insights-list">
 					{#if (metrics?.conflict_effect || 0) < 100}
 						<div class="insight-item excellent">
 							<span class="insight-icon">⭐</span>
-							<span>Excellent selective attention! You resist distraction very well.</span>
+							<span>{lt('Excellent selective attention! You resist distraction very well.', 'অসাধারণ নির্বাচিত মনোযোগ! আপনি বিভ্রান্তি খুব ভালোভাবে প্রতিরোধ করতে পারেন।')}</span>
 						</div>
 					{:else if (metrics?.conflict_effect || 0) < 150}
 						<div class="insight-item good">
 							<span class="insight-icon">✓</span>
-							<span>Good selective attention. Normal interference effect.</span>
+							<span>{lt('Good selective attention. Normal interference effect.', 'ভালো নির্বাচিত মনোযোগ। বিভ্রান্তির প্রভাব স্বাভাবিক সীমায় আছে।')}</span>
 						</div>
 					{:else}
 						<div class="insight-item needs-work">
 							<span class="insight-icon">💡</span>
-							<span>High interference - practice focusing on relevant information only.</span>
+							<span>{lt('High interference - practice focusing on relevant information only.', 'বিভ্রান্তির প্রভাব বেশি - শুধু প্রাসঙ্গিক তথ্যের দিকে মন দেওয়ার অনুশীলন করুন।')}</span>
 						</div>
 					{/if}
 
 					{#if (metrics?.incongruent_accuracy || 0) > 85}
 						<div class="insight-item excellent">
 							<span class="insight-icon">🎯</span>
-							<span>Strong accuracy on hard trials - excellent conflict resolution!</span>
+							<span>{lt('Strong accuracy on hard trials - excellent conflict resolution!', 'কঠিন ট্রায়ালেও নির্ভুলতা খুব ভালো - দ্বন্দ্ব সামলানোর ক্ষমতা শক্তিশালী!')}</span>
 						</div>
 					{/if}
 
 					{#if (metrics?.congruent_mean_rt || 0) < 500 && (metrics?.congruent_mean_rt || 0) > 0}
 						<div class="insight-item good">
 							<span class="insight-icon">⚡</span>
-							<span>Fast processing speed on easy trials!</span>
+							<span>{lt('Fast processing speed on easy trials!', 'সহজ ট্রায়ালে প্রক্রিয়াকরণের গতি দ্রুত!')}</span>
 						</div>
 					{/if}
 				</div>
@@ -771,19 +947,19 @@
 
 			<!-- Clinical Context -->
 			<div class="clinical-context">
-				<h3>📊 Clinical Context</h3>
+				<h3>📊 {lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h3>
 				<p>
-					The <strong>Conflict Effect</strong> (incongruent RT - congruent RT) is the key measure 
-					of selective attention. Research shows this reflects anterior cingulate cortex function 
-					and executive control networks. Reducing your conflict effect through training indicates 
-					improved ability to ignore distractions and focus on relevant information.
+					{@html lt(
+						'The <strong>Conflict Effect</strong> (incongruent RT - congruent RT) is the key measure of selective attention. Research shows this reflects anterior cingulate cortex function and executive control networks. Reducing your conflict effect through training indicates improved ability to ignore distractions and focus on relevant information.',
+						'<strong>কনফ্লিক্ট ইফেক্ট</strong> (অসঙ্গত প্রতিক্রিয়ার সময় - সঙ্গত প্রতিক্রিয়ার সময়) হলো নির্বাচিত মনোযোগের একটি গুরুত্বপূর্ণ সূচক। গবেষণায় দেখা যায়, এটি অ্যান্টেরিয়র সিংগুলেট কর্টেক্স এবং নির্বাহী নিয়ন্ত্রণ নেটওয়ার্কের কার্যকারিতাকে প্রতিফলিত করে। অনুশীলনের মাধ্যমে কনফ্লিক্ট ইফেক্ট কমে গেলে বোঝা যায় যে বিভ্রান্তি উপেক্ষা করে প্রাসঙ্গিক তথ্যের দিকে মনোযোগ দেওয়ার ক্ষমতা উন্নত হচ্ছে।'
+					)}
 				</p>
 			</div>
 
 			<!-- Navigation -->
 			<div class="button-group">
 				<button class="primary-button" on:click={returnToDashboard}>
-					Return to Dashboard
+					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
 				</button>
 			</div>
 		</div>

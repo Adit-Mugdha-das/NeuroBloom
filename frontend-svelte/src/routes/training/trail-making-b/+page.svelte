@@ -491,7 +491,7 @@
 
 <svelte:window on:keydown={(e) => e.key === 'Escape' && phase !== 'results' && returnToDashboard()} />
 
-<div class="tmt-b-container">
+<div class="tmt-b-container" data-localize-skip>
 	{#if loading}
 		<div class="loading-state">
 			<div class="spinner"></div>

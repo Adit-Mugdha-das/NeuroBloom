@@ -310,7 +310,7 @@
 	});
 </script>
 
-<div class="container">
+<div class="container" data-localize-skip>
 	<div style="background: white; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 1000px;">
 		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;">
 			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">{t('Wisconsin Card Sorting Test')}</h1>
@@ -368,7 +368,7 @@
 				<div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
 					<h3 style="font-weight: 600; color: #333; margin-bottom: 8px;">🎯 {t('Your Task:')}</h3>
 					<p style="color: #555;">
-						{t('Sort each card by clicking one of the four target cards at the top. You\'ll get feedback on whether your sort was "Correct" or "Wrong".')}
+						{t(`Sort each card by clicking one of the four target cards at the top. You'll get feedback on whether your sort was "Correct" or "Wrong".`)}
 					</p>
 				</div>
 

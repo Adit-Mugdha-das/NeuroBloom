@@ -390,7 +390,7 @@
 	});
 </script>
 
-<div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
+<div data-localize-skip style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
 	<div style="background: white; padding: 30px; border-radius: 10px; margin: 0 auto; max-width: 1000px;">
 		<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;">
 			<h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">

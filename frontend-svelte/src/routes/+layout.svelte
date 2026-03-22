@@ -11,12 +11,44 @@
 
 	let currentUser = null;
 	const PUBLIC_LANGUAGE_ROUTES = new Set(['/', '/login', '/register']);
+	const GAME_ROUTE_PREFIXES = ['/training', '/baseline/tasks'];
+	// Keep this list in sync with `npm run audit:bangla-ui`.
+	const LEGACY_GAME_ROUTES = new Set([
+		'/training',
+		'/training/cancellation-test',
+		'/training/inspection-time',
+		'/training/letter-number-sequencing',
+		'/training/multiple-object-tracking',
+		'/training/pattern-comparison',
+		'/training/plus-minus',
+		'/training/sdmt',
+		'/training/stockings-of-cambridge',
+		'/training/tower-of-london',
+		'/training/twenty-questions',
+		'/training/useful-field-of-view',
+		'/training/visual-search',
+		'/baseline/tasks/attention',
+		'/baseline/tasks/flexibility',
+		'/baseline/tasks/planning',
+		'/baseline/tasks/processing-speed',
+		'/baseline/tasks/visual-scanning'
+	]);
 	const NATIVE_LOCALIZED_ROUTES = new Set([
 		'/baseline/tasks/working-memory',
 		'/training/category-fluency',
+		'/training/dccs',
+		'/training/digit-span',
+		'/training/dual-n-back',
+		'/training/flanker',
+		'/training/gonogo',
 		'/training/operation-span',
 		'/training/pasat',
-		'/training/verbal-fluency'
+		'/training/spatial-span',
+		'/training/stroop',
+		'/training/trail-making-a',
+		'/training/trail-making-b',
+		'/training/verbal-fluency',
+		'/training/wcst'
 	]);
 
 	const unsubscribe = user.subscribe((value) => {
@@ -83,7 +115,12 @@
 
 	$: showPublicLanguageSwitcher =
 		$authReady && !currentUser && PUBLIC_LANGUAGE_ROUTES.has($page.url.pathname);
-	$: useLegacyDomLocalization = !NATIVE_LOCALIZED_ROUTES.has($page.url.pathname);
+	$: isGameRoute = GAME_ROUTE_PREFIXES.some((prefix) =>
+		$page.url.pathname === prefix || $page.url.pathname.startsWith(`${prefix}/`)
+	);
+	$: useLegacyDomLocalization = isGameRoute
+		? LEGACY_GAME_ROUTES.has($page.url.pathname)
+		: !NATIVE_LOCALIZED_ROUTES.has($page.url.pathname);
 </script>
 
 {#if showPublicLanguageSwitcher}
