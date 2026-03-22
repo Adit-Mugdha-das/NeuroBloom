@@ -1,0 +1,983 @@
+{
+  "summary": {
+    "totalRoutes": 33,
+    "nativeRoutes": 15,
+    "legacyRoutes": 18,
+    "routesWithUncoveredTranslations": 0,
+    "compileFailures": 0
+  },
+  "routes": [
+    {
+      "routePath": "/baseline/tasks/attention",
+      "filePath": "src/routes/baseline/tasks/attention/+page.svelte",
+      "lines": 528,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/baseline/tasks/flexibility",
+      "filePath": "src/routes/baseline/tasks/flexibility/+page.svelte",
+      "lines": 464,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/baseline/tasks/planning",
+      "filePath": "src/routes/baseline/tasks/planning/+page.svelte",
+      "lines": 408,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/baseline/tasks/processing-speed",
+      "filePath": "src/routes/baseline/tasks/processing-speed/+page.svelte",
+      "lines": 336,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "choice",
+        "intro",
+        "results",
+        "simple"
+      ],
+      "manualChecks": [
+        "choice",
+        "error-alert",
+        "intro",
+        "results",
+        "simple"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/baseline/tasks/visual-scanning",
+      "filePath": "src/routes/baseline/tasks/visual-scanning/+page.svelte",
+      "lines": 368,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/baseline/tasks/working-memory",
+      "filePath": "src/routes/baseline/tasks/working-memory/+page.svelte",
+      "lines": 1152,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "instructions",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training",
+      "filePath": "src/routes/training/+page.svelte",
+      "lines": 958,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [],
+      "manualChecks": [
+        "loading"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/cancellation-test",
+      "filePath": "src/routes/training/cancellation-test/+page.svelte",
+      "lines": 504,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "instructions",
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/category-fluency",
+      "filePath": "src/routes/training/category-fluency/+page.svelte",
+      "lines": 570,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "loading",
+        "results",
+        "trial"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "instructions",
+        "intro",
+        "loading",
+        "results",
+        "trial"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/dccs",
+      "filePath": "src/routes/training/dccs/+page.svelte",
+      "lines": 687,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "phase-transition",
+        "results",
+        "task"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "intro",
+        "loading",
+        "phase-transition",
+        "results",
+        "task"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/digit-span",
+      "filePath": "src/routes/training/digit-span/+page.svelte",
+      "lines": 1210,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "loading"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/dual-n-back",
+      "filePath": "src/routes/training/dual-n-back/+page.svelte",
+      "lines": 1005,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "instructions",
+        "loading",
+        "playing",
+        "round_intro",
+        "trial_feedback"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "complete",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "playing",
+        "round_intro",
+        "trial_feedback"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/flanker",
+      "filePath": "src/routes/training/flanker/+page.svelte",
+      "lines": 1915,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": true,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "instructions",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/gonogo",
+      "filePath": "src/routes/training/gonogo/+page.svelte",
+      "lines": 2048,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": true,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "instructions",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/inspection-time",
+      "filePath": "src/routes/training/inspection-time/+page.svelte",
+      "lines": 1441,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/letter-number-sequencing",
+      "filePath": "src/routes/training/letter-number-sequencing/+page.svelte",
+      "lines": 1271,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "feedback",
+        "input",
+        "instructions",
+        "loading",
+        "ready",
+        "showing"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "feedback",
+        "help-modal",
+        "input",
+        "instructions",
+        "loading",
+        "ready",
+        "showing"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/multiple-object-tracking",
+      "filePath": "src/routes/training/multiple-object-tracking/+page.svelte",
+      "lines": 1159,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "highlighting",
+        "intro",
+        "results",
+        "selection",
+        "tracking"
+      ],
+      "manualChecks": [
+        "error-alert",
+        "highlighting",
+        "instructions",
+        "intro",
+        "loading",
+        "results",
+        "selection",
+        "tracking"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/operation-span",
+      "filePath": "src/routes/training/operation-span/+page.svelte",
+      "lines": 1450,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "feedback",
+        "instructions",
+        "letter_display",
+        "loading",
+        "math_problem",
+        "ready",
+        "recall"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "feedback",
+        "help-modal",
+        "instructions",
+        "letter_display",
+        "loading",
+        "math_problem",
+        "ready",
+        "recall"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/pasat",
+      "filePath": "src/routes/training/pasat/+page.svelte",
+      "lines": 1739,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/pattern-comparison",
+      "filePath": "src/routes/training/pattern-comparison/+page.svelte",
+      "lines": 1570,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "instructions",
+        "loading",
+        "ready",
+        "testing"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "loading",
+        "practice",
+        "ready",
+        "testing"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/plus-minus",
+      "filePath": "src/routes/training/plus-minus/+page.svelte",
+      "lines": 567,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "block-transition",
+        "intro",
+        "results",
+        "task"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "block-transition",
+        "intro",
+        "loading",
+        "results",
+        "task"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/sdmt",
+      "filePath": "src/routes/training/sdmt/+page.svelte",
+      "lines": 1381,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "instructions",
+        "loading",
+        "ready",
+        "testing"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "loading",
+        "practice",
+        "ready",
+        "testing"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/spatial-span",
+      "filePath": "src/routes/training/spatial-span/+page.svelte",
+      "lines": 977,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "feedback",
+        "input",
+        "instructions",
+        "loading",
+        "ready",
+        "showing"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "feedback",
+        "help-modal",
+        "input",
+        "instructions",
+        "loading",
+        "ready",
+        "showing"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/stockings-of-cambridge",
+      "filePath": "src/routes/training/stockings-of-cambridge/+page.svelte",
+      "lines": 787,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "planning",
+        "problem_complete",
+        "results",
+        "solving"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "intro",
+        "loading",
+        "planning",
+        "problem_complete",
+        "results",
+        "solving"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/stroop",
+      "filePath": "src/routes/training/stroop/+page.svelte",
+      "lines": 1940,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "instructions",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/tower-of-london",
+      "filePath": "src/routes/training/tower-of-london/+page.svelte",
+      "lines": 772,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "planning",
+        "problem_complete",
+        "results",
+        "solving"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "intro",
+        "loading",
+        "planning",
+        "problem_complete",
+        "results",
+        "solving"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/trail-making-a",
+      "filePath": "src/routes/training/trail-making-a/+page.svelte",
+      "lines": 1453,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "complete",
+        "instructions",
+        "loading",
+        "ready",
+        "testing"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "complete",
+        "error-alert",
+        "help-modal",
+        "instructions",
+        "loading",
+        "practice",
+        "ready",
+        "testing"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/trail-making-b",
+      "filePath": "src/routes/training/trail-making-b/+page.svelte",
+      "lines": 1484,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "instructions",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "error-alert",
+        "instructions",
+        "intro",
+        "loading",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/twenty-questions",
+      "filePath": "src/routes/training/twenty-questions/+page.svelte",
+      "lines": 546,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "instructions",
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/useful-field-of-view",
+      "filePath": "src/routes/training/useful-field-of-view/+page.svelte",
+      "lines": 1576,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "ready",
+        "response",
+        "results",
+        "stimulus"
+      ],
+      "manualChecks": [
+        "instructions",
+        "intro",
+        "loading",
+        "ready",
+        "response",
+        "results",
+        "stimulus"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/verbal-fluency",
+      "filePath": "src/routes/training/verbal-fluency/+page.svelte",
+      "lines": 643,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "between_letters",
+        "intro",
+        "letter_round",
+        "loading",
+        "results"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "between_letters",
+        "error-alert",
+        "instructions",
+        "intro",
+        "letter_round",
+        "loading",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/visual-search",
+      "filePath": "src/routes/training/visual-search/+page.svelte",
+      "lines": 1265,
+      "localizationMode": "legacy",
+      "hasDataLocalizeSkip": false,
+      "usesTranslateText": false,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "error-alert",
+        "instructions",
+        "intro",
+        "loading",
+        "playing",
+        "results"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    },
+    {
+      "routePath": "/training/wcst",
+      "filePath": "src/routes/training/wcst/+page.svelte",
+      "lines": 626,
+      "localizationMode": "native",
+      "hasDataLocalizeSkip": true,
+      "usesTranslateText": true,
+      "usesLocaleText": false,
+      "longUncoveredTranslations": [],
+      "rawEnglishTemplateFragments": [],
+      "states": [
+        "instructions",
+        "instructions-test",
+        "intro",
+        "practice",
+        "results",
+        "test"
+      ],
+      "manualChecks": [
+        "backend-response",
+        "badges",
+        "instructions",
+        "instructions-test",
+        "intro",
+        "loading",
+        "practice",
+        "results",
+        "test"
+      ],
+      "compileStatus": {
+        "ok": true
+      }
+    }
+  ]
+}
