@@ -25,7 +25,7 @@ function _page($$renderer, $$props) {
     function levelLabel(value = difficulty, max = 10) {
       return store_get($$store_subs ??= {}, "$locale", locale) === "bn" ? `লেভেল ${n(value)}/${n(max)}` : `Level ${value}/${max}`;
     }
-    $$renderer2.push(`<div class="container"><div style="background: white; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 1000px;"><div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;"><h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">${escape_html(t("Wisconsin Card Sorting Test"))}</h1> `);
+    $$renderer2.push(`<div class="container" data-localize-skip=""><div style="background: white; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 1000px;"><div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;"><h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;">${escape_html(t("Wisconsin Card Sorting Test"))}</h1> `);
     DifficultyBadge($$renderer2, { difficulty: 5, domain: "Cognitive Flexibility" });
     $$renderer2.push(`<!----></div> `);
     {

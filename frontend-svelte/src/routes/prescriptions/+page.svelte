@@ -132,7 +132,9 @@
 					<h2>{prescriptionData.doctor?.name || 'Assigned doctor'}</h2>
 					<p class="hero-copy">
 						{#if latestPrescription}
-							Latest prescription: {latestPrescription.title}. Review the PDF for the full medication and instructions list.
+							<span>Latest prescription:</span>
+							<span data-localize-skip> {latestPrescription.title}</span>
+							<span>. Review the PDF for the full medication and instructions list.</span>
 						{:else}
 							Your clinician is connected. Prescriptions issued by them will appear here.
 						{/if}
@@ -166,8 +168,8 @@
 								<div class="card-head">
 									<div>
 										<p class="card-kicker">{prescription.verification_id}</p>
-										<h3>{prescription.title}</h3>
-										<p class="summary-copy">{prescription.summary || prescription.patient_instructions}</p>
+										<h3 data-localize-skip>{prescription.title}</h3>
+										<p class="summary-copy" data-localize-skip>{prescription.summary || prescription.patient_instructions}</p>
 									</div>
 									<div class="card-meta">
 										<span class="status-pill status-{prescription.status}">{prescription.status.replaceAll('_', ' ')}</span>
@@ -177,7 +179,7 @@
 								</div>
 
 								<div class="detail-grid">
-									<div><span>Doctor</span><strong>{prescription.doctor_name}</strong></div>
+									<div><span>Doctor</span><strong data-localize-skip>{prescription.doctor_name}</strong></div>
 									<div><span>Review date</span><strong>{formatDate(prescription.review_date)}</strong></div>
 									<div><span>Valid until</span><strong>{formatDate(prescription.valid_until)}</strong></div>
 									<div><span>Medication count</span><strong>{prescription.medication_count}</strong></div>
@@ -186,7 +188,7 @@
 								{#if prescription.medications?.length}
 									<div class="medication-list">
 										{#each prescription.medications as medication}
-											<div class="medication-item">
+											<div class="medication-item" data-localize-skip>
 												<strong>{medication.name}</strong>
 												<span>{medication.dosage} · {medication.frequency}{medication.duration ? ` · ${medication.duration}` : ''}</span>
 												{#if medication.instructions}
@@ -200,7 +202,7 @@
 								{#if prescription.lifestyle_plan?.length}
 									<div class="support-block">
 										<p class="card-kicker">Lifestyle Recommendations</p>
-										<ul>
+										<ul data-localize-skip>
 											{#each prescription.lifestyle_plan as item}
 												<li>{item}</li>
 											{/each}

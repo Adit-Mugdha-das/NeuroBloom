@@ -70,7 +70,7 @@
 						<div>
 							<p class="card-kicker">Patient Reports</p>
 							<h2>{patient.full_name}</h2>
-							<p class="card-subtitle">{patient.diagnosis || 'Diagnosis not recorded'}</p>
+							<p class="card-subtitle" data-localize-skip>{patient.diagnosis || 'Diagnosis not recorded'}</p>
 						</div>
 						<div class="report-meta">
 							<div><span>Baseline</span><strong>{patient.baseline_completed ? 'Complete' : 'Pending'}</strong></div>

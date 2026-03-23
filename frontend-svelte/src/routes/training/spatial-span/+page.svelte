@@ -292,9 +292,9 @@
 				<div class="tips">
 					<h3>{t('Memory Strategies')}</h3>
 					<ul>
-						<li><strong>Visualize the path:</strong> Imagine drawing a line connecting the blocks</li>
-						<li><strong>Spatial chunking:</strong> Group blocks into patterns (L-shape, diagonal, etc.)</li>
-						<li><strong>Mental rehearsal:</strong> Replay the sequence in your mind before responding</li>
+						<li><strong>{t('Visualize the path:')}</strong> {t('Imagine drawing a line connecting the blocks')}</li>
+						<li><strong>{t('Spatial chunking:')}</strong> {t('Group blocks into patterns (L-shape, diagonal, etc.)')}</li>
+						<li><strong>{t('Mental rehearsal:')}</strong> {t('Replay the sequence in your mind before responding')}</li>
 					</ul>
 				</div>
 			</div>
@@ -326,11 +326,11 @@
 			{:else}
 				<div class="input-header">
 					<p class="instruction">
-						{#if currentTrial.span_type === 'backward'}
-							Click blocks in <strong>REVERSE</strong> order
-						{:else}
-							Click blocks in the <strong>SAME</strong> order
-						{/if}
+						{t(
+							currentTrial.span_type === 'backward'
+								? 'Click blocks in REVERSE order'
+								: 'Click blocks in the SAME order'
+						)}
 					</p>
 					<div class="control-buttons">
 						<button class="control-btn" on:click={undoLastClick} disabled={userResponse.length === 0}>
@@ -452,27 +452,27 @@
 			on:click|stopPropagation
 			on:keydown|stopPropagation
 		>
-			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>Memory Strategies</h2>
+			<button class="close-button" on:click={toggleHelp}>&times;</button>
+			<h2>{t('Memory Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>🎨 Visual Imagery</h3>
-				<p>Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.</p>
+				<h3>🎨 {t('Visual Imagery')}</h3>
+				<p>{t('Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧩 Spatial Chunking</h3>
-				<p>Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.</p>
+				<h3>🧩 {t('Spatial Chunking')}</h3>
+				<p>{t('Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 Mental Rehearsal</h3>
-				<p>After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.</p>
+				<h3>🔄 {t('Mental Rehearsal')}</h3>
+				<p>{t('After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>📍 Landmark Method</h3>
-				<p>Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.</p>
+				<h3>📍 {t('Landmark Method')}</h3>
+				<p>{t('Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.')}</p>
 			</div>
 		</div>
 	</div>

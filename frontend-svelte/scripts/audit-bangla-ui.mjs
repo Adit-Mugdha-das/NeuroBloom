@@ -2,23 +2,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parse } from 'svelte/compiler';
+import { getRouteLocalizationMode } from '../src/lib/i18n/route-localization.js';
+import {
+	getGoNoGoStimulusPair,
+	getTaskDifficultyDescription
+} from '../src/lib/i18n/task-ui.js';
+import { translateText } from '../src/lib/i18n/translator.js';
 
 const projectRoot = process.cwd();
-const catalogSource = fs.readFileSync(
-	path.join(projectRoot, 'src', 'lib', 'i18n', 'catalog.js'),
-	'utf8'
-);
+const routesRoot = path.join(projectRoot, 'src', 'routes');
 const scanRoots = [
 	path.join(projectRoot, 'src', 'routes', 'training'),
 	path.join(projectRoot, 'src', 'routes', 'baseline', 'tasks')
 ];
 const userFacingAttributes = new Set(['placeholder', 'aria-label', 'title', 'alt']);
 const allowedFragments = [
+	'NeuroBloom',
 	'MS',
 	'ADHD',
 	'WCST',
 	'DCCS',
 	'PASAT',
+	'CPT',
+	'UFOV',
+	'AX',
 	'ANT',
 	'OSPAN',
 	'SDMT',
@@ -48,6 +55,15 @@ function collectFiles(dir, output = []) {
 	return output;
 }
 
+function routePathFromFile(filePath) {
+	const relative = path.relative(routesRoot, path.dirname(filePath));
+	if (!relative) {
+		return '/';
+	}
+
+	return `/${relative.replace(/\\/g, '/')}`;
+}
+
 function normalizeText(value) {
 	return value.replace(/\s+/g, ' ').trim();
 }
@@ -59,8 +75,17 @@ function stripAllowedFragments(text) {
 	);
 }
 
+function stripPreservedStimuli(text) {
+	return text
+		.replace(/"([A-Z])"/g, '""')
+		.replace(/\b[A-Z]\b/g, '')
+		.replace(/[→←]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
 function looksLikeEnglishUiText(text) {
-	const normalized = stripAllowedFragments(normalizeText(text));
+	const normalized = stripPreservedStimuli(stripAllowedFragments(normalizeText(text)));
 
 	if (!normalized || !/[A-Za-z]/.test(normalized)) {
 		return false;
@@ -77,10 +102,65 @@ function looksLikeEnglishUiText(text) {
 	return true;
 }
 
-function hasExactCatalogCoverage(text) {
-	const singleQuoted = `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
-	const doubleQuoted = `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-	return catalogSource.includes(singleQuoted) || catalogSource.includes(doubleQuoted);
+function createSharedTaskUiFinding(routePath, sourceText, localizedText) {
+	return {
+		filePath: path.join(projectRoot, 'src', 'lib', 'i18n', 'task-ui.js'),
+		routePath,
+		localizationMode: 'native',
+		kind: 'shared-task-ui',
+		line: 1,
+		column: 1,
+		sourceText,
+		localizedText
+	};
+}
+
+function auditSharedTaskUi() {
+	const findings = [];
+
+	for (const taskKey of ['pasat', 'gonogo']) {
+		for (let difficulty = 1; difficulty <= 10; difficulty += 1) {
+			const localizedText = normalizeText(getTaskDifficultyDescription(taskKey, difficulty, 'bn'));
+
+			if (!localizedText || isResidualEnglish(localizedText)) {
+				findings.push(
+					createSharedTaskUiFinding(
+						`/training/${taskKey}`,
+						`${taskKey} difficulty ${difficulty} Bangla description`,
+						localizedText || '<missing>'
+					)
+				);
+			}
+		}
+	}
+
+	for (const stimulusSet of ['basic', 'similar', 'complex']) {
+		const pair = getGoNoGoStimulusPair(stimulusSet, 'bn');
+		const localizedText = `${pair.go || '<missing>'} / ${pair.nogo || '<missing>'}`;
+
+		if (!pair.go || !pair.nogo || /[A-Za-z]/.test(pair.go) || /[A-Za-z]/.test(pair.nogo)) {
+			findings.push(
+				createSharedTaskUiFinding(
+					'/training/gonogo',
+					`gonogo ${stimulusSet} Bangla stimuli`,
+					localizedText
+				)
+			);
+		}
+	}
+
+	const shapePair = getGoNoGoStimulusPair('shapes', 'bn');
+	if (!shapePair.go || !shapePair.nogo) {
+		findings.push(
+			createSharedTaskUiFinding(
+				'/training/gonogo',
+				'gonogo shapes Bangla stimuli',
+				`${shapePair.go || '<missing>'} / ${shapePair.nogo || '<missing>'}`
+			)
+		);
+	}
+
+	return findings;
 }
 
 function createLocator(source) {
@@ -113,18 +193,71 @@ function getNodeStart(node) {
 			: 0;
 }
 
-function addFinding(findings, filePath, locator, node, kind, text) {
+function getRootNodes(ast) {
+	if (Array.isArray(ast?.fragment?.nodes)) {
+		return ast.fragment.nodes;
+	}
+
+	if (Array.isArray(ast?.html?.children)) {
+		return ast.html.children;
+	}
+
+	return [];
+}
+
+function getChildNodes(block) {
+	if (Array.isArray(block?.nodes)) {
+		return block.nodes;
+	}
+
+	if (Array.isArray(block?.children)) {
+		return block.children;
+	}
+
+	return [];
+}
+
+function localizeForRoute(text, localizationMode) {
+	const options = localizationMode === 'observe' ? { aggressive: true } : {};
+	return translateText(text, 'bn', options);
+}
+
+function isResidualEnglish(text) {
+	return looksLikeEnglishUiText(text);
+}
+
+function addFinding(findings, filePath, routePath, localizationMode, locator, node, kind, sourceText) {
+	const normalizedSource = normalizeText(sourceText);
+	const localizedText =
+		localizationMode === 'observe'
+			? normalizeText(localizeForRoute(normalizedSource, localizationMode))
+			: normalizedSource;
+
+	if (!isResidualEnglish(localizedText)) {
+		return;
+	}
+
 	const location = locator(getNodeStart(node));
 	findings.push({
 		filePath,
+		routePath,
+		localizationMode,
 		kind,
 		line: location.line,
 		column: location.column,
-		text: normalizeText(text)
+		sourceText: normalizedSource,
+		localizedText
 	});
 }
 
-function inspectAttributes(findings, filePath, locator, attributes = []) {
+function inspectAttributes(
+	findings,
+	filePath,
+	routePath,
+	localizationMode,
+	locator,
+	attributes = []
+) {
 	for (const attribute of attributes) {
 		if (!userFacingAttributes.has(attribute.name) || !Array.isArray(attribute.value)) {
 			continue;
@@ -136,30 +269,58 @@ function inspectAttributes(findings, filePath, locator, attributes = []) {
 			.join(' ');
 
 		if (looksLikeEnglishUiText(textValue)) {
-			addFinding(findings, filePath, locator, attribute, `attribute:${attribute.name}`, textValue);
+			addFinding(
+				findings,
+				filePath,
+				routePath,
+				localizationMode,
+				locator,
+				attribute,
+				`attribute:${attribute.name}`,
+				textValue
+			);
 		}
 	}
 }
 
-function walkNodes(findings, filePath, locator, nodes = []) {
+function walkNodes(findings, filePath, routePath, localizationMode, locator, nodes = []) {
 	for (const node of nodes) {
 		switch (node.type) {
 			case 'Text': {
 				const text = normalizeText(node.data || '');
 				if (looksLikeEnglishUiText(text)) {
-					addFinding(findings, filePath, locator, node, 'text', text);
+					addFinding(
+						findings,
+						filePath,
+						routePath,
+						localizationMode,
+						locator,
+						node,
+						'text',
+						text
+					);
 				}
 				break;
 			}
 
 			case 'Element':
+			case 'RegularElement':
 			case 'InlineComponent':
 			case 'SvelteElement':
 			case 'Slot':
 			case 'Component': {
-				inspectAttributes(findings, filePath, locator, node.attributes);
-				if (Array.isArray(node.fragment?.nodes)) {
-					walkNodes(findings, filePath, locator, node.fragment.nodes);
+				inspectAttributes(
+					findings,
+					filePath,
+					routePath,
+					localizationMode,
+					locator,
+					node.attributes
+				);
+				const fragmentNodes = getChildNodes(node.fragment);
+				const childNodes = fragmentNodes.length > 0 ? fragmentNodes : getChildNodes(node);
+				if (childNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, childNodes);
 				}
 				break;
 			}
@@ -168,20 +329,30 @@ function walkNodes(findings, filePath, locator, nodes = []) {
 			case 'EachBlock':
 			case 'AwaitBlock':
 			case 'KeyBlock': {
-				if (Array.isArray(node.fragment?.nodes)) {
-					walkNodes(findings, filePath, locator, node.fragment.nodes);
+				const directChildNodes = getChildNodes(node);
+				const fragmentNodes = getChildNodes(node.fragment);
+				const elseNodes = getChildNodes(node.else);
+				const pendingNodes = getChildNodes(node.pending);
+				const thenNodes = getChildNodes(node.then);
+				const catchNodes = getChildNodes(node.catch);
+
+				if (directChildNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, directChildNodes);
 				}
-				if (Array.isArray(node.else?.nodes)) {
-					walkNodes(findings, filePath, locator, node.else.nodes);
+				if (fragmentNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, fragmentNodes);
 				}
-				if (Array.isArray(node.pending?.nodes)) {
-					walkNodes(findings, filePath, locator, node.pending.nodes);
+				if (elseNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, elseNodes);
 				}
-				if (Array.isArray(node.then?.nodes)) {
-					walkNodes(findings, filePath, locator, node.then.nodes);
+				if (pendingNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, pendingNodes);
 				}
-				if (Array.isArray(node.catch?.nodes)) {
-					walkNodes(findings, filePath, locator, node.catch.nodes);
+				if (thenNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, thenNodes);
+				}
+				if (catchNodes.length > 0) {
+					walkNodes(findings, filePath, routePath, localizationMode, locator, catchNodes);
 				}
 				break;
 			}
@@ -197,51 +368,63 @@ function auditFile(filePath) {
 	const locator = createLocator(source);
 	const ast = parse(source);
 	const findings = [];
+	const routePath = routePathFromFile(filePath);
+	const localizationMode = getRouteLocalizationMode(routePath);
 
-	walkNodes(findings, filePath, locator, ast.fragment?.nodes || []);
-
-	if (!source.includes('data-localize-skip')) {
-		findings.push({
-			filePath,
-			kind: 'route',
-			line: 1,
-			column: 1,
-			text: 'Route still relies on legacy DOM localization.'
-		});
-	}
+	walkNodes(findings, filePath, routePath, localizationMode, locator, getRootNodes(ast));
 
 	for (const match of source.matchAll(longTranslationCallPattern)) {
 		const literal = normalizeText(match[2] || '');
+		if (literal.includes('${') || !looksLikeEnglishUiText(literal)) {
+			continue;
+		}
 
-		if (literal.length < 30 || !looksLikeEnglishUiText(literal) || hasExactCatalogCoverage(literal)) {
+		const localizedText = normalizeText(localizeForRoute(literal, localizationMode));
+		if (!isResidualEnglish(localizedText)) {
 			continue;
 		}
 
 		const location = locator(match.index || 0);
 		findings.push({
 			filePath,
+			routePath,
+			localizationMode,
 			kind: 'translation-call',
 			line: location.line,
 			column: location.column,
-			text: literal
+			sourceText: literal,
+			localizedText
 		});
 	}
 
-	return findings;
+	return {
+		routePath,
+		localizationMode,
+		findings
+	};
 }
 
 const files = scanRoots.flatMap((root) => collectFiles(root));
-const findings = files.flatMap((filePath) => auditFile(filePath));
+const routeAudits = files.map((filePath) => auditFile(filePath));
+const findings = [...routeAudits.flatMap((audit) => audit.findings), ...auditSharedTaskUi()];
+const observedRoutes = routeAudits.filter((audit) => audit.localizationMode === 'observe').length;
+const nativeRoutes = routeAudits.filter((audit) => audit.localizationMode === 'native').length;
 
 if (findings.length === 0) {
-	console.log('Bangla UI audit passed. No static English UI text found in training or baseline game pages.');
+	console.log(
+		`Bangla UI audit passed. Scanned ${routeAudits.length} game routes with ${nativeRoutes} native and ${observedRoutes} observer-backed routes. No residual English UI text found after applying each route's localization path.`
+	);
 	process.exit(0);
 }
 
-console.log(`Bangla UI audit found ${findings.length} issue(s):`);
+console.log(
+	`Bangla UI audit found ${findings.length} residual English issue(s) across ${routeAudits.length} game routes:`
+);
 for (const finding of findings) {
 	const relativePath = path.relative(projectRoot, finding.filePath);
-	console.log(`${relativePath}:${finding.line}:${finding.column} [${finding.kind}] ${finding.text}`);
+	console.log(
+		`${relativePath}:${finding.line}:${finding.column} [${finding.localizationMode}:${finding.kind}] ${finding.sourceText} => ${finding.localizedText}`
+	);
 }
 
 process.exit(1);

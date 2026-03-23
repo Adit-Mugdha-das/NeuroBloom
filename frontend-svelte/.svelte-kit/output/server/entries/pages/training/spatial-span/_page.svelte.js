@@ -14,7 +14,7 @@ function _page($$renderer, $$props) {
     function t(text) {
       return translateText(text, store_get($$store_subs ??= {}, "$locale", locale));
     }
-    $$renderer2.push(`<div class="spatial-span-container svelte-1l6ci7f">`);
+    $$renderer2.push(`<div class="spatial-span-container svelte-1l6ci7f" data-localize-skip="">`);
     {
       $$renderer2.push("<!--[-->");
       $$renderer2.push(`<div class="loading svelte-1l6ci7f"><div class="spinner svelte-1l6ci7f"></div> <p class="svelte-1l6ci7f">${escape_html(t("Loading Spatial Span Task..."))}</p></div>`);

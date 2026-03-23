@@ -2,22 +2,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { compile, parse } from 'svelte/compiler';
+import {
+	getRouteLocalizationMode
+} from '../src/lib/i18n/route-localization.js';
 
 const projectRoot = process.cwd();
 const routesRoot = path.join(projectRoot, 'src', 'routes');
-const layoutPath = path.join(routesRoot, '+layout.svelte');
 const catalogPath = path.join(projectRoot, 'src', 'lib', 'i18n', 'catalog.js');
+const taskTranslationsPath = path.join(projectRoot, 'src', 'lib', 'i18n', 'task-translations.js');
 const reportsDir = path.join(projectRoot, 'reports');
 const reportJsonPath = path.join(reportsDir, 'localization-verification-report.json');
 const reportMdPath = path.join(reportsDir, 'localization-verification-report.md');
 
-const routeScanRoots = [
-	path.join(routesRoot, 'training'),
-	path.join(routesRoot, 'baseline', 'tasks')
-];
+const routeScanRoots = [routesRoot];
 
 const catalogSource = fs.readFileSync(catalogPath, 'utf8');
-const layoutSource = fs.readFileSync(layoutPath, 'utf8');
+const taskTranslationsSource = fs.readFileSync(taskTranslationsPath, 'utf8');
+const translationSources = [catalogSource, taskTranslationsSource];
 const longTranslationCallPattern =
 	/(?:\bt|translateText)\(\s*(['"`])((?:\\.|(?!\1)[\s\S])+?)\1(?:\s*,[\s\S]*?)?\)/g;
 const allowedFragments = [
@@ -36,20 +37,6 @@ const allowedFragments = [
 	'NO-GO',
 	'SPACEBAR'
 ];
-
-function extractRouteSet(name) {
-	const blockMatch = layoutSource.match(
-		new RegExp(`const ${name} = new Set\\(\\[(.*?)\\]\\);`, 's')
-	);
-
-	if (!blockMatch) {
-		return new Set();
-	}
-
-	return new Set(
-		[...blockMatch[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
-	);
-}
 
 function walk(dir, output = []) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -80,6 +67,30 @@ function normalizeText(value) {
 	return value.replace(/\s+/g, ' ').trim();
 }
 
+function getRootNodes(ast) {
+	if (Array.isArray(ast?.fragment?.nodes)) {
+		return ast.fragment.nodes;
+	}
+
+	if (Array.isArray(ast?.html?.children)) {
+		return ast.html.children;
+	}
+
+	return [];
+}
+
+function getChildNodes(block) {
+	if (Array.isArray(block?.nodes)) {
+		return block.nodes;
+	}
+
+	if (Array.isArray(block?.children)) {
+		return block.children;
+	}
+
+	return [];
+}
+
 function stripAllowedFragments(text) {
 	return allowedFragments.reduce(
 		(current, fragment) => current.replaceAll(fragment, ''),
@@ -105,12 +116,11 @@ function looksLikeEnglishUiText(text) {
 	return true;
 }
 
-function hasExactCatalogCoverage(text) {
+function hasExactTranslationCoverage(text) {
 	const escapedSingle = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 	const escapedDouble = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-	return (
-		catalogSource.includes(`'${escapedSingle}'`) ||
-		catalogSource.includes(`"${escapedDouble}"`)
+	return translationSources.some(
+		(source) => source.includes(`'${escapedSingle}'`) || source.includes(`"${escapedDouble}"`)
 	);
 }
 
@@ -119,7 +129,12 @@ function collectLongUncoveredTranslations(source) {
 
 	for (const match of source.matchAll(longTranslationCallPattern)) {
 		const text = normalizeText(match[2] || '');
-		if (text.length < 30 || !looksLikeEnglishUiText(text) || hasExactCatalogCoverage(text)) {
+		if (
+			text.length < 30 ||
+			text.includes('${') ||
+			!looksLikeEnglishUiText(text) ||
+			hasExactTranslationCoverage(text)
+		) {
 			continue;
 		}
 
@@ -142,29 +157,16 @@ function collectTemplateEnglishFragments(source) {
 				}
 			}
 
-			if (Array.isArray(node.fragment?.nodes)) {
-				walkNodes(node.fragment.nodes);
-			}
-
-			if (Array.isArray(node.else?.nodes)) {
-				walkNodes(node.else.nodes);
-			}
-
-			if (Array.isArray(node.pending?.nodes)) {
-				walkNodes(node.pending.nodes);
-			}
-
-			if (Array.isArray(node.then?.nodes)) {
-				walkNodes(node.then.nodes);
-			}
-
-			if (Array.isArray(node.catch?.nodes)) {
-				walkNodes(node.catch.nodes);
-			}
+			walkNodes(getChildNodes(node));
+			walkNodes(getChildNodes(node.fragment));
+			walkNodes(getChildNodes(node.else));
+			walkNodes(getChildNodes(node.pending));
+			walkNodes(getChildNodes(node.then));
+			walkNodes(getChildNodes(node.catch));
 		}
 	}
 
-	walkNodes(ast.fragment?.nodes || []);
+	walkNodes(getRootNodes(ast));
 	return [...findings];
 }
 
@@ -227,7 +229,7 @@ function compileRoute(filePath, source) {
 	}
 }
 
-function analyzeRoute(filePath, nativeRoutes, legacyRoutes) {
+function analyzeRoute(filePath) {
 	const source = fs.readFileSync(filePath, 'utf8');
 	const routePath = routePathFromFile(filePath);
 	const relativePath = path.relative(projectRoot, filePath).replace(/\\/g, '/');
@@ -236,12 +238,7 @@ function analyzeRoute(filePath, nativeRoutes, legacyRoutes) {
 	const rawEnglishTemplateFragments = collectTemplateEnglishFragments(source);
 	const compileStatus = compileRoute(filePath, source);
 
-	let localizationMode = 'non-game';
-	if (nativeRoutes.has(routePath)) {
-		localizationMode = 'native';
-	} else if (legacyRoutes.has(routePath)) {
-		localizationMode = 'legacy';
-	}
+	const localizationMode = getRouteLocalizationMode(routePath);
 
 	return {
 		routePath,
@@ -268,9 +265,9 @@ function buildMarkdown(summary, routes) {
 	lines.push('');
 	lines.push('## Summary');
 	lines.push('');
-	lines.push(`- Total game routes scanned: ${summary.totalRoutes}`);
+	lines.push(`- Total routes scanned: ${summary.totalRoutes}`);
 	lines.push(`- Native-localized routes: ${summary.nativeRoutes}`);
-	lines.push(`- Legacy fallback routes: ${summary.legacyRoutes}`);
+	lines.push(`- Observed DOM routes: ${summary.legacyRoutes}`);
 	lines.push(`- Routes with uncovered long translation strings: ${summary.routesWithUncoveredTranslations}`);
 	lines.push(`- Routes with compile failures: ${summary.compileFailures}`);
 	lines.push('');
@@ -303,17 +300,15 @@ function buildMarkdown(summary, routes) {
 	return `${lines.join('\n')}\n`;
 }
 
-const nativeRoutes = extractRouteSet('NATIVE_LOCALIZED_ROUTES');
-const legacyRoutes = extractRouteSet('LEGACY_GAME_ROUTES');
 const routeFiles = routeScanRoots.flatMap((root) => walk(root));
 const routeReports = routeFiles
-	.map((filePath) => analyzeRoute(filePath, nativeRoutes, legacyRoutes))
+	.map((filePath) => analyzeRoute(filePath))
 	.sort((left, right) => left.routePath.localeCompare(right.routePath));
 
 const summary = {
 	totalRoutes: routeReports.length,
 	nativeRoutes: routeReports.filter((route) => route.localizationMode === 'native').length,
-	legacyRoutes: routeReports.filter((route) => route.localizationMode === 'legacy').length,
+	legacyRoutes: routeReports.filter((route) => route.localizationMode === 'observe').length,
 	routesWithUncoveredTranslations: routeReports.filter(
 		(route) => route.longUncoveredTranslations.length > 0
 	).length,

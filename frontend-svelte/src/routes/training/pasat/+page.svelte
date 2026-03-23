@@ -7,9 +7,11 @@
 		formatPercent,
 		localizeDigitInput,
 		locale,
+		localeText,
 		normalizeLocalizedDigits,
 		translateText
 	} from '$lib/i18n';
+	import { getTaskDifficultyDescription } from '$lib/i18n/task-ui.js';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -60,6 +62,10 @@
 		return translateText(text ?? '', $locale);
 	}
 
+	function lt(englishText, banglaText) {
+		return localeText({ en: englishText, bn: banglaText }, $locale);
+	}
+
 	function n(value, options = {}) {
 		return formatNumber(value, $locale, options);
 	}
@@ -104,6 +110,11 @@
 
 	function performanceLevelLabel(value) {
 		return t(value);
+	}
+
+	function currentPaceDescription() {
+		const fallbackDescription = sessionData?.config?.description || 'Standard PASAT-3';
+		return getTaskDifficultyDescription('pasat', sessionData?.difficulty, $locale, t(fallbackDescription));
 	}
 
 	function paceChangeLabel(type, before, after) {
@@ -403,7 +414,7 @@
 </script>
 
 <svelte:head>
-	<title>PASAT - NeuroBloom</title>
+	<title>{lt('PASAT - NeuroBloom', 'পাসাট - NeuroBloom')}</title>
 </svelte:head>
 
 <svelte:window on:keypress={handleKeyPress} />
@@ -535,7 +546,7 @@
 			<div class="difficulty-info">
 				<h4>📊 {t('Your Current Pace')}</h4>
 				<p><strong>{secondsLabel(sessionData?.config?.interval_seconds || 3)}</strong> {t('between digits')}</p>
-				<p class="difficulty-description">{t(sessionData?.config?.description || 'Standard PASAT-3')}</p>
+				<p class="difficulty-description">{currentPaceDescription()}</p>
 			</div>
 
 			<div class="action-buttons">

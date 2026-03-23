@@ -1,7 +1,7 @@
 import { s as store_get, u as unsubscribe_stores, f as bind_props } from "./index2.js";
 import { t as translateText, f as formatNumber, l as locale } from "./index3.js";
 /* empty css                                              */
-import { j as fallback } from "./utils3.js";
+import { $ as fallback } from "./utils2.js";
 import { e as escape_html } from "./escaping.js";
 function DifficultyBadge($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {

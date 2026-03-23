@@ -1,5 +1,5 @@
 import { a as attr_class, e as ensure_array_like, f as bind_props, c as stringify } from "./index2.js";
-import { j as fallback } from "./utils3.js";
+import { $ as fallback } from "./utils2.js";
 function LoadingSkeleton($$renderer, $$props) {
   let variant = fallback(
     $$props["variant"],

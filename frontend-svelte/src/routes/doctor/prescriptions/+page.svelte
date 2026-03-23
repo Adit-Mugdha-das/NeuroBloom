@@ -89,7 +89,7 @@
 							<div>
 								<p class="card-kicker">Prescription Record</p>
 								<h2>{patient.full_name}</h2>
-								<p class="card-subtitle">{patient.diagnosis || patient.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
+								<p class="card-subtitle" data-localize-skip>{patient.diagnosis || patient.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
 							</div>
 							<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/prescriptions`)}>
 								Open Workspace
@@ -100,15 +100,15 @@
 							<div><span>Total prescriptions</span><strong>{patient.prescription_count}</strong></div>
 							<div><span>Active</span><strong>{patient.active_prescription_count}</strong></div>
 							<div><span>Latest issued</span><strong>{formatDate(patient.last_prescribed_at)}</strong></div>
-							<div><span>Treatment goal</span><strong>{patient.treatment_goal || 'Not recorded'}</strong></div>
+							<div><span>Treatment goal</span><strong data-localize-skip>{patient.treatment_goal || 'Not recorded'}</strong></div>
 						</div>
 
 						{#if patient.latest_prescription}
 							<div class="latest-card">
 								<div>
 									<p class="latest-kicker">Latest Prescription</p>
-									<h3>{patient.latest_prescription.title}</h3>
-									<p>{patient.latest_prescription.summary || patient.latest_prescription.patient_instructions}</p>
+									<h3 data-localize-skip>{patient.latest_prescription.title}</h3>
+									<p data-localize-skip>{patient.latest_prescription.summary || patient.latest_prescription.patient_instructions}</p>
 								</div>
 								<div class="latest-meta">
 									<span>Version {patient.latest_prescription.version_number}</span>

@@ -4,6 +4,7 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import { getGoNoGoStimulus, getGoNoGoStimulusPair } from '$lib/i18n/task-ui.js';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -142,6 +143,24 @@
 		return lt(`${n(count)} remaining`, `${n(count)}টি বাকি`);
 	}
 
+	function getDisplayStimulusPair() {
+		return getGoNoGoStimulusPair(sessionData?.stimulus_set, $locale, {
+			go: sessionData?.go_stimulus || '',
+			nogo: sessionData?.nogo_stimulus || ''
+		});
+	}
+
+	function displayStimulus(trial) {
+		if (!trial) return '';
+
+		const fallback =
+			trial.trial_type === 'nogo'
+				? sessionData?.nogo_stimulus || trial.stimulus || ''
+				: sessionData?.go_stimulus || trial.stimulus || '';
+
+		return getGoNoGoStimulus(sessionData?.stimulus_set, trial.trial_type, $locale, fallback);
+	}
+
 	function localizedPracticeHint(trial) {
 		if (!trial?.hint) return '';
 		return lt(trial.hint.en, trial.hint.bn);
@@ -179,7 +198,6 @@
 		return [
 			{
 				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
 				hint: {
 					en: 'Press SPACEBAR when you see this.',
 					bn: 'এটি দেখলে স্পেসবার চাপুন।'
@@ -187,7 +205,6 @@
 			},
 			{
 				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
 				hint: {
 					en: 'Quick, press SPACEBAR again.',
 					bn: 'দ্রুত আবার স্পেসবার চাপুন।'
@@ -195,7 +212,6 @@
 			},
 			{
 				trial_type: 'nogo',
-				stimulus: sessionData.nogo_stimulus,
 				hint: {
 					en: 'Do not press. Just wait.',
 					bn: 'চাপবেন না, শুধু অপেক্ষা করুন।'
@@ -203,7 +219,6 @@
 			},
 			{
 				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
 				hint: {
 					en: 'Be ready and press SPACEBAR.',
 					bn: 'প্রস্তুত থাকুন এবং স্পেসবার চাপুন।'
@@ -211,7 +226,6 @@
 			},
 			{
 				trial_type: 'nogo',
-				stimulus: sessionData.nogo_stimulus,
 				hint: {
 					en: 'Remember, do not press for this one.',
 					bn: 'মনে রাখুন, এটি দেখলে চাপবেন না।'
@@ -219,7 +233,6 @@
 			},
 			{
 				trial_type: 'go',
-				stimulus: sessionData.go_stimulus,
 				hint: {
 					en: 'Final practice, press SPACEBAR.',
 					bn: 'শেষ অনুশীলন, স্পেসবার চাপুন।'
@@ -497,6 +510,9 @@
 	// Progress tracking
 	$: progress = sessionData ? ((currentTrial / sessionData.trials.length) * 100) : 0;
 	$: trialsRemaining = sessionData ? sessionData.trials.length - currentTrial : 0;
+	$: displayStimuli = getDisplayStimulusPair();
+	$: goDisplayStimulus = displayStimuli.go;
+	$: nogoDisplayStimulus = displayStimuli.nogo;
 
 	// Performance badge color
 	$: performanceBadgeColor = metrics?.performance_level === 'Excellent' ? 'from-green-500'
@@ -538,14 +554,14 @@
 				<div class="stimulus-examples">
 					<div class="example-card go-card">
 						<div class="example-label">{lt('GO Trial (75%)', 'গো ট্রায়াল (৭৫%)')}</div>
-						<div class="stimulus-display go-stimulus">{sessionData.go_stimulus}</div>
+						<div class="stimulus-display go-stimulus">{goDisplayStimulus}</div>
 						<div class="example-action">{lt('PRESS SPACEBAR', 'স্পেসবার চাপুন')}</div>
 						<div class="example-note">{lt('Respond as quickly as possible.', 'যত দ্রুত সম্ভব সাড়া দিন।')}</div>
 					</div>
 					
 					<div class="example-card nogo-card">
 						<div class="example-label">{lt('NO-GO Trial (25%)', 'নো-গো ট্রায়াল (২৫%)')}</div>
-						<div class="stimulus-display nogo-stimulus">{sessionData.nogo_stimulus}</div>
+						<div class="stimulus-display nogo-stimulus">{nogoDisplayStimulus}</div>
 						<div class="example-action">{lt("DON'T PRESS", 'চাপবেন না')}</div>
 						<div class="example-note">{lt('Resist the urge to respond.', 'সাড়া দেওয়ার তাড়না থামিয়ে রাখুন।')}</div>
 					</div>
@@ -636,8 +652,8 @@
 
 			<div class="key-reminder">
 				<div class="key-icon">{lt('SPACEBAR', 'স্পেসবার')}</div>
-				<p>{@html lt(`Press <strong>SPACEBAR</strong> when you see: <span class="inline-stimulus">${sessionData.go_stimulus}</span>`, `এটি দেখলে <strong>স্পেসবার</strong> চাপুন: <span class="inline-stimulus">${sessionData.go_stimulus}</span>`)}</p>
-				<p>{@html lt(`<strong>DON'T PRESS</strong> when you see: <span class="inline-stimulus nogo">${sessionData.nogo_stimulus}</span>`, `এটি দেখলে <strong>চাপবেন না</strong>: <span class="inline-stimulus nogo">${sessionData.nogo_stimulus}</span>`)}</p>
+				<p>{@html lt(`Press <strong>SPACEBAR</strong> when you see: <span class="inline-stimulus">${goDisplayStimulus}</span>`, `এটি দেখলে <strong>স্পেসবার</strong> চাপুন: <span class="inline-stimulus">${goDisplayStimulus}</span>`)}</p>
+				<p>{@html lt(`<strong>DON'T PRESS</strong> when you see: <span class="inline-stimulus nogo">${nogoDisplayStimulus}</span>`, `এটি দেখলে <strong>চাপবেন না</strong>: <span class="inline-stimulus nogo">${nogoDisplayStimulus}</span>`)}</p>
 			</div>
 
 			<div class="instructions-flow">
@@ -693,14 +709,14 @@
 		<div class="trial-screen">
 			<div class="trial-header">
 				<h2>{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>
-				<p class="instruction-reminder">{lt(`Press SPACEBAR for GO (${sessionData.go_stimulus}), withhold for NO-GO (${sessionData.nogo_stimulus})`, `গো (${sessionData.go_stimulus}) দেখলে স্পেসবার চাপুন, নো-গো (${sessionData.nogo_stimulus}) দেখলে সাড়া থামিয়ে রাখুন`)}</p>
+				<p class="instruction-reminder">{lt(`Press SPACEBAR for GO (${goDisplayStimulus}), withhold for NO-GO (${nogoDisplayStimulus})`, `গো (${goDisplayStimulus}) দেখলে স্পেসবার চাপুন, নো-গো (${nogoDisplayStimulus}) দেখলে সাড়া থামিয়ে রাখুন`)}</p>
 			</div>
 
 			<!-- Stimulus Display -->
 			<div class="stimulus-area">
 				{#if showStimulus}
 					<div class="stimulus-large" class:go={practiceTrials[currentPractice].trial_type === 'go'} class:nogo={practiceTrials[currentPractice].trial_type === 'nogo'}>
-						{practiceTrials[currentPractice].stimulus}
+						{displayStimulus(practiceTrials[currentPractice])}
 					</div>
 				{:else}
 					<div class="fixation">+</div>
@@ -735,7 +751,7 @@
 			<div class="stimulus-area">
 				{#if showStimulus && currentTrial < sessionData.trials.length}
 					<div class="stimulus-xlarge">
-						{sessionData.trials[currentTrial].stimulus}
+						{displayStimulus(sessionData.trials[currentTrial])}
 					</div>
 				{:else}
 					<div class="fixation">+</div>
@@ -743,7 +759,7 @@
 			</div>
 
 			<div class="reminder-text">
-				{lt(`Press SPACEBAR for ${sessionData.go_stimulus} | Don't press for ${sessionData.nogo_stimulus}`, `${sessionData.go_stimulus} দেখলে স্পেসবার চাপুন | ${sessionData.nogo_stimulus} দেখলে চাপবেন না`)}
+				{lt(`Press SPACEBAR for ${goDisplayStimulus} | Don't press for ${nogoDisplayStimulus}`, `${goDisplayStimulus} দেখলে স্পেসবার চাপুন | ${nogoDisplayStimulus} দেখলে চাপবেন না`)}
 			</div>
 		</div>
 
@@ -918,9 +934,9 @@
 
 	<!-- Help Modal -->
 	{#if showHelp}
-		<div class="modal-overlay" on:click={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="button" aria-label={lt('Close help dialog', 'সহায়তা ডায়ালগ বন্ধ করুন')} tabindex="0">
-			<div class="modal-content" on:click|stopPropagation on:keydown={(e) => e.stopPropagation()} role="document" tabindex="0">
-				<h2 class="modal-title">{lt('Go/No-Go Task Help', 'গো/নো-গো টাস্ক সহায়তা')}</h2>
+		<div class="modal-overlay" on:click|self={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="dialog" aria-modal="true" aria-labelledby="gonogo-help-title" tabindex="0">
+			<div class="modal-content" role="document">
+				<h2 class="modal-title" id="gonogo-help-title">{lt('Go/No-Go Task Help', 'গো/নো-গো টাস্ক সহায়তা')}</h2>
 
 				<div class="help-sections">
 					<div class="help-section">
@@ -1052,7 +1068,7 @@
 		text-align: center;
 	}
 
-	.importance strong {
+	.importance :global(strong) {
 		color: #3b82f6;
 	}
 
@@ -1437,7 +1453,7 @@
 		font-size: 0.95rem;
 	}
 
-	.tips-box li strong {
+	.tips-box li :global(strong) {
 		color: #064e3b;
 	}
 

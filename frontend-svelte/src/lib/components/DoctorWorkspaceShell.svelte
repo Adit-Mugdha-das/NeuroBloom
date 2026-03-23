@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 
 	export let title = '';
@@ -30,6 +31,10 @@
 		user.set(null);
 		goto('/login');
 	}
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
 </script>
 
 <div class="doctor-shell">
@@ -37,26 +42,26 @@
 	<div class="doctor-shell__inner" style={`--shell-max-width: ${maxWidth};`}>
 		<header class="doctor-shell__header">
 			<div class="doctor-shell__brand">
-				<p class="doctor-shell__eyebrow">{eyebrow}</p>
-				<h1>{title}</h1>
+				<p class="doctor-shell__eyebrow">{t(eyebrow)}</p>
+				<h1>{t(title)}</h1>
 				{#if subtitle}
-					<p class="doctor-shell__subtitle">{subtitle}</p>
+					<p class="doctor-shell__subtitle">{t(subtitle)}</p>
 				{/if}
 			</div>
 			<div class="doctor-shell__actions">
 				<slot name="actions" />
-				<button class="doctor-shell__logout" on:click={handleLogout}>Logout</button>
+				<button class="doctor-shell__logout" on:click={handleLogout}>{t('Logout')}</button>
 			</div>
 		</header>
 
-		<nav class="doctor-shell__nav" aria-label="Doctor workspace">
+		<nav class="doctor-shell__nav" aria-label={t('Doctor Workspace')}>
 			{#each navItems as item}
 				<button
 					class:active={isActive(item.href)}
 					class="doctor-shell__nav-item"
 					on:click={() => goto(item.href)}
 				>
-					{item.label}
+					{t(item.label)}
 				</button>
 			{/each}
 		</nav>

@@ -2,9 +2,16 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import {
+		formatNumber,
+		formatPercent,
+		locale,
+		localizeStimulusSequence,
+		localizeStimulusSymbol,
+		translateText
+	} from '$lib/i18n';
 	import { onMount } from 'svelte';
 
-	// Task states
 	const STATE = {
 		LOADING: 'loading',
 		INSTRUCTIONS: 'instructions',
@@ -22,21 +29,81 @@
 	let currentTrial = null;
 	let userNumbers = [];
 	let userLetters = [];
-	let showingSequence = false;
 	let currentItemIndex = 0;
 	let startTime = 0;
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
 
-	// Available numbers and letters for input
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 	const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
 
-	// Timings come from each trial's display_ms / interval_ms set by the backend
-	// based on the exact difficulty level — no coarse frontend brackets needed.
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function symbol(value) {
+		return localizeStimulusSymbol(value, $locale);
+	}
+
+	function sequence(values = []) {
+		return localizeStimulusSequence(values, $locale).join(' - ');
+	}
+
+	function trialLabel(current, total) {
+		return $locale === 'bn'
+			? `ট্রায়াল ${n(current)} / ${n(total)}`
+			: `Trial ${current} of ${total}`;
+	}
+
+	function compactTrialLabel(current, total) {
+		return $locale === 'bn'
+			? `ট্রায়াল ${n(current)}/${n(total)}`
+			: `Trial ${current}/${total}`;
+	}
+
+	function levelLabel(value) {
+		return $locale === 'bn' ? `লেভেল ${n(value)}` : `Level ${value}`;
+	}
+
+	function difficultyChangeLabel(before, after) {
+		return $locale === 'bn'
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
+	}
+
+	function speedTrendLabel(trend) {
+		if (trend === 'improving') {
+			return $locale === 'bn' ? '📈 উন্নত হচ্ছে' : '📈 Improving';
+		}
+
+		if (trend === 'slowing') {
+			return $locale === 'bn' ? '📉 ধীর হচ্ছে' : '📉 Slowing';
+		}
+
+		return $locale === 'bn' ? '➡️ স্থিতিশীল' : '➡️ Stable';
+	}
+
+	function pointsLabel(value) {
+		const absolute = Math.abs(Number(value) || 0).toFixed(1);
+		const prefix = value >= 0 ? '+' : '-';
+		return t(`${prefix}${absolute} pts`);
+	}
 
 	onMount(async () => {
+		taskId = $page.url.searchParams.get('taskId');
 		await loadSession();
 	});
 
@@ -50,7 +117,6 @@
 				return;
 			}
 
-			// Get user's current difficulty from their training plan
 			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
@@ -64,9 +130,7 @@
 			}
 
 			difficulty = userDifficulty;
-			console.log('📊 Letter-Number Sequencing - Loaded difficulty:', difficulty);
 
-			// Generate session
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/letter-number-sequencing/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
 				{
@@ -78,17 +142,17 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map(t => ({
-				...t,
+			trials = data.trials.map((trial) => ({
+				...trial,
 				user_numbers: [],
 				user_letters: [],
 				reaction_time: 0
 			}));
-			
+
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load task session');
+			alert(t('Failed to load task session'));
 			goto('/dashboard');
 		}
 	}
@@ -103,62 +167,52 @@
 		currentTrial = trials[currentTrialIndex];
 		userNumbers = [];
 		userLetters = [];
-		
-		// Show ready screen
+
 		state = STATE.READY;
-		await new Promise(resolve => setTimeout(resolve, 1000));
-		
-		// Show sequence
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		state = STATE.SHOWING;
-		showingSequence = true;
 		await playSequence();
-		
-		// Allow user input
+
 		state = STATE.INPUT;
 		startTime = Date.now();
 	}
 
 	async function playSequence() {
-		const sequence = currentTrial.sequence;
 		const displayTime = currentTrial.display_ms ?? 1000;
 		const intervalTime = currentTrial.interval_ms ?? 400;
 
-		for (let i = 0; i < sequence.length; i++) {
-			currentItemIndex = i;
-			await new Promise(resolve => setTimeout(resolve, displayTime));
-			
-			if (i < sequence.length - 1) {
+		for (let index = 0; index < currentTrial.sequence.length; index += 1) {
+			currentItemIndex = index;
+			await new Promise((resolve) => setTimeout(resolve, displayTime));
+
+			if (index < currentTrial.sequence.length - 1) {
 				currentItemIndex = -1;
-				await new Promise(resolve => setTimeout(resolve, intervalTime));
+				await new Promise((resolve) => setTimeout(resolve, intervalTime));
 			}
 		}
-		
+
 		currentItemIndex = -1;
-		showingSequence = false;
 	}
 
-	function addNumber(num) {
-		if (state !== STATE.INPUT) return;
-		if (userNumbers.includes(num)) return; // Can't add same number twice
-		userNumbers = [...userNumbers, num];
+	function addNumber(value) {
+		if (state !== STATE.INPUT || userNumbers.includes(value)) return;
+		userNumbers = [...userNumbers, value];
 	}
 
-	function addLetter(letter) {
-		if (state !== STATE.INPUT) return;
-		if (userLetters.includes(letter)) return; // Can't add same letter twice
-		userLetters = [...userLetters, letter];
+	function addLetter(value) {
+		if (state !== STATE.INPUT || userLetters.includes(value)) return;
+		userLetters = [...userLetters, value];
 	}
 
 	function removeLastNumber() {
-		if (userNumbers.length > 0) {
-			userNumbers = userNumbers.slice(0, -1);
-		}
+		if (userNumbers.length === 0) return;
+		userNumbers = userNumbers.slice(0, -1);
 	}
 
 	function removeLastLetter() {
-		if (userLetters.length > 0) {
-			userLetters = userLetters.slice(0, -1);
-		}
+		if (userLetters.length === 0) return;
+		userLetters = userLetters.slice(0, -1);
 	}
 
 	function clearNumbers() {
@@ -171,18 +225,17 @@
 
 	function submitResponse() {
 		if (state !== STATE.INPUT) return;
-		
+
 		const reactionTime = Date.now() - startTime;
 		trials[currentTrialIndex].user_numbers = userNumbers;
 		trials[currentTrialIndex].user_letters = userLetters;
 		trials[currentTrialIndex].reaction_time = reactionTime;
-		
-		// Show feedback
+
 		state = STATE.FEEDBACK;
-		
+
 		setTimeout(() => {
 			if (currentTrialIndex < trials.length - 1) {
-				currentTrialIndex++;
+				currentTrialIndex += 1;
 				startTrial();
 			} else {
 				submitSession();
@@ -198,20 +251,19 @@
 
 	async function submitSession() {
 		state = STATE.LOADING;
-		
+
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
-			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
 				`http://localhost:8000/api/training/tasks/letter-number-sequencing/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						difficulty: difficulty,
-						trials: trials,
+						difficulty,
+						trials,
 						task_id: taskId
 					})
 				}
@@ -223,7 +275,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 		}
 	}
 
@@ -232,181 +284,183 @@
 	}
 </script>
 
-<div class="lns-container">
+<div class="lns-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading Letter-Number Sequencing Task...</p>
+			<p>{t('Loading Letter-Number Sequencing Task...')}</p>
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>🔢🔤 Letter-Number Sequencing</h1>
+				<h1>🔢🔤 {t('Letter-Number Sequencing')}</h1>
 				<DifficultyBadge {difficulty} domain="Working Memory" />
 			</div>
 
 			<div class="instruction-card">
-				<h2>How It Works</h2>
-				<p>You'll see a mixed sequence of numbers and letters. Your task is to reorder them:</p>
+				<h2>{t('How It Works')}</h2>
+				<p>{t("You'll see a mixed sequence of numbers and letters. Your task is to reorder them:")}</p>
 				
 				<div class="rules">
 					<div class="rule-card">
 						<div class="rule-number">1️⃣</div>
-						<h3>Numbers First</h3>
-						<p>Put all numbers in <strong>ascending order</strong><br/>(1, 2, 3...)</p>
+						<h3>{t('Numbers First')}</h3>
+						<p>
+							{t('Put all numbers in')} <strong>{t('ascending order')}</strong><br />
+							({symbol('1')}, {symbol('2')}, {symbol('3')}...)
+						</p>
 					</div>
 					<div class="rule-card">
 						<div class="rule-number">2️⃣</div>
-						<h3>Then Letters</h3>
-						<p>Put all letters in <strong>alphabetical order</strong><br/>(A, B, C...)</p>
+						<h3>{t('Then Letters')}</h3>
+						<p>
+							{t('Put all letters in')} <strong>{t('alphabetical order')}</strong><br />
+							({symbol('A')}, {symbol('B')}, {symbol('C')}...)
+						</p>
 					</div>
 				</div>
 
 				<div class="example">
-					<h3>📝 Example</h3>
+					<h3>📝 {t('Example')}</h3>
 					<div class="example-flow">
 						<div class="example-box">
-							<div class="example-label">You See:</div>
-							<div class="example-sequence">B - 3 - A - 1</div>
+							<div class="example-label">{t('You See:')}</div>
+							<div class="example-sequence">{sequence(['B', '3', 'A', '1'])}</div>
 						</div>
 						<div class="arrow">→</div>
 						<div class="example-box">
-							<div class="example-label">You Answer:</div>
+							<div class="example-label">{t('You Answer:')}</div>
 							<div class="example-answer">
-								<span class="answer-numbers">1 - 3</span>
-								<span class="answer-separator">then</span>
-								<span class="answer-letters">A - B</span>
+								<span class="answer-numbers">{sequence(['1', '3'])}</span>
+								<span class="answer-separator">{t('then')}</span>
+								<span class="answer-letters">{sequence(['A', 'B'])}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 				
 				<div class="tips">
-					<h3>💡 Memory Strategies</h3>
+					<h3>💡 {t('Memory Strategies')}</h3>
 					<ul>
-						<li><strong>Categorize first:</strong> Mentally separate numbers from letters</li>
-						<li><strong>Sort mentally:</strong> Order each group in your mind before clicking</li>
-						<li><strong>Use rehearsal:</strong> Repeat the correct order silently</li>
+						<li><strong>{t('Categorize first:')}</strong> {t('Mentally separate numbers from letters')}</li>
+						<li><strong>{t('Sort mentally:')}</strong> {t('Order each group in your mind before clicking')}</li>
+						<li><strong>{t('Use rehearsal:')}</strong> {t('Repeat the correct order silently')}</li>
 					</ul>
 				</div>
 			</div>
 			
 			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				Start Training Session
+				{t('Start Training Session')}
 			</button>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>Trial {currentTrialIndex + 1} of {trials.length}</h2>
-			<p>Watch the sequence carefully...</p>
+			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
+			<p>{t('Watch the sequence carefully...')}</p>
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
 			<div class="header">
 				<div class="trial-info">
-					<span class="trial-number">Trial {currentTrialIndex + 1}/{trials.length}</span>
-					<span class="difficulty-badge">Level {difficulty}</span>
+					<span class="trial-number">{compactTrialLabel(currentTrialIndex + 1, trials.length)}</span>
+					<span class="difficulty-badge">{levelLabel(difficulty)}</span>
 				</div>
 				<button class="help-button" on:click={toggleHelp}>?</button>
 			</div>
 
 			{#if state === STATE.SHOWING}
-				<p class="instruction">Memorize the sequence...</p>
+				<p class="instruction">{t('Memorize the sequence...')}</p>
 				<div class="sequence-display">
 					{#each currentTrial.sequence as item, index}
-						<div 
-							class="sequence-item" 
+						<div
+							class="sequence-item"
 							class:active={currentItemIndex === index}
-							class:number={!isNaN(item)}
-							class:letter={isNaN(item)}
+							class:number={!Number.isNaN(Number(item))}
+							class:letter={Number.isNaN(Number(item))}
 						>
-							{item}
+							{symbol(item)}
 						</div>
 					{/each}
 				</div>
 			{:else}
 				<div class="input-header">
 					<p class="instruction">
-						<strong>Reorder:</strong> Numbers ascending (1, 2, 3...) then Letters alphabetical (A, B, C...)
+						<strong>{t('Reorder:')}</strong>
+						{t('Numbers ascending (1, 2, 3...) then Letters alphabetical (A, B, C...)')}
 					</p>
 				</div>
 
 				<div class="input-section">
-					<!-- Numbers Section -->
 					<div class="input-group">
-						<h3>Numbers (Low → High)</h3>
+						<h3>{t('Numbers (Low → High)')}</h3>
 						<div class="selected-items">
 							{#if userNumbers.length === 0}
-								<span class="placeholder">Select numbers...</span>
+								<span class="placeholder">{t('Select numbers...')}</span>
 							{:else}
-								{#each userNumbers as num}
-									<span class="selected-item number">{num}</span>
+								{#each userNumbers as number}
+									<span class="selected-item number">{symbol(number)}</span>
 								{/each}
 							{/if}
 						</div>
 						<div class="button-grid numbers">
-							{#each NUMBERS as num}
-								<button 
-									class="item-button number" 
-									class:selected={userNumbers.includes(num)}
-									disabled={userNumbers.includes(num)}
-									on:click={() => addNumber(num)}
+							{#each NUMBERS as number}
+								<button
+									class="item-button number"
+									class:selected={userNumbers.includes(number)}
+									disabled={userNumbers.includes(number)}
+									on:click={() => addNumber(number)}
 								>
-									{num}
+									{symbol(number)}
 								</button>
 							{/each}
 						</div>
 						<div class="controls">
 							<button class="control-btn" on:click={removeLastNumber} disabled={userNumbers.length === 0}>
-								↶ Undo
+								↶ {t('Undo')}
 							</button>
 							<button class="control-btn" on:click={clearNumbers} disabled={userNumbers.length === 0}>
-								✕ Clear
+								✕ {t('Clear')}
 							</button>
 						</div>
 					</div>
 
-					<!-- Letters Section -->
 					<div class="input-group">
-						<h3>Letters (A → Z)</h3>
+						<h3>{t('Letters (A → Z)')}</h3>
 						<div class="selected-items">
 							{#if userLetters.length === 0}
-								<span class="placeholder">Select letters...</span>
+								<span class="placeholder">{t('Select letters...')}</span>
 							{:else}
 								{#each userLetters as letter}
-									<span class="selected-item letter">{letter}</span>
+									<span class="selected-item letter">{symbol(letter)}</span>
 								{/each}
 							{/if}
 						</div>
 						<div class="button-grid letters">
 							{#each LETTERS as letter}
-								<button 
-									class="item-button letter" 
+								<button
+									class="item-button letter"
 									class:selected={userLetters.includes(letter)}
 									disabled={userLetters.includes(letter)}
 									on:click={() => addLetter(letter)}
 								>
-									{letter}
+									{symbol(letter)}
 								</button>
 							{/each}
 						</div>
 						<div class="controls">
 							<button class="control-btn" on:click={removeLastLetter} disabled={userLetters.length === 0}>
-								↶ Undo
+								↶ {t('Undo')}
 							</button>
 							<button class="control-btn" on:click={clearLetters} disabled={userLetters.length === 0}>
-								✕ Clear
+								✕ {t('Clear')}
 							</button>
 						</div>
 					</div>
 				</div>
 
 				<div class="submit-section">
-					<button 
-						class="submit-button" 
-						on:click={submitResponse}
-					>
-						Submit Answer
+					<button class="submit-button" on:click={submitResponse}>
+						{t('Submit Answer')}
 					</button>
 				</div>
 			{/if}
@@ -417,103 +471,96 @@
 				{checkCorrect() ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
-				{checkCorrect() ? 'Correct!' : 'Incorrect'}
+				{checkCorrect() ? t('Correct!') : t('Incorrect')}
 			</p>
 			{#if !checkCorrect()}
 				<div class="correct-answer">
-					<p>Correct answer:</p>
+					<p>{t('Correct answer:')}</p>
 					<div class="answer-display">
-						<span class="numbers">{currentTrial.correct_numbers.join(' - ')}</span>
-						<span class="separator">then</span>
-						<span class="letters">{currentTrial.correct_letters.join(' - ')}</span>
+						<span class="numbers">{sequence(currentTrial.correct_numbers)}</span>
+						<span class="separator">{t('then')}</span>
+						<span class="letters">{sequence(currentTrial.correct_letters)}</span>
 					</div>
 				</div>
 			{/if}
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>Session Complete! 🎉</h1>
+			<h1>{t('Session Complete!')} 🎉</h1>
 
-			<!-- Primary score cards -->
 			<div class="results-grid">
 				<div class="result-card highlight">
-					<div class="result-value">{sessionResults.metrics.score}</div>
-					<div class="result-label">Session Score</div>
+					<div class="result-value">{n(sessionResults.metrics.score)}</div>
+					<div class="result-label">{t('Session Score')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.binary_accuracy.toFixed(1)}%</div>
-					<div class="result-label">Fully Correct</div>
+					<div class="result-value">{pct(sessionResults.metrics.binary_accuracy)}</div>
+					<div class="result-label">{t('Fully Correct')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.longest_sequence}</div>
-					<div class="result-label">Longest Sequence</div>
+					<div class="result-value">{n(sessionResults.metrics.longest_sequence)}</div>
+					<div class="result-label">{t('Longest Sequence')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.consistency.toFixed(1)}%</div>
-					<div class="result-label">Consistency</div>
+					<div class="result-value">{pct(sessionResults.metrics.consistency)}</div>
+					<div class="result-label">{t('Consistency')}</div>
 				</div>
 			</div>
 
-			<!-- Component score breakdown -->
 			<div class="breakdown">
-				<h3>Score Breakdown</h3>
+				<h3>{t('Score Breakdown')}</h3>
 				<div class="breakdown-row">
-					<span>🧠 Item Recall (what you remembered)</span>
-					<span>{sessionResults.metrics.avg_set_accuracy.toFixed(1)}%</span>
+					<span>🧠 {t('Item Recall (what you remembered)')}</span>
+					<span>{pct(sessionResults.metrics.avg_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔢 Ordering (correct sequence)</span>
-					<span>{sessionResults.metrics.avg_order_accuracy.toFixed(1)}%</span>
+					<span>🔢 {t('Ordering (correct sequence)')}</span>
+					<span>{pct(sessionResults.metrics.avg_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⚡ Speed Bonus (avg)</span>
-					<span>+{sessionResults.metrics.avg_speed_bonus.toFixed(1)} pts</span>
+					<span>⚡ {t('Speed Bonus (avg)')}</span>
+					<span>{pointsLabel(sessionResults.metrics.avg_speed_bonus)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⚠️ Wrong Selections (penalty)</span>
-					<span>−{sessionResults.metrics.avg_penalty.toFixed(1)} pts</span>
+					<span>⚠️ {t('Wrong Selections (penalty)')}</span>
+					<span>{pointsLabel(-sessionResults.metrics.avg_penalty)}</span>
 				</div>
 			</div>
 
-			<!-- Numbers vs Letters breakdown -->
 			<div class="breakdown">
-				<h3>Numbers vs Letters</h3>
+				<h3>{t('Numbers vs Letters')}</h3>
 				<div class="breakdown-row">
-					<span>🔢 Numbers — recalled</span>
-					<span>{sessionResults.metrics.numbers_set_accuracy.toFixed(1)}%</span>
+					<span>🔢 {t('Numbers — recalled')}</span>
+					<span>{pct(sessionResults.metrics.numbers_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔢 Numbers — ordered correctly</span>
-					<span>{sessionResults.metrics.numbers_order_accuracy.toFixed(1)}%</span>
+					<span>🔢 {t('Numbers — ordered correctly')}</span>
+					<span>{pct(sessionResults.metrics.numbers_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔤 Letters — recalled</span>
-					<span>{sessionResults.metrics.letters_set_accuracy.toFixed(1)}%</span>
+					<span>🔤 {t('Letters — recalled')}</span>
+					<span>{pct(sessionResults.metrics.letters_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔤 Letters — ordered correctly</span>
-					<span>{sessionResults.metrics.letters_order_accuracy.toFixed(1)}%</span>
+					<span>🔤 {t('Letters — ordered correctly')}</span>
+					<span>{pct(sessionResults.metrics.letters_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⏱️ Response speed trend</span>
+					<span>⏱️ {t('Response speed trend')}</span>
 					<span class="trend-{sessionResults.metrics.speed_trend}">
-						{sessionResults.metrics.speed_trend === 'improving' ? '📈 Improving' :
-						 sessionResults.metrics.speed_trend === 'slowing'   ? '📉 Slowing'   : '➡️ Stable'}
+						{speedTrendLabel(sessionResults.metrics.speed_trend)}
 					</span>
 				</div>
 			</div>
 
 			<div class="difficulty-info">
-				<p>
-					Difficulty: <strong>{sessionResults.difficulty_before}</strong> → 
-					<strong>{sessionResults.difficulty_after}</strong>
-				</p>
-				<p class="adaptation-reason">{sessionResults.adaptation_reason}</p>
+				<p>{difficultyChangeLabel(sessionResults.difficulty_before, sessionResults.difficulty_after)}</p>
+				<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
 			</div>
 
 			{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 				<div class="new-badges">
-					<h3>🏆 New Badges Earned!</h3>
+					<h3>🏆 {t('New Badges Earned!')}</h3>
 					{#each sessionResults.new_badges as badge}
 						<div class="badge">
 							<span class="badge-icon">{badge.icon}</span>
@@ -524,42 +571,42 @@
 			{/if}
 
 			<div class="actions">
-				<button on:click={() => goto('/training')}>Back to Training</button>
-				<button on:click={() => goto('/dashboard')}>View Dashboard</button>
+				<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
+				<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 			</div>
 		</div>
 	{/if}
 </div>
 
 {#if showHelp}
-	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
-		<div class="help-content" on:click|stopPropagation role="document" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
-			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>Memory Strategies</h2>
+	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(event) => event.key === 'Escape' && toggleHelp()}>
+		<div class="help-content" on:click|stopPropagation role="document" tabindex="-1" on:keydown={(event) => event.key === 'Escape' && toggleHelp()}>
+			<button class="close-button" on:click={toggleHelp}>&times;</button>
+			<h2>{t('Memory Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>📊 Categorize First</h3>
-				<p>Quickly identify which items are numbers and which are letters. Group them mentally before ordering.</p>
+				<h3>📊 {t('Categorize First')}</h3>
+				<p>{t('Quickly identify which items are numbers and which are letters. Group them mentally before ordering.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔢 Sort Numbers</h3>
-				<p>Arrange numbers from smallest to largest (1, 2, 3, 4...). This is your first group.</p>
+				<h3>🔢 {t('Sort Numbers')}</h3>
+				<p>{t('Arrange numbers from smallest to largest (1, 2, 3, 4...). This is your first group.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔤 Sort Letters</h3>
-				<p>Arrange letters alphabetically (A, B, C, D...). This is your second group.</p>
+				<h3>🔤 {t('Sort Letters')}</h3>
+				<p>{t('Arrange letters alphabetically (A, B, C, D...). This is your second group.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 Mental Rehearsal</h3>
-				<p>Silently repeat the correct order 2-3 times before clicking to strengthen memory.</p>
+				<h3>🔄 {t('Mental Rehearsal')}</h3>
+				<p>{t('Silently repeat the correct order 2-3 times before clicking to strengthen memory.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>✨ Chunking</h3>
-				<p>For longer sequences, break them into smaller chunks (e.g., "1-3" and "A-B-D").</p>
+				<h3>✨ {t('Chunking')}</h3>
+				<p>{t('For longer sequences, break them into smaller chunks (e.g., "1-3" and "A-B-D").')}</p>
 			</div>
 		</div>
 	</div>
@@ -582,15 +629,19 @@
 		width: 50px;
 		height: 50px;
 		border: 4px solid #f3f3f3;
-		border-top: 4px solid #4CAF50;
+		border-top: 4px solid #4caf50;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 		margin: 0 auto 1rem;
 	}
 
 	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
 	}
 
 	.instructions {
@@ -607,7 +658,7 @@
 		border-radius: 12px;
 		padding: 2rem;
 		margin: 2rem 0;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		text-align: left;
 	}
 
@@ -622,7 +673,7 @@
 		background: #f8f9fa;
 		padding: 1.5rem;
 		border-radius: 8px;
-		border-left: 4px solid #4CAF50;
+		border-left: 4px solid #4caf50;
 		text-align: center;
 	}
 
@@ -645,7 +696,7 @@
 
 	.example h3 {
 		margin: 0 0 1rem 0;
-		color: #1976D2;
+		color: #1976d2;
 	}
 
 	.example-flow {
@@ -681,10 +732,11 @@
 		align-items: center;
 		font-size: 1.2rem;
 		font-weight: bold;
+		flex-wrap: wrap;
 	}
 
 	.answer-numbers {
-		color: #2196F3;
+		color: #2196f3;
 	}
 
 	.answer-separator {
@@ -694,12 +746,12 @@
 	}
 
 	.answer-letters {
-		color: #4CAF50;
+		color: #4caf50;
 	}
 
 	.arrow {
 		font-size: 2rem;
-		color: #4CAF50;
+		color: #4caf50;
 	}
 
 	.tips {
@@ -725,7 +777,7 @@
 	}
 
 	.start-button {
-		background: #4CAF50;
+		background: #4caf50;
 		color: white;
 		border: none;
 		padding: 1rem 3rem;
@@ -779,16 +831,16 @@
 		padding: 0.5rem 1rem;
 		border-radius: 20px;
 		font-weight: 500;
-		color: #1976D2;
+		color: #1976d2;
 	}
 
 	.help-button {
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
-		border: 2px solid #4CAF50;
+		border: 2px solid #4caf50;
 		background: white;
-		color: #4CAF50;
+		color: #4caf50;
 		font-size: 1.5rem;
 		font-weight: bold;
 		cursor: pointer;
@@ -796,7 +848,7 @@
 	}
 
 	.help-button:hover {
-		background: #4CAF50;
+		background: #4caf50;
 		color: white;
 	}
 
@@ -834,17 +886,17 @@
 	.sequence-item.active {
 		opacity: 1;
 		transform: scale(1.2);
-		box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 	}
 
 	.sequence-item.active.number {
-		background: linear-gradient(145deg, #2196F3, #1976D2);
-		border-color: #1565C0;
+		background: linear-gradient(145deg, #2196f3, #1976d2);
+		border-color: #1565c0;
 		color: white;
 	}
 
 	.sequence-item.active.letter {
-		background: linear-gradient(145deg, #4CAF50, #45a049);
+		background: linear-gradient(145deg, #4caf50, #45a049);
 		border-color: #2e7d32;
 		color: white;
 	}
@@ -886,12 +938,12 @@
 	}
 
 	.selected-item.number {
-		background: #2196F3;
+		background: #2196f3;
 		color: white;
 	}
 
 	.selected-item.letter {
-		background: #4CAF50;
+		background: #4caf50;
 		color: white;
 	}
 
@@ -918,18 +970,18 @@
 	}
 
 	.item-button.number {
-		color: #2196F3;
-		border-color: #2196F3;
+		color: #2196f3;
+		border-color: #2196f3;
 	}
 
 	.item-button.letter {
-		color: #4CAF50;
-		border-color: #4CAF50;
+		color: #4caf50;
+		border-color: #4caf50;
 	}
 
 	.item-button:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.item-button.number:hover:not(:disabled) {
@@ -957,9 +1009,9 @@
 
 	.control-btn {
 		padding: 0.5rem 1rem;
-		border: 2px solid #FF9800;
+		border: 2px solid #ff9800;
 		background: white;
-		color: #FF9800;
+		color: #ff9800;
 		border-radius: 6px;
 		font-size: 0.9rem;
 		font-weight: 600;
@@ -968,7 +1020,7 @@
 	}
 
 	.control-btn:hover:not(:disabled) {
-		background: #FF9800;
+		background: #ff9800;
 		color: white;
 		transform: translateY(-2px);
 	}
@@ -985,7 +1037,7 @@
 	}
 
 	.submit-button {
-		background: linear-gradient(135deg, #4CAF50, #45a049);
+		background: linear-gradient(135deg, #4caf50, #45a049);
 		color: white;
 		border: none;
 		padding: 1rem 3rem;
@@ -1025,7 +1077,7 @@
 	}
 
 	.feedback-icon.correct {
-		background: #4CAF50;
+		background: #4caf50;
 	}
 
 	.feedback-icon.incorrect {
@@ -1055,10 +1107,11 @@
 		font-size: 1.3rem;
 		font-weight: bold;
 		margin-top: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.answer-display .numbers {
-		color: #2196F3;
+		color: #2196f3;
 	}
 
 	.answer-display .separator {
@@ -1068,7 +1121,7 @@
 	}
 
 	.answer-display .letters {
-		color: #4CAF50;
+		color: #4caf50;
 	}
 
 	.complete-screen {
@@ -1086,11 +1139,11 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.result-card.highlight {
-		background: linear-gradient(135deg, #4CAF50, #45a049);
+		background: linear-gradient(135deg, #4caf50, #45a049);
 		color: white;
 	}
 
@@ -1102,7 +1155,7 @@
 	.result-value {
 		font-size: 2.5rem;
 		font-weight: bold;
-		color: #4CAF50;
+		color: #4caf50;
 		margin-bottom: 0.5rem;
 	}
 
@@ -1115,7 +1168,7 @@
 		background: white;
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 		margin: 2rem 0;
 	}
 
@@ -1129,15 +1182,27 @@
 		justify-content: space-between;
 		padding: 0.5rem 0;
 		border-bottom: 1px solid #eee;
+		gap: 1rem;
 	}
 
 	.breakdown-row:last-child {
 		border-bottom: none;
 	}
 
-	.trend-improving { color: #4CAF50; font-weight: 600; }
-	.trend-slowing   { color: #f44336; font-weight: 600; }
-	.trend-stable    { color: #FF9800; font-weight: 600; }
+	.trend-improving {
+		color: #4caf50;
+		font-weight: 600;
+	}
+
+	.trend-slowing {
+		color: #f44336;
+		font-weight: 600;
+	}
+
+	.trend-stable {
+		color: #ff9800;
+		font-weight: 600;
+	}
 
 	.difficulty-info {
 		background: #e3f2fd;
@@ -1190,16 +1255,16 @@
 	}
 
 	.actions button:first-child {
-		background: #2196F3;
+		background: #2196f3;
 		color: white;
 	}
 
 	.actions button:first-child:hover {
-		background: #1976D2;
+		background: #1976d2;
 	}
 
 	.actions button:last-child {
-		background: #4CAF50;
+		background: #4caf50;
 		color: white;
 	}
 
@@ -1254,7 +1319,7 @@
 		padding: 1rem;
 		background: #f8f9fa;
 		border-radius: 8px;
-		border-left: 4px solid #4CAF50;
+		border-left: 4px solid #4caf50;
 	}
 
 	.strategy h3 {
@@ -1266,5 +1331,24 @@
 		margin: 0;
 		color: #555;
 		line-height: 1.6;
+	}
+
+	@media (max-width: 768px) {
+		.rules,
+		.input-section {
+			grid-template-columns: 1fr;
+		}
+
+		.button-grid.letters {
+			grid-template-columns: repeat(4, 1fr);
+		}
+
+		.button-grid.numbers {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.actions {
+			flex-direction: column;
+		}
 	}
 </style>

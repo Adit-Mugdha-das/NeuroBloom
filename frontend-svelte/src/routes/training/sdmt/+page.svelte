@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -35,6 +36,36 @@
 	let symbolDigitMapping = {};
 	let testSequence = [];
 	let currentSymbol = '';
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function msText(value) {
+		return $locale === 'bn' ? `${n(value)} মিলিসেকেন্ড` : `${n(value)} ms`;
+	}
+
+	function secondsText(value, digits = 1) {
+		return `${n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		})}${lt('s', 'সে')}`;
+	}
+
+	function percentText(value, digits = 1) {
+		return `${n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		})}%`;
+	}
 
 	onMount(async () => {
 		await loadSession();
@@ -88,7 +119,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load task session');
+			alert(t('Failed to load task session'));
 			goto('/dashboard');
 		}
 	}
@@ -194,7 +225,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting results:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 		}
 	}
 
@@ -204,187 +235,185 @@
 
 	// Get performance level based on score
 	function getPerformanceLevel(score) {
-		if (score >= 60) return { level: 'Excellent', color: '#4CAF50' };
-		if (score >= 50) return { level: 'Good', color: '#8BC34A' };
-		if (score >= 40) return { level: 'Average', color: '#FFC107' };
-		if (score >= 30) return { level: 'Fair', color: '#FF9800' };
-		return { level: 'Needs Practice', color: '#f44336' };
+		if (score >= 60) return { level: t('Excellent'), color: '#4CAF50' };
+		if (score >= 50) return { level: t('Good'), color: '#8BC34A' };
+		if (score >= 40) return { level: t('Average'), color: '#FFC107' };
+		if (score >= 30) return { level: t('Fair'), color: '#FF9800' };
+		return { level: t('Needs Practice'), color: '#f44336' };
 	}
 </script>
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<div class="sdmt-container">
+<div class="sdmt-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading Symbol Digit Modalities Test...</p>
+			<p>{t('Loading Symbol Digit Modalities Test...')}</p>
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>⚡ Symbol Digit Modalities Test (SDMT)</h1>
+				<h1>⚡ {t('Symbol Digit Modalities Test (SDMT)')}</h1>
 				<DifficultyBadge {difficulty} domain="Processing Speed" />
 			</div>
-			<div class="gold-badge">⭐ GOLD STANDARD for MS Assessment ⭐</div>
+			<div class="gold-badge">⭐ {t('GOLD STANDARD for MS Assessment')} ⭐</div>
 			
 			<div class="instruction-card">
-				<h2>About This Test</h2>
+				<h2>{t('About This Test')}</h2>
 				<p class="importance">
-					The SDMT is the <strong>most sensitive and widely used test</strong> for detecting 
-					cognitive changes in Multiple Sclerosis. It measures processing speed - how quickly 
-					your brain can match symbols to numbers.
+					{t('The SDMT is the most sensitive and widely used test for detecting cognitive changes in Multiple Sclerosis. It measures processing speed - how quickly your brain can match symbols to numbers.')}
 				</p>
 				
 				<div class="clinical-info">
-					<h3>📊 Clinical Significance</h3>
+					<h3>{t('📊 Clinical Significance')}</h3>
 					<ul>
-						<li><strong>Most used in MS clinical trials</strong> worldwide</li>
-						<li>Predicts <strong>employment success</strong> and daily functioning</li>
-						<li>Correlates with <strong>brain health</strong> and disease progression</li>
-						<li>Detects cognitive changes <strong>earlier</strong> than other tests</li>
+						<li>{t('Most used in MS clinical trials')} {t('worldwide')}</li>
+						<li>{t('Predicts employment success and daily functioning')}</li>
+						<li>{t('Correlates with brain health and disease progression')}</li>
+						<li>{t('Detects cognitive changes earlier than other tests')}</li>
 					</ul>
 				</div>
 
 				<div class="how-it-works">
-					<h3>🎯 How It Works</h3>
+					<h3>{t('🎯 How It Works')}</h3>
 					<div class="example-demo">
 						<div class="example-key">
-							<p><strong>Reference Key (memorize these):</strong></p>
+							<p><strong>{t('Reference Key (memorize these):')}</strong></p>
 							<div class="demo-mappings">
-								<div class="demo-pair"><span class="demo-symbol">★</span> → <span class="demo-digit">1</span></div>
-								<div class="demo-pair"><span class="demo-symbol">●</span> → <span class="demo-digit">2</span></div>
-								<div class="demo-pair"><span class="demo-symbol">■</span> → <span class="demo-digit">3</span></div>
-								<div class="demo-pair"><span class="demo-symbol">▲</span> → <span class="demo-digit">4</span></div>
+								<div class="demo-pair"><span class="demo-symbol">★</span> → <span class="demo-digit">{n(1)}</span></div>
+								<div class="demo-pair"><span class="demo-symbol">●</span> → <span class="demo-digit">{n(2)}</span></div>
+								<div class="demo-pair"><span class="demo-symbol">■</span> → <span class="demo-digit">{n(3)}</span></div>
+								<div class="demo-pair"><span class="demo-symbol">▲</span> → <span class="demo-digit">{n(4)}</span></div>
 							</div>
 						</div>
 						
 						<div class="example-task">
-							<p><strong>You see symbol:</strong></p>
+							<p><strong>{t('You see symbol:')}</strong></p>
 							<div class="big-symbol">■</div>
-							<p><strong>You type:</strong></p>
-							<div class="big-digit">3</div>
+							<p><strong>{t('You type:')}</strong></p>
+							<div class="big-digit">{n(3)}</div>
 						</div>
 					</div>
 				</div>
 
 				<div class="test-details">
-					<h3>⏱️ Test Format</h3>
+					<h3>{t('⏱️ Test Format')}</h3>
 					<div class="details-grid">
 						<div class="detail-item">
 							<div class="detail-icon">⏰</div>
 							<div class="detail-text">
-								<strong>90 Seconds</strong>
-								<span>Timed challenge</span>
+								<strong>{lt('90 Seconds', `${n(90)} সেকেন্ড`)}</strong>
+								<span>{t('Timed challenge')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">🎯</div>
 							<div class="detail-text">
-								<strong>Target: {trial.target_responses}</strong>
-								<span>Correct responses</span>
+								<strong>{lt(`Target: ${trial.target_responses}`, `লক্ষ্য: ${n(trial.target_responses)}`)}</strong>
+								<span>{t('Correct responses')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">⚡</div>
 							<div class="detail-text">
-								<strong>Speed Matters</strong>
-								<span>Go as fast as you can</span>
+								<strong>{t('Speed Matters')}</strong>
+								<span>{t('Go as fast as you can')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">✓</div>
 							<div class="detail-text">
-								<strong>Accuracy Too</strong>
-								<span>But don't sacrifice speed</span>
+								<strong>{t('Accuracy Too')}</strong>
+								<span>{t("But don't sacrifice speed")}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 				
 				<div class="tips">
-					<h3>💡 Pro Tips</h3>
+					<h3>{t('💡 Pro Tips')}</h3>
 					<ul>
-						<li><strong>Memorize the key first:</strong> Study the symbol-digit pairs before starting</li>
-						<li><strong>Use keyboard numbers:</strong> Much faster than clicking</li>
-						<li><strong>Don't overthink:</strong> Quick glances at the key are okay</li>
-						<li><strong>Rhythm is key:</strong> Find a steady pace - look, type, next</li>
-						<li><strong>If unsure, keep going:</strong> Don't dwell on mistakes</li>
+						<li><strong>{t('Memorize the key first:')}</strong> {t('Study the symbol-digit pairs before starting')}</li>
+						<li><strong>{t('Use keyboard numbers:')}</strong> {t('Much faster than clicking')}</li>
+						<li><strong>{t("Don't overthink:")}</strong> {t('Quick glances at the key are okay')}</li>
+						<li><strong>{t('Rhythm is key:')}</strong> {t("Find a steady pace - look, type, next")}</li>
+						<li><strong>{t('If unsure, keep going:')}</strong> {t("Don't dwell on mistakes")}</li>
 					</ul>
 				</div>
 
 				<div class="performance-guide">
-					<h3>📈 Performance Guide (MS Norms)</h3>
+					<h3>{t('📈 Performance Guide (MS Norms)')}</h3>
 					<div class="norm-scale">
-						<div class="norm-item excellent">60+ = Excellent</div>
-						<div class="norm-item good">50-60 = Good</div>
-						<div class="norm-item average">40-50 = Average</div>
-						<div class="norm-item fair">30-40 = Fair</div>
-						<div class="norm-item practice">&lt;30 = Practice Needed</div>
+						<div class="norm-item excellent">{lt('60+ = Excellent', `${n(60)}+ = ${t('Excellent')}`)}</div>
+						<div class="norm-item good">{lt('50-60 = Good', `${n(50)}-${n(60)} = ${t('Good')}`)}</div>
+						<div class="norm-item average">{lt('40-50 = Average', `${n(40)}-${n(50)} = ${t('Average')}`)}</div>
+						<div class="norm-item fair">{lt('30-40 = Fair', `${n(30)}-${n(40)} = ${t('Fair')}`)}</div>
+						<div class="norm-item practice">{lt('<30 = Practice Needed', `<${n(30)} = ${t('Practice Needed')}`)}</div>
 					</div>
 				</div>
 			</div>
 			
 			<button class="start-button" on:click={startTest}>
-				Start SDMT Test
+				{t('Start SDMT Test')}
 			</button>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>Get Ready!</h2>
-			<p class="ready-message">Study the symbol-digit key below</p>
+			<h2>{t('Get Ready!')}</h2>
+			<p class="ready-message">{t('Study the symbol-digit key below')}</p>
 			<div class="key-display">
 				{#each Object.entries(symbolDigitMapping) as [symbol, digit]}
 					<div class="key-pair">
 						<div class="key-symbol">{symbol}</div>
 						<div class="key-arrow">→</div>
-						<div class="key-digit">{digit}</div>
+						<div class="key-digit">{n(digit)}</div>
 					</div>
 				{/each}
 			</div>
-			<p class="ready-countdown">Starting in 2 seconds...</p>
+			<p class="ready-countdown">{t('Starting in 2 seconds...')}</p>
 		</div>
 	{:else if state === STATE.TESTING}
 		<div class="testing-screen">
 			<div class="header">
 				<div class="progress-info">
-					<span class="count-badge">Completed: {currentIndex}</span>
-					<span class="target-badge">Target: {trial.target_responses}</span>
+					<span class="count-badge">{lt(`Completed: ${currentIndex}`, `সম্পন্ন: ${n(currentIndex)}`)}</span>
+					<span class="target-badge">{lt(`Target: ${trial.target_responses}`, `লক্ষ্য: ${n(trial.target_responses)}`)}</span>
 				</div>
 				<div class="timer-display">
 					<span class="timer-icon">⏱️</span>
 					<span class="timer-value" class:urgent={timeRemaining < 10}>
-						{Math.max(0, timeRemaining).toFixed(1)}s
+						{secondsText(Math.max(0, timeRemaining), 1)}
 					</span>
 				</div>
 			</div>
 
 			<div class="reference-key">
-				<div class="key-label">Reference Key:</div>
+				<div class="key-label">{t('Reference Key:')}</div>
 				<div class="key-grid">
 					{#each Object.entries(symbolDigitMapping) as [symbol, digit]}
 						<div class="key-item">
 							<span class="ref-symbol">{symbol}</span>
 							<span class="ref-arrow">→</span>
-							<span class="ref-digit">{digit}</span>
+							<span class="ref-digit">{n(digit)}</span>
 						</div>
 					{/each}
 				</div>
 			</div>
 
 			<div class="test-area">
-				<p class="task-prompt">What number matches this symbol?</p>
+				<p class="task-prompt">{t('What number matches this symbol?')}</p>
 				<div class="current-symbol">{currentSymbol}</div>
 				
 				<div class="input-area">
-					<p class="input-instruction">Type the number or click below:</p>
+					<p class="input-instruction">{t('Type the number or click below:')}</p>
 					<div class="digit-buttons">
 						{#each Object.values(symbolDigitMapping).sort((a, b) => a - b) as digit}
 							<button 
 								class="digit-btn" 
 								on:click={() => handleDigitClick(digit)}
 							>
-								{digit}
+								{n(digit)}
 							</button>
 						{/each}
 					</div>
@@ -399,101 +428,96 @@
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>SDMT Test Complete! 🎉</h1>
+			<h1>{t('SDMT Test Complete! 🎉')}</h1>
 			
 			{#if sessionResults}
 				{@const perfLevel = getPerformanceLevel(sessionResults.metrics.score)}
 				
 				<div class="performance-badge" style="border-color: {perfLevel.color}; color: {perfLevel.color}">
 					<div class="perf-level">{perfLevel.level}</div>
-					<div class="perf-score">{sessionResults.metrics.score} Correct</div>
+					<div class="perf-score">{lt(`${sessionResults.metrics.score} Correct`, `${n(sessionResults.metrics.score)} ${t('Correct')}`)}</div>
 				</div>
 
 				<div class="results-grid">
 					<div class="result-card primary">
 						<div class="result-icon">🎯</div>
-						<div class="result-value">{sessionResults.metrics.score}</div>
-						<div class="result-label">Correct Responses</div>
-						<div class="result-sublabel">Target: {trial.target_responses}</div>
+						<div class="result-value">{n(sessionResults.metrics.score)}</div>
+						<div class="result-label">{t('Correct Responses')}</div>
+						<div class="result-sublabel">{lt(`Target: ${trial.target_responses}`, `লক্ষ্য: ${n(trial.target_responses)}`)}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">⚡</div>
-						<div class="result-value">{sessionResults.metrics.processing_speed}</div>
-						<div class="result-label">Processing Speed</div>
-						<div class="result-sublabel">Responses/minute</div>
+						<div class="result-value">{n(sessionResults.metrics.processing_speed)}</div>
+						<div class="result-label">{t('Processing Speed')}</div>
+						<div class="result-sublabel">{t('Responses/minute')}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">✓</div>
-						<div class="result-value">{sessionResults.metrics.accuracy}%</div>
-						<div class="result-label">Accuracy</div>
-						<div class="result-sublabel">Of attempted items</div>
+						<div class="result-value">{percentText(sessionResults.metrics.accuracy)}</div>
+						<div class="result-label">{t('Accuracy')}</div>
+						<div class="result-sublabel">{t('Of attempted items')}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">⏱️</div>
-						<div class="result-value">{(sessionResults.metrics.avg_response_time / 1000).toFixed(2)}s</div>
-						<div class="result-label">Avg Response Time</div>
-						<div class="result-sublabel">Per correct item</div>
+						<div class="result-value">{secondsText(sessionResults.metrics.avg_response_time / 1000, 2)}</div>
+						<div class="result-label">{t('Avg Response Time')}</div>
+						<div class="result-sublabel">{t('Per correct item')}</div>
 					</div>
 				</div>
 
 				<div class="performance-breakdown">
-					<h3>📊 Detailed Breakdown</h3>
+					<h3>{t('📊 Detailed Breakdown')}</h3>
 					<div class="breakdown-grid">
 						<div class="breakdown-item">
-							<span>Total Attempted:</span>
-							<span class="value">{sessionResults.metrics.total_attempted}</span>
+							<span>{t('Total Attempted:')}</span>
+							<span class="value">{n(sessionResults.metrics.total_attempted)}</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Correct:</span>
-							<span class="value correct">{sessionResults.metrics.correct_count}</span>
+							<span>{t('Correct:')}</span>
+							<span class="value correct">{n(sessionResults.metrics.correct_count)}</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Incorrect:</span>
-							<span class="value incorrect">{sessionResults.metrics.incorrect_count}</span>
+							<span>{t('Incorrect:')}</span>
+							<span class="value incorrect">{n(sessionResults.metrics.incorrect_count)}</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Consistency:</span>
-							<span class="value">{sessionResults.metrics.consistency}%</span>
+							<span>{t('Consistency:')}</span>
+							<span class="value">{percentText(sessionResults.metrics.consistency)}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="clinical-context">
-					<h3>🏥 Clinical Context</h3>
+					<h3>{t('🏥 Clinical Context')}</h3>
 					<p>
 						{#if sessionResults.metrics.score >= 60}
-							Excellent performance! Your processing speed is <strong>above average</strong> for MS patients. 
-							This suggests good cognitive function and neural efficiency.
+							{t('Excellent performance! Your processing speed is above average for MS patients. This suggests good cognitive function and neural efficiency.')}
 						{:else if sessionResults.metrics.score >= 50}
-							Good performance! Your score is in the <strong>average to above-average range</strong> for MS patients.
-							Continue training to maintain and improve this level.
+							{t('Good performance! Your score is in the average to above-average range for MS patients. Continue training to maintain and improve this level.')}
 						{:else if sessionResults.metrics.score >= 40}
-							Average performance. Your score is in the <strong>typical range</strong> for MS patients.
-							Regular training can help improve processing speed over time.
+							{t('Average performance. Your score is in the typical range for MS patients. Regular training can help improve processing speed over time.')}
 						{:else if sessionResults.metrics.score >= 30}
-							Fair performance. There's <strong>room for improvement</strong> in processing speed.
-							Consistent practice with SDMT can lead to significant gains.
+							{t("Fair performance. There's room for improvement in processing speed. Consistent practice with SDMT can lead to significant gains.")}
 						{:else}
-							Keep practicing! Processing speed can be trained and improved with regular practice.
-							The SDMT is challenging but very effective for building cognitive efficiency.
+							{t('Keep practicing! Processing speed can be trained and improved with regular practice. The SDMT is challenging but very effective for building cognitive efficiency.')}
 						{/if}
 					</p>
 				</div>
 
 				<div class="difficulty-info">
 					<p>
-						Difficulty: <strong>{sessionResults.difficulty_before}</strong> → 
-						<strong>{sessionResults.difficulty_after}</strong>
+						{t('Difficulty:')} <strong>{n(sessionResults.difficulty_before)}</strong> → 
+						<strong>{n(sessionResults.difficulty_after)}</strong>
 					</p>
-					<p class="adaptation-reason">{sessionResults.adaptation_reason}</p>
+					<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
 				</div>
 
 				{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 					<div class="new-badges">
-						<h3>🏆 New Badges Earned!</h3>
+						<h3>{t('🏆 New Badges Earned!')}</h3>
 						{#each sessionResults.new_badges as badge}
 							<div class="badge">
 								<span class="badge-icon">{badge.icon}</span>
@@ -504,8 +528,8 @@
 				{/if}
 
 				<div class="actions">
-					<button on:click={() => goto('/training')}>Back to Training</button>
-					<button on:click={() => goto('/dashboard')}>View Dashboard</button>
+					<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
+					<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 				</div>
 			{/if}
 		</div>
@@ -513,39 +537,39 @@
 </div>
 
 {#if showHelp}
-	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
-		<div class="help-content" on:click|stopPropagation role="document" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
+	<div class="help-modal" on:click|self={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
+		<div class="help-content" role="document" tabindex="-1">
 			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>SDMT Success Strategies</h2>
+			<h2>{t('SDMT Success Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>👀 Visual Scanning</h3>
-				<p>Train your eyes to quickly dart between the symbol, the key, and back. With practice, you'll memorize most pairs.</p>
+				<h3>{t('👀 Visual Scanning')}</h3>
+				<p>{lt("Train your eyes to quickly dart between the symbol, the key, and back. With practice, you'll memorize most pairs.", 'চোখকে এমনভাবে অনুশীলন করুন যেন প্রতীক, কী, এবং আবার প্রতীকের দিকে দ্রুত যেতে পারে। অনুশীলনের সঙ্গে সঙ্গে বেশিরভাগ জোড়া আপনার মনে গেঁথে যাবে।')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧠 Chunking Memory</h3>
-				<p>Group symbols by shape or type in your mind. This creates mental "buckets" that make recall faster.</p>
+				<h3>{t('🧠 Chunking Memory')}</h3>
+				<p>{lt('Group symbols by shape or type in your mind. This creates mental "buckets" that make recall faster.', 'মনে মনে প্রতীকগুলোকে আকার বা ধরন অনুযায়ী ভাগ করুন। এতে মানসিক ছোট ছোট দলে সাজানো যায় এবং মনে করা দ্রুত হয়।')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>⌨️ Keyboard Mastery</h3>
-				<p>Use the number row on your keyboard. Position your fingers over commonly used digits. Much faster than clicking!</p>
+				<h3>{t('⌨️ Keyboard Mastery')}</h3>
+				<p>{lt('Use the number row on your keyboard. Position your fingers over commonly used digits. Much faster than clicking!', 'কীবোর্ডের সংখ্যার সারি ব্যবহার করুন। যে অঙ্কগুলো বেশি লাগে, সেগুলোর উপর আঙুল প্রস্তুত রাখুন। এতে ক্লিকের চেয়ে অনেক দ্রুত সাড়া দেওয়া যায়।')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🎯 Rhythm Over Perfection</h3>
-				<p>Find a steady rhythm: glance → type → next. Don't stop to verify each answer. Speed matters more than perfection.</p>
+				<h3>{t('🎯 Rhythm Over Perfection')}</h3>
+				<p>{lt("Find a steady rhythm: glance → type → next. Don't stop to verify each answer. Speed matters more than perfection.", 'একটি স্থির ছন্দ তৈরি করুন: দেখুন → টাইপ করুন → এগোন। প্রতিটি উত্তর বারবার যাচাই করতে থামবেন না। নিখুঁততার চেয়ে গতি এখানে বেশি গুরুত্বপূর্ণ।')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 Progressive Learning</h3>
-				<p>First few trials: reference the key often. Later trials: you'll have memorized most pairs. Trust your memory!</p>
+				<h3>{t('🔄 Progressive Learning')}</h3>
+				<p>{lt("First few trials: reference the key often. Later trials: you'll have memorized most pairs. Trust your memory!", 'শুরুর কয়েকটি ট্রায়ালে কী বেশি দেখে নিন। পরে বেশিরভাগ জোড়া মনে থেকে যাবে। নিজের স্মৃতির ওপর ভরসা রাখুন।')}</p>
 			</div>
 
 			<div class="strategy">
-				<h3>💪 Why This Matters</h3>
-				<p>SDMT measures neural processing efficiency - how fast your brain can retrieve and apply information. Regular practice strengthens these neural pathways!</p>
+				<h3>{t('💪 Why This Matters')}</h3>
+				<p>{lt('SDMT measures neural processing efficiency - how fast your brain can retrieve and apply information. Regular practice strengthens these neural pathways!', 'SDMT মাপে মস্তিষ্ক কত দ্রুত তথ্য খুঁজে বের করে প্রয়োগ করতে পারে। নিয়মিত অনুশীলন এই স্নায়বিক পথগুলোকে আরও শক্তিশালী করে।')}</p>
 			</div>
 		</div>
 	</div>

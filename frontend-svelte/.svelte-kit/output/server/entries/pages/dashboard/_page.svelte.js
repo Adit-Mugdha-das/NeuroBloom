@@ -32,7 +32,7 @@ function _page($$renderer, $$props) {
       return names[domain] || t("Training");
     }
     function getDisplayName() {
-      return currentUser?.fullName || currentUser?.full_name || currentUser?.email || "Patient";
+      return currentUser?.fullName || currentUser?.full_name || currentUser?.email || t("Patient");
     }
     function getPrimaryRecommendation() {
       return null;
@@ -74,25 +74,25 @@ function _page($$renderer, $$props) {
       }
     ];
     getEncouragementMessage();
-    $$renderer2.push(`<div class="dashboard-shell svelte-x1i5gj">`);
+    $$renderer2.push(`<div class="dashboard-shell svelte-x1i5gj" data-localize-skip="">`);
     {
       $$renderer2.push("<!--[!-->");
     }
-    $$renderer2.push(`<!--]--> <header class="topbar svelte-x1i5gj"><div class="brand-block svelte-x1i5gj"><p class="eyebrow svelte-x1i5gj">NeuroBloom</p> <h1 class="svelte-x1i5gj">Your Brain Health Today</h1> <p class="subcopy svelte-x1i5gj">A calm view of your training progress, next step, and care support.</p></div> <div class="topbar-actions svelte-x1i5gj">`);
+    $$renderer2.push(`<!--]--> <header class="topbar svelte-x1i5gj"><div class="brand-block svelte-x1i5gj"><p class="eyebrow svelte-x1i5gj">NeuroBloom</p> <h1 class="svelte-x1i5gj">${escape_html(t("Your Brain Health Today"))}</h1> <p class="subcopy svelte-x1i5gj">${escape_html(t("A calm view of your training progress, next step, and care support."))}</p></div> <div class="topbar-actions svelte-x1i5gj">`);
     if (currentUser) {
       $$renderer2.push("<!--[-->");
-      $$renderer2.push(`<span class="user-email svelte-x1i5gj">${escape_html(getDisplayName())}</span> <button class="ghost-btn svelte-x1i5gj">Notifications `);
+      $$renderer2.push(`<span class="user-email svelte-x1i5gj">${escape_html(getDisplayName())}</span> <button class="ghost-btn svelte-x1i5gj">${escape_html(t("Notifications"))} `);
       {
         $$renderer2.push("<!--[!-->");
       }
-      $$renderer2.push(`<!--]--></button> <button class="ghost-btn svelte-x1i5gj">Messages</button> <button class="ghost-btn svelte-x1i5gj">Settings</button>`);
+      $$renderer2.push(`<!--]--></button> <button class="ghost-btn svelte-x1i5gj">${escape_html(t("Messages"))}</button> <button class="ghost-btn svelte-x1i5gj">${escape_html(t("Settings"))}</button>`);
     } else {
       $$renderer2.push("<!--[!-->");
     }
-    $$renderer2.push(`<!--]--> <button class="logout-btn svelte-x1i5gj">Logout</button></div></header> <main class="dashboard-main svelte-x1i5gj">`);
+    $$renderer2.push(`<!--]--> <button class="logout-btn svelte-x1i5gj">${escape_html(t("Logout"))}</button></div></header> <main class="dashboard-main svelte-x1i5gj">`);
     {
       $$renderer2.push("<!--[-->");
-      $$renderer2.push(`<section class="loading-panel svelte-x1i5gj"><p>Loading your dashboard...</p></section>`);
+      $$renderer2.push(`<section class="loading-panel svelte-x1i5gj"><p>${escape_html(t("Loading your dashboard..."))}</p></section>`);
     }
     $$renderer2.push(`<!--]--></main></div>`);
     if ($$store_subs) unsubscribe_stores($$store_subs);

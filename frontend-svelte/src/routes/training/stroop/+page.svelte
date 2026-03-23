@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { locale, translateText } from '$lib/i18n';
+	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -78,7 +78,7 @@
 			loading = false;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load training session. Please ensure the backend server is running and you have completed baseline assessment.');
+			alert(t('Failed to load training session. Please ensure the backend server is running and you have completed baseline assessment.'));
 			loading = false;
 		}
 	}
@@ -91,13 +91,25 @@
 		return translateText(text, $locale);
 	}
 
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
 	function getDisplayColorLabel(color) {
 		return translateText(String(color ?? '').toUpperCase(), $locale);
 	}
 
+	function displayStimulusWord(wordText) {
+		return translateText(String(wordText ?? '').toUpperCase(), $locale);
+	}
+
 	function startPractice() {
 		if (!sessionData || !sessionData.colors) {
-			alert('Session data not loaded. Please refresh the page.');
+			alert(t('Session data not loaded. Please refresh the page.'));
 			return;
 		}
 		
@@ -316,113 +328,112 @@
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading task...</p>
+			<p>{t('Loading task...')}</p>
 		</div>
 	{:else if phase === 'intro'}
 			<!-- Introduction Screen -->
 		<div class="instructions">
 			<div class="header-with-badge">
-				<h1>🧠 Stroop Color-Word Test</h1>
+				<h1>🧠 {t('Stroop Color-Word Test')}</h1>
 				<DifficultyBadge {difficulty} domain="Attention" />
 			</div>
-			<div class="classic-badge">Classic Attention & Inhibitory Control Assessment</div>
+			<div class="classic-badge">{t('Classic Attention & Inhibitory Control Assessment')}</div>
 			
 			<div class="instruction-card">
 				<div class="task-header">
-					<h2>💡 Your Task: Name the Color, NOT the Word!</h2>
+					<h2>{t('💡 Your Task: Name the Color, NOT the Word!')}</h2>
 				</div>
 				
 				<p class="importance">
-					Your brain automatically reads words - it's involuntary! This test measures your ability 
-					to <strong>inhibit</strong> this automatic response and focus on the <strong>ink color</strong> instead.
+					{t("Your brain automatically reads words - it's involuntary! This test measures your ability to inhibit this automatic response and focus on the ink color instead.")}
 				</p>
 				
 				<!-- Visual Examples -->
 				<div class="stroop-examples">
 					<div class="example-card baseline">
-						<div class="example-label">Type 1: Baseline</div>
+						<div class="example-label">{t('Type 1: Baseline')}</div>
 						<div class="color-patch"></div>
-						<div class="example-desc">Just a color patch</div>
-						<div class="example-note">✓ Easy - No interference</div>
+						<div class="example-desc">{t('Just a color patch')}</div>
+						<div class="example-note">{t('✓ Easy - No interference')}</div>
 					</div>
 					
 					<div class="example-card congruent">
-						<div class="example-label">Type 2: Congruent</div>
-						<div class="stroop-word" style="color: #dc2626;">RED</div>
-						<div class="example-desc">Word matches color</div>
-						<div class="example-note">✓ Easy - No conflict</div>
+						<div class="example-label">{t('Type 2: Congruent')}</div>
+						<div class="stroop-word" style="color: #dc2626;">{displayStimulusWord('RED')}</div>
+						<div class="example-desc">{t('Word matches color')}</div>
+						<div class="example-note">{t('✓ Easy - No conflict')}</div>
 					</div>
 					
 					<div class="example-card incongruent">
-						<div class="example-label">Type 3: Incongruent ⚡</div>
-						<div class="stroop-word" style="color: #2563eb;">RED</div>
-						<div class="example-desc">Word conflicts with color!</div>
-						<div class="example-note">🎯 The REAL challenge!</div>
+						<div class="example-label">{t('Type 3: Incongruent ⚡')}</div>
+						<div class="stroop-word" style="color: #2563eb;">{displayStimulusWord('RED')}</div>
+						<div class="example-desc">{t('Word conflicts with color!')}</div>
+						<div class="example-note">{t('🎯 The REAL challenge!')}</div>
 					</div>
 				</div>
 				
 				<div class="rule-box">
-					<strong>⚡ The Rule:</strong>
-					Always name the INK COLOR, not the word!<br>
-					In the example above, the correct answer is <strong>"BLUE"</strong> (ignore the word "RED")
+					<strong>{t('⚡ The Rule:')}</strong>
+					{t('Always name the INK COLOR, not the word!')}<br>
+					{t('In the example above, the correct answer is')} <strong>"{displayStimulusWord('BLUE')}"</strong> {t('(ignore the word "RED")')}
 				</div>
 				
 				<!-- Two Column Layout -->
 				<div class="info-grid">
 					<div class="info-section">
-						<h3>📋 Test Structure</h3>
+						<h3>{t('📋 Test Structure')}</h3>
 						<div class="structure-list">
 							<div class="structure-item">
 								<div class="structure-num">1</div>
 								<div class="structure-text">
-									<strong>Color Patches</strong>
-									<span>Baseline speed</span>
+									<strong>{t('Color Patches')}</strong>
+									<span>{t('Baseline speed')}</span>
 								</div>
 							</div>
 							<div class="structure-item">
 								<div class="structure-num">2</div>
 								<div class="structure-text">
-									<strong>Matching Words</strong>
-									<span>Word = Color</span>
+									<strong>{t('Matching Words')}</strong>
+									<span>{t('Word = Color')}</span>
 								</div>
 							</div>
 							<div class="structure-item">
 								<div class="structure-num">3</div>
 								<div class="structure-text">
-									<strong>Conflicting Words</strong>
-									<span>The real test!</span>
+									<strong>{t('Conflicting Words')}</strong>
+									<span>{t('The real test!')}</span>
 								</div>
 							</div>
 						</div>
 					</div>
 					
 					<div class="info-section">
-						<h3>💪 Tips for Success</h3>
+						<h3>{t('💪 Tips for Success')}</h3>
 						<div class="tips-list">
-							<div class="tip-item">✓ <strong>Focus on the color</strong> - Not the letters</div>
-							<div class="tip-item">✓ <strong>Don't read</strong> - Your brain will try!</div>
-							<div class="tip-item">✓ <strong>Stay focused</strong> - Concentration is key</div>
-							<div class="tip-item">✓ <strong>Speed matters</strong> - Quick but accurate</div>
-							<div class="tip-item">✓ <strong>Practice helps</strong> - Trains your brain!</div>
+							<div class="tip-item">✓ <strong>{t('Focus on the color')}</strong> - {t('Not the letters')}</div>
+							<div class="tip-item">✓ <strong>{t("Don't read")}</strong> - {t('Your brain will try!')}</div>
+							<div class="tip-item">✓ <strong>{t('Stay focused')}</strong> - {t('Concentration is key')}</div>
+							<div class="tip-item">✓ <strong>{t('Speed matters')}</strong> - {t('Quick but accurate')}</div>
+							<div class="tip-item">✓ <strong>{t('Practice helps')}</strong> - {t('Trains your brain!')}</div>
 						</div>
 					</div>
 				</div>
 				
 				<!-- Clinical Context -->
 				<div class="clinical-info">
-					<h3>📚 Clinical Significance</h3>
+					<h3>{t('📚 Clinical Significance')}</h3>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>📜 History:</strong> Stroop, 1935 - Psychology's most famous experiment
+							<strong>{t('📜 History:')}</strong> {t("Stroop, 1935 - Psychology's most famous experiment")}
 						</div>
 						<div class="clinical-item">
-							<strong>🎯 Measures:</strong> Attention, inhibition, cognitive control
+							<strong>{t('🎯 Measures:')}</strong> {t('Attention, inhibition, cognitive control')}
 						</div>
 						<div class="clinical-item">
-							<strong>🏥 MS Relevance:</strong> Sensitive to frontal lobe changes (Parmenter et al., 2007)
+							<strong>{t('🏥 MS Relevance:')}</strong> {t('Sensitive to frontal lobe changes (Parmenter et al., 2007)')}
 						</div>
 						<div class="clinical-item">
-							<strong>🌍 Clinical Use:</strong> Standard in neuropsych assessments worldwide
+							<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard in neuropsych assessments worldwide')}
 						</div>
 					</div>
 				</div>
@@ -430,10 +441,10 @@
 			
 			<div class="button-group">
 				<button class="start-button" on:click={startInstructions}>
-					Begin Test
+					{t('Begin Test')}
 				</button>
 				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					Back to Dashboard
+					{t('Back to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -441,54 +452,54 @@
 		{:else if phase === 'instructions'}
 			<!-- Quick Instructions Before Practice -->
 		<div class="quick-instructions">
-			<h2>Quick Instructions</h2>
+			<h2>{t('Quick Instructions')}</h2>
 
 			<div class="instructions-steps">
 				<div class="instruction-step step-1">
 					<span class="step-number">1</span>
 					<div class="step-content">
-						<p class="step-title">See the Stimulus</p>
-						<p class="step-desc">Color patch or colored word appears</p>
+						<p class="step-title">{t('See the Stimulus')}</p>
+						<p class="step-desc">{t('Color patch or colored word appears')}</p>
 					</div>
 				</div>
 
 				<div class="instruction-step step-2">
 					<span class="step-number">2</span>
 					<div class="step-content">
-						<p class="step-title">Identify Ink Color</p>
-						<p class="step-desc">Ignore what the word says - focus on the COLOR</p>
+						<p class="step-title">{t('Identify Ink Color')}</p>
+						<p class="step-desc">{t('Ignore what the word says - focus on the COLOR')}</p>
 					</div>
 				</div>
 
 				<div class="instruction-step step-3">
 					<span class="step-number">3</span>
 					<div class="step-content">
-						<p class="step-title">Click the Color Button</p>
-						<p class="step-desc">Click the button matching the ink color</p>
+						<p class="step-title">{t('Click the Color Button')}</p>
+						<p class="step-desc">{t('Click the button matching the ink color')}</p>
 					</div>
 				</div>
 
 				<div class="instruction-step step-4">
 					<span class="step-number">4</span>
 					<div class="step-content">
-						<p class="step-title">Respond Quickly</p>
-						<p class="step-desc">Speed matters - but stay accurate!</p>
+						<p class="step-title">{t('Respond Quickly')}</p>
+						<p class="step-desc">{t('Speed matters - but stay accurate!')}</p>
 					</div>
 				</div>
 			</div>
 
 			<div class="remember-box">
-				<p class="remember-title">Remember:</p>
+				<p class="remember-title">{t('Remember:')}</p>
 				<p class="remember-text">
-					In conflicting trials, your brain will want to read the word. 
-					<strong>Resist this impulse!</strong> Focus only on the ink color. This is what makes it challenging!
+					{t('In conflicting trials, your brain will want to read the word.')} 
+					<strong>{t('Resist this impulse!')}</strong> {t('Focus only on the ink color. This is what makes it challenging!')}
 				</p>
 				</div>
 
 			<div class="practice-prompt">
-				<p>Let's practice with 6 trials to get familiar...</p>
+				<p>{t("Let's practice with 6 trials to get familiar...")}</p>
 				<button class="start-button" on:click={startPractice}>
-					Start Practice
+					{t('Start Practice')}
 				</button>
 			</div>
 		</div>
@@ -497,8 +508,8 @@
 		<!-- Practice Trials -->
 		<div class="trial-screen">
 			<div class="trial-header">
-				<h2>Practice Trial {currentPractice + 1} of {practiceTrials.length}</h2>
-				<p class="condition-label">Condition: <span>{conditionName}</span></p>
+				<h2>{lt(`Practice Trial ${currentPractice + 1} of ${practiceTrials.length}`, `অনুশীলনী ট্রায়াল ${n(currentPractice + 1)} / ${n(practiceTrials.length)}`)}</h2>
+				<p class="condition-label">{t('Condition:')} <span>{conditionName}</span></p>
 			</div>
 
 			<!-- Stimulus Display -->
@@ -515,7 +526,7 @@
 						class="stroop-word-large"
 						style="color: {COLOR_MAP[currentTrialData.display_color]};"
 					>
-						{currentTrialData.word_text}
+						{displayStimulusWord(currentTrialData.word_text)}
 					</div>
 				{/if}
 			</div>
@@ -529,7 +540,7 @@
 						class="color-btn"
 						style="background-color: {COLOR_MAP[color]};"
 					>
-						{color.toUpperCase()}
+						{getDisplayColorLabel(color)}
 					</button>
 				{/each}
 			</div>
@@ -548,9 +559,9 @@
 			<!-- Progress Header -->
 			<div class="progress-header">
 				<div class="progress-top">
-					<h2>Trial {currentTrial + 1} of {sessionData.trials.length}</h2>
+					<h2>{lt(`Trial ${currentTrial + 1} of ${sessionData.trials.length}`, `ট্রায়াল ${n(currentTrial + 1)} / ${n(sessionData.trials.length)}`)}</h2>
 					<div class="progress-badges">
-						<span class="badge-remaining">{trialsRemaining} remaining</span>
+						<span class="badge-remaining">{lt(`${trialsRemaining} remaining`, `${n(trialsRemaining)}টি বাকি`)}</span>
 						<span class="badge-condition">{conditionName}</span>
 					</div>
 				</div>
@@ -577,11 +588,11 @@
 							class="stroop-word-xlarge"
 							style="color: {COLOR_MAP[currentTrialData.display_color]};"
 						>
-							{currentTrialData.word_text}
+							{displayStimulusWord(currentTrialData.word_text)}
 						</div>
 						{#if currentTrialData.condition === 'incongruent'}
 							<p class="hint-text">
-								(Ignore the word - name the INK color!)
+								{t('(Ignore the word - name the INK color!)')}
 							</p>
 						{/if}
 					{/if}
@@ -595,7 +606,7 @@
 							class="color-btn"
 							style="background-color: {COLOR_MAP[color]};"
 						>
-							{color.toUpperCase()}
+							{getDisplayColorLabel(color)}
 						</button>
 					{/each}
 				</div>
@@ -606,9 +617,9 @@
 		<!-- Results Screen -->
 		<div class="results-container">
 			<div class="results-header">
-				<h2>Stroop Test Complete!</h2>
+				<h2>{t('Stroop Test Complete!')}</h2>
 				<div class="performance-badge {performanceBadgeColor}">
-					{metrics.performance_level}
+					{t(metrics.performance_level)}
 				</div>
 			</div>
 
@@ -616,69 +627,69 @@
 			<div class="metrics-grid">
 				<!-- Overall Accuracy -->
 				<div class="metric-card accuracy-card">
-					<div class="metric-label">Overall Accuracy</div>
-					<div class="metric-value">{metrics.overall_accuracy.toFixed(1)}%</div>
-					<div class="metric-detail">{metrics.correct_trials}/{metrics.total_trials} correct</div>
+					<div class="metric-label">{t('Overall Accuracy')}</div>
+					<div class="metric-value">{n(metrics.overall_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
+					<div class="metric-detail">{lt(`${metrics.correct_trials}/${metrics.total_trials} correct`, `${n(metrics.correct_trials)}/${n(metrics.total_trials)} ${t('correct')}`)}</div>
 				</div>
 
 				<!-- Stroop Effect -->
 				<div class="metric-card stroop-card">
-					<div class="metric-label">Stroop Effect</div>
-					<div class="metric-value">{metrics.stroop_effect.toFixed(0)} ms</div>
-					<div class="metric-detail">Conflict - Congruent RT</div>
+					<div class="metric-label">{t('Stroop Effect')}</div>
+					<div class="metric-value">{n(metrics.stroop_effect.toFixed(0))} {lt('ms', 'মি.সে')}</div>
+					<div class="metric-detail">{t('Conflict - Congruent RT')}</div>
 				</div>
 
 				<!-- Interference Cost -->
 				<div class="metric-card interference-card">
-					<div class="metric-label">Interference Cost</div>
-					<div class="metric-value">{metrics.interference_cost.toFixed(1)}%</div>
-					<div class="metric-detail">vs Baseline</div>
+					<div class="metric-label">{t('Interference Cost')}</div>
+					<div class="metric-value">{n(metrics.interference_cost.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
+					<div class="metric-detail">{t('vs Baseline')}</div>
 				</div>
 
 				<!-- Consistency -->
 				<div class="metric-card consistency-card">
-					<div class="metric-label">Consistency</div>
-					<div class="metric-value">{metrics.consistency.toFixed(1)}%</div>
-					<div class="metric-detail">Response stability</div>
+					<div class="metric-label">{t('Consistency')}</div>
+					<div class="metric-value">{n(metrics.consistency.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
+					<div class="metric-detail">{t('Response stability')}</div>
 				</div>
 			</div>
 
 				<!-- Condition Breakdown -->
 			<div class="conditions-section">
-				<h3>Performance by Condition</h3>
+				<h3>{t('Performance by Condition')}</h3>
 				<div class="conditions-grid">
 					<!-- Baseline -->
 					<div class="condition-card baseline-card">
-						<p class="condition-title">Color Patches (Baseline)</p>
-						<p class="condition-stat">Accuracy: <span>{metrics.baseline_accuracy.toFixed(1)}%</span></p>
-						<p class="condition-stat">Avg RT: <span>{metrics.baseline_rt.toFixed(0)} ms</span></p>
-						<p class="condition-note">Pure processing speed</p>
+						<p class="condition-title">{t('Color Patches (Baseline)')}</p>
+						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.baseline_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
+						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.baseline_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
+						<p class="condition-note">{t('Pure processing speed')}</p>
 					</div>
 
 					<!-- Congruent -->
 					<div class="condition-card congruent-card">
-						<p class="condition-title">Matching Words (Congruent)</p>
-						<p class="condition-stat">Accuracy: <span>{metrics.congruent_accuracy.toFixed(1)}%</span></p>
-						<p class="condition-stat">Avg RT: <span>{metrics.congruent_rt.toFixed(0)} ms</span></p>
+						<p class="condition-title">{t('Matching Words (Congruent)')}</p>
+						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.congruent_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
+						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.congruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
 						<p class="condition-note success">
 							{#if metrics.facilitation_effect > 0}
-								✓ {metrics.facilitation_effect.toFixed(0)} ms faster than baseline!
+								✓ {lt(`${metrics.facilitation_effect.toFixed(0)} ms faster than baseline!`, `${n(metrics.facilitation_effect.toFixed(0))} মি.সে বেসলাইনের চেয়ে দ্রুত!`)}
 							{:else}
-								No facilitation effect
+								{t('No facilitation effect')}
 							{/if}
 						</p>
 					</div>
 
 					<!-- Incongruent -->
 					<div class="condition-card incongruent-card">
-						<p class="condition-title">Conflicting Words (Incongruent)</p>
-						<p class="condition-stat">Accuracy: <span>{metrics.incongruent_accuracy.toFixed(1)}%</span></p>
-						<p class="condition-stat">Avg RT: <span>{metrics.incongruent_rt.toFixed(0)} ms</span></p>
+						<p class="condition-title">{t('Conflicting Words (Incongruent)')}</p>
+						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.incongruent_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
+						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.incongruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
 						<p class="condition-note warning">
 							{#if metrics.stroop_effect > 0}
-								⚡ {metrics.stroop_effect.toFixed(0)} ms interference penalty
+								⚡ {lt(`${metrics.stroop_effect.toFixed(0)} ms interference penalty`, `${n(metrics.stroop_effect.toFixed(0))} মি.সে হস্তক্ষেপজনিত বিলম্ব`)}
 							{:else}
-								Excellent interference control!
+								{t('Excellent interference control!')}
 							{/if}
 						</p>
 					</div>
@@ -687,39 +698,39 @@
 
 				<!-- Interpretation -->
 			<div class="interpretation-section">
-				<h3>What This Means</h3>
-				<p class="feedback-text">{metrics.feedback}</p>
+				<h3>{t('What This Means')}</h3>
+				<p class="feedback-text">{t(metrics.feedback)}</p>
 				
 				<div class="insights-list">
 					{#if metrics.interference_cost < 20}
 						<p class="insight success">
-							✓ <strong>Excellent inhibitory control:</strong> Minimal interference from word reading
+							✓ <strong>{t('Excellent inhibitory control:')}</strong> {t('Minimal interference from word reading')}
 						</p>
 					{:else if metrics.interference_cost < 40}
 						<p class="insight good">
-							✓ <strong>Good cognitive control:</strong> Managing interference effectively
+							✓ <strong>{t('Good cognitive control:')}</strong> {t('Managing interference effectively')}
 						</p>
 					{:else if metrics.interference_cost < 60}
 						<p class="insight moderate">
-							⚡ <strong>Moderate interference:</strong> Word reading affecting performance - normal!
+							⚡ <strong>{t('Moderate interference:')}</strong> {t('Word reading affecting performance - normal!')}
 						</p>
 					{:else}
 						<p class="insight high">
-							⚡ <strong>High interference effect:</strong> Word reading strongly competing with color naming
+							⚡ <strong>{t('High interference effect:')}</strong> {t('Word reading strongly competing with color naming')}
 						</p>
 					{/if}
 
 					{#if metrics.stroop_effect < 100}
 						<p class="insight success">
-							✓ <strong>Minimal Stroop effect:</strong> Fast conflict resolution
+							✓ <strong>{t('Minimal Stroop effect:')}</strong> {t('Fast conflict resolution')}
 						</p>
 					{:else if metrics.stroop_effect < 200}
 						<p class="insight good">
-							✓ <strong>Normal Stroop effect:</strong> Expected interference range
+							✓ <strong>{t('Normal Stroop effect:')}</strong> {t('Expected interference range')}
 						</p>
 					{:else}
 						<p class="insight moderate">
-							⚡ <strong>Significant Stroop effect:</strong> Conflicts taking extra processing time
+							⚡ <strong>{t('Significant Stroop effect:')}</strong> {t('Conflicts taking extra processing time')}
 						</p>
 					{/if}
 				</div>
@@ -727,23 +738,19 @@
 
 				<!-- Clinical Context -->
 			<div class="clinical-context">
-				<h3>About the Stroop Test</h3>
+				<h3>{t('About the Stroop Test')}</h3>
 				<div class="clinical-content">
 					<p>
-						<strong>The Stroop Effect</strong> demonstrates automatic processing (word reading) 
-						versus controlled processing (color naming). Everyone experiences this interference!
+						<strong>{t('The Stroop Effect')}</strong> {t('demonstrates automatic processing (word reading) versus controlled processing (color naming). Everyone experiences this interference!')}
 					</p>
 					<p>
-						<strong>For MS:</strong> This test is sensitive to frontal lobe dysfunction and executive 
-						control deficits. Regular practice can improve inhibitory control and selective attention.
+						<strong>{t('For MS:')}</strong> {t('This test is sensitive to frontal lobe dysfunction and executive control deficits. Regular practice can improve inhibitory control and selective attention.')}
 					</p>
 					<p>
-						<strong>Why It's Hard:</strong> Your brain has practiced reading for years - it happens 
-						automatically. Suppressing this automatic response requires focused attention and cognitive control.
+						<strong>{t("Why It's Hard:")}</strong> {t('Your brain has practiced reading for years - it happens automatically. Suppressing this automatic response requires focused attention and cognitive control.')}
 					</p>
 					<p>
-						<strong>Training Benefits:</strong> Repeated Stroop practice strengthens prefrontal circuits 
-						involved in inhibitory control, which can improve real-world attention and focus.
+						<strong>{t('Training Benefits:')}</strong> {t('Repeated Stroop practice strengthens prefrontal circuits involved in inhibitory control, which can improve real-world attention and focus.')}
 					</p>
 				</div>
 			</div>
@@ -752,7 +759,7 @@
 			{#if metrics.difficulty_after !== difficulty}
 				<div class="difficulty-change">
 					<p>
-						<strong>Difficulty Adjusted:</strong> Level {difficulty} → Level {metrics.difficulty_after}
+						<strong>{t('Difficulty Adjusted:')}</strong> {lt(`Level ${difficulty} → Level ${metrics.difficulty_after}`, `লেভেল ${n(difficulty)} → লেভেল ${n(metrics.difficulty_after)}`)}
 					</p>
 				</div>
 			{/if}
@@ -760,7 +767,7 @@
 			<!-- New Badges -->
 			{#if newBadges.length > 0}
 				<div class="badges-section">
-					<h3>New Badges Earned!</h3>
+					<h3>{t('New Badges Earned!')}</h3>
 					<BadgeNotification badges={newBadges} />
 				</div>
 			{/if}
@@ -768,7 +775,7 @@
 			<!-- Actions -->
 			<div class="results-actions">
 				<button on:click={returnToDashboard} class="return-button">
-					Return to Dashboard
+					{t('Return to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -776,69 +783,67 @@
 
 		<!-- Help Button (always visible) -->
 	{#if phase !== 'results'}
-		<button on:click={() => showHelp = true} class="help-button" aria-label="Help">
+		<button on:click={() => showHelp = true} class="help-button" aria-label={t('Help')}>
 			?
 		</button>
 	{/if}
 
 	<!-- Help Modal -->
 	{#if showHelp}
-		<div class="modal-overlay" on:click={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="button" aria-label="Close help dialog" tabindex="0">
-			<div class="modal-content" on:click|stopPropagation on:keydown={(e) => e.stopPropagation()} role="document" tabindex="0">
-				<h2 class="modal-title">Stroop Test Help</h2>
+		<div class="modal-overlay" on:click|self={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="dialog" aria-label={t('Close help dialog')} tabindex="0">
+			<div class="modal-content" role="document" tabindex="0">
+				<h2 class="modal-title">{t('Stroop Test Help')}</h2>
 
 				<div class="help-sections">
 					<div class="help-section">
-						<h3>What is the Stroop Test?</h3>
+						<h3>{t('What is the Stroop Test?')}</h3>
 						<p>
-							A classic psychological test measuring selective attention and cognitive interference. 
-							It demonstrates how automatic processes (reading) can interfere with task goals (naming colors).
+							{t('A classic psychological test measuring selective attention and cognitive interference. It demonstrates how automatic processes (reading) can interfere with task goals (naming colors).')}
 						</p>
 					</div>
 
 					<div class="help-section">
-						<h3>Why Is It Used in MS?</h3>
+						<h3>{t('Why Is It Used in MS?')}</h3>
 						<ul>
-							<li>Sensitive to frontal lobe and executive function changes</li>
-							<li>Measures inhibitory control (suppressing automatic responses)</li>
-							<li>Assesses selective attention and cognitive flexibility</li>
-							<li>Standard in neuropsychological MS assessments</li>
-							<li>Training can improve real-world attention control</li>
+							<li>{t('Sensitive to frontal lobe and executive function changes')}</li>
+							<li>{t('Measures inhibitory control (suppressing automatic responses)')}</li>
+							<li>{t('Assesses selective attention and cognitive flexibility')}</li>
+							<li>{t('Standard in neuropsychological MS assessments')}</li>
+							<li>{t('Training can improve real-world attention control')}</li>
 						</ul>
 					</div>
 
 					<div class="help-section">
-						<h3>Understanding Your Metrics</h3>
+						<h3>{t('Understanding Your Metrics')}</h3>
 						<div class="metrics-explain">
-							<p><strong>Stroop Effect:</strong> Difference between conflicting and matching trials. Lower is better.</p>
-							<p><strong>Interference Cost:</strong> How much slower you are on conflict trials vs. baseline. Measures inhibitory control.</p>
-							<p><strong>Facilitation Effect:</strong> How much faster matching words are vs. baseline. Shows word reading benefit.</p>
-							<p><strong>Consistency:</strong> How stable your response times are across trials.</p>
+							<p><strong>{t('Stroop Effect:')}</strong> {t('Difference between conflicting and matching trials. Lower is better.')}</p>
+							<p><strong>{t('Interference Cost:')}</strong> {t('How much slower you are on conflict trials vs. baseline. Measures inhibitory control.')}</p>
+							<p><strong>{t('Facilitation Effect:')}</strong> {t('How much faster matching words are vs. baseline. Shows word reading benefit.')}</p>
+							<p><strong>{t('Consistency:')}</strong> {t('How stable your response times are across trials.')}</p>
 						</div>
 					</div>
 
 					<div class="help-section">
-						<h3>Strategies for Success</h3>
+						<h3>{t('Strategies for Success')}</h3>
 						<ul>
-							<li>Look at the color of the letters/ink, not their meaning</li>
-							<li>Try slightly unfocusing your eyes to blur the word</li>
-							<li>Practice saying color names aloud during practice</li>
-							<li>Stay focused - concentration improves inhibitory control</li>
-							<li>Don't worry about mistakes - interference is universal!</li>
+							<li>{t('Look at the color of the letters/ink, not their meaning')}</li>
+							<li>{t('Try slightly unfocusing your eyes to blur the word')}</li>
+							<li>{t('Practice saying color names aloud during practice')}</li>
+							<li>{t('Stay focused - concentration improves inhibitory control')}</li>
+							<li>{t("Don't worry about mistakes - interference is universal!")}</li>
 						</ul>
 					</div>
 
 					<div class="help-section">
-						<h3>Historical Note</h3>
+						<h3>{t('Historical Note')}</h3>
 						<p>
-							John Ridley Stroop published this effect in 1935. It remains one of the most widely 
-							used tests in psychology and neuropsychology, with thousands of research papers published!
+							{t('John Ridley Stroop published this effect in 1935. It remains one of the most widely used tests in psychology and neuropsychology, with thousands of research papers published!')}
 						</p>
 					</div>
 				</div>
 
 				<button on:click={() => showHelp = false} class="modal-close-btn">
-					Close
+					{t('Close')}
 				</button>
 			</div>
 		</div>

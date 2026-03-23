@@ -9,7 +9,7 @@ import "../../../../chunks/index3.js";
 import { L as LoadingSkeleton } from "../../../../chunks/LoadingSkeleton.js";
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
-    $$renderer2.push(`<div class="digit-span-container svelte-nmzcug">`);
+    $$renderer2.push(`<div class="digit-span-container svelte-nmzcug" data-localize-skip="">`);
     {
       $$renderer2.push("<!--[-->");
       LoadingSkeleton($$renderer2, { variant: "card", count: 3 });

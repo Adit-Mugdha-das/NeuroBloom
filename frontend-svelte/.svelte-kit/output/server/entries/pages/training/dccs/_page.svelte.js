@@ -78,7 +78,7 @@ function _page($$renderer, $$props) {
         return `Basic: Color & Shape sorting, ${cueDuration}ms cues`;
       }
     }
-    $$renderer2.push(`<div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;" class="svelte-yzdviz"><div style="background: white; padding: 30px; border-radius: 10px; margin: 0 auto; max-width: 1000px;" class="svelte-yzdviz"><div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;" class="svelte-yzdviz"><h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;" class="svelte-yzdviz">${escape_html(t("Dimensional Change Card Sort (DCCS)"))}</h1> `);
+    $$renderer2.push(`<div data-localize-skip="" style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;" class="svelte-yzdviz"><div style="background: white; padding: 30px; border-radius: 10px; margin: 0 auto; max-width: 1000px;" class="svelte-yzdviz"><div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 20px;" class="svelte-yzdviz"><h1 style="font-size: 28px; font-weight: bold; margin: 0; color: #333;" class="svelte-yzdviz">${escape_html(t("Dimensional Change Card Sort (DCCS)"))}</h1> `);
     DifficultyBadge($$renderer2, { difficulty: 5, domain: "Cognitive Flexibility" });
     $$renderer2.push(`<!----></div> `);
     {

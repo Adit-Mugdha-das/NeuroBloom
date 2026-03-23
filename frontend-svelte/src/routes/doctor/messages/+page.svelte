@@ -171,7 +171,7 @@
 						>
 							<div>
 								<p class="patient-title">{patient.name}</p>
-								<p class="patient-preview">{patient.lastMessage.slice(0, 72)}{patient.lastMessage.length > 72 ? '...' : ''}</p>
+								<p class="patient-preview" data-localize-skip>{patient.lastMessage.slice(0, 72)}{patient.lastMessage.length > 72 ? '...' : ''}</p>
 							</div>
 							<div class="patient-meta">
 								<span>{formatDate(patient.timestamp)}</span>
@@ -204,9 +204,9 @@
 					{#each conversation as message}
 						<article class:sent={message.sender_type === 'doctor'} class="message-bubble">
 							{#if message.subject}
-								<p class="message-subject">{message.subject}</p>
+								<p class="message-subject" data-localize-skip>{message.subject}</p>
 							{/if}
-							<p class="message-content">{message.message}</p>
+							<p class="message-content" data-localize-skip>{message.message}</p>
 							<p class="message-time">
 								{new Date(message.created_at).toLocaleString()}
 								{#if message.sender_type === 'doctor' && message.is_read}

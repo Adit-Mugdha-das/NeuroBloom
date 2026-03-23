@@ -6,7 +6,7 @@ import { e as escape_html } from "../../../../chunks/escaping.js";
 import "clsx";
 import "@sveltejs/kit/internal/server";
 import "../../../../chunks/state.svelte.js";
-import { b as localeText, l as locale } from "../../../../chunks/index3.js";
+import { a as localeText, l as locale } from "../../../../chunks/index3.js";
 /* empty css                                                                 */
 /* empty css                                                               */
 import { u as user } from "../../../../chunks/stores2.js";
@@ -18,7 +18,7 @@ function _page($$renderer, $$props) {
     function lt(en, bn) {
       return localeText({ en, bn }, store_get($$store_subs ??= {}, "$locale", locale));
     }
-    $$renderer2.push(`<div class="flanker-container svelte-1sghbzl" data-localize-skip="">`);
+    $$renderer2.push(`<div class="flanker-container svelte-1sghbzl">`);
     {
       $$renderer2.push("<!--[-->");
       $$renderer2.push(`<div class="loading svelte-1sghbzl"><div class="spinner svelte-1sghbzl"></div> <p>${escape_html(lt("Loading task...", "টাস্ক লোড হচ্ছে..."))}</p></div>`);

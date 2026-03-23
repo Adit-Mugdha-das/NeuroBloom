@@ -468,9 +468,7 @@
 					</div>
 					<div style="color: #64748b; font-size: 0.9rem;">
 						💡
-						{taskLocale() === 'bn'
-							? 'দ্রুত জমা দিতে Enter বা Space চাপুন'
-							: 'Tip: Press Enter or Space to submit quickly'}
+						{t('Tip: Press Enter or Space to submit quickly', taskLocale())}
 					</div>
 				</div>
 

@@ -295,9 +295,9 @@
 									</div>
 
 									{#if message.subject}
-										<p class="audit-subject">{message.subject}</p>
+										<p class="audit-subject" data-localize-skip>{message.subject}</p>
 									{/if}
-									<p class="audit-message">{message.preview}</p>
+									<p class="audit-message" data-localize-skip>{message.preview}</p>
 
 									{#if message.audit.flagged}
 										<div class="audit-reasons">

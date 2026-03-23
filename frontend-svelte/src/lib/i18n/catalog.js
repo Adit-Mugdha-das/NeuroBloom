@@ -1,3 +1,10 @@
+import {
+	TASK_EXACT_TRANSLATIONS,
+	TASK_PATTERN_TRANSLATIONS,
+	TASK_PHRASE_TRANSLATIONS,
+	TASK_WORD_TRANSLATIONS
+} from './task-translations.js';
+
 export const DIGIT_MAP = {
 	'0': '০',
 	'1': '১',
@@ -55,6 +62,35 @@ export const EXACT_TRANSLATIONS = {
 	'New notification': 'নতুন নোটিফিকেশন',
 	'Notifications': 'নোটিফিকেশন',
 	'Messages': 'মেসেজ',
+	'Patient Experience': 'রোগী অভিজ্ঞতা',
+	'Notification Center': 'নোটিফিকেশন সেন্টার',
+	'Stay Informed': 'আপডেট থাকুন',
+	'Your latest platform notices in one place': 'আপনার সর্বশেষ প্ল্যাটফর্ম নোটিশ এক জায়গায়',
+	'System announcements, feature updates, and research invitations from the NeuroBloom team.': 'NeuroBloom দলের সিস্টেম ঘোষণা, ফিচার আপডেট এবং গবেষণার আমন্ত্রণ এখানে দেখুন।',
+	'Unread badges on the dashboard clear as soon as you open this page.': 'এই পেজ খুললেই ড্যাশবোর্ডের অপঠিত ব্যাজগুলো স্বয়ংক্রিয়ভাবে পরিষ্কার হয়ে যাবে।',
+	'Loading notifications...': 'নোটিফিকেশন লোড হচ্ছে...',
+	'Failed to load notifications': 'নোটিফিকেশন লোড করা যায়নি',
+	'No notifications yet': 'এখনও কোনো নোটিফিকেশন নেই',
+	'New notices from admins will appear here automatically.': 'অ্যাডমিনদের নতুন নোটিশ এখানে স্বয়ংক্রিয়ভাবে দেখা যাবে।',
+	'Announcement': 'ঘোষণা',
+	'Feature Update': 'ফিচার আপডেট',
+	'Research Invitation': 'গবেষণার আমন্ত্রণ',
+	'Notice': 'নোটিশ',
+	'No Doctor Assigned': 'কোনো চিকিৎসক সংযুক্ত নেই',
+	'Connect with a healthcare provider to start secure messaging': 'নিরাপদ মেসেজিং শুরু করতে একজন স্বাস্থ্যসেবা প্রদানকারীর সাথে সংযুক্ত হন',
+	'Find a Doctor': 'চিকিৎসক খুঁজুন',
+	'Loading messages...': 'মেসেজ লোড হচ্ছে...',
+	'Failed to send message': 'মেসেজ পাঠানো যায়নি',
+	'Unknown error': 'অজানা ত্রুটি',
+	'Start Your Conversation': 'কথোপকথন শুরু করুন',
+	'Send a message to connect with your healthcare provider': 'স্বাস্থ্যসেবা প্রদানকারীর সাথে সংযুক্ত হতে একটি মেসেজ পাঠান',
+	'Subject (optional)': 'বিষয় (ঐচ্ছিক)',
+	'Type your message...': 'আপনার মেসেজ লিখুন...',
+	'Press Enter to send': 'পাঠাতে Enter চাপুন',
+	'Shift+Enter for new line': 'নতুন লাইনের জন্য Shift+Enter চাপুন',
+	'Send message (Enter)': 'মেসেজ পাঠান (Enter)',
+	'Sending...': 'পাঠানো হচ্ছে...',
+	'Send Message': 'মেসেজ পাঠান',
 	'Logout': 'লগআউট',
 	'Your Brain Health Today': 'আজকের আপনার মস্তিষ্কের সুস্থতা',
 	'A calm view of your training progress, next step, and care support.': 'আপনার ট্রেনিং অগ্রগতি, পরবর্তী করণীয় এবং সেবাসংক্রান্ত সহায়তার একটি শান্ত ও পরিষ্কার চিত্র।',
@@ -93,6 +129,12 @@ export const EXACT_TRANSLATIONS = {
 	'Baseline Status': 'বেসলাইনের অবস্থা',
 	'Done': 'সম্পন্ন',
 	'Start': 'শুরু',
+	'Strengthen short-term memory and recall.': 'স্বল্পমেয়াদি স্মৃতি ও মনে রাখার ক্ষমতা শক্তিশালী করুন।',
+	'Improve focus and sustained concentration.': 'মনোযোগ ও দীর্ঘসময় একাগ্রতা ধরে রাখার ক্ষমতা বাড়ান।',
+	'Practice adapting to changing rules.': 'পরিবর্তিত নিয়মের সাথে মানিয়ে নেওয়ার অনুশীলন করুন।',
+	'Build strategy and problem-solving skills.': 'কৌশল গঠন ও সমস্যা সমাধানের দক্ষতা গড়ে তুলুন।',
+	'Work on speed and response efficiency.': 'গতি ও সাড়া দেওয়ার দক্ষতা উন্নত করুন।',
+	'Train quick visual search and detection.': 'দ্রুত ভিজ্যুয়াল খোঁজা ও শনাক্ত করার দক্ষতা অনুশীলন করুন।',
 	'Healthcare Provider': 'স্বাস্থ্যসেবা প্রদানকারী',
 	'Your Care Team': 'আপনার কেয়ার টিম',
 	'Expand when needed': 'প্রয়োজনে খুলুন',
@@ -592,7 +634,26 @@ Object.assign(EXACT_TRANSLATIONS, {
 	'Add this digit to the one you just saw (not the answer you gave!)': 'এই অঙ্কটিকে ঠিক আগের দেখা অঙ্কের সঙ্গে যোগ করুন, আপনার দেওয়া উত্তরের সঙ্গে নয়!',
 	'Add each new digit to the previous digit, not to your running total!': 'প্রতিটি নতুন অঙ্ককে আগের অঙ্কের সঙ্গে যোগ করুন, চলমান মোটের সঙ্গে নয়!',
 	"Sort each card by clicking one of the four target cards at the top. You'll get feedback on whether your sort was \"Correct\" or \"Wrong\".": 'উপরে থাকা চারটি টার্গেট কার্ডের একটিতে ক্লিক করে প্রতিটি কার্ড সাজান। আপনার সাজানোটি "সঠিক" না "ভুল" তা সঙ্গে সঙ্গে জানানো হবে।'
+	,
+	'Loading doctor information...': 'চিকিৎসকের তথ্য লোড হচ্ছে...',
+	'Failed to load doctor information': 'চিকিৎসকের তথ্য লোড করা যায়নি',
+	'Your Healthcare Provider': 'আপনার স্বাস্থ্যসেবা প্রদানকারী',
+	'Doctor:': 'চিকিৎসক:',
+	'Specialization:': 'বিশেষায়ন:',
+	'Institution:': 'প্রতিষ্ঠান:',
+	'Email:': 'ইমেইল:',
+	'Under care since:': 'তত্ত্বাবধানে আছেন:',
+	'Diagnosis:': 'রোগনির্ণয়:',
+	'Treatment Goals:': 'চিকিৎসার লক্ষ্য:',
+	'Your progress is being monitored by a healthcare professional':
+		'আপনার অগ্রগতি একজন স্বাস্থ্যসেবা পেশাজীবী পর্যবেক্ষণ করছেন',
+	'No doctor currently assigned': 'বর্তমানে কোনো চিকিৎসক নির্ধারিত নেই',
+	'You can continue your training independently, or request to be assigned to a healthcare provider for professional monitoring.':
+		'আপনি স্বাধীনভাবে ট্রেনিং চালিয়ে যেতে পারেন, অথবা পেশাদার পর্যবেক্ষণের জন্য একজন স্বাস্থ্যসেবা প্রদানকারীর কাছে নির্ধারিত হওয়ার অনুরোধ করতে পারেন।',
+	'Browse Available Doctors': 'উপলভ্য চিকিৎসকদের দেখুন'
 });
+
+Object.assign(EXACT_TRANSLATIONS, TASK_EXACT_TRANSLATIONS);
 
 export const PHRASE_TRANSLATIONS = {
 	'Interface language': 'ইন্টারফেস ভাষা',
@@ -604,6 +665,15 @@ export const PHRASE_TRANSLATIONS = {
 	'Current Streak': 'বর্তমান ধারাবাহিকতা',
 	'Unavailable': 'পাওয়া যাচ্ছে না',
 	'No recent activity': 'সাম্প্রতিক কোনো কার্যক্রম নেই',
+	'Yesterday': 'গতকাল',
+	'Unread': 'অপঠিত',
+	'Read': 'পড়া হয়েছে',
+	'Not available': 'উপলব্ধ নয়',
+	'Not scheduled': 'নির্ধারিত নয়',
+	'All time': 'সমস্ত সময়',
+	'Last 7 days': 'গত ৭ দিন',
+	'Last 30 days': 'গত ৩০ দিন',
+	'Last 90 days': 'গত ৯০ দিন',
 	'Open': 'খুলুন',
 	'Review': 'রিভিউ',
 	'Latest': 'সর্বশেষ',
@@ -640,6 +710,8 @@ export const PHRASE_TRANSLATIONS = {
 	'Preference': 'পছন্দ'
 };
 
+Object.assign(PHRASE_TRANSLATIONS, TASK_PHRASE_TRANSLATIONS);
+
 export const WORD_TRANSLATIONS = {
 	January: 'জানুয়ারি',
 	February: 'ফেব্রুয়ারি',
@@ -657,6 +729,8 @@ export const WORD_TRANSLATIONS = {
 	Feb: 'ফেব',
 	Mar: 'মার্চ',
 	Apr: 'এপ্রি',
+	Jun: 'জুন',
+	Jul: 'জুলাই',
 	Aug: 'আগ',
 	Sep: 'সেপ্টে',
 	Oct: 'অক্টো',
@@ -669,6 +743,13 @@ export const WORD_TRANSLATIONS = {
 	Friday: 'শুক্রবার',
 	Saturday: 'শনিবার',
 	Sunday: 'রবিবার',
+	Mon: 'সোম',
+	Tue: 'মঙ্গল',
+	Wed: 'বুধ',
+	Thu: 'বৃহস্পতি',
+	Fri: 'শুক্র',
+	Sat: 'শনি',
+	Sun: 'রবি',
 	Level: 'লেভেল',
 	Round: 'রাউন্ড',
 	Training: 'ট্রেনিং',
@@ -1465,6 +1546,15 @@ export const WORD_TRANSLATIONS = {
 	'REVERSE': 'উল্টো',
 	'SAME': 'একই',
 	'Visual Imagery': 'দৃশ্য কল্পনা',
+	'Spatial Chunking': 'স্থানিক চাঙ্কিং',
+	'Mental Rehearsal': 'মানসিক পুনরাবৃত্তি',
+	'Landmark Method': 'ল্যান্ডমার্ক পদ্ধতি',
+	'Click blocks in REVERSE order': 'ব্লকগুলো উল্টো ক্রমে চাপুন',
+	'Click blocks in the SAME order': 'ব্লকগুলো একই ক্রমে চাপুন',
+	'Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.': 'ব্লকগুলো জ্বলতে থাকলে মনে করুন আপনি সেগুলোকে একটি রেখা দিয়ে যুক্ত করছেন। ধারাটি যে আকার বা প্যাটার্ন তৈরি করে সেটি কল্পনা করুন।',
+	'Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.': 'ব্লকগুলোকে অর্থবহ প্যাটার্নে ভাগ করুন: L-আকৃতি, তির্যক রেখা, বর্গ বা আপনার চেনা অন্য জ্যামিতিক রূপ।',
+	'After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.': 'ধারাটি শেষ হলে ক্লিক করার আগে মনে মনে ১-২ বার তা পুনরাবৃত্তি করুন। এতে স্মৃতি আরও মজবুত হয়।',
+	'Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.': 'কোণের ব্লক বা মাঝের ব্লককে রেফারেন্স হিসেবে ব্যবহার করুন। বাকি অবস্থানগুলোকে সেই ল্যান্ডমার্কের তুলনায় মনে রাখুন।',
 	'What This Measures': 'এটি কী মাপে',
 	'Set-Shifting': 'নিয়ম বদলে নেওয়ার ক্ষমতা',
 	'Mental Flexibility': 'মানসিক নমনীয়তা',
@@ -1599,6 +1689,31 @@ export const WORD_TRANSLATIONS = {
 	'Select letters...': 'অক্ষর বাছুন...',
 	'Numbers (Low → High)': 'সংখ্যা (ছোট → বড়)',
 	'Letters (A → Z)': 'অক্ষর (ক → হ)',
+	"You'll see a mixed sequence of numbers and letters. Your task is to reorder them:": 'আপনি সংখ্যা ও অক্ষরের মিশ্র একটি ধারা দেখবেন। আপনার কাজ হবে সেগুলো নতুন করে সাজানো:',
+	'You See:': 'আপনি দেখবেন:',
+	'You Answer:': 'আপনার উত্তর:',
+	'then': 'তারপর',
+	'Watch the sequence carefully...': 'ধারাটি মনোযোগ দিয়ে দেখুন...',
+	'Categorize first:': 'আগে ভাগ করুন:',
+	'Mentally separate numbers from letters': 'মনে মনে সংখ্যা ও অক্ষর আলাদা করুন',
+	'Sort mentally:': 'মনে মনে সাজান:',
+	'Order each group in your mind before clicking': 'ক্লিক করার আগে প্রতিটি দলকে মনে মনে ক্রম অনুযায়ী সাজান',
+	'Use rehearsal:': 'মনে মনে বলুন:',
+	'Repeat the correct order silently': 'সঠিক ক্রমটি চুপচাপ মনে মনে পুনরাবৃত্তি করুন',
+	'Numbers ascending (1, 2, 3...) then Letters alphabetical (A, B, C...)': 'সংখ্যাগুলো ছোট থেকে বড় ক্রমে সাজান, তারপর অক্ষরগুলো বর্ণানুক্রমে সাজান',
+	'Numbers — recalled': 'সংখ্যা — মনে রাখা',
+	'Numbers — ordered correctly': 'সংখ্যা — সঠিক ক্রমে সাজানো',
+	'Letters — recalled': 'অক্ষর — মনে রাখা',
+	'Letters — ordered correctly': 'অক্ষর — সঠিক ক্রমে সাজানো',
+	'Response speed trend': 'সাড়ার গতির ধারা',
+	'Categorize First': 'আগে ভাগ করুন',
+	'Sort Numbers': 'সংখ্যা সাজান',
+	'Sort Letters': 'অক্ষর সাজান',
+	'Quickly identify which items are numbers and which are letters. Group them mentally before ordering.': 'দ্রুত বুঝে নিন কোনগুলো সংখ্যা আর কোনগুলো অক্ষর। সাজানোর আগে সেগুলোকে মনে মনে আলাদা দলে রাখুন।',
+	'Arrange numbers from smallest to largest (1, 2, 3, 4...). This is your first group.': 'সংখ্যাগুলো ছোট থেকে বড় ক্রমে সাজান (১, ২, ৩, ৪...)। এটিই হবে আপনার প্রথম দল।',
+	'Arrange letters alphabetically (A, B, C, D...). This is your second group.': 'অক্ষরগুলো বর্ণানুক্রমে সাজান (অ, আ, ই, ঈ...)। এটিই হবে আপনার দ্বিতীয় দল।',
+	'Silently repeat the correct order 2-3 times before clicking to strengthen memory.': 'ক্লিক করার আগে সঠিক ক্রমটি ২-৩ বার মনে মনে বলুন, এতে স্মৃতি আরও মজবুত হবে।',
+	'For longer sequences, break them into smaller chunks (e.g., "1-3" and "A-B-D").': 'দীর্ঘ ধারাকে ছোট ছোট ভাগে ভেঙে নিন (যেমন, "১-৩" এবং "অ-আ-ঈ")।',
 	'Start Practice (4 digits)': 'অনুশীলন শুরু করুন (৪টি অঙ্ক)',
 	'More Information': 'আরও তথ্য',
 	'Type Your Answer': 'আপনার উত্তর লিখুন',
@@ -1647,6 +1762,8 @@ export const WORD_TRANSLATIONS = {
 		'গতি জরুরি - GO ট্রায়ালে দ্রুত সাড়া দিন',
 	'Loading research export catalog...': 'রিসার্চ এক্সপোর্ট ক্যাটালগ লোড হচ্ছে...'
 };
+
+Object.assign(WORD_TRANSLATIONS, TASK_WORD_TRANSLATIONS);
 
 export const PATTERN_TRANSLATIONS = [
 	{
@@ -1975,5 +2092,6 @@ export const PATTERN_TRANSLATIONS = [
 	{
 		pattern: /^No recent activity$/u,
 		replace: () => 'সাম্প্রতিক কোনো কার্যক্রম নেই'
-	}
+	},
+	...TASK_PATTERN_TRANSLATIONS
 ];

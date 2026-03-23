@@ -511,7 +511,7 @@
 
 <svelte:window on:keydown={handleKeyPress} />
 
-<div class="flanker-container" data-localize-skip>
+<div class="flanker-container">
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>

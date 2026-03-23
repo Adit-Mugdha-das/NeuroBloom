@@ -1,58 +1,32 @@
 <script>
+	import { afterNavigate } from '$app/navigation';
 	import { dev } from '$app/environment';
 	import { page } from '$app/stores';
 	import { training } from '$lib/api';
 	import PublicLanguageSwitcher from '$lib/components/PublicLanguageSwitcher.svelte';
 	import DevPanel from '$lib/components/DevPanel.svelte';
-	import { initializeLocale, localize, translateText } from '$lib/i18n';
+	import {
+		initializeLocale,
+		localize,
+		queueLocalizationRefresh,
+		translateText
+	} from '$lib/i18n';
+	import {
+		getRouteLocalizationMode,
+		PUBLIC_LANGUAGE_ROUTES,
+	} from '$lib/i18n/route-localization.js';
 	import { authReady, markAuthReady, user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 	import '../app.css';
 
 	let currentUser = null;
-	const PUBLIC_LANGUAGE_ROUTES = new Set(['/', '/login', '/register']);
-	const GAME_ROUTE_PREFIXES = ['/training', '/baseline/tasks'];
-	// Keep this list in sync with `npm run audit:bangla-ui`.
-	const LEGACY_GAME_ROUTES = new Set([
-		'/training',
-		'/training/cancellation-test',
-		'/training/inspection-time',
-		'/training/letter-number-sequencing',
-		'/training/multiple-object-tracking',
-		'/training/pattern-comparison',
-		'/training/plus-minus',
-		'/training/sdmt',
-		'/training/stockings-of-cambridge',
-		'/training/tower-of-london',
-		'/training/twenty-questions',
-		'/training/useful-field-of-view',
-		'/training/visual-search',
-		'/baseline/tasks/attention',
-		'/baseline/tasks/flexibility',
-		'/baseline/tasks/planning',
-		'/baseline/tasks/processing-speed',
-		'/baseline/tasks/visual-scanning'
-	]);
-	const NATIVE_LOCALIZED_ROUTES = new Set([
-		'/baseline/tasks/working-memory',
-		'/training/category-fluency',
-		'/training/dccs',
-		'/training/digit-span',
-		'/training/dual-n-back',
-		'/training/flanker',
-		'/training/gonogo',
-		'/training/operation-span',
-		'/training/pasat',
-		'/training/spatial-span',
-		'/training/stroop',
-		'/training/trail-making-a',
-		'/training/trail-making-b',
-		'/training/verbal-fluency',
-		'/training/wcst'
-	]);
 
 	const unsubscribe = user.subscribe((value) => {
 		currentUser = value;
+	});
+
+	afterNavigate(() => {
+		queueLocalizationRefresh('full');
 	});
 
 	onMount(() => {
@@ -97,6 +71,8 @@
 				console.error('Failed to auto-link questionnaire context after task submission:', error);
 			}
 
+			queueLocalizationRefresh('pulse');
+
 			return response;
 		};
 
@@ -104,31 +80,40 @@
 		window.confirm = (message) => originalConfirm(translateText(message));
 		window.prompt = (message, defaultValue = '') => originalPrompt(translateText(message), defaultValue);
 
+		const interactionEvents = ['click', 'change', 'submit'];
+		const handleInteraction = () => {
+			if (getRouteLocalizationMode(window.location.pathname) === 'refresh') {
+				queueLocalizationRefresh('pulse');
+			}
+		};
+
+		for (const eventName of interactionEvents) {
+			window.document.addEventListener(eventName, handleInteraction, true);
+		}
+
 		return () => {
 			window.fetch = originalFetch;
 			window.alert = originalAlert;
 			window.confirm = originalConfirm;
 			window.prompt = originalPrompt;
+			for (const eventName of interactionEvents) {
+				window.document.removeEventListener(eventName, handleInteraction, true);
+			}
 			unsubscribe();
 		};
 	});
 
 	$: showPublicLanguageSwitcher =
 		$authReady && !currentUser && PUBLIC_LANGUAGE_ROUTES.has($page.url.pathname);
-	$: isGameRoute = GAME_ROUTE_PREFIXES.some((prefix) =>
-		$page.url.pathname === prefix || $page.url.pathname.startsWith(`${prefix}/`)
-	);
-	$: useLegacyDomLocalization = isGameRoute
-		? LEGACY_GAME_ROUTES.has($page.url.pathname)
-		: !NATIVE_LOCALIZED_ROUTES.has($page.url.pathname);
+	$: localizationMode = getRouteLocalizationMode($page.url.pathname);
 </script>
 
 {#if showPublicLanguageSwitcher}
 	<PublicLanguageSwitcher />
 {/if}
 
-{#if useLegacyDomLocalization}
-	<div class="app-localization-root" use:localize>
+{#if localizationMode !== 'native'}
+	<div class="app-localization-root" use:localize={localizationMode}>
 		<slot />
 	</div>
 {:else}

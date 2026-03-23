@@ -11,7 +11,7 @@ import "../../../../chunks/index3.js";
 import { L as LoadingSkeleton } from "../../../../chunks/LoadingSkeleton.js";
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
-    $$renderer2.push(`<div class="dual-n-back-page svelte-11qvr0n">`);
+    $$renderer2.push(`<div class="dual-n-back-page svelte-11qvr0n" data-localize-skip="">`);
     {
       $$renderer2.push("<!--[-->");
       LoadingSkeleton($$renderer2, { variant: "card", count: 3 });

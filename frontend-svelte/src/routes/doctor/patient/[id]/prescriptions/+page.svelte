@@ -323,7 +323,7 @@
 			<div>
 				<p class="eyebrow-copy">Patient Prescription Record</p>
 				<h2>{patientName}</h2>
-				<p class="hero-copy">{patient?.diagnosis || patient?.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
+				<p class="hero-copy" data-localize-skip>{patient?.diagnosis || patient?.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
 				{#if latestActivePrescription}
 					<p class="hero-note">Current active prescription: {latestActivePrescription.title} · {latestActivePrescription.verification_id}</p>
 				{/if}
@@ -332,7 +332,11 @@
 				{#each heroCards as card}
 					<div class="hero-metric">
 						<span>{card.label}</span>
-						<strong>{card.value}</strong>
+						{#if card.label === 'Diagnosis'}
+							<strong data-localize-skip>{card.value}</strong>
+						{:else}
+							<strong>{card.value}</strong>
+						{/if}
 					</div>
 				{/each}
 			</div>
@@ -366,8 +370,8 @@
 										<p class="card-kicker">{prescription.verification_id}</p>
 										<span class="status-pill status-{prescription.status}">{prescription.status.replaceAll('_', ' ')}</span>
 									</div>
-									<h3>{prescription.title}</h3>
-									<p class="summary-copy">{prescription.summary || prescription.patient_instructions}</p>
+									<h3 data-localize-skip>{prescription.title}</h3>
+									<p class="summary-copy" data-localize-skip>{prescription.summary || prescription.patient_instructions}</p>
 								</div>
 								<div class="head-meta">
 									<span>Issued {formatDateTime(prescription.created_at)}</span>
@@ -378,7 +382,7 @@
 							<div class="detail-grid">
 								<div>
 									<span>Patient instructions</span>
-									<strong>{prescription.patient_instructions}</strong>
+									<strong data-localize-skip>{prescription.patient_instructions}</strong>
 								</div>
 								<div>
 									<span>Review date</span>
@@ -399,7 +403,7 @@
 									<p class="card-kicker">Status Update</p>
 									<p>
 										{#if prescription.retired_reason}
-											{prescription.retired_reason}
+											<span data-localize-skip>{prescription.retired_reason}</span>
 										{:else}
 											This prescription is no longer active.
 										{/if}
@@ -413,7 +417,7 @@
 							{#if prescription.medications?.length}
 								<div class="medication-list">
 									{#each prescription.medications as medication}
-										<div class="medication-item">
+										<div class="medication-item" data-localize-skip>
 											<strong>{medication.name}</strong>
 											<span>{medication.dosage} · {medication.frequency}{medication.duration ? ` · ${medication.duration}` : ''}</span>
 											{#if medication.instructions}
@@ -427,7 +431,7 @@
 							{#if prescription.lifestyle_plan?.length}
 								<div class="lifestyle-block">
 									<p class="card-kicker">Lifestyle Recommendations</p>
-									<ul>
+									<ul data-localize-skip>
 										{#each prescription.lifestyle_plan as item}
 											<li>{item}</li>
 										{/each}
@@ -595,11 +599,11 @@
 				<aside class="composer-panel preview-panel">
 					<p class="section-kicker">Live Review</p>
 					<h3>{draft.title || 'Prescription title preview'}</h3>
-					<p class="preview-summary">{draft.summary || draft.patient_instructions || 'A short summary and patient-facing instructions will appear here as you compose the prescription.'}</p>
+					<p class="preview-summary" data-localize-skip>{draft.summary || draft.patient_instructions || 'A short summary and patient-facing instructions will appear here as you compose the prescription.'}</p>
 
 					<div class="preview-meta">
 						<div><span>Patient</span><strong>{patientName}</strong></div>
-						<div><span>Diagnosis</span><strong>{patient?.diagnosis || 'Not recorded'}</strong></div>
+						<div><span>Diagnosis</span><strong data-localize-skip>{patient?.diagnosis || 'Not recorded'}</strong></div>
 						<div><span>Review date</span><strong>{draft.review_date || 'Not scheduled'}</strong></div>
 						<div><span>Status</span><strong>{draft.status}</strong></div>
 					</div>
@@ -608,7 +612,7 @@
 						<p class="card-kicker">Medications</p>
 						{#if previewMedications.length}
 							{#each previewMedications as medication}
-								<div class="preview-item">
+								<div class="preview-item" data-localize-skip>
 									<strong>{medication.name || 'Medication'}</strong>
 									<span>{medication.dosage || '-'} · {medication.frequency || '-'}</span>
 									{#if medication.duration}
@@ -627,7 +631,7 @@
 					<div class="preview-block">
 						<p class="card-kicker">Lifestyle Recommendations</p>
 						{#if previewLifestyleItems.length}
-							<ul>
+							<ul data-localize-skip>
 								{#each previewLifestyleItems as item}
 									<li>{item}</li>
 								{/each}
@@ -639,7 +643,7 @@
 
 					<div class="preview-block">
 						<p class="card-kicker">Patient Instructions</p>
-						<p>{draft.patient_instructions || 'Patient-facing instructions will appear here.'}</p>
+						<p data-localize-skip>{draft.patient_instructions || 'Patient-facing instructions will appear here.'}</p>
 					</div>
 				</aside>
 			</div>

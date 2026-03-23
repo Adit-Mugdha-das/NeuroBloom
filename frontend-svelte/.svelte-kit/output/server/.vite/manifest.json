@@ -14,7 +14,7 @@
     "name": "BadgeNotification",
     "imports": [
       "_index2.js",
-      "_utils3.js",
+      "_utils2.js",
       "_index3.js"
     ],
     "css": [
@@ -31,7 +31,7 @@
     "imports": [
       "_index2.js",
       "_index3.js",
-      "_utils3.js",
+      "_utils2.js",
       "_escaping.js"
     ],
     "css": [
@@ -47,12 +47,14 @@
     "name": "DoctorWorkspaceShell",
     "imports": [
       "_index2.js",
-      "_utils3.js",
+      "_utils2.js",
       "_exports.js",
       "_utils.js",
-      "_escaping.js",
+      "_attributes.js",
       "_state.svelte.js",
-      "_stores.js"
+      "_stores.js",
+      "_index3.js",
+      "_escaping.js"
     ],
     "css": [
       "_app/immutable/assets/DoctorWorkspaceShell.lJiOfr-8.css"
@@ -71,7 +73,7 @@
     "name": "LoadingSkeleton",
     "imports": [
       "_index2.js",
-      "_utils3.js"
+      "_utils2.js"
     ],
     "css": [
       "_app/immutable/assets/LoadingSkeleton.CVHYgqtf.css"
@@ -79,7 +81,10 @@
   },
   "_api.js": {
     "file": "chunks/api.js",
-    "name": "api"
+    "name": "api",
+    "imports": [
+      "_index3.js"
+    ]
   },
   "_attributes.js": {
     "file": "chunks/attributes.js",
@@ -118,6 +123,10 @@
     "file": "chunks/false.js",
     "name": "false"
   },
+  "_html.js": {
+    "file": "chunks/html.js",
+    "name": "html"
+  },
   "_index-server.js": {
     "file": "chunks/index-server.js",
     "name": "index-server",
@@ -129,7 +138,6 @@
     "file": "chunks/index.js",
     "name": "index",
     "imports": [
-      "_utils3.js",
       "_utils2.js"
     ]
   },
@@ -164,7 +172,6 @@
     "name": "internal",
     "imports": [
       "_utils2.js",
-      "_utils3.js",
       "_index2.js",
       "_context.js",
       "_environment.js"
@@ -185,7 +192,7 @@
     "file": "chunks/state.svelte.js",
     "name": "state.svelte",
     "imports": [
-      "_utils3.js"
+      "_utils2.js"
     ]
   },
   "_stores.js": {
@@ -205,6 +212,13 @@
       "_index.js"
     ]
   },
+  "_task-ui.js": {
+    "file": "chunks/task-ui.js",
+    "name": "task-ui",
+    "imports": [
+      "_index3.js"
+    ]
+  },
   "_utils.js": {
     "file": "chunks/utils.js",
     "name": "utils"
@@ -213,13 +227,8 @@
     "file": "chunks/utils2.js",
     "name": "utils",
     "imports": [
-      "_false.js",
-      "_utils3.js"
+      "_false.js"
     ]
-  },
-  "_utils3.js": {
-    "file": "chunks/utils3.js",
-    "name": "utils"
   },
   "node_modules/@sveltejs/kit/src/runtime/app/server/remote/index.js": {
     "file": "remote-entry.js",
@@ -264,13 +273,13 @@
     "isEntry": true,
     "imports": [
       "_index2.js",
+      "_exports.js",
+      "_utils.js",
+      "_state.svelte.js",
       "_stores.js",
       "_api.js",
       "_index3.js",
-      "_stores2.js",
-      "_exports.js",
-      "_utils.js",
-      "_state.svelte.js"
+      "_stores2.js"
     ],
     "css": [
       "_app/immutable/assets/_layout.D2W9QeVM.css"
@@ -532,9 +541,11 @@
     "imports": [
       "_index2.js",
       "_client.js",
+      "_index3.js",
       "_api.js",
       "_stores2.js",
-      "_escaping.js"
+      "_escaping.js",
+      "_html.js"
     ],
     "css": [
       "_app/immutable/assets/_page.DcVmGcjC.css"
@@ -551,7 +562,9 @@
       "_utils.js",
       "_escaping.js",
       "_state.svelte.js",
-      "_api.js"
+      "_index3.js",
+      "_api.js",
+      "_html.js"
     ],
     "css": [
       "_app/immutable/assets/_page.CD8aX_xJ.css"
@@ -565,9 +578,12 @@
     "imports": [
       "_index2.js",
       "_client.js",
+      "_index-server.js",
+      "_index3.js",
       "_api.js",
       "_stores2.js",
-      "_escaping.js"
+      "_escaping.js",
+      "_html.js"
     ],
     "css": [
       "_app/immutable/assets/_page.PV7HdHZo.css"
@@ -608,7 +624,7 @@
       "_stores2.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CIozSf-K.css"
+      "_app/immutable/assets/_page.BDH45dg8.css"
     ]
   },
   "src/routes/doctor/analytics/+page.svelte": {
@@ -801,7 +817,7 @@
       "_utils.js",
       "_state.svelte.js",
       "_index2.js",
-      "_utils3.js",
+      "_utils2.js",
       "_escaping.js",
       "_attributes.js",
       "_LoadingSkeleton.js"
@@ -817,10 +833,13 @@
     "src": "src/routes/find-doctor/+page.svelte",
     "isEntry": true,
     "imports": [
+      "_index2.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_api.js",
+      "_index3.js",
       "_stores2.js"
     ],
     "css": [
@@ -852,14 +871,17 @@
     "src": "src/routes/messages/+page.svelte",
     "isEntry": true,
     "imports": [
+      "_index2.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_api.js",
+      "_index3.js",
       "_stores2.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DWlTTvRM.css"
+      "_app/immutable/assets/_page.DFc8mnmO.css"
     ]
   },
   "src/routes/notifications/+page.svelte": {
@@ -868,11 +890,13 @@
     "src": "src/routes/notifications/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_escaping.js",
+      "_index2.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_api.js",
+      "_index3.js",
       "_stores2.js"
     ],
     "css": [
@@ -1177,11 +1201,12 @@
       "_attributes.js",
       "_state.svelte.js",
       "_index3.js",
+      "_task-ui.js",
       "_stores2.js",
       "_escaping.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.Bno6sqG2.css",
+      "_app/immutable/assets/_page.BGt1upmg.css",
       "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
       "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]
@@ -1209,13 +1234,15 @@
     "src": "src/routes/training/letter-number-sequencing/+page.svelte",
     "isEntry": true,
     "imports": [
+      "_index2.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_index3.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DGFbjsf2.css",
+      "_app/immutable/assets/_page.CNjzSwvc.css",
       "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]
   },
@@ -1272,6 +1299,7 @@
       "_state.svelte.js",
       "_DifficultyBadge.js",
       "_index3.js",
+      "_task-ui.js",
       "_stores2.js"
     ],
     "css": [
@@ -1300,13 +1328,15 @@
     "src": "src/routes/training/plus-minus/+page.svelte",
     "isEntry": true,
     "imports": [
-      "_escaping.js",
+      "_index2.js",
       "_index-server.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_BadgeNotification.js",
       "_DifficultyBadge.js",
+      "_index3.js",
       "_stores2.js"
     ],
     "css": [
@@ -1319,9 +1349,11 @@
     "src": "src/routes/training/sdmt/+page.svelte",
     "isEntry": true,
     "imports": [
+      "_index2.js",
       "_index-server.js",
       "_exports.js",
       "_utils.js",
+      "_escaping.js",
       "_state.svelte.js",
       "_index3.js"
     ],
@@ -1372,12 +1404,14 @@
       "_index2.js",
       "_exports.js",
       "_utils.js",
+      "_attributes.js",
       "_state.svelte.js",
       "_index3.js",
-      "_stores2.js"
+      "_stores2.js",
+      "_escaping.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.BTqSlhAL.css",
+      "_app/immutable/assets/_page.Dv9TI8ZO.css",
       "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
       "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]

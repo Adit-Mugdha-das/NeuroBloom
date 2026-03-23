@@ -6,7 +6,7 @@ import "@sveltejs/kit/internal/server";
 import "../../../chunks/state.svelte.js";
 import { a as attr_class, f as bind_props, c as stringify } from "../../../chunks/index2.js";
 /* empty css                                                       */
-import { j as fallback } from "../../../chunks/utils3.js";
+import { $ as fallback } from "../../../chunks/utils2.js";
 import { e as escape_html } from "../../../chunks/escaping.js";
 import { a as attr } from "../../../chunks/attributes.js";
 import { L as LoadingSkeleton } from "../../../chunks/LoadingSkeleton.js";

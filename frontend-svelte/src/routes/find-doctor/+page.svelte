@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
+	import { locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 	
@@ -21,6 +22,14 @@
 	user.subscribe(value => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
 	
 	onMount(async () => {
 		if (!currentUser) {
@@ -42,7 +51,7 @@
 			const requestsResp = await api.get(`/api/doctor/patient/${currentUser.id}/requests`);
 			myRequests = requestsResp.data.requests;
 		} catch (err) {
-			error = 'Failed to load doctors';
+			error = lt('Failed to load doctors', 'চিকিৎসকদের তথ্য লোড করা যায়নি');
 			console.error(err);
 		} finally {
 			loading = false;
@@ -67,7 +76,7 @@
 		if (!selectedDoctor) return;
 		
 		if (!fullName.trim()) {
-			alert('Please enter your full name');
+			alert(lt('Please enter your full name', 'অনুগ্রহ করে আপনার পূর্ণ নাম লিখুন'));
 			return;
 		}
 		
@@ -86,18 +95,18 @@
 				params: {
 					patient_id: currentUser.id,
 					doctor_id: selectedDoctor.id,
-					reason: reason || 'Seeking professional oversight',
+					reason: reason || lt('Seeking professional oversight', 'পেশাদার তত্ত্বাবধান চাই'),
 					message: message || null,
 					diagnosis: diagnosis || null
 				}
 			});
 			
-			alert('Request sent successfully! The doctor will review your request.');
+			alert(lt('Request sent successfully! The doctor will review your request.', 'অনুরোধ সফলভাবে পাঠানো হয়েছে! চিকিৎসক আপনার অনুরোধ পর্যালোচনা করবেন।'));
 			closeRequestModal();
 			await loadData(); // Reload to show new request
 		} catch (err) {
-			const errorMsg = err.response?.data?.detail || 'Failed to send request';
-			alert(errorMsg);
+			const errorMsg = err.response?.data?.detail || lt('Failed to send request', 'অনুরোধ পাঠানো যায়নি');
+			alert(t(errorMsg));
 		}
 	}
 	
@@ -112,48 +121,61 @@
 	
 	function formatDate(dateStr) {
 		if (!dateStr) return '';
-		return new Date(dateStr).toLocaleDateString('en-US', {
+		return new Date(dateStr).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US', {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric'
 		});
 	}
+
+	function statusLabel(status) {
+		switch (status) {
+			case 'pending':
+				return lt('Pending', 'অপেক্ষমাণ');
+			case 'approved':
+				return lt('Approved', 'অনুমোদিত');
+			case 'rejected':
+				return lt('Rejected', 'প্রত্যাখ্যাত');
+			default:
+				return t(status || '');
+		}
+	}
 </script>
 
-<div class="page-container">
-	<h1>🏥 Find a Healthcare Provider</h1>
-	<p class="subtitle">Browse verified doctors and request assignment for professional monitoring</p>
+<div class="page-container" data-localize-skip>
+	<h1>🏥 {lt('Find a Healthcare Provider', 'একজন স্বাস্থ্যসেবা প্রদানকারী খুঁজুন')}</h1>
+	<p class="subtitle">{lt('Browse verified doctors and request assignment for professional monitoring', 'যাচাইকৃত চিকিৎসকদের দেখুন এবং পেশাদার পর্যবেক্ষণের জন্য যুক্ত হওয়ার অনুরোধ করুন')}</p>
 	
 	{#if loading}
-		<div class="loading">Loading doctors...</div>
+		<div class="loading">{lt('Loading doctors...', 'চিকিৎসকদের তথ্য লোড হচ্ছে...')}</div>
 	{:else if error}
-		<div class="error">{error}</div>
+		<div class="error">{t(error)}</div>
 	{:else}
 		<!-- My Requests Section -->
 		{#if myRequests.length > 0}
 			<div class="my-requests-section">
-				<h2>📋 My Requests</h2>
+				<h2>📋 {lt('My Requests', 'আমার অনুরোধসমূহ')}</h2>
 				<div class="requests-list">
 					{#each myRequests as request}
 						<div class="request-card">
 							<div class="request-header">
 								<h3>{request.doctor_name}</h3>
 								<span class="status-badge {getStatusBadgeClass(request.status)}">
-									{request.status}
+									{statusLabel(request.status)}
 								</span>
 							</div>
 							<div class="request-details">
-								<p><strong>Specialization:</strong> {request.doctor_specialization}</p>
+								<p><strong>{lt('Specialization:', 'বিশেষায়ন:')}</strong> {request.doctor_specialization}</p>
 								{#if request.reason}
-									<p><strong>Reason:</strong> {request.reason}</p>
+									<p><strong>{lt('Reason:', 'কারণ:')}</strong> {request.reason}</p>
 								{/if}
-								<p><strong>Requested:</strong> {formatDate(request.created_at)}</p>
+								<p><strong>{lt('Requested:', 'অনুরোধের তারিখ:')}</strong> {formatDate(request.created_at)}</p>
 								{#if request.responded_at}
-									<p><strong>Responded:</strong> {formatDate(request.responded_at)}</p>
+									<p><strong>{lt('Responded:', 'জবাবের তারিখ:')}</strong> {formatDate(request.responded_at)}</p>
 								{/if}
 								{#if request.doctor_notes}
 									<div class="doctor-notes">
-										<strong>Doctor's Response:</strong>
+										<strong>{lt("Doctor's Response:", 'চিকিৎসকের জবাব:')}</strong>
 										<p>{request.doctor_notes}</p>
 									</div>
 								{/if}
@@ -166,10 +188,10 @@
 		
 		<!-- Available Doctors Section -->
 		<div class="doctors-section">
-			<h2>👨‍⚕️ Available Doctors</h2>
+			<h2>👨‍⚕️ {lt('Available Doctors', 'উপলভ্য চিকিৎসক')}</h2>
 			{#if doctors.length === 0}
 				<div class="no-doctors">
-					<p>No doctors available at the moment. Please check back later.</p>
+					<p>{lt('No doctors available at the moment. Please check back later.', 'এই মুহূর্তে কোনো চিকিৎসক উপলভ্য নেই। পরে আবার দেখুন।')}</p>
 				</div>
 			{:else}
 				<div class="doctors-grid">
@@ -182,7 +204,7 @@
 								<p class="institution">🏥 {doctor.institution}</p>
 							{/if}
 							<button class="request-btn" on:click={() => openRequestModal(doctor)}>
-								Request Assignment
+								{lt('Request Assignment', 'যুক্ত হওয়ার অনুরোধ পাঠান')}
 							</button>
 						</div>
 					{/each}
@@ -194,53 +216,53 @@
 
 <!-- Request Modal -->
 {#if showRequestModal && selectedDoctor}
-	<div class="modal-overlay" on:click={closeRequestModal}>
-		<div class="modal-content" on:click|stopPropagation>
+	<div class="modal-overlay" on:click|self={closeRequestModal}>
+		<div class="modal-content">
 			<div class="modal-header">
-				<h2>Request Assignment to {selectedDoctor.full_name}</h2>
+				<h2>{lt('Request Assignment to', 'নিম্নোক্ত চিকিৎসকের কাছে যুক্ত হওয়ার অনুরোধ')} {selectedDoctor.full_name}</h2>
 				<button class="close-btn" on:click={closeRequestModal}>×</button>
 			</div>
 			
 			<div class="modal-body">
 				<p class="modal-info">
-					Send a request to be assigned to this doctor for professional monitoring of your cognitive training.
+					{lt('Send a request to be assigned to this doctor for professional monitoring of your cognitive training.', 'আপনার কগনিটিভ ট্রেনিংয়ের পেশাদার পর্যবেক্ষণের জন্য এই চিকিৎসকের কাছে যুক্ত হওয়ার অনুরোধ পাঠান।')}
 				</p>
 				
 				<div class="form-group">
-					<label for="reason">Reason for Request *</label>
+					<label for="reason">{lt('Reason for Request *', 'অনুরোধের কারণ *')}</label>
 					<input 
 						type="text" 
 						id="reason" 
 						bind:value={reason}
-						placeholder="e.g., Need professional oversight, diagnosed with MS"
+						placeholder={lt('e.g., Need professional oversight, diagnosed with MS', 'যেমন: পেশাদার তত্ত্বাবধান প্রয়োজন, এমএস নির্ণীত')}
 					/>
 				</div>
 				
 				<div class="form-group">
-					<label for="diagnosis">Diagnosis (Optional)</label>
+					<label for="diagnosis">{lt('Diagnosis (Optional)', 'রোগ নির্ণয় (ঐচ্ছিক)')}</label>
 					<input 
 						type="text" 
 						id="diagnosis" 
 						bind:value={diagnosis}
-						placeholder="e.g., Multiple Sclerosis, RRMS"
+						placeholder={lt('e.g., Multiple Sclerosis, RRMS', 'যেমন: মাল্টিপল স্ক্লেরোসিস, RRMS')}
 					/>
 				</div>
 				
 				<div class="form-group">
-					<label for="message">Additional Message (Optional)</label>
+					<label for="message">{lt('Additional Message (Optional)', 'অতিরিক্ত বার্তা (ঐচ্ছিক)')}</label>
 					<textarea 
 						id="message" 
 						bind:value={message}
-						placeholder="Any additional information for the doctor..."
+						placeholder={lt('Any additional information for the doctor...', 'চিকিৎসকের জন্য অতিরিক্ত কোনো তথ্য থাকলে লিখুন...')}
 						rows="4"
 					></textarea>
 				</div>
 			</div>
 			
 			<div class="modal-footer">
-				<button class="btn-cancel" on:click={closeRequestModal}>Cancel</button>
+				<button class="btn-cancel" on:click={closeRequestModal}>{lt('Cancel', 'বাতিল করুন')}</button>
 				<button class="btn-submit" on:click={submitRequest} disabled={!fullName.trim() || !reason.trim()}>
-					Send Request
+					{lt('Send Request', 'অনুরোধ পাঠান')}
 				</button>
 			</div>
 		</div>

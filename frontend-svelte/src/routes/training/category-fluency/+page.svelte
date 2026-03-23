@@ -40,7 +40,7 @@
 		if (!trialData) return '';
 
 		if ($locale === 'bn') {
-			return `আপনার কাছে ${n(trialData.time_limit_seconds || 60)} সেকেন্ড সময় আছে। এই বিভাগের যত বেশি সম্ভব শব্দ লিখুন। প্রতিটি শব্দ লিখে Enter চাপুন।`;
+			return `আপনার কাছে ${n(trialData.time_limit_seconds || 60)} সেকেন্ড সময় আছে। এই বিভাগের যত বেশি সম্ভব শব্দ লিখুন। প্রতিটি শব্দ লিখে এন্টার চাপুন।`;
 		}
 
 		return trialData.instructions;
@@ -311,7 +311,7 @@
 					<div style="background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
 						<h4 style="color: #8b5cf6; margin-bottom: 1rem;">{t('Rules:')}</h4>
 						<ul style="color: #64748b; line-height: 2;">
-							<li>{t('Type each word and press')} <strong>Enter</strong> {t('to submit it')}</li>
+							<li>{t('Type each word and press')} <strong>{$locale === 'bn' ? 'এন্টার' : 'Enter'}</strong> {t('to submit it')}</li>
 							<li>{t('You can submit as many words as you can think of')}</li>
 							<li>{t('Duplicate words will be automatically filtered out')}</li>
 							<li>{t('You have 60 seconds to complete the task')}</li>

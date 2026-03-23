@@ -17,7 +17,7 @@ function _page($$renderer, $$props) {
     }
     onDestroy(() => {
     });
-    $$renderer2.push(`<div class="tmt-container svelte-z5j1ow">`);
+    $$renderer2.push(`<div class="tmt-container svelte-z5j1ow" data-localize-skip="">`);
     {
       $$renderer2.push("<!--[-->");
       $$renderer2.push(`<div class="loading svelte-z5j1ow"><div class="spinner svelte-z5j1ow"></div> <p class="svelte-z5j1ow">${escape_html(t("Loading Trail Making Test..."))}</p></div>`);

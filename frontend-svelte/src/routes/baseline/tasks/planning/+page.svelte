@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -18,15 +19,80 @@
 	let totalTasksCount = 4;
 	
 	// Tower of Hanoi state
-	let towers = [[3, 2, 1], [], []]; // 3 disks on first tower
+	let diskCount = 3;
+	let towers = [];
 	let selectedTower = null;
 	let moves = 0;
-	let optimalMoves = 7; // 2^3 - 1 = 7 for 3 disks
+	let optimalMoves = 7;
 	let startTime = 0;
 	let firstMoveTime = 0;
 	let planningTime = 0;
 	let completed = false;
-	
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function initialTowers() {
+		return [Array.from({ length: diskCount }, (_, index) => diskCount - index), [], []];
+	}
+
+	function refreshTowerState() {
+		towers = initialTowers();
+		optimalMoves = 2 ** diskCount - 1;
+	}
+
+	function towerLabel(index) {
+		return lt(`Tower ${index + 1}`, `টাওয়ার ${n(index + 1)}`);
+	}
+
+	function moveSummaryLabel() {
+		return lt(`Moves: ${moves} / ${optimalMoves}`, `মুভ: ${n(moves)} / ${n(optimalMoves)}`);
+	}
+
+	function selectedTowerMessage() {
+		return lt(
+			`Selected Tower ${selectedTower + 1} - Click another tower to move`,
+			`নির্বাচিত টাওয়ার ${n(selectedTower + 1)} - সরাতে অন্য টাওয়ারে চাপুন`
+		);
+	}
+
+	function trainingProgressText() {
+		return lt(
+			`Training Progress: ${completedTasksCount} / ${totalTasksCount} tasks completed`,
+			`ট্রেনিং অগ্রগতি: ${n(completedTasksCount)} / ${n(totalTasksCount)}টি টাস্ক সম্পন্ন`
+		);
+	}
+
+	function insightMessage() {
+		if (moves === optimalMoves) {
+			return lt(
+				'Perfect! You solved it with optimal efficiency. Excellent planning skills!',
+				'চমৎকার! আপনি সর্বোত্তম দক্ষতায় ধাঁধাটি সমাধান করেছেন। আপনার পরিকল্পনা দক্ষতা দারুণ।'
+			);
+		}
+
+		if (moves <= optimalMoves + 3) {
+			return lt(
+				"Great planning! You're close to the optimal solution.",
+				'ভালো পরিকল্পনা! আপনি প্রায় সর্বোত্তম সমাধানের কাছাকাছি পৌঁছেছেন।'
+			);
+		}
+
+		return lt(
+			'Keep practicing. Planning ahead can help reduce unnecessary moves.',
+			'অনুশীলন চালিয়ে যান। আগে থেকে পরিকল্পনা করলে অপ্রয়োজনীয় মুভ কমানো যায়।'
+		);
+	}
+
 	user.subscribe(value => {
 		currentUser = value;
 		if (!value) {
@@ -41,17 +107,15 @@
 		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
 		taskId = $page.url.searchParams.get('taskId');
 		
-		// Adjust difficulty: more disks for higher difficulty
-		if (isTrainingMode && trainingDifficulty > 3) {
-			// Keep 3 disks but can increase to 4-5 for very high difficulty
-			if (trainingDifficulty >= 8) {
-				// 5 disks = 31 optimal moves
-				optimalMoves = 31;
-			} else if (trainingDifficulty >= 6) {
-				// 4 disks = 15 optimal moves
-				optimalMoves = 15;
-			}
+		if (isTrainingMode && trainingDifficulty >= 8) {
+			diskCount = 5;
+		} else if (isTrainingMode && trainingDifficulty >= 6) {
+			diskCount = 4;
+		} else {
+			diskCount = 3;
 		}
+
+		refreshTowerState();
 	});
 	
 	function backToDashboard() {
@@ -64,11 +128,13 @@
 	
 	function startTest() {
 		stage = 'test';
-		towers = [[3, 2, 1], [], []];
+		refreshTowerState();
 		selectedTower = null;
 		moves = 0;
 		startTime = Date.now();
 		firstMoveTime = 0;
+		planningTime = 0;
+		completed = false;
 	}
 	
 	function selectTower(index) {
@@ -99,7 +165,7 @@
 					}
 					
 					// Check if completed
-					if (towers[2].length === 3) {
+					if (towers[2].length === diskCount) {
 						completed = true;
 						calculateResults();
 					}
@@ -173,60 +239,70 @@
 	}
 	
 	function resetTest() {
-		towers = [[3, 2, 1], [], []];
+		refreshTowerState();
 		selectedTower = null;
 		moves = 0;
 		completed = false;
 		startTime = Date.now();
 		firstMoveTime = 0;
+		planningTime = 0;
 	}
 	
 	function getDiskColor(size) {
-		const colors = ['#4caf50', '#2196f3', '#ff9800'];
+		const colors = ['#4caf50', '#2196f3', '#ff9800', '#ef4444', '#8b5cf6'];
 		return colors[size - 1];
 	}
 </script>
 
-<div class="test-container">
+<div class="test-container" data-localize-skip>
 	{#if stage === 'intro'}
 		<div class="test-card">
-			<h1>Planning Test</h1>
-			<h2 style="color: #666; font-size: 20px; margin-bottom: 30px;">Tower of Hanoi</h2>
+			<h1>{t('Planning Test')}</h1>
+			<h2 style="color: #666; font-size: 20px; margin-bottom: 30px;">{t('Tower of Hanoi')}</h2>
 			
 			<div style="text-align: left; max-width: 600px; margin: 0 auto;">
-				<h3 style="color: #667eea; margin-bottom: 15px;">Instructions:</h3>
+				<h3 style="color: #667eea; margin-bottom: 15px;">{t('Instructions:')}</h3>
 				<ul style="line-height: 1.8; color: #666;">
-					<li>Move all disks from the first tower to the third tower</li>
-					<li>You can only move one disk at a time</li>
-					<li>A larger disk cannot be placed on a smaller disk</li>
-					<li>Try to complete in <strong>minimum moves ({optimalMoves})</strong></li>
-					<li>Think before you move - planning is key!</li>
+					<li>{t('Move all disks from the first tower to the third tower')}</li>
+					<li>{t('You can only move one disk at a time')}</li>
+					<li>{t('A larger disk cannot be placed on a smaller disk')}</li>
+					<li>{@html lt(`Try to complete in <strong>minimum moves (${optimalMoves})</strong>`, `যত কম সম্ভব মুভে শেষ করার চেষ্টা করুন <strong>(${n(optimalMoves)})</strong>`)}</li>
+					<li>{t('Think before you move - planning is key!')}</li>
 				</ul>
 				
 				<div style="background: #f0f7ff; padding: 20px; border-radius: 8px; margin-top: 30px;">
-					<h4 style="color: #667eea; margin-bottom: 10px;">How to Play:</h4>
+					<h4 style="color: #667eea; margin-bottom: 10px;">{t('How to Play:')}</h4>
 					<p style="color: #666; line-height: 1.6;">
-						1. Click on a tower to pick up the top disk<br>
-						2. Click on another tower to place it<br>
-						3. Goal: Get all disks on the rightmost tower
+						{lt(
+							'1. Click on a tower to pick up the top disk',
+							'১. উপরের ডিস্ক তুলতে একটি টাওয়ারে চাপুন'
+						)}<br>
+						{lt(
+							'2. Click on another tower to place it',
+							'২. বসাতে অন্য টাওয়ারে চাপুন'
+						)}<br>
+						{lt(
+							'3. Goal: Get all disks on the rightmost tower',
+							'৩. লক্ষ্য: সব ডিস্ক ডানদিকের টাওয়ারে নিয়ে যান'
+						)}
 					</p>
 				</div>
 			</div>
 			
 			<button class="btn-primary" on:click={startTest} style="margin-top: 40px;">
-				Start Test
+				{t('Start Test')}
 			</button>
 			<button class="btn-secondary" on:click={backToDashboard}>
-				Back to Dashboard
+				{t('Back to Dashboard')}
 			</button>
 		</div>
 	
 	{:else if stage === 'test'}
 		<div class="test-card">
 			<div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-				<div class="timer">Moves: {moves} / {optimalMoves}</div>
+				<div class="timer">{moveSummaryLabel()}</div>
 				<button class="btn-secondary" on:click={resetTest} style="padding: 8px 20px; font-size: 14px;">
-					Reset
+					{t('Reset')}
 				</button>
 			</div>
 			
@@ -268,7 +344,7 @@
 						</div>
 						
 						<div style="text-align: center; margin-top: 20px; color: #666; font-weight: 600;">
-							Tower {index + 1}
+							{towerLabel(index)}
 						</div>
 					</div>
 				{/each}
@@ -276,87 +352,81 @@
 			
 			{#if selectedTower !== null}
 				<p style="color: #667eea; font-weight: 600; margin-top: 20px;">
-					Selected Tower {selectedTower + 1} - Click another tower to move
+					{selectedTowerMessage()}
 				</p>
 			{/if}
 			
 			{#if completed}
 				<div style="margin-top: 30px; padding: 20px; background: #4caf50; color: white; border-radius: 8px;">
-					<h3>🎉 Puzzle Completed!</h3>
-					<p>Calculating results...</p>
+					<h3>{t('🎉 Puzzle Completed!')}</h3>
+					<p>{t('Calculating results...')}</p>
 				</div>
 			{/if}
 		</div>
 	
 	{:else if stage === 'results'}
 		<div class="test-card">
-			<h1>Test Complete!</h1>
+			<h1>{t('Test Complete!')}</h1>
 			
 			{#if isTrainingMode}
 				<div class="training-progress-banner">
 					{#if sessionComplete}
 						<div class="session-complete-msg">
-							🎉 Session Complete! You've finished all 4 tasks for this session.
+							{lt('🎉 Session Complete! You\'ve finished all 4 tasks for this session.', '🎉 সেশন সম্পন্ন! আপনি এই সেশনের সব ৪টি টাস্ক শেষ করেছেন।')}
 						</div>
 					{:else}
 						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
-							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+							{trainingProgressText()}
 						</div>
 						<div style="font-size: 14px; color: #666;">
-							Continue with the remaining tasks to complete this session
+							{t('Continue with the remaining tasks to complete this session')}
 						</div>
 					{/if}
 				</div>
 			{/if}
 			
 			<div class="score-display">
-				{Math.max(0, 100 - ((moves - optimalMoves) * 10)).toFixed(0)}%
+				{n(Math.max(0, 100 - ((moves - optimalMoves) * 10)).toFixed(0))}%
 			</div>
 			
 			<div class="result-details">
 				<p>
-					<span>Moves Taken:</span>
-					<strong>{moves}</strong>
+					<span>{t('Moves Taken:')}</span>
+					<strong>{n(moves)}</strong>
 				</p>
 				<p>
-					<span>Optimal Moves:</span>
-					<strong>{optimalMoves}</strong>
+					<span>{t('Optimal Moves:')}</span>
+					<strong>{n(optimalMoves)}</strong>
 				</p>
 				<p>
-					<span>Excess Moves:</span>
-					<strong>{moves - optimalMoves}</strong>
+					<span>{t('Excess Moves:')}</span>
+					<strong>{n(moves - optimalMoves)}</strong>
 				</p>
 				<p>
-					<span>Planning Time:</span>
-					<strong>{(planningTime / 1000).toFixed(1)}s</strong>
+					<span>{t('Planning Time:')}</span>
+					<strong>{n((planningTime / 1000).toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}{lt('s', 'সে')}</strong>
 				</p>
 				<p>
-					<span>Completed:</span>
-					<strong>{completed ? 'Yes' : 'No'}</strong>
+					<span>{t('Completed:')}</span>
+					<strong>{completed ? t('Yes') : t('No')}</strong>
 				</p>
 			</div>
 			
 			<div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
-				<h4 style="color: #667eea; margin-bottom: 10px;">Planning Insights:</h4>
+				<h4 style="color: #667eea; margin-bottom: 10px;">{t('Planning Insights:')}</h4>
 				<p style="color: #666; line-height: 1.6;">
-					{#if moves === optimalMoves}
-						Perfect! You solved it with optimal efficiency. Excellent planning skills!
-					{:else if moves <= optimalMoves + 3}
-						Great planning! You're close to the optimal solution.
-					{:else}
-						Keep practicing. Planning ahead can help reduce unnecessary moves.
-					{/if}
+					{insightMessage()}
 				</p>
 				{#if planningTime > 30000}
 					<p style="color: #ff9800; margin-top: 10px;">
-						💡 Tip: Long planning time detected. Sometimes thinking through the entire sequence helps!
+						{t('💡 Tip: Long planning time detected. Sometimes thinking through the entire sequence helps!')}
 					</p>
 				{/if}
 			</div>
 			
 			<div style="margin-top: 40px;">
 				<button class="btn-primary" on:click={backToDashboard}>
-					Back to Dashboard
+					{t('Back to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -403,5 +473,5 @@
 </style>
 
 <svelte:head>
-	<title>Planning Test - NeuroBloom</title>
+	<title>{lt('Planning Test - NeuroBloom', 'পরিকল্পনা পরীক্ষা - NeuroBloom')}</title>
 </svelte:head>
