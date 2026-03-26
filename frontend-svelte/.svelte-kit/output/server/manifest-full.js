@@ -10,7 +10,7 @@ return {
 	assets: new Set(["favicon.png"]),
 	mimeTypes: {".png":"image/png"},
 	_: {
-		client: {start:"_app/immutable/entry/start.1b12FnFH.js",app:"_app/immutable/entry/app.feKYwhZM.js",imports:["_app/immutable/entry/start.1b12FnFH.js","_app/immutable/chunks/Ckn0ZsGu.js","_app/immutable/chunks/B_svR1Ec.js","_app/immutable/entry/app.feKYwhZM.js","_app/immutable/chunks/B_svR1Ec.js","_app/immutable/chunks/D0ceBE4O.js","_app/immutable/chunks/Ky5-2dZi.js","_app/immutable/chunks/OKpv22AX.js","_app/immutable/chunks/BWFMkk5A.js","_app/immutable/chunks/1fMQUamX.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.CYMBUkX2.js",app:"_app/immutable/entry/app.DkHCYfpw.js",imports:["_app/immutable/entry/start.CYMBUkX2.js","_app/immutable/chunks/PoH_LTmY.js","_app/immutable/chunks/NgfaUR1v.js","_app/immutable/entry/app.DkHCYfpw.js","_app/immutable/chunks/NgfaUR1v.js","_app/immutable/chunks/DkeB4MK6.js","_app/immutable/chunks/BM2Be3BK.js","_app/immutable/chunks/DGW8LM0i.js","_app/immutable/chunks/BELIOZw_.js","_app/immutable/chunks/3-3IU2G2.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
 			__memo(() => import('./nodes/0.js')),
 			__memo(() => import('./nodes/1.js')),
@@ -84,7 +84,11 @@ return {
 			__memo(() => import('./nodes/69.js')),
 			__memo(() => import('./nodes/70.js')),
 			__memo(() => import('./nodes/71.js')),
-			__memo(() => import('./nodes/72.js'))
+			__memo(() => import('./nodes/72.js')),
+			__memo(() => import('./nodes/73.js')),
+			__memo(() => import('./nodes/74.js')),
+			__memo(() => import('./nodes/75.js')),
+			__memo(() => import('./nodes/76.js'))
 		],
 		remotes: {
 			
@@ -413,171 +417,199 @@ return {
 				endpoint: null
 			},
 			{
+				id: "/training/choice-reaction-time",
+				pattern: /^\/training\/choice-reaction-time\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 49 },
+				endpoint: null
+			},
+			{
 				id: "/training/dccs",
 				pattern: /^\/training\/dccs\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 49 },
+				page: { layouts: [0,], errors: [1,], leaf: 50 },
 				endpoint: null
 			},
 			{
 				id: "/training/digit-span",
 				pattern: /^\/training\/digit-span\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 50 },
+				page: { layouts: [0,], errors: [1,], leaf: 51 },
 				endpoint: null
 			},
 			{
 				id: "/training/dual-n-back",
 				pattern: /^\/training\/dual-n-back\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 51 },
+				page: { layouts: [0,], errors: [1,], leaf: 52 },
 				endpoint: null
 			},
 			{
 				id: "/training/flanker",
 				pattern: /^\/training\/flanker\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 52 },
+				page: { layouts: [0,], errors: [1,], leaf: 53 },
 				endpoint: null
 			},
 			{
 				id: "/training/gonogo",
 				pattern: /^\/training\/gonogo\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 53 },
+				page: { layouts: [0,], errors: [1,], leaf: 54 },
 				endpoint: null
 			},
 			{
 				id: "/training/inspection-time",
 				pattern: /^\/training\/inspection-time\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 54 },
+				page: { layouts: [0,], errors: [1,], leaf: 55 },
+				endpoint: null
+			},
+			{
+				id: "/training/landmark-task",
+				pattern: /^\/training\/landmark-task\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 56 },
 				endpoint: null
 			},
 			{
 				id: "/training/letter-number-sequencing",
 				pattern: /^\/training\/letter-number-sequencing\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 55 },
+				page: { layouts: [0,], errors: [1,], leaf: 57 },
 				endpoint: null
 			},
 			{
 				id: "/training/multiple-object-tracking",
 				pattern: /^\/training\/multiple-object-tracking\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 56 },
+				page: { layouts: [0,], errors: [1,], leaf: 58 },
 				endpoint: null
 			},
 			{
 				id: "/training/operation-span",
 				pattern: /^\/training\/operation-span\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 57 },
+				page: { layouts: [0,], errors: [1,], leaf: 59 },
 				endpoint: null
 			},
 			{
 				id: "/training/pasat",
 				pattern: /^\/training\/pasat\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 58 },
+				page: { layouts: [0,], errors: [1,], leaf: 60 },
 				endpoint: null
 			},
 			{
 				id: "/training/pattern-comparison",
 				pattern: /^\/training\/pattern-comparison\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 59 },
+				page: { layouts: [0,], errors: [1,], leaf: 61 },
 				endpoint: null
 			},
 			{
 				id: "/training/plus-minus",
 				pattern: /^\/training\/plus-minus\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 60 },
+				page: { layouts: [0,], errors: [1,], leaf: 62 },
+				endpoint: null
+			},
+			{
+				id: "/training/rule-shift",
+				pattern: /^\/training\/rule-shift\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 63 },
+				endpoint: null
+			},
+			{
+				id: "/training/sart",
+				pattern: /^\/training\/sart\/?$/,
+				params: [],
+				page: { layouts: [0,], errors: [1,], leaf: 64 },
 				endpoint: null
 			},
 			{
 				id: "/training/sdmt",
 				pattern: /^\/training\/sdmt\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 61 },
+				page: { layouts: [0,], errors: [1,], leaf: 65 },
 				endpoint: null
 			},
 			{
 				id: "/training/spatial-span",
 				pattern: /^\/training\/spatial-span\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 62 },
+				page: { layouts: [0,], errors: [1,], leaf: 66 },
 				endpoint: null
 			},
 			{
 				id: "/training/stockings-of-cambridge",
 				pattern: /^\/training\/stockings-of-cambridge\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 63 },
+				page: { layouts: [0,], errors: [1,], leaf: 67 },
 				endpoint: null
 			},
 			{
 				id: "/training/stroop",
 				pattern: /^\/training\/stroop\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 64 },
+				page: { layouts: [0,], errors: [1,], leaf: 68 },
 				endpoint: null
 			},
 			{
 				id: "/training/tower-of-london",
 				pattern: /^\/training\/tower-of-london\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 65 },
+				page: { layouts: [0,], errors: [1,], leaf: 69 },
 				endpoint: null
 			},
 			{
 				id: "/training/trail-making-a",
 				pattern: /^\/training\/trail-making-a\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 66 },
+				page: { layouts: [0,], errors: [1,], leaf: 70 },
 				endpoint: null
 			},
 			{
 				id: "/training/trail-making-b",
 				pattern: /^\/training\/trail-making-b\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 67 },
+				page: { layouts: [0,], errors: [1,], leaf: 71 },
 				endpoint: null
 			},
 			{
 				id: "/training/twenty-questions",
 				pattern: /^\/training\/twenty-questions\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 68 },
+				page: { layouts: [0,], errors: [1,], leaf: 72 },
 				endpoint: null
 			},
 			{
 				id: "/training/useful-field-of-view",
 				pattern: /^\/training\/useful-field-of-view\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 69 },
+				page: { layouts: [0,], errors: [1,], leaf: 73 },
 				endpoint: null
 			},
 			{
 				id: "/training/verbal-fluency",
 				pattern: /^\/training\/verbal-fluency\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 70 },
+				page: { layouts: [0,], errors: [1,], leaf: 74 },
 				endpoint: null
 			},
 			{
 				id: "/training/visual-search",
 				pattern: /^\/training\/visual-search\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 71 },
+				page: { layouts: [0,], errors: [1,], leaf: 75 },
 				endpoint: null
 			},
 			{
 				id: "/training/wcst",
 				pattern: /^\/training\/wcst\/?$/,
 				params: [],
-				page: { layouts: [0,], errors: [1,], leaf: 72 },
+				page: { layouts: [0,], errors: [1,], leaf: 76 },
 				endpoint: null
 			}
 		],

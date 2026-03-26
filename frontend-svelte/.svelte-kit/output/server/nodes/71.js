@@ -2,7 +2,7 @@
 
 export const index = 71;
 let component_cache;
-export const component = async () => component_cache ??= (await import('../entries/pages/training/visual-search/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/71.e--9irrN.js","_app/immutable/chunks/D0ceBE4O.js","_app/immutable/chunks/B_svR1Ec.js","_app/immutable/chunks/BtBcnEEO.js","_app/immutable/chunks/Ky5-2dZi.js","_app/immutable/chunks/DKn0IgOT.js","_app/immutable/chunks/DyVEhiGf.js","_app/immutable/chunks/DoydPl9W.js","_app/immutable/chunks/BRzKQYUk.js","_app/immutable/chunks/Dwclz_Xk.js","_app/immutable/chunks/1fMQUamX.js","_app/immutable/chunks/Ckn0ZsGu.js","_app/immutable/chunks/BXogX5gN.js","_app/immutable/chunks/B7kakw_8.js","_app/immutable/chunks/CYq_EI-C.js","_app/immutable/chunks/BWFMkk5A.js","_app/immutable/chunks/D7E9gqHK.js"];
-export const stylesheets = ["_app/immutable/assets/BadgeNotification.DOFTKZ_B.css","_app/immutable/assets/71.CxjcHYND.css"];
+export const component = async () => component_cache ??= (await import('../entries/pages/training/trail-making-b/_page.svelte.js')).default;
+export const imports = ["_app/immutable/nodes/71.esQje5Is.js","_app/immutable/chunks/DkeB4MK6.js","_app/immutable/chunks/NgfaUR1v.js","_app/immutable/chunks/wc3gF-7_.js","_app/immutable/chunks/BM2Be3BK.js","_app/immutable/chunks/CbyPAb5a.js","_app/immutable/chunks/BPMZs6pr.js","_app/immutable/chunks/BRzKQYUk.js","_app/immutable/chunks/DGW8LM0i.js","_app/immutable/chunks/3-3IU2G2.js","_app/immutable/chunks/PoH_LTmY.js","_app/immutable/chunks/DYfNkk_j.js","_app/immutable/chunks/B6OKIdJF.js","_app/immutable/chunks/BELIOZw_.js","_app/immutable/chunks/CH1k-VJl.js","_app/immutable/chunks/BOzAY8m2.js"];
+export const stylesheets = ["_app/immutable/assets/BadgeNotification.DOFTKZ_B.css","_app/immutable/assets/DifficultyBadge.CUPFysGe.css","_app/immutable/assets/71._S3etHSu.css"];
 export const fonts = [];

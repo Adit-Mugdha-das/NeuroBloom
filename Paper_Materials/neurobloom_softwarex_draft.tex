@@ -6,6 +6,7 @@
 \documentclass[preprint,12pt,a4paper]{elsarticle}
 
 \usepackage{amssymb}
+\usepackage{algpseudocode}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage[left=2cm,right=2cm]{geometry}
@@ -120,11 +121,6 @@ The separation of interface layer, application services, analytics processing, a
 \paragraph{Patient interaction and session execution}
 NeuroBloom provides a patient-facing workflow for baseline and training activity across multiple sessions rather than one-time task use. Patients can complete structured cognitive activities, view session progress, and optionally submit pre-session contextual information such as fatigue or sleep quality before task execution. In this way, the software supports adherence-oriented use over time while preserving a simple interaction flow for repeated home- or clinic-based follow-up. The patient-facing interaction flow is illustrated in Fig.~\ref{fig:patient_workflow}.
 
-\paragraph{Cognitive task framework}
-The task framework currently includes 34 tests distributed across six cognitive domains: working memory, processing speed, attention, cognitive flexibility, planning, and visual scanning. Although individual tasks differ in presentation and interaction style, they are integrated into a common session model that standardizes outputs including score, accuracy, response speed, completion behavior, and difficulty-linked progression. This allows heterogeneous task designs to contribute to a shared record across sessions instead of remaining isolated task-specific measurements.
-
-Each task is implemented across 10 difficulty levels, enabling adaptive progression based on patient performance. NeuroBloom also incorporates a session-level task selection mechanism that determines which cognitive domains should be emphasized in a given session and selects four domain tasks accordingly, with priority given to weaker or more rehabilitation-relevant areas.
-
 \begin{figure}[!t]
 \centering
 \begin{minipage}[t]{0.49\textwidth}
@@ -139,8 +135,70 @@ Each task is implemented across 10 difficulty levels, enabling adaptive progress
 \label{fig:patient_workflow}
 \end{figure}
 
+\paragraph{Cognitive task framework}
+The task framework currently includes 34 tests distributed across six cognitive domains: working memory, processing speed, attention, cognitive flexibility, planning, and visual scanning. Although individual tasks differ in presentation and interaction style, they are integrated into a common session model that standardizes outputs including score, accuracy, response speed, completion behavior, and difficulty-linked progression. This allows heterogeneous task designs to contribute to a shared record across sessions instead of remaining isolated task-specific measurements.
+
+Each task is implemented across 10 difficulty levels, enabling adaptive progression based on patient performance. NeuroBloom also incorporates a session-level task selection mechanism that determines which cognitive domains should be emphasized in a given session and selects four domain tasks accordingly, with priority given to weaker or more rehabilitation-relevant areas.
+
+\begin{center}
+\begin{minipage}{0.92\linewidth}
+\small
+\textbf{Algorithm 1. Personalized session planning and task rotation in NeuroBloom}
+\begin{algorithmic}[1]
+\Require Baseline scores $B[d]$, recent task history $H[d]$, current difficulties $L[d]$
+\State $\textit{sorted\_domains} \gets \Call{SortAscending}{B}$
+\State $\textit{primary\_focus} \gets \textit{sorted\_domains}[0:2]$
+\State $\textit{secondary\_focus} \gets \textit{sorted\_domains}[2:4]$
+\State $\textit{maintenance} \gets \textit{sorted\_domains}[4:6]$
+\ForAll{domain $d$ in $B$}
+    \State $L[d] \gets \Call{ScoreToDifficulty}{B[d]}$
+\EndFor
+\State $\textit{session\_domains} \gets \textit{primary\_focus} \cup \textit{secondary\_focus}$
+\ForAll{domain $d$ in $\textit{session\_domains}$}
+    \State $\textit{available} \gets \Call{GetAvailableTasks}{d}$
+    \State $\textit{recent} \gets \Call{GetRecentTasks}{H[d], d}$
+    \State $\textit{candidates} \gets \Call{ExcludeRecentWhenPossible}{\textit{available}, \textit{recent}}$
+    \State $\textit{strategy} \gets \Call{RotationStrategy}{d}$
+    \State $\textit{task}[d] \gets \Call{SelectTask}{\textit{candidates}, \textit{strategy}, L[d]}$
+\EndFor
+\ForAll{completed task result $r$}
+    \State \Call{StoreTrainingSession}{$r$}
+    \State $L[r.domain] \gets \Call{UpdateDifficulty}{L[r.domain], r.score, r.accuracy, r.reaction\_time}$
+\EndFor
+\If{\Call{ShouldRebalanceFocusAreas}{active training plan}}
+    \State \Call{RebalanceFocusAreas}{active training plan}
+\EndIf
+\State \Return personalized four-task session plan
+\end{algorithmic}
+\end{minipage}
+\end{center}
+
 \paragraph{Longitudinal analytics and digital biomarkers}
 Beyond raw task completion, the platform supports session-based monitoring through summary analytics derived from accumulated performance and contextual records. These outputs include longitudinal trend summaries, fatigue-related patterns, response-time variability, and related indicators that help characterize change over time at patient level. Their purpose within NeuroBloom is to support progression-aware monitoring and clinician interpretation of rehabilitation-relevant performance change rather than to provide diagnostic conclusions. The processing pipeline underlying these analytics-oriented outputs is illustrated in Fig.~\ref{fig:biomarker_pipeline}, while an example dashboard view of derived biomarker and contextual summaries is shown in Fig.~\ref{fig:admin_workflow}(a).
+
+The current analytics layer is based on deterministic statistical feature extraction rather than machine-learning prediction models. All indicators are computed directly from trial-level accuracy, reaction times, session-level scores, and contextual self-report variables. Within-session cognitive fatigue is estimated from the difference between early- and late-session performance, with
+\begin{equation}
+\Delta Acc = Acc_{Q1} - Acc_{Q4}, \qquad \Delta RT = RT_{Q4} - RT_{Q1},
+\end{equation}
+where $Q1$ and $Q4$ denote the first and last quartiles of trials in a session. A trial-wise linear slope $\beta$ of accuracy over time is also computed, and the normalized fatigue index is defined as
+\begin{equation}
+F = 0.5A + 0.3R + 0.2S,
+\end{equation}
+where $A=\min(1,\max(0,\Delta Acc/30))$, $R=\min(1,\max(0,\Delta RT/200))$, and $S=\min(1,\max(0,-100\beta))$.
+
+Reaction-time variability is summarized using standard dispersion measures, with coefficient of variation computed as
+\begin{equation}
+CV = \frac{\sigma_{RT}}{\mu_{RT}},
+\end{equation}
+where $\sigma_{RT}$ and $\mu_{RT}$ are the standard deviation and mean of valid reaction times. For longitudinal monitoring, NeuroBloom applies an exponentially weighted moving average (EWMA) to repeated performance values:
+\begin{equation}
+EWMA_t = \alpha x_t + (1-\alpha)EWMA_{t-1},
+\end{equation}
+with $\alpha=0.2$ in the current implementation. Across sessions, score change is also summarized using a reliable change index,
+\begin{equation}
+RCI = \frac{X_{\mathrm{latest}} - X_{\mathrm{baseline}}}{\sqrt{2}\,\sigma_X},
+\end{equation}
+where $\sigma_X$ is the observed standard deviation of session scores for the individual. Associations between contextual variables such as fatigue level, sleep quality, and hours since medication are estimated using Pearson correlation coefficients with session score and mean reaction time. These indicators are intended as heuristic monitoring features and longitudinal summary measures, not as validated diagnostic biomarkers or predictive clinical models.
 
 \paragraph{Doctor-facing clinical workflow}
 The clinician-facing functionality connects patient interaction data to supervised review and intervention. Doctors can inspect patient histories, assess adherence and recent performance, review biomarker-oriented summaries and trend information, generate or review progress reports, and modify training plans, task difficulty levels, or prescriptions in response to observed change. By linking monitoring outputs to concrete clinical actions, the software supports iterative rehabilitation management rather than passive data display alone. The doctor-facing review and intervention process is shown in Fig.~\ref{fig:doctor_workflow}.
@@ -187,6 +245,7 @@ NeuroBloom contributes a research-oriented software environment for longitudinal
 The platform also has practical value for MS-oriented follow-up between formal clinical encounters. By linking patient-side task activity with doctor-facing review tools, longitudinal summaries, and progress-oriented reporting, NeuroBloom supports repeated low-cost monitoring and clinician-guided rehabilitation workflows without positioning itself as a diagnostic substitute for established neurological assessment. In this setting, its free-of-cost software model further reduces barriers to access and use, particularly where frequent specialist review may be difficult or resource-constrained.
 
 From a software perspective, NeuroBloom provides a modular and extensible architecture that integrates cognitive task delivery, contextual data capture, analytics, and multi-role workflow management within a single system. This design supports reuse of the platform as a digital research and deployment framework, allowing additional task modules, analytics components, and reporting workflows to be incorporated without restructuring the core architecture. NeuroBloom is therefore intended not only as an MS-oriented monitoring application, but also as reusable software infrastructure for longitudinal cognitive and rehabilitation-oriented digital health research.
+Because its analytics layer is based on interpretable statistical indicators and its task-planning workflow is explicitly defined, NeuroBloom also supports transparent, reproducible, and extensible digital monitoring research.
 
 \section{Conclusions}
 This paper presented NeuroBloom as a web-based platform for supporting repeated cognitive follow-up and clinician-supervised rehabilitation activity in multiple sclerosis. Its main contribution lies in bringing together task-based assessment, contextual session information, analytics-driven review, and multi-role system support within a single coordinated environment. Rather than functioning as a diagnostic instrument, NeuroBloom is intended to facilitate structured monitoring, rehabilitation-oriented decision support, and the study of behavioral change across time. Future work will focus on broader deployment, expansion of task coverage, refinement of analytical measures, and further evaluation in research and supervised clinical settings.

@@ -1,0 +1,1 @@
+import{J as u,K as o,ap as p,H as t,O as _,W as g,aa as i,U as l,N as d,V as m}from"./NgfaUR1v.js";function E(n,r){let a=null,f=t;var s;if(t){a=m;for(var e=_(document.head);e!==null&&(e.nodeType!==g||e.data!==n);)e=i(e);if(e===null)l(!1);else{var y=i(e);e.remove(),d(y)}}t||(s=document.head.appendChild(u()));try{o(()=>r(s),p)}finally{f&&(l(!0),d(a))}}export{E as h};

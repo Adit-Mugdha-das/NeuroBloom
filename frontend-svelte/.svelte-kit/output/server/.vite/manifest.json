@@ -1041,6 +1041,23 @@
       "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]
   },
+  "src/routes/training/choice-reaction-time/+page.svelte": {
+    "file": "entries/pages/training/choice-reaction-time/_page.svelte.js",
+    "name": "entries/pages/training/choice-reaction-time/_page.svelte",
+    "src": "src/routes/training/choice-reaction-time/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_exports.js",
+      "_utils.js",
+      "_state.svelte.js",
+      "_LoadingSkeleton.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.CTYJUVB1.css",
+      "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
+      "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
+    ]
+  },
   "src/routes/training/dccs/+page.svelte": {
     "file": "entries/pages/training/dccs/_page.svelte.js",
     "name": "entries/pages/training/dccs/_page.svelte",
@@ -1141,6 +1158,23 @@
     ],
     "css": [
       "_app/immutable/assets/_page.CmpA5z7b.css"
+    ]
+  },
+  "src/routes/training/landmark-task/+page.svelte": {
+    "file": "entries/pages/training/landmark-task/_page.svelte.js",
+    "name": "entries/pages/training/landmark-task/_page.svelte",
+    "src": "src/routes/training/landmark-task/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_exports.js",
+      "_utils.js",
+      "_state.svelte.js",
+      "_LoadingSkeleton.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.zR8NieWL.css",
+      "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
+      "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]
   },
   "src/routes/training/letter-number-sequencing/+page.svelte": {
@@ -1244,6 +1278,40 @@
     ],
     "css": [
       "_app/immutable/assets/_page.DOUG2vtQ.css"
+    ]
+  },
+  "src/routes/training/rule-shift/+page.svelte": {
+    "file": "entries/pages/training/rule-shift/_page.svelte.js",
+    "name": "entries/pages/training/rule-shift/_page.svelte",
+    "src": "src/routes/training/rule-shift/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_exports.js",
+      "_utils.js",
+      "_state.svelte.js",
+      "_LoadingSkeleton.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.nYqb6UWd.css",
+      "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
+      "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
+    ]
+  },
+  "src/routes/training/sart/+page.svelte": {
+    "file": "entries/pages/training/sart/_page.svelte.js",
+    "name": "entries/pages/training/sart/_page.svelte",
+    "src": "src/routes/training/sart/+page.svelte",
+    "isEntry": true,
+    "imports": [
+      "_exports.js",
+      "_utils.js",
+      "_state.svelte.js",
+      "_LoadingSkeleton.js"
+    ],
+    "css": [
+      "_app/immutable/assets/_page.D3DLu6Ks.css",
+      "_app/immutable/assets/BadgeNotification.DOFTKZ_B.css",
+      "_app/immutable/assets/DifficultyBadge.CUPFysGe.css"
     ]
   },
   "src/routes/training/sdmt/+page.svelte": {

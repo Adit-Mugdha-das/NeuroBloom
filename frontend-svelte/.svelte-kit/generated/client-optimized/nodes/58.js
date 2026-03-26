@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/pasat/+page.svelte";
+export { default as component } from "../../../../src/routes/training/multiple-object-tracking/+page.svelte";

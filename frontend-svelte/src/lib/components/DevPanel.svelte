@@ -39,18 +39,21 @@
 
 		// Processing Speed
 		'simple_reaction': '/baseline/tasks/processing-speed',
+		'choice-reaction-time': '/training/choice-reaction-time',
 		'sdmt': '/training/sdmt',
 		'pasat': '/training/pasat',
 		'inspection-time': '/training/inspection-time',
 		'pattern-comparison': '/training/pattern-comparison',
 
 		// Attention
+		'sart': '/training/sart',
 		'gonogo': '/training/gonogo',
 		'flanker': '/training/flanker',
 		'stroop': '/training/stroop',
 
 		// Cognitive Flexibility
 		'dccs': '/training/dccs',
+		'rule_shift': '/training/rule-shift',
 		'trail-making-a': '/training/trail-making-a',
 		'trail-making-b': '/training/trail-making-b',
 		'plus-minus': '/training/plus-minus',
@@ -66,6 +69,7 @@
 		// Visual Scanning
 		'visual-search': '/training/visual-search',
 		'cancellation-test': '/training/cancellation-test',
+		'landmark_task': '/training/landmark-task',
 		'multiple-object-tracking': '/training/multiple-object-tracking',
 		'useful-field-of-view': '/training/useful-field-of-view'
 	};
@@ -81,18 +85,21 @@
 		],
 		'Processing Speed': [
 			{ name: 'Simple Reaction Time', code: 'simple_reaction' },
+			{ name: 'Choice Reaction Time', code: 'choice-reaction-time' },
 			{ name: 'SDMT', code: 'sdmt' },
 			{ name: 'PASAT', code: 'pasat' },
 			{ name: 'Inspection Time', code: 'inspection-time' },
 			{ name: 'Pattern Comparison', code: 'pattern-comparison' }
 		],
 		'Attention': [
+			{ name: 'SART', code: 'sart' },
 			{ name: 'Go/No-Go (CPT)', code: 'gonogo' },
 			{ name: 'Flanker Task', code: 'flanker' },
 			{ name: 'Stroop Test', code: 'stroop' }
 		],
 		'Cognitive Flexibility': [
 			{ name: 'DCCS', code: 'dccs' },
+			{ name: 'Rule Shift', code: 'rule_shift' },
 			{ name: 'Trail Making A', code: 'trail-making-a' },
 			{ name: 'Trail Making B', code: 'trail-making-b' },
 			{ name: 'Plus-Minus Task', code: 'plus-minus' },
@@ -108,6 +115,7 @@
 		'Visual Scanning': [
 			{ name: 'Visual Search', code: 'visual-search' },
 			{ name: 'Cancellation Test', code: 'cancellation-test' },
+			{ name: 'Landmark Task', code: 'landmark_task' },
 			{ name: 'Multiple Object Tracking', code: 'multiple-object-tracking' },
 			{ name: 'Useful Field of View', code: 'useful-field-of-view' }
 		]

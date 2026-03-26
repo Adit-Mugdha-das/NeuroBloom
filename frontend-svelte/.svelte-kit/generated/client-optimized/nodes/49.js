@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/dccs/+page.svelte";
+export { default as component } from "../../../../src/routes/training/choice-reaction-time/+page.svelte";
