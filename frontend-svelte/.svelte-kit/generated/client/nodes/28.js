@@ -1,1 +1,0 @@
-export { default as component } from "../../../../src/routes/doctor/patient/[id]/prescriptions/+page.svelte";

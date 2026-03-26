@@ -1,1 +1,0 @@
-import{aj as t}from"./NgfaUR1v.js";const r=JSON.parse(localStorage.getItem("user")||"null"),s=t(r);s.subscribe(e=>{e?localStorage.setItem("user",JSON.stringify(e)):localStorage.removeItem("user")});const o=e=>{s.set(e)},l=()=>{s.set(null)};export{l as c,o as s,s as u};

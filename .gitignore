@@ -40,3 +40,8 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+
+frontend-svelte/.svelte-kit/
+node_modules/
+dist/
+build/
