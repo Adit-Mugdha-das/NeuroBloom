@@ -13,6 +13,7 @@ Add these to your training router by importing this module.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select, col
+from pydantic import BaseModel
 from typing import Optional
 import json
 from datetime import datetime, timedelta
@@ -36,21 +37,25 @@ def get_session():
 
 # ==================== SESSION CONTEXT ENDPOINTS ====================
 
+class SessionContextCreate(BaseModel):
+    user_id: int
+    fatigue_level: Optional[int] = None
+    sleep_quality: Optional[int] = None
+    sleep_hours: Optional[float] = None
+    medication_taken_today: Optional[bool] = None
+    hours_since_medication: Optional[float] = None
+    pain_level: Optional[int] = None
+    stress_level: Optional[int] = None
+    time_of_day: Optional[str] = None
+    readiness_level: Optional[int] = None
+    notes: Optional[str] = None
+    distractions_present: Optional[bool] = None
+    location: Optional[str] = None
+
+
 @router.post("/session-context")
 def create_session_context(
-    user_id: int,
-    fatigue_level: Optional[int] = None,
-    sleep_quality: Optional[int] = None,
-    sleep_hours: Optional[float] = None,
-    medication_taken_today: Optional[bool] = None,
-    hours_since_medication: Optional[float] = None,
-    pain_level: Optional[int] = None,
-    stress_level: Optional[int] = None,
-    time_of_day: Optional[str] = None,
-    readiness_level: Optional[int] = None,
-    notes: Optional[str] = None,
-    distractions_present: Optional[bool] = None,
-    location: Optional[str] = None,
+    body: SessionContextCreate,
     session: Session = Depends(get_session)
 ):
     """
@@ -61,6 +66,7 @@ def create_session_context(
     
     Returns the context_id to link with subsequent training session.
     """
+    time_of_day = body.time_of_day
     # Determine time_of_day if not provided
     if not time_of_day:
         hour = datetime.now().hour
@@ -74,19 +80,19 @@ def create_session_context(
             time_of_day = 'night'
     
     context = SessionContext(
-        user_id=user_id,
-        fatigue_level=fatigue_level,
-        sleep_quality=sleep_quality,
-        sleep_hours=sleep_hours,
-        medication_taken_today=medication_taken_today,
-        hours_since_medication=hours_since_medication,
-        pain_level=pain_level,
-        stress_level=stress_level,
+        user_id=body.user_id,
+        fatigue_level=body.fatigue_level,
+        sleep_quality=body.sleep_quality,
+        sleep_hours=body.sleep_hours,
+        medication_taken_today=body.medication_taken_today,
+        hours_since_medication=body.hours_since_medication,
+        pain_level=body.pain_level,
+        stress_level=body.stress_level,
         time_of_day=time_of_day,
-        readiness_level=readiness_level,
-        notes=notes,
-        distractions_present=distractions_present,
-        location=location
+        readiness_level=body.readiness_level,
+        notes=body.notes,
+        distractions_present=body.distractions_present,
+        location=body.location
     )
     
     session.add(context)
