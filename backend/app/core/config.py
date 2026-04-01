@@ -8,6 +8,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/neurobloom_db"
 
+settings = Settings()
+
 engine = create_engine(settings.DATABASE_URL, echo=True)
 
 
