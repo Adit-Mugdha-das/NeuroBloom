@@ -1,0 +1,22 @@
+# Core framework
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
+python-multipart==0.0.21
+
+# Database
+sqlmodel==0.0.31
+psycopg2-binary==2.9.11
+
+# Settings / config
+pydantic-settings==2.12.0
+python-dotenv==1.2.1
+
+# Auth
+bcrypt==5.0.0
+
+# Validation
+email-validator==2.3.0
+
+# PDF generation (prescriptions)
+reportlab==4.4.1
+pillow==11.1.0

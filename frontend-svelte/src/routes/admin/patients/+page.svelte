@@ -372,7 +372,7 @@
 						</div>
 						<p class="identity-email">{patientDetail.profile.email}</p>
 						{#if patientDetail.profile.diagnosis}
-							<p class="identity-diagnosis">{patientDetail.profile.diagnosis}</p>
+							<p class="identity-diagnosis" data-localize-skip>{patientDetail.profile.diagnosis}</p>
 						{/if}
 					</div>
 				</div>
@@ -421,7 +421,7 @@
 								<p class="doctor-info-name">Dr. {patientDetail.doctor.full_name}</p>
 								{#if patientDetail.doctor.specialization}<p class="doctor-info-meta">{patientDetail.doctor.specialization}{patientDetail.doctor.institution ? ` · ${patientDetail.doctor.institution}` : ''}</p>{/if}
 								{#if patientDetail.assignment?.assigned_at}<p class="doctor-info-meta muted">Assigned {formatDate(patientDetail.assignment.assigned_at)}</p>{/if}
-								{#if patientDetail.assignment?.treatment_goal}<p class="doctor-info-meta">Goal: {patientDetail.assignment.treatment_goal}</p>{/if}
+								{#if patientDetail.assignment?.treatment_goal}<p class="doctor-info-meta">Goal: <span data-localize-skip>{patientDetail.assignment.treatment_goal}</span></p>{/if}
 							</div>
 						</div>
 					</div>

@@ -3,6 +3,7 @@
 	import { tasks, training } from '$lib/api';
 	import api, { API_BASE_URL } from '$lib/api.js';
 	import DoctorWidget from '$lib/components/DoctorWidget.svelte';
+	import { formatNumber, locale, translateText } from '$lib/i18n';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -20,7 +21,7 @@
 	let notificationToast = null;
 	let latestNotificationFingerprint = null;
 	let notificationsHydrated = false;
-	let dashboardWarnings = [];
+	let hasDashboardWarning = false;
 
 	const modules = [
 		{
@@ -65,6 +66,57 @@
 		currentUser = value;
 	});
 
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function dayLabel(value) {
+		const count = Number(value) || 0;
+		if ($locale === 'bn') {
+			return `${n(count)} দিন`;
+		}
+		return `${count} day${count === 1 ? '' : 's'}`;
+	}
+
+	function unreadBadgeLabel() {
+		return unreadCount > 9 ? `${n(9)}+` : n(unreadCount);
+	}
+
+	function baselineSummaryLabel() {
+		if (!baselineStatus) {
+			return t('Baseline unavailable');
+		}
+
+		return $locale === 'bn'
+			? `বেসলাইন: ${n(baselineStatus.completed_count)}/${n(baselineStatus.total_tasks)}`
+			: `Baseline: ${baselineStatus.completed_count}/${baselineStatus.total_tasks}`;
+	}
+
+	function recommendationDifficultyLabel(difficulty) {
+		return $locale === 'bn'
+			? `${getDifficultyLabel(difficulty)} স্তর`
+			: `${getDifficultyLabel(difficulty)} challenge`;
+	}
+
+	function recommendationLevelLabel(difficulty) {
+		return $locale === 'bn'
+			? `লেভেল ${n(difficulty)}/${n(10)}`
+			: `Level ${difficulty}/10`;
+	}
+
+	function issuedPrescriptionLabel(dateValue) {
+		return t(`Issued ${formatDate(dateValue)}`);
+	}
+
+	function medicationCountLabel(count) {
+		const total = Number(count) || 0;
+		return t(`${total} medication item${total === 1 ? '' : 's'}`);
+	}
+
 	onMount(() => {
 		if (!currentUser) {
 			goto('/login');
@@ -86,7 +138,7 @@
 
 	async function initializeDashboard() {
 		loading = true;
-		dashboardWarnings = [];
+		hasDashboardWarning = false;
 
 		try {
 			try {
@@ -94,7 +146,7 @@
 				baselineStatus = baselineResp;
 			} catch (error) {
 				baselineStatus = null;
-				dashboardWarnings = [...dashboardWarnings, 'Baseline progress could not be loaded.'];
+				hasDashboardWarning = true;
 			}
 
 			await loadNotifications();
@@ -103,21 +155,21 @@
 				stats = await training.getMetrics(currentUser.id);
 			} catch (error) {
 				stats = null;
-				dashboardWarnings = [...dashboardWarnings, 'Training metrics are temporarily unavailable.'];
+				hasDashboardWarning = true;
 			}
 
 			try {
 				streak = await training.getStreak(currentUser.id);
 			} catch (error) {
 				streak = null;
-				dashboardWarnings = [...dashboardWarnings, 'Streak information could not be loaded.'];
+				hasDashboardWarning = true;
 			}
 
 			try {
 				nextTasks = await training.getNextTasks(currentUser.id);
 			} catch (error) {
 				nextTasks = null;
-				dashboardWarnings = [...dashboardWarnings, 'Recommendations are temporarily unavailable.'];
+				hasDashboardWarning = true;
 			}
 
 			try {
@@ -125,11 +177,11 @@
 				prescriptionSummary = prescriptionResponse.data;
 			} catch (error) {
 				prescriptionSummary = null;
-				dashboardWarnings = [...dashboardWarnings, 'Prescription data could not be loaded.'];
+				hasDashboardWarning = true;
 			}
 		} catch (error) {
 			console.error('Error fetching dashboard data:', error);
-			dashboardWarnings = [...dashboardWarnings, 'Dashboard data could not be fully loaded.'];
+			hasDashboardWarning = true;
 		} finally {
 			loading = false;
 		}
@@ -200,32 +252,41 @@
 	}
 
 	function formatDate(dateValue) {
-		return dateValue ? new Date(dateValue).toLocaleDateString() : 'Not yet';
+		if (!dateValue) {
+			return $locale === 'bn' ? 'এখনও নয়' : 'Not yet';
+		}
+
+		return new Date(dateValue).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US');
 	}
 
 	function getDomainName(domain) {
 		const names = {
-			working_memory: 'Working Memory',
-			attention: 'Attention',
-			flexibility: 'Cognitive Flexibility',
-			planning: 'Planning',
-			processing_speed: 'Processing Speed',
-			visual_scanning: 'Visual Scanning'
+			working_memory: t('Working Memory'),
+			attention: t('Attention'),
+			flexibility: t('Cognitive Flexibility'),
+			planning: t('Planning'),
+			processing_speed: t('Processing Speed'),
+			visual_scanning: t('Visual Scanning')
 		};
 
-		return names[domain] || 'Training';
+		return names[domain] || t('Training');
 	}
 
 	function getDifficultyLabel(difficulty) {
-		if (!difficulty) return 'Gentle';
-		if (difficulty <= 3) return 'Gentle';
-		if (difficulty <= 6) return 'Steady';
-		if (difficulty <= 8) return 'Focused';
-		return 'Advanced';
+		if (!difficulty || difficulty <= 3) {
+			return $locale === 'bn' ? 'সহজ' : 'Gentle';
+		}
+		if (difficulty <= 6) {
+			return $locale === 'bn' ? 'স্থিতিশীল' : 'Steady';
+		}
+		if (difficulty <= 8) {
+			return $locale === 'bn' ? 'মনোযোগী' : 'Focused';
+		}
+		return $locale === 'bn' ? 'উন্নত' : 'Advanced';
 	}
 
 	function getDisplayName() {
-		return currentUser?.fullName || currentUser?.full_name || currentUser?.email || 'Patient';
+		return currentUser?.fullName || currentUser?.full_name || currentUser?.email || t('Patient');
 	}
 
 	function viewLatestPrescription() {
@@ -244,32 +305,40 @@
 
 	function getEncouragementMessage() {
 		if (primaryRecommendation?.domain) {
+			if ($locale === 'bn') {
+				return `দারুণ অগ্রগতি! আপনি এই সপ্তাহে ${getDomainName(primaryRecommendation.domain)} আরও শক্তিশালী করছেন।`;
+			}
 			return `Great progress! You're improving your ${getDomainName(primaryRecommendation.domain).toLowerCase()} this week.`;
 		}
 
 		if ((streak?.current_streak || 0) > 0) {
+			if ($locale === 'bn') {
+				return `দারুণ অগ্রগতি! আপনি টানা ${n(streak.current_streak)} দিন নিয়মিত থেকেছেন।`;
+			}
 			return `Great progress! You've stayed consistent for ${streak.current_streak} day${streak.current_streak === 1 ? '' : 's'}.`;
 		}
 
-		return 'Great progress! Each training session helps build a clearer picture of your cognitive health.';
+		return $locale === 'bn'
+			? 'দারুণ অগ্রগতি! প্রতিটি ট্রেনিং সেশন আপনার কগনিটিভ স্বাস্থ্যের আরও পরিষ্কার চিত্র গড়ে তুলতে সাহায্য করে।'
+			: 'Great progress! Each training session helps build a clearer picture of your cognitive health.';
 	}
 
 	$: primaryRecommendation = getPrimaryRecommendation();
 	$: latestPrescription = prescriptionSummary?.prescriptions?.[0] || null;
 	$: overviewCards = [
-		{ key: 'sessions', label: 'Total Sessions', value: stats ? stats.total_sessions : 'Unavailable', tone: 'indigo' },
-		{ key: 'domains', label: 'Active Domains', value: stats?.metrics_by_domain ? Object.keys(stats.metrics_by_domain).length : stats ? 0 : 'Unavailable', tone: 'cyan' },
-		{ key: 'last-training', label: 'Last Training', value: stats ? formatDate(stats.last_training_date) : 'Unavailable', tone: 'violet' },
-		{ key: 'streak', label: 'Current Streak', value: streak ? `${streak.current_streak || 0} day${(streak.current_streak || 0) === 1 ? '' : 's'}` : 'Unavailable', tone: 'teal' }
+		{ key: 'sessions', label: t('Total Sessions'), value: stats ? n(stats.total_sessions) : t('Unavailable'), tone: 'indigo' },
+		{ key: 'domains', label: t('Active Domains'), value: stats?.metrics_by_domain ? n(Object.keys(stats.metrics_by_domain).length) : stats ? n(0) : t('Unavailable'), tone: 'cyan' },
+		{ key: 'last-training', label: t('Last Training'), value: stats ? formatDate(stats.last_training_date) : t('Unavailable'), tone: 'violet' },
+		{ key: 'streak', label: t('Current Streak'), value: streak ? dayLabel(streak.current_streak || 0) : t('Unavailable'), tone: 'teal' }
 	];
 	$: encouragementMessage = getEncouragementMessage();
 </script>
 
-<div class="dashboard-shell">
+<div class="dashboard-shell" data-localize-skip>
 	{#if notificationToast}
 		<div class="toast-shell" role="status" aria-live="polite">
 			<div class="notification-toast">
-				<p class="toast-label">New notification</p>
+				<p class="toast-label">{t('New notification')}</p>
 				<p class="toast-title">{notificationToast.title}</p>
 				<p class="toast-message">{notificationToast.message}</p>
 			</div>
@@ -279,51 +348,47 @@
 	<header class="topbar">
 		<div class="brand-block">
 			<p class="eyebrow">NeuroBloom</p>
-			<h1>Your Brain Health Today</h1>
-			<p class="subcopy">A calm view of your training progress, next step, and care support.</p>
+			<h1>{t('Your Brain Health Today')}</h1>
+			<p class="subcopy">{t('A calm view of your training progress, next step, and care support.')}</p>
 		</div>
 		<div class="topbar-actions">
 			{#if currentUser}
 				<span class="user-email">{getDisplayName()}</span>
 				<button class="ghost-btn" on:click={() => goto('/notifications')}>
-					Notifications
+					{t('Notifications')}
 					{#if unreadCount > 0}
-						<span class="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+						<span class="notification-badge">{unreadBadgeLabel()}</span>
 					{/if}
 				</button>
-				<button class="ghost-btn" on:click={() => goto('/messages')}>Messages</button>
-				<button class="ghost-btn" on:click={() => goto('/settings')}>Settings</button>
+				<button class="ghost-btn" on:click={() => goto('/messages')}>{t('Messages')}</button>
+				<button class="ghost-btn" on:click={() => goto('/settings')}>{t('Settings')}</button>
 			{/if}
-			<button class="logout-btn" on:click={handleLogout}>Logout</button>
+			<button class="logout-btn" on:click={handleLogout}>{t('Logout')}</button>
 		</div>
 	</header>
 
 	<main class="dashboard-main">
 		{#if loading}
 			<section class="loading-panel">
-				<p>Loading your dashboard...</p>
+				<p>{t('Loading your dashboard...')}</p>
 			</section>
 		{:else}
-			{#if dashboardWarnings.length > 0}
+			{#if hasDashboardWarning}
 				<section class="status-banner" role="status" aria-live="polite">
-					<p>Some dashboard sections could not be loaded. Please refresh or sign in again.</p>
+					<p>{t('Some dashboard sections could not be loaded. Please refresh or sign in again.')}</p>
 				</section>
 			{/if}
 
 			<section class="section hero-section">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Brain Health Overview</p>
-						<h2>Today at a glance</h2>
+						<p class="section-kicker">{t('Brain Health Overview')}</p>
+						<h2>{t('Today at a glance')}</h2>
 					</div>
 					{#if baselineStatus}
-						<div class="baseline-pill">
-							Baseline: {baselineStatus.completed_count}/{baselineStatus.total_tasks}
-						</div>
+						<div class="baseline-pill">{baselineSummaryLabel()}</div>
 					{:else}
-						<div class="baseline-pill unavailable">
-							Baseline unavailable
-						</div>
+						<div class="baseline-pill unavailable">{t('Baseline unavailable')}</div>
 					{/if}
 				</div>
 
@@ -380,8 +445,8 @@
 				{#if baselineStatus}
 					<div class="baseline-track-row">
 						<div class="baseline-track-copy">
-							<p class="track-title">Baseline assessment progress</p>
-							<p class="track-text">Complete all six modules to unlock your personalised plan.</p>
+							<p class="track-title">{t('Baseline assessment progress')}</p>
+							<p class="track-text">{t('Complete all six modules to unlock your personalised plan.')}</p>
 						</div>
 						<div class="baseline-track-wrap">
 							<div class="baseline-track">
@@ -392,8 +457,8 @@
 				{:else}
 					<div class="baseline-track-row unavailable-copy">
 						<div class="baseline-track-copy">
-							<p class="track-title">Baseline assessment progress</p>
-							<p class="track-text">Progress data is temporarily unavailable. Refresh the page to try again.</p>
+							<p class="track-title">{t('Baseline assessment progress')}</p>
+							<p class="track-text">{t('Progress data is temporarily unavailable. Refresh the page to try again.')}</p>
 						</div>
 					</div>
 				{/if}
@@ -402,8 +467,8 @@
 			<section class="section recommendation-section">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Today's Recommendation</p>
-						<h2>Your next best step</h2>
+						<p class="section-kicker">{t("Today's Recommendation")}</p>
+						<h2>{t('Your next best step')}</h2>
 					</div>
 				</div>
 
@@ -411,27 +476,27 @@
 					<div class="recommendation-card">
 						<div class="recommendation-copy">
 							<p class="recommendation-domain">{getDomainName(primaryRecommendation.domain)}</p>
-							<h3>{primaryRecommendation.task_name || 'Recommended training task'}</h3>
-							<p class="recommendation-reason">{primaryRecommendation.focus_reason}</p>
+							<h3>{translateText(primaryRecommendation.task_name || 'Recommended training task', $locale)}</h3>
+							<p class="recommendation-reason">{translateText(primaryRecommendation.focus_reason, $locale)}</p>
 							<div class="recommendation-meta">
-								<span class="meta-chip">{getDifficultyLabel(primaryRecommendation.difficulty)} challenge</span>
-								<span class="meta-chip">Level {primaryRecommendation.difficulty}/10</span>
+								<span class="meta-chip">{recommendationDifficultyLabel(primaryRecommendation.difficulty)}</span>
+								<span class="meta-chip">{recommendationLevelLabel(primaryRecommendation.difficulty)}</span>
 							</div>
 						</div>
 						<div class="recommendation-actions">
-							<button class="primary-btn" on:click={() => goto('/training')}>Open Training Plan</button>
-							<button class="secondary-btn" on:click={() => goto('/progress')}>View Progress</button>
+							<button class="primary-btn" on:click={() => goto('/training')}>{t('Open Training Plan')}</button>
+							<button class="secondary-btn" on:click={() => goto('/progress')}>{t('View Progress')}</button>
 						</div>
 					</div>
 				{:else}
 					<div class="recommendation-card empty">
 						<div class="recommendation-copy">
-							<p class="recommendation-domain">Getting started</p>
-							<h3>Finish your baseline to unlock recommendations</h3>
-							<p class="recommendation-reason">Once baseline assessment is complete, NeuroBloom will suggest the best next training focus for you.</p>
+							<p class="recommendation-domain">{t('Getting started')}</p>
+							<h3>{t('Finish your baseline to unlock recommendations')}</h3>
+							<p class="recommendation-reason">{t('Once baseline assessment is complete, NeuroBloom will suggest the best next training focus for you.')}</p>
 						</div>
 						<div class="recommendation-actions">
-							<button class="primary-btn" on:click={() => goto('/baseline/results')}>Review Baseline</button>
+							<button class="primary-btn" on:click={() => goto('/baseline/results')}>{t('Review Baseline')}</button>
 						</div>
 					</div>
 				{/if}
@@ -440,37 +505,37 @@
 			<section class="section care-plan-section">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Prescription Record</p>
-						<h2>Your clinician-issued medication and care plans</h2>
+						<p class="section-kicker">{t('Prescription Record')}</p>
+						<h2>{t('Your clinician-issued medication and care plans')}</h2>
 					</div>
 				</div>
 
 				{#if prescriptionSummary?.has_doctor && latestPrescription}
 					<div class="care-plan-card">
 						<div class="care-plan-copy">
-							<p class="recommendation-domain">Latest prescription</p>
+							<p class="recommendation-domain">{t('Latest prescription')}</p>
 							<h3>{latestPrescription.title}</h3>
 							<p class="recommendation-reason">{latestPrescription.summary || latestPrescription.patient_instructions}</p>
 							<div class="recommendation-meta">
 								<span class="meta-chip">Dr. {latestPrescription.doctor_name}</span>
-								<span class="meta-chip">Issued {formatDate(latestPrescription.created_at)}</span>
-								<span class="meta-chip">{latestPrescription.medication_count} medication item{latestPrescription.medication_count === 1 ? '' : 's'}</span>
+								<span class="meta-chip">{issuedPrescriptionLabel(latestPrescription.created_at)}</span>
+								<span class="meta-chip">{medicationCountLabel(latestPrescription.medication_count)}</span>
 							</div>
 						</div>
 						<div class="recommendation-actions">
-							<button class="primary-btn" on:click={() => goto('/prescriptions')}>Open Prescriptions</button>
-							<button class="secondary-btn" on:click={viewLatestPrescription}>View Latest PDF</button>
+							<button class="primary-btn" on:click={() => goto('/prescriptions')}>{t('Open Prescriptions')}</button>
+							<button class="secondary-btn" on:click={viewLatestPrescription}>{t('View Latest PDF')}</button>
 						</div>
 					</div>
 				{:else}
 					<div class="recommendation-card empty">
 						<div class="recommendation-copy">
-							<p class="recommendation-domain">Care documents</p>
-							<h3>No digital prescriptions yet</h3>
-							<p class="recommendation-reason">When your clinician issues a prescription or medication plan, it will appear here and in the prescriptions page.</p>
+							<p class="recommendation-domain">{t('Care documents')}</p>
+							<h3>{t('No digital prescriptions yet')}</h3>
+							<p class="recommendation-reason">{t('When your clinician issues a prescription or medication plan, it will appear here and in the prescriptions page.')}</p>
 						</div>
 						<div class="recommendation-actions">
-							<button class="primary-btn" on:click={() => goto('/prescriptions')}>Open Prescriptions</button>
+							<button class="primary-btn" on:click={() => goto('/prescriptions')}>{t('Open Prescriptions')}</button>
 						</div>
 					</div>
 				{/if}
@@ -479,15 +544,15 @@
 			<section class="section modules-section">
 				<div class="section-head modules-head">
 					<div>
-						<p class="section-kicker">Training Modules</p>
-						<h2>Six key cognitive areas</h2>
+						<p class="section-kicker">{t('Training Modules')}</p>
+						<h2>{t('Six key cognitive areas')}</h2>
 					</div>
 					<div class="section-actions">
 						{#if baselineStatus?.all_completed}
-							<a class="inline-link" href="/training">Training Plan</a>
-							<a class="inline-link" href="/progress">Progress</a>
+							<a class="inline-link" href="/training">{t('Training Plan')}</a>
+							<a class="inline-link" href="/progress">{t('Progress')}</a>
 						{:else}
-							<a class="inline-link" href="/baseline/results">Baseline Status</a>
+							<a class="inline-link" href="/baseline/results">{t('Baseline Status')}</a>
 						{/if}
 					</div>
 				</div>
@@ -496,14 +561,14 @@
 					{#each modules as module}
 						<a class="module-card" href={module.route}>
 							<div class="module-topline">
-								<p class="module-title">{module.title}</p>
+								<p class="module-title">{t(module.title)}</p>
 								{#if moduleProgress(module.key)}
-									<span class="status-chip complete">Done</span>
+									<span class="status-chip complete">{t('Done')}</span>
 								{:else}
-									<span class="status-chip pending">Start</span>
+									<span class="status-chip pending">{t('Start')}</span>
 								{/if}
 							</div>
-							<p class="module-description">{module.description}</p>
+							<p class="module-description">{t(module.description)}</p>
 						</a>
 					{/each}
 				</div>
@@ -513,10 +578,10 @@
 				<details class="care-team-details">
 					<summary>
 						<div>
-							<p class="section-kicker">Healthcare Provider</p>
-							<h2>Your Care Team</h2>
+							<p class="section-kicker">{t('Healthcare Provider')}</p>
+							<h2>{t('Your Care Team')}</h2>
 						</div>
-						<span class="summary-hint">Expand when needed</span>
+						<span class="summary-hint">{t('Expand when needed')}</span>
 					</summary>
 					<div class="care-team-body">
 						{#if currentUser}

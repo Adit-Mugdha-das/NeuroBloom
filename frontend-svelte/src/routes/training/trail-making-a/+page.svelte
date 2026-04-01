@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -36,6 +37,41 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let countdown = 3;
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function secondsLabel(value, options = {}) {
+		const formatted = n(value, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+		return $locale === 'bn' ? `${formatted} সেকেন্ড` : `${formatted}s`;
+	}
+
+	function levelBadge(value = difficulty) {
+		return $locale === 'bn' ? `লেভেল ${n(value)}` : `Level ${value}`;
+	}
+
+	function difficultyChangeLabel(before, after) {
+		return $locale === 'bn'
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
+	}
 
 	onMount(async () => {
 		await loadSession();
@@ -105,7 +141,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load task session');
+			alert(t('Failed to load task session'));
 			goto('/dashboard');
 		}
 	}
@@ -197,7 +233,7 @@
 			
 			// Symbol
 			ctx.fillStyle = '#666';
-			ctx.fillText(distractor.symbol, distractor.x, distractor.y);
+			ctx.fillText(t(distractor.symbol), distractor.x, distractor.y);
 		}
 		
 		// Draw circles
@@ -235,7 +271,7 @@
 			
 			// Number text - White on completed, dark on unclicked
 			ctx.fillStyle = (isCompleted || isLastClicked) ? 'white' : '#2c3e50';
-			ctx.fillText(circle.number, circle.x, circle.y);
+			ctx.fillText(n(circle.number), circle.x, circle.y);
 		}
 	}
 
@@ -350,7 +386,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting results:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 		}
 	}
 
@@ -368,148 +404,144 @@
 	}
 </script>
 
-<div class="tmt-container">
+<div class="tmt-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading Trail Making Test...</p>
+			<p>{t('Loading Trail Making Test...')}</p>
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>🎯 Trail Making Test - Part A</h1>
+				<h1>{t('Trail Making Test - Part A')}</h1>
 				<DifficultyBadge difficulty={difficulty} domain="Processing Speed" />
 			</div>
-			<div class="classic-badge">Classic Neuropsychological Test</div>
+			<div class="classic-badge">{t('Classic Neuropsychological Test')}</div>
 			
 			<div class="instruction-card">
-				<h2>About This Test</h2>
+				<h2>{t('About This Test')}</h2>
 				<p class="importance">
-					The Trail Making Test (TMT) is a <strong>classic neuropsychological assessment</strong> 
-					from the Halstead-Reitan Battery. It measures <strong>psychomotor speed</strong>, visual 
-					scanning, and motor control - all areas that can be affected by MS.
+					{$locale === 'bn'
+						? 'Trail Making Test (TMT) হলো Halstead-Reitan Battery-র একটি ক্লাসিক নিউরোসাইকোলজিক্যাল মূল্যায়ন। এটি সাইকোমোটর গতি, ভিজ্যুয়াল স্ক্যানিং এবং মোটর নিয়ন্ত্রণ মূল্যায়ন করে, যেগুলো এমএসে প্রভাবিত হতে পারে।'
+						: 'The Trail Making Test (TMT) is a classic neuropsychological assessment from the Halstead-Reitan Battery. It measures psychomotor speed, visual scanning, and motor control - all areas that can be affected by MS.'}
 				</p>
 				
 				<div class="clinical-info">
-					<h3>📊 Clinical Significance</h3>
+					<h3>{t('Clinical Significance')}</h3>
 					<ul>
-						<li><strong>Gold standard</strong> for measuring processing speed</li>
-						<li>Highly <strong>sensitive to MS progression</strong></li>
-						<li>Assesses <strong>visual scanning</strong> and motor coordination</li>
-						<li>Widely used in <strong>neurological assessments</strong></li>
+						<li>{$locale === 'bn' ? 'প্রসেসিং স্পিড মাপার নির্ভরযোগ্য মানদণ্ড' : 'Gold standard for measuring processing speed'}</li>
+						<li>{$locale === 'bn' ? 'এমএসের অগ্রগতি ধরতে অত্যন্ত সংবেদনশীল' : 'Highly sensitive to MS progression'}</li>
+						<li>{$locale === 'bn' ? 'ভিজ্যুয়াল স্ক্যানিং ও মোটর সমন্বয় মূল্যায়ন করে' : 'Assesses visual scanning and motor coordination'}</li>
+						<li>{$locale === 'bn' ? 'নিউরোলজিক্যাল মূল্যায়নে বহুল ব্যবহৃত' : 'Widely used in neurological assessments'}</li>
 					</ul>
 				</div>
 
 				<div class="how-it-works">
-					<h3>🎯 How It Works</h3>
+					<h3>{t('How It Works')}</h3>
 					<div class="demo-sequence">
 						<div class="demo-step">
 							<div class="demo-circles">
-								<div class="demo-circle active">1</div>
+								<div class="demo-circle active">{n(1)}</div>
 								<div class="demo-arrow">→</div>
-								<div class="demo-circle">2</div>
+								<div class="demo-circle">{n(2)}</div>
 								<div class="demo-arrow">→</div>
-								<div class="demo-circle">3</div>
+								<div class="demo-circle">{n(3)}</div>
 								<div class="demo-arrow">...</div>
-								<div class="demo-circle">25</div>
+								<div class="demo-circle">{n(25)}</div>
 							</div>
-							<p><strong>Connect the circles in order</strong></p>
-							<p>Click 1, then 2, then 3, and so on as fast as you can!</p>
+							<p><strong>{t('Connect the circles in order')}</strong></p>
+							<p>{t('Click 1, then 2, then 3, and so on as fast as you can!')}</p>
 						</div>
 					</div>
 				</div>
 
 				<div class="test-details">
-					<h3>⏱️ Test Format</h3>
+					<h3>{t('Test Format')}</h3>
 					<div class="details-grid">
 						<div class="detail-item">
 							<div class="detail-icon">🔢</div>
 							<div class="detail-text">
-								<strong>{trial.circles.length} Circles</strong>
-								<span>Connect in sequence</span>
+								<strong>{n(trial.circles.length)} {t('Circles')}</strong>
+								<span>{t('Connect in sequence')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">⚡</div>
 							<div class="detail-text">
-								<strong>Speed Test</strong>
-								<span>As fast as possible</span>
+								<strong>{t('Speed Test')}</strong>
+								<span>{t('As fast as possible')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">✓</div>
 							<div class="detail-text">
-								<strong>Accuracy Counts</strong>
-								<span>Avoid mistakes</span>
+								<strong>{t('Accuracy Counts')}</strong>
+								<span>{t('Avoid mistakes')}</span>
 							</div>
 						</div>
 						<div class="detail-item">
 							<div class="detail-icon">🎯</div>
 							<div class="detail-text">
-								<strong>One Chance</strong>
-								<span>Do your best!</span>
+								<strong>{t('One Chance')}</strong>
+								<span>{t('Do your best!')}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 				
 				<div class="tips">
-					<h3>💡 Pro Tips</h3>
+					<h3>{t('Pro Tips')}</h3>
 					<ul>
-						<li><strong>Scan ahead:</strong> Look for the next number while clicking current one</li>
-						<li><strong>Stay focused:</strong> Don't get distracted by other symbols</li>
-						<li><strong>Click center:</strong> Aim for the center of each circle</li>
-						<li><strong>Smooth movements:</strong> Efficient path = better time</li>
-						<li><strong>No rush mistakes:</strong> Going fast but accurate is better than rushing</li>
+						<li><strong>{t('Scan ahead:')}</strong> {$locale === 'bn' ? 'বর্তমান সংখ্যায় চাপার সময় পরের সংখ্যাটি কোথায় আছে তা আগেই খুঁজে নিন।' : 'Look for the next number while clicking current one'}</li>
+						<li><strong>{t('Stay focused:')}</strong> {$locale === 'bn' ? 'অন্য প্রতীক দেখে মনোযোগ হারাবেন না।' : "Don't get distracted by other symbols"}</li>
+						<li><strong>{t('Click center:')}</strong> {$locale === 'bn' ? 'প্রতিটি বৃত্তের মাঝখানে চাপার চেষ্টা করুন।' : 'Aim for the center of each circle'}</li>
+						<li><strong>{t('Smooth movements:')}</strong> {$locale === 'bn' ? 'সুশৃঙ্খল পথ দ্রুততর ফল দেয়।' : 'Efficient path = better time'}</li>
+						<li><strong>{t('No rush mistakes:')}</strong> {$locale === 'bn' ? 'অতিরিক্ত তাড়াহুড়ার চেয়ে দ্রুত কিন্তু নির্ভুল হওয়া ভালো।' : 'Going fast but accurate is better than rushing'}</li>
 					</ul>
 				</div>
 
 				<div class="performance-guide">
-					<h3>📈 Performance Norms (MS Patients)</h3>
+					<h3>{t('Performance Norms (MS Patients)')}</h3>
 					<div class="norm-scale">
-						<div class="norm-item excellent">&lt;29 seconds = Excellent</div>
-						<div class="norm-item good">29-39 seconds = Good</div>
-						<div class="norm-item average">40-78 seconds = Average</div>
-						<div class="norm-item needs-practice">&gt;78 seconds = Practice Needed</div>
+						<div class="norm-item excellent">{$locale === 'bn' ? '&lt;২৯ সেকেন্ড = চমৎকার' : '<29 seconds = Excellent'}</div>
+						<div class="norm-item good">{$locale === 'bn' ? '২৯-৩৯ সেকেন্ড = ভালো' : '29-39 seconds = Good'}</div>
+						<div class="norm-item average">{$locale === 'bn' ? '৪০-৭৮ সেকেন্ড = গড়' : '40-78 seconds = Average'}</div>
+						<div class="norm-item needs-practice">{$locale === 'bn' ? '&gt;৭৮ সেকেন্ড = আরও অনুশীলন দরকার' : '>78 seconds = Practice Needed'}</div>
 					</div>
-					<p class="norm-note">*Times normalized to 25 circles</p>
+					<p class="norm-note">{$locale === 'bn' ? '*সময় ২৫টি বৃত্তের মানদণ্ডে সমন্বিত' : '*Times normalized to 25 circles'}</p>
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startTest}>
-				Start Trail Making Test
-			</button>
+			<button class="start-button" on:click={startTest}>{t('Start Trail Making Test')}</button>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>Get Ready!</h2>
-			<p class="ready-message">Connect the numbered circles in order as fast as you can</p>
+			<h2>{t('Get Ready!')}</h2>
+			<p class="ready-message">{t('Connect the numbered circles in order as fast as you can')}</p>
 			<div class="ready-sequence">
-				<div class="ready-circle">1</div>
+				<div class="ready-circle">{n(1)}</div>
 				<div class="ready-arrow">→</div>
-				<div class="ready-circle">2</div>
+				<div class="ready-circle">{n(2)}</div>
 				<div class="ready-arrow">→</div>
-				<div class="ready-circle">3</div>
+				<div class="ready-circle">{n(3)}</div>
 				<div class="ready-arrow">→</div>
 				<div class="ready-dots">...</div>
 			</div>
-			<div class="countdown">{countdown}</div>
+			<div class="countdown">{n(countdown)}</div>
 		</div>
 	{:else if state === STATE.TESTING}
 		<div class="testing-screen">
 			<div class="header">
 				<div class="progress-info">
-					<span class="next-badge">Next: {currentNumber}</span>
-					<span class="progress-badge">{currentNumber - 1} / {trial.circles.length}</span>
+					<span class="next-badge">{t('Next:')} {n(currentNumber)}</span>
+					<span class="progress-badge">{n(currentNumber - 1)} / {n(trial.circles.length)}</span>
 					{#if errors.length > 0}
-						<span class="errors-badge">Errors: {errors.length}</span>
+						<span class="errors-badge">{t('Errors:')} {n(errors.length)}</span>
 					{/if}
 				</div>
 				<div class="timer-display">
 					<span class="timer-icon">⏱️</span>
-					<span class="timer-value">
-						{elapsedTime.toFixed(1)}s
-					</span>
+					<span class="timer-value">{secondsLabel(elapsedTime)}</span>
 				</div>
 				<button class="help-button-floating" on:click={toggleHelp}>?</button>
 			</div>
@@ -522,108 +554,111 @@
 			</div>
 
 			<div class="instruction-bar">
-				<p>Click the circles in numerical order: 1 → 2 → 3 → ...</p>
-				<p class="current-target">Looking for: <strong>{currentNumber}</strong></p>
+				<p>{t('Click the circles in numerical order: 1 → 2 → 3 → ...')}</p>
+				<p class="current-target">{t('Looking for:')} <strong>{n(currentNumber)}</strong></p>
 			</div>
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>Trail Making Test Complete! 🎉</h1>
+			<h1>{t('Trail Making Test Complete!')} 🎉</h1>
 			
 			{#if sessionResults}
 				{@const perfColor = getPerformanceColor(sessionResults.metrics.performance_level)}
 				
 				<div class="performance-badge" style="border-color: {perfColor}; color: {perfColor}">
-					<div class="perf-level">{sessionResults.metrics.performance_level}</div>
-					<div class="perf-time">{sessionResults.metrics.completion_time}s</div>
+					<div class="perf-level">{t(sessionResults.metrics.performance_level)}</div>
+					<div class="perf-time">{secondsLabel(sessionResults.metrics.completion_time)}</div>
 				</div>
 
 				<div class="results-grid">
 					<div class="result-card primary">
 						<div class="result-icon">⏱️</div>
-						<div class="result-value">{sessionResults.metrics.completion_time}s</div>
-						<div class="result-label">Completion Time</div>
-						<div class="result-sublabel">Normalized: {sessionResults.metrics.normalized_time}s</div>
+						<div class="result-value">{secondsLabel(sessionResults.metrics.completion_time)}</div>
+						<div class="result-label">{t('Completion Time')}</div>
+						<div class="result-sublabel">{t('Normalized:')} {secondsLabel(sessionResults.metrics.normalized_time)}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">🎯</div>
-						<div class="result-value">{sessionResults.metrics.score}</div>
-						<div class="result-label">Score</div>
-						<div class="result-sublabel">Out of 100</div>
+						<div class="result-value">{n(sessionResults.metrics.score)}</div>
+						<div class="result-label">{t('Score')}</div>
+						<div class="result-sublabel">{t('Out of 100')}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">✓</div>
-						<div class="result-value">{sessionResults.metrics.accuracy}%</div>
-						<div class="result-label">Accuracy</div>
-						<div class="result-sublabel">{sessionResults.metrics.errors} errors</div>
+						<div class="result-value">{pct(sessionResults.metrics.accuracy, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</div>
+						<div class="result-label">{t('Accuracy')}</div>
+						<div class="result-sublabel">{n(sessionResults.metrics.errors)} {t('errors')}</div>
 					</div>
 					
 					<div class="result-card">
 						<div class="result-icon">⚡</div>
-						<div class="result-value">{sessionResults.metrics.processing_speed}</div>
-						<div class="result-label">Processing Speed</div>
-						<div class="result-sublabel">Circles/second</div>
+						<div class="result-value">{n(sessionResults.metrics.processing_speed)}</div>
+						<div class="result-label">{t('Processing Speed')}</div>
+						<div class="result-sublabel">{t('Circles/second')}</div>
 					</div>
 				</div>
 
 				<div class="performance-breakdown">
-					<h3>📊 Detailed Analysis</h3>
+					<h3>{t('Detailed Analysis')}</h3>
 					<div class="breakdown-grid">
 						<div class="breakdown-item">
-							<span>Total Clicks:</span>
-							<span class="value">{sessionResults.metrics.total_clicks}</span>
+							<span>{t('Total Clicks:')}</span>
+							<span class="value">{n(sessionResults.metrics.total_clicks)}</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Errors Made:</span>
+							<span>{t('Errors Made:')}</span>
 							<span class="value {sessionResults.metrics.errors > 0 ? 'error' : 'success'}">
-								{sessionResults.metrics.errors}
+								{n(sessionResults.metrics.errors)}
 							</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Path Efficiency:</span>
-							<span class="value">{sessionResults.metrics.path_efficiency}%</span>
+							<span>{t('Path Efficiency:')}</span>
+							<span class="value">{pct(sessionResults.metrics.path_efficiency, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
 						</div>
 						<div class="breakdown-item">
-							<span>Performance Level:</span>
+							<span>{t('Performance Level:')}</span>
 							<span class="value" style="color: {perfColor}">
-								{sessionResults.metrics.performance_level}
+								{t(sessionResults.metrics.performance_level)}
 							</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="clinical-context">
-					<h3>🏥 Clinical Context</h3>
+					<h3>{t('Clinical Context')}</h3>
 					<p>
 						{#if sessionResults.metrics.performance_level === 'Excellent'}
-							Outstanding performance! Your processing speed and visual scanning are <strong>well above average</strong> 
-							for MS patients. This indicates excellent psychomotor function.
+							{$locale === 'bn'
+								? 'চমৎকার পারফরম্যান্স! আপনার প্রসেসিং স্পিড ও ভিজ্যুয়াল স্ক্যানিং গড়ের চেয়ে অনেক ভালো, যা শক্তিশালী সাইকোমোটর কার্যকারিতা নির্দেশ করে।'
+								: 'Outstanding performance! Your processing speed and visual scanning are well above average for MS patients. This indicates excellent psychomotor function.'}
 						{:else if sessionResults.metrics.performance_level === 'Good'}
-							Great performance! Your processing speed is <strong>above average</strong> for MS patients. 
-							Keep up the excellent work!
+							{$locale === 'bn'
+								? 'খুব ভালো পারফরম্যান্স! আপনার প্রসেসিং স্পিড এমএস রোগীদের গড়ের চেয়ে ভালো। এই অগ্রগতি ধরে রাখুন।'
+								: 'Great performance! Your processing speed is above average for MS patients. Keep up the excellent work!'}
 						{:else if sessionResults.metrics.performance_level === 'Average'}
-							Good performance! Your time is in the <strong>normal range</strong> for MS patients. 
-							Regular practice can help improve speed and efficiency.
+							{$locale === 'bn'
+								? 'ভালো পারফরম্যান্স! আপনার সময় এমএস রোগীদের স্বাভাবিক সীমার মধ্যে রয়েছে। নিয়মিত অনুশীলন গতি ও দক্ষতা বাড়াতে সাহায্য করবে।'
+								: 'Good performance! Your time is in the normal range for MS patients. Regular practice can help improve speed and efficiency.'}
 						{:else}
-							Keep practicing! Processing speed and visual scanning can improve significantly with 
-							regular training. The Trail Making Test is excellent for building these skills.
+							{$locale === 'bn'
+								? 'অনুশীলন চালিয়ে যান। নিয়মিত ট্রেনিংয়ের মাধ্যমে প্রসেসিং স্পিড ও ভিজ্যুয়াল স্ক্যানিং অনেক উন্নত হতে পারে।'
+								: 'Keep practicing! Processing speed and visual scanning can improve significantly with regular training. The Trail Making Test is excellent for building these skills.'}
 						{/if}
 					</p>
 				</div>
 
 				<div class="difficulty-info">
 					<p>
-						Difficulty: <strong>{sessionResults.difficulty_before}</strong> → 
-						<strong>{sessionResults.difficulty_after}</strong>
+						{difficultyChangeLabel(sessionResults.difficulty_before, sessionResults.difficulty_after)}
 					</p>
-					<p class="adaptation-reason">{sessionResults.adaptation_reason}</p>
+					<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
 				</div>
 
 				{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 					<div class="new-badges">
-						<h3>🏆 New Badges Earned!</h3>
+						<h3>{t('New Badges Earned!')}</h3>
 						{#each sessionResults.new_badges as badge}
 							<div class="badge">
 								<span class="badge-icon">{badge.icon}</span>
@@ -634,8 +669,8 @@
 				{/if}
 
 				<div class="actions">
-					<button on:click={() => goto('/training')}>Back to Training</button>
-					<button on:click={() => goto('/dashboard')}>View Dashboard</button>
+					<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
+					<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 				</div>
 			{/if}
 		</div>
@@ -647,36 +682,36 @@
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="help-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
 			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>TMT-A Success Strategies</h2>
+			<h2>{t('TMT-A Success Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>👀 Visual Scanning</h3>
-				<p>Train your eyes to scan ahead. While clicking one circle, your eyes should already be locating the next number.</p>
+				<h3>{t('Visual Scanning')}</h3>
+				<p>{$locale === 'bn' ? 'একটি বৃত্তে চাপার সময়ই চোখকে পরের সংখ্যাটি খুঁজতে অভ্যস্ত করুন।' : 'Train your eyes to scan ahead. While clicking one circle, your eyes should already be locating the next number.'}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🎯 Center Clicking</h3>
-				<p>Click near the center of each circle for fastest, most accurate results. Peripheral clicks may miss.</p>
+				<h3>{t('Center Clicking')}</h3>
+				<p>{$locale === 'bn' ? 'দ্রুত ও নির্ভুল ফলের জন্য প্রতিটি বৃত্তের মাঝামাঝি অংশে চাপুন। কিনারায় চাপলে মিস হতে পারে।' : 'Click near the center of each circle for fastest, most accurate results. Peripheral clicks may miss.'}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>➡️ Efficient Path</h3>
-				<p>Your mouse/finger should move in smooth, direct lines between circles. Erratic movements waste time.</p>
+				<h3>{t('Efficient Path')}</h3>
+				<p>{$locale === 'bn' ? 'বৃত্তগুলোর মাঝে মাউস বা আঙুল সোজা ও মসৃণভাবে চালান। অগোছালো নড়াচড়া সময় নষ্ট করে।' : 'Your mouse/finger should move in smooth, direct lines between circles. Erratic movements waste time.'}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧠 Pattern Recognition</h3>
-				<p>Try to notice clusters of sequential numbers. This helps you plan your path more efficiently.</p>
+				<h3>{t('Pattern Recognition')}</h3>
+				<p>{$locale === 'bn' ? 'ক্রমাগত সংখ্যাগুলোর ছোট ছোট গুচ্ছ লক্ষ্য করুন। এতে পথ পরিকল্পনা করা সহজ হয়।' : 'Try to notice clusters of sequential numbers. This helps you plan your path more efficiently.'}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>⚡ Speed vs Accuracy</h3>
-				<p>Find the balance - rushing leads to errors which hurt your score more than going slightly slower but accurate.</p>
+				<h3>{t('Speed vs Accuracy')}</h3>
+				<p>{$locale === 'bn' ? 'ভারসাম্য খুঁজুন। অযথা তাড়াহুড়া করলে এমন ভুল হয় যা সামান্য ধীর কিন্তু নির্ভুল হওয়ার চেয়ে বেশি ক্ষতি করে।' : 'Find the balance - rushing leads to errors which hurt your score more than going slightly slower but accurate.'}</p>
 			</div>
 
 			<div class="strategy">
-				<h3>💪 Why This Matters</h3>
-				<p>TMT-A measures the brain's ability to rapidly process visual information and coordinate motor responses - critical for daily activities like driving and navigation.</p>
+				<h3>{t('Why This Matters')}</h3>
+				<p>{$locale === 'bn' ? 'TMT-A মস্তিষ্ক কত দ্রুত দৃশ্যমান তথ্য প্রক্রিয়া করতে পারে এবং মোটর প্রতিক্রিয়া সমন্বয় করতে পারে তা মাপে, যা ড্রাইভিং বা পথচলার মতো দৈনন্দিন কাজে গুরুত্বপূর্ণ।' : "TMT-A measures the brain's ability to rapidly process visual information and coordinate motor responses - critical for daily activities like driving and navigation."}</p>
 			</div>
 		</div>
 	</div>

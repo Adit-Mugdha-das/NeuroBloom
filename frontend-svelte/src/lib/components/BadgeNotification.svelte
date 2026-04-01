@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { formatNumber, locale, translateText } from '$lib/i18n';
 	
 	export let badges = [];
 	
@@ -7,6 +8,17 @@
 	let currentBadgeIndex = 0;
 	
 	$: currentBadge = badges[currentBadgeIndex];
+	$: translatedBadgeName = currentBadge ? translateText(currentBadge.name, $locale) : '';
+	$: translatedBadgeDescription = currentBadge
+		? translateText(currentBadge.description, $locale)
+		: '';
+	$: translatedBadgeCount =
+		badges.length > 1
+			? `${formatNumber(currentBadgeIndex + 1, $locale)} ${translateText('of', $locale)} ${formatNumber(
+					badges.length,
+					$locale
+				)} ${translateText('new badges', $locale)}`
+			: '';
 	
 	onMount(() => {
 		if (badges.length > 0) {
@@ -37,20 +49,20 @@
 		<div class="notification-content">
 			<div class="badge-header">
 				<span class="trophy">🏆</span>
-				<h3>New Badge Unlocked!</h3>
+				<h3>{translateText('New Badge Unlocked!', $locale)}</h3>
 			</div>
 			
 			<div class="badge-display">
 				<div class="badge-icon">{currentBadge.icon}</div>
 				<div class="badge-details">
-					<h2>{currentBadge.name}</h2>
-					<p>{currentBadge.description}</p>
+					<h2>{translatedBadgeName}</h2>
+					<p>{translatedBadgeDescription}</p>
 				</div>
 			</div>
 			
 			{#if badges.length > 1}
 				<div class="badge-count">
-					{currentBadgeIndex + 1} of {badges.length} new badges
+					{translatedBadgeCount}
 				</div>
 			{/if}
 		</div>

@@ -241,7 +241,7 @@
 									<div class="notice-card">
 										<div class="notice-top">
 											<div>
-												<p class="notice-title">{notification.title}</p>
+												<p class="notice-title" data-localize-skip>{notification.title}</p>
 												<p class="notice-meta">By {notification.created_by} · {relativeDate(notification.created_at)}</p>
 											</div>
 											<div class="notice-badges">
@@ -249,7 +249,7 @@
 												<span class="badge badge-neutral">{audienceLabel(notification.audience)}</span>
 											</div>
 										</div>
-										<p class="notice-message">{notification.message}</p>
+										<p class="notice-message" data-localize-skip>{notification.message}</p>
 										<div class="notice-footer">
 											<span>{notification.is_active ? 'Active' : 'Inactive'}</span>
 											<span>{formatDateTime(notification.created_at)}</span>

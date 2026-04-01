@@ -46,6 +46,16 @@ class VerbalFluencyTask:
         "hard": ["L", "W", "N", "H", "G"],  # Less common
         "expert": ["Q", "X", "Z", "V", "J"],  # Rare starting letters
     }
+
+    BANGLA_LETTER_SETS = {
+        "easy": ["ক", "ম", "ব", "স", "প"],
+        "medium": ["অ", "ত", "ন", "ল", "চ"],
+        "hard": ["দ", "র", "গ", "হ", "শ"],
+        "expert": ["ভ", "ফ", "ঘ", "ছ", "ঝ"],
+    }
+
+    ENGLISH_SUFFIXES = ["ing", "ed", "s", "es", "er", "est", "ly", "tion", "ness", "ment"]
+    BANGLA_SUFFIXES = ["গুলো", "গুলি", "দের", "ের", "টা", "টি", "রা", "তে", "র"]
     
     # Common proper nouns to reject (not exhaustive, but helps)
     COMMON_PROPER_NOUNS = {
@@ -138,9 +148,89 @@ class VerbalFluencyTask:
             "strict_validation": True,
         },
     }
+
+    @staticmethod
+    def normalize_locale(locale: str | None) -> str:
+        return "bn" if locale == "bn" else "en"
+
+    @staticmethod
+    def letter_sets_for_locale(locale: str) -> Dict[str, List[str]]:
+        return (
+            VerbalFluencyTask.BANGLA_LETTER_SETS
+            if VerbalFluencyTask.normalize_locale(locale) == "bn"
+            else VerbalFluencyTask.LETTER_SETS
+        )
+
+    @staticmethod
+    def variant_suffixes_for_locale(locale: str) -> List[str]:
+        return (
+            VerbalFluencyTask.BANGLA_SUFFIXES
+            if VerbalFluencyTask.normalize_locale(locale) == "bn"
+            else VerbalFluencyTask.ENGLISH_SUFFIXES
+        )
+
+    @staticmethod
+    def localized_instruction_copy(locale: str, seconds: int) -> Dict[str, Any]:
+        if VerbalFluencyTask.normalize_locale(locale) == "bn":
+            return {
+                "title": "শব্দপ্রবাহ অনুশীলন",
+                "description": f"প্রতিটি অক্ষর দেখে {seconds} সেকেন্ডের মধ্যে সেই অক্ষর দিয়ে যত বেশি সম্ভব শব্দ লিখুন।",
+                "rules": [
+                    "দেওয়া অক্ষর দিয়ে শুরু হয় এমন শব্দ লিখুন",
+                    "ব্যক্তিনাম, জায়গার নাম বা ব্র্যান্ডের নাম লিখবেন না",
+                    "একই শব্দ বারবার লেখা যাবে না",
+                    "একই শব্দের কাছাকাছি রূপ একবারই গণনা হবে",
+                    "প্রতিটি শব্দ লিখে Enter বা Space চাপুন"
+                ],
+                "details_title": "সেশনের বিবরণ",
+                "comparison": "এমএস রোগীদের গড়: প্রতি অক্ষরে ১০-১৩টি শব্দ"
+            }
+
+        return {
+            "title": "Verbal Fluency Test",
+            "description": f"Generate as many words as possible starting with each letter in {seconds} seconds.",
+            "rules": [
+                "Type words that start with the given letter",
+                "No proper nouns (names, places, brands)",
+                "No repetitions",
+                "No variants (run, running, runs = 1 word)",
+                "Press Enter or Space to submit each word"
+            ],
+            "details_title": "Session Details",
+            "comparison": "MS patient average: 10-13 words per letter"
+        }
+
+    @staticmethod
+    def localized_reason(reason_key: str, locale: str, **kwargs: Any) -> str:
+        locale = VerbalFluencyTask.normalize_locale(locale)
+
+        if locale == "bn":
+            reasons = {
+                "empty_word": "ফাঁকা শব্দ গ্রহণযোগ্য নয়",
+                "too_short": "খুব ছোট (কমপক্ষে ২টি অক্ষর)",
+                "wrong_letter": f"'{kwargs.get('target_letter', '')}' দিয়ে শুরু হতে হবে",
+                "proper_noun": "ব্যক্তিনাম বা বিশেষ নাম গ্রহণযোগ্য নয়",
+                "proper_noun_common": "নাম, জায়গা বা ব্র্যান্ড গ্রহণযোগ্য নয়",
+                "variant_used": "একই শব্দপরিবার আগেই ব্যবহার হয়েছে"
+            }
+            return reasons.get(reason_key, reason_key)
+
+        reasons = {
+            "empty_word": "Empty word",
+            "too_short": "Too short (min 2 letters)",
+            "wrong_letter": f"Must start with '{kwargs.get('target_letter', '')}'",
+            "proper_noun": "No proper nouns",
+            "proper_noun_common": "No proper nouns (names/places/brands)",
+            "variant_used": "Variant already used"
+        }
+        return reasons.get(reason_key, reason_key)
     
     @staticmethod
-    def generate_session(difficulty: int, baseline_score: int | None = None) -> Dict[str, Any]:
+    def generate_session(
+        difficulty: int,
+        baseline_score: int | None = None,
+        locale: str = "en"
+    ) -> Dict[str, Any]:
         """
         Generate a verbal fluency session
         
@@ -154,12 +244,17 @@ class VerbalFluencyTask:
         if difficulty not in VerbalFluencyTask.DIFFICULTY_CONFIG:
             difficulty = 5
             
+        locale = VerbalFluencyTask.normalize_locale(locale)
         config = VerbalFluencyTask.DIFFICULTY_CONFIG[difficulty]
         letter_category = config["letter_category"]
         num_letters = config["num_letters"]
-        
+        instruction_copy = VerbalFluencyTask.localized_instruction_copy(
+            locale,
+            config["time_per_letter_seconds"]
+        )
+
         # Select random letters from the category
-        available_letters = VerbalFluencyTask.LETTER_SETS[letter_category].copy()
+        available_letters = VerbalFluencyTask.letter_sets_for_locale(locale)[letter_category].copy()
         random.shuffle(available_letters)
         selected_letters = available_letters[:num_letters]
         
@@ -171,16 +266,12 @@ class VerbalFluencyTask:
             "min_words_target": config["min_words_target"],
             "strict_validation": config["strict_validation"],
             "total_letters": num_letters,
+            "locale": locale,
+            "script": "bangla" if locale == "bn" else "latin",
             "instructions": {
-                "title": "Verbal Fluency Test",
-                "description": f"Generate as many words as possible starting with each letter in {config['time_per_letter_seconds']} seconds.",
-                "rules": [
-                    "Type words that start with the given letter",
-                    "No proper nouns (names, places, brands)",
-                    "No repetitions",
-                    "No variants (run, running, runs = 1 word)",
-                    "Press Enter or Space to submit each word"
-                ]
+                "title": instruction_copy["title"],
+                "description": instruction_copy["description"],
+                "rules": instruction_copy["rules"]
             }
         }
         
@@ -195,7 +286,7 @@ class VerbalFluencyTask:
         word = word.lower()
         
         # Remove common suffixes
-        suffixes = ["ing", "ed", "s", "es", "er", "est", "ly", "tion", "ness", "ment"]
+        suffixes = VerbalFluencyTask.ENGLISH_SUFFIXES
         
         for suffix in sorted(suffixes, key=len, reverse=True):
             if word.endswith(suffix) and len(word) > len(suffix) + 2:
@@ -204,7 +295,13 @@ class VerbalFluencyTask:
         return word
     
     @staticmethod
-    def validate_word(word: str, target_letter: str, seen_roots: Set[str], strict: bool = True) -> Dict[str, Any]:
+    def validate_word(
+        word: str,
+        target_letter: str,
+        seen_roots: Set[str],
+        strict: bool = True,
+        locale: str = "en"
+    ) -> Dict[str, Any]:
         """
         Validate a word submission
         
@@ -215,32 +312,66 @@ class VerbalFluencyTask:
                 "root": str (word root for variant detection)
             }
         """
+        locale = VerbalFluencyTask.normalize_locale(locale)
         word_clean = word.strip().lower()
-        target_letter_lower = target_letter.lower()
+        target_letter_lower = target_letter.strip().lower()
         
         # Basic validation
         if not word_clean:
-            return {"valid": False, "reason": "Empty word"}
-        
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason("empty_word", locale)
+            }
+
         if len(word_clean) < 2:
-            return {"valid": False, "reason": "Too short (min 2 letters)"}
-        
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason("too_short", locale)
+            }
+
         # Check if word starts with target letter
         if not word_clean.startswith(target_letter_lower):
-            return {"valid": False, "reason": f"Must start with '{target_letter.upper()}'"}
-        
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason(
+                    "wrong_letter",
+                    locale,
+                    target_letter=target_letter
+                )
+            }
+
         # Check if it's a proper noun (basic check - starts with capital in original)
-        if strict and word[0].isupper() and word not in ["I", "I'm", "I've", "I'd", "I'll"]:
-            return {"valid": False, "reason": "No proper nouns"}
-        
+        if (
+            locale == "en"
+            and strict
+            and word[0].isupper()
+            and word not in ["I", "I'm", "I've", "I'd", "I'll"]
+        ):
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason("proper_noun", locale)
+            }
+
         # Check against common proper nouns list
-        if word_clean in VerbalFluencyTask.COMMON_PROPER_NOUNS:
-            return {"valid": False, "reason": "No proper nouns (names/places/brands)"}
-        
+        if locale == "en" and word_clean in VerbalFluencyTask.COMMON_PROPER_NOUNS:
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason("proper_noun_common", locale)
+            }
+
         # Check for variants (root already seen)
         root = VerbalFluencyTask._get_word_root(word_clean)
+        if locale == "bn":
+            for suffix in sorted(VerbalFluencyTask.BANGLA_SUFFIXES, key=len, reverse=True):
+                if root.endswith(suffix) and len(root) > len(suffix) + 1:
+                    root = root[: -len(suffix)]
+                    break
+
         if root in seen_roots:
-            return {"valid": False, "reason": "Variant already used"}
+            return {
+                "valid": False,
+                "reason": VerbalFluencyTask.localized_reason("variant_used", locale)
+            }
         
         return {
             "valid": True,
@@ -268,6 +399,7 @@ class VerbalFluencyTask:
             Scoring results with performance metrics
         """
         difficulty = session_data["difficulty"]
+        locale = VerbalFluencyTask.normalize_locale(session_data.get("locale"))
         config = VerbalFluencyTask.DIFFICULTY_CONFIG[difficulty]
         strict = config["strict_validation"]
         
@@ -285,7 +417,13 @@ class VerbalFluencyTask:
             invalid_words = []
             
             for word in words:
-                validation = VerbalFluencyTask.validate_word(word, letter, seen_roots, strict)
+                validation = VerbalFluencyTask.validate_word(
+                    word,
+                    letter,
+                    seen_roots,
+                    strict,
+                    locale=locale
+                )
                 
                 if validation["valid"]:
                     valid_words.append(word.lower())
@@ -351,7 +489,10 @@ class VerbalFluencyTask:
             "difficulty": difficulty,
             "completed": True,
             "ms_comparison": {
-                "description": "MS patient average: 10-13 words per letter",
+                "description": VerbalFluencyTask.localized_instruction_copy(
+                    locale,
+                    session_data.get("time_per_letter_seconds", 60)
+                )["comparison"],
                 "user_avg": round(avg_words_per_letter, 1),
                 "status": "above_average" if avg_words_per_letter >= 10 else "below_average"
             }

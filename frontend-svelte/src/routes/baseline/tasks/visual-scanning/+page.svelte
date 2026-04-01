@@ -1,9 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	
 	let currentUser = null;
 	let stage = 'intro'; // intro, test, results
@@ -25,6 +26,72 @@
 	let startTime = 0;
 	let endTime = 0;
 	let searchTime = 0;
+	let liveElapsedTime = 0;
+	let timerInterval = null;
+
+	const LETTER_SETS = {
+		en: {
+			target: 'T',
+			distractors: ['L', 'I', 'F', 'E', 'P'],
+			distractorPreview: 'L I F E P'
+		},
+		bn: {
+			target: 'ট',
+			distractors: ['ড', 'ঠ', 'ণ', 'ল', 'ফ'],
+			distractorPreview: 'ড ঠ ণ ল ফ'
+		}
+	};
+
+	function t(text) {
+		return translateText(text ?? '', $locale);
+	}
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function activeLetterSet() {
+		return $locale === 'bn' ? LETTER_SETS.bn : LETTER_SETS.en;
+	}
+
+	function startLiveTimer() {
+		if (timerInterval) clearInterval(timerInterval);
+		timerInterval = setInterval(() => {
+			liveElapsedTime = Date.now() - startTime;
+		}, 100);
+	}
+
+	function stopLiveTimer() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+	}
+
+	function trainingProgressText() {
+		return lt(
+			`Training Progress: ${completedTasksCount} / ${totalTasksCount} tasks completed`,
+			`ট্রেনিং অগ্রগতি: ${n(completedTasksCount)} / ${n(totalTasksCount)}টি টাস্ক সম্পন্ন`
+		);
+	}
+
+	function targetsFoundLabel() {
+		return lt(
+			`Targets Found: ${foundTargets.length} / ${totalTargets}`,
+			`খুঁজে পাওয়া লক্ষ্য: ${n(foundTargets.length)} / ${n(totalTargets)}`
+		);
+	}
+
+	function elapsedSecondsText(valueMs = liveElapsedTime) {
+		return `${n((valueMs / 1000).toFixed(1), {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		})}${lt('s', 'সে')}`;
+	}
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -57,13 +124,18 @@
 	
 	function startTest() {
 		stage = 'test';
+		foundTargets = [];
+		searchTime = 0;
+		endTime = 0;
 		generateGrid();
 		startTime = Date.now();
+		liveElapsedTime = 0;
+		startLiveTimer();
 	}
 	
 	function generateGrid() {
 		grid = [];
-		const distractors = ['L', 'I', 'F', 'E', 'P'];
+		const { distractors, target } = activeLetterSet();
 		const positions = [];
 		
 		// Initialize with distractors
@@ -81,7 +153,7 @@
 			const randomIndex = Math.floor(Math.random() * positions.length);
 			const pos = positions.splice(randomIndex, 1)[0];
 			grid[pos] = {
-				letter: 'T',
+				letter: target,
 				isTarget: true,
 				found: false
 			};
@@ -98,6 +170,7 @@
 			if (foundTargets.length === totalTargets) {
 				endTime = Date.now();
 				searchTime = endTime - startTime;
+				stopLiveTimer();
 				calculateResults();
 			}
 		}
@@ -164,55 +237,57 @@
 			console.error('Error saving results:', error);
 		}
 	}
+
+	onDestroy(() => {
+		stopLiveTimer();
+	});
 </script>
 
-<div class="test-container">
+<div class="test-container" data-localize-skip>
 	{#if stage === 'intro'}
 		<div class="test-card">
-			<h1>Visual Scanning Test</h1>
-			<h2 style="color: #666; font-size: 20px; margin-bottom: 30px;">Visual Search Task</h2>
+			<h1>{t('Visual Scanning Test')}</h1>
+			<h2 style="color: #666; font-size: 20px; margin-bottom: 30px;">{t('Visual Search Task')}</h2>
 			
 			<div style="text-align: left; max-width: 600px; margin: 0 auto;">
-				<h3 style="color: #667eea; margin-bottom: 15px;">Instructions:</h3>
+				<h3 style="color: #667eea; margin-bottom: 15px;">{t('Instructions:')}</h3>
 				<ul style="line-height: 1.8; color: #666;">
-					<li>You'll see a grid of letters (L, I, F, E, P, T)</li>
-					<li>Find and click ALL the letter <strong style="color: #4caf50; font-size: 24px;">"T"</strong></li>
-					<li>There are <strong>{totalTargets} targets</strong> hidden in the grid</li>
-					<li>Work as quickly and accurately as possible</li>
-					<li>Timer starts when the grid appears</li>
+					<li>{lt(`You'll see a grid of letters (${activeLetterSet().distractorPreview}, ${activeLetterSet().target})`, `আপনি অক্ষরের একটি গ্রিড দেখবেন (${activeLetterSet().distractorPreview}, ${activeLetterSet().target})`)}</li>
+					<li>{lt(`Find and click ALL the letter "${activeLetterSet().target}"`, `সব "${activeLetterSet().target}" অক্ষর খুঁজে ক্লিক করুন`)}</li>
+					<li>{@html lt(`There are <strong>${totalTargets} targets</strong> hidden in the grid`, `গ্রিডে <strong>${n(totalTargets)}টি লক্ষ্য</strong> লুকানো আছে`)}</li>
+					<li>{t('Work as quickly and accurately as possible')}</li>
+					<li>{t('Timer starts when the grid appears')}</li>
 				</ul>
 				
 				<div style="background: #f0f7ff; padding: 20px; border-radius: 8px; margin-top: 30px;">
-					<h4 style="color: #667eea; margin-bottom: 10px;">What to Look For:</h4>
+					<h4 style="color: #667eea; margin-bottom: 10px;">{t('What to Look For:')}</h4>
 					<div style="display: flex; justify-content: center; gap: 30px; margin-top: 15px;">
 						<div>
-							<p style="color: #4caf50; font-size: 48px; font-weight: bold; margin: 0;">T</p>
-							<p style="color: #666; font-size: 14px;">FIND THIS</p>
+							<p style="color: #4caf50; font-size: 48px; font-weight: bold; margin: 0;">{activeLetterSet().target}</p>
+							<p style="color: #666; font-size: 14px;">{t('FIND THIS')}</p>
 						</div>
 						<div>
-							<p style="color: #999; font-size: 48px; font-weight: bold; margin: 0;">L I F E P</p>
-							<p style="color: #666; font-size: 14px;">IGNORE THESE</p>
+							<p style="color: #999; font-size: 48px; font-weight: bold; margin: 0;">{activeLetterSet().distractorPreview}</p>
+							<p style="color: #666; font-size: 14px;">{t('IGNORE THESE')}</p>
 						</div>
 					</div>
 				</div>
 			</div>
 			
 			<button class="btn-primary" on:click={startTest} style="margin-top: 40px;">
-				Start Test
+				{t('Start Test')}
 			</button>
 			<button class="btn-secondary" on:click={backToDashboard}>
-				Back to Dashboard
+				{t('Back to Dashboard')}
 			</button>
 		</div>
 	
 	{:else if stage === 'test'}
 		<div class="test-card">
 			<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+				<div class="timer">{targetsFoundLabel()}</div>
 				<div class="timer">
-					Targets Found: {foundTargets.length} / {totalTargets}
-				</div>
-				<div class="timer">
-					Time: {((Date.now() - startTime) / 1000).toFixed(1)}s
+					{t('Time:')} {elapsedSecondsText()}
 				</div>
 			</div>
 			
@@ -254,79 +329,79 @@
 			</div>
 			
 			<p style="color: #666; margin-top: 20px;">
-				Click on all the letter "T" in the grid
+				{lt(`Click on all the letter "${activeLetterSet().target}" in the grid`, `গ্রিডের সব "${activeLetterSet().target}" অক্ষরে ক্লিক করুন`)}
 			</p>
 		</div>
 	
 	{:else if stage === 'results'}
 		<div class="test-card">
-			<h1>Test Complete!</h1>
+			<h1>{t('Test Complete!')}</h1>
 			
 			{#if isTrainingMode}
 				<div class="training-progress-banner">
 					{#if sessionComplete}
 						<div class="session-complete-msg">
-							🎉 Session Complete! You've finished all 4 tasks for this session.
+							{lt('🎉 Session Complete! You\'ve finished all 4 tasks for this session.', '🎉 সেশন সম্পন্ন! আপনি এই সেশনের সব ৪টি টাস্ক শেষ করেছেন।')}
 						</div>
 					{:else}
 						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
-							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
+							{trainingProgressText()}
 						</div>
 						<div style="font-size: 14px; color: #666;">
-							Continue with the remaining tasks to complete this session
+							{t('Continue with the remaining tasks to complete this session')}
 						</div>
 					{/if}
 				</div>
 			{/if}
 			
 			<div class="score-display">
-				{((foundTargets.length / totalTargets) * 100).toFixed(0)}%
+				{n(((foundTargets.length / totalTargets) * 100).toFixed(0))}%
 			</div>
 			
 			<div class="result-details">
 				<p>
-					<span>Targets Found:</span>
-					<strong>{foundTargets.length} / {totalTargets}</strong>
+					<span>{t('Targets Found:')}</span>
+					<strong>{n(foundTargets.length)} / {n(totalTargets)}</strong>
 				</p>
 				<p>
-					<span>Missed Targets:</span>
-					<strong>{totalTargets - foundTargets.length}</strong>
+					<span>{t('Missed Targets:')}</span>
+					<strong>{n(totalTargets - foundTargets.length)}</strong>
 				</p>
 				<p>
-					<span>Total Search Time:</span>
-					<strong>{(searchTime / 1000).toFixed(1)}s</strong>
+					<span>{t('Total Search Time:')}</span>
+					<strong>{elapsedSecondsText(searchTime)}</strong>
 				</p>
 				<p>
-					<span>Time Per Target:</span>
-					<strong>{(searchTime / foundTargets.length / 1000).toFixed(2)}s</strong>
+					<span>{t('Time Per Target:')}</span>
+					<strong>{n((searchTime / foundTargets.length / 1000).toFixed(2), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{lt('s', 'সে')}</strong>
 				</p>
 				<p>
-					<span>Scan Efficiency:</span>
-					<strong>{((totalTargets / (searchTime / 1000)) * 10).toFixed(1)} targets/10s</strong>
+					<span>{t('Scan Efficiency:')}</span>
+					<strong>{lt(`${n(((totalTargets / (searchTime / 1000)) * 10).toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} targets/10s`, `${n(((totalTargets / (searchTime / 1000)) * 10).toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} লক্ষ্য/১০সে`)}</strong>
 				</p>
 			</div>
 			
 			<div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
-				<h4 style="color: #667eea; margin-bottom: 10px;">Visual Scanning Insights:</h4>
+				<h4 style="color: #667eea; margin-bottom: 10px;">{t('Visual Scanning Insights:')}</h4>
 				<p style="color: #666; line-height: 1.6;">
 					{#if foundTargets.length === totalTargets && searchTime < 15000}
-						Excellent visual scanning! Fast and accurate detection.
+						{t('Excellent visual scanning! Fast and accurate detection.')}
 					{:else if foundTargets.length === totalTargets}
-						Good accuracy! With practice, you can improve your speed.
+						{t('Good accuracy! With practice, you can improve your speed.')}
 					{:else}
-						Keep practicing. Systematic scanning strategies can help find all targets.
+						{lt('Keep practicing. Systematic scanning strategies can help find all targets.', 'অনুশীলন চালিয়ে যান। পদ্ধতিগতভাবে স্ক্যান করলে সব লক্ষ্য খুঁজে পাওয়া সহজ হবে।')}
 					{/if}
 				</p>
 				{#if searchTime / foundTargets.length > 3000}
 					<p style="color: #ff9800; margin-top: 10px;">
-						💡 Tip: Try scanning row by row or column by column for more efficiency.
+						{t('💡 Tip: Try scanning row by row or column by column for more efficiency.')}
 					</p>
 				{/if}
 			</div>
 			
 			<div style="margin-top: 40px;">
 				<button class="btn-primary" on:click={backToDashboard}>
-					Back to Dashboard
+					{t('Back to Dashboard')}
 				</button>
 			</div>
 		</div>
@@ -363,5 +438,5 @@
 </style>
 
 <svelte:head>
-	<title>Visual Scanning Test - NeuroBloom</title>
+	<title>{lt('Visual Scanning Test - NeuroBloom', 'ভিজ্যুয়াল স্ক্যানিং টেস্ট - NeuroBloom')}</title>
 </svelte:head>

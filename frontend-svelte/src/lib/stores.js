@@ -6,6 +6,7 @@ const initialUser = browser ? JSON.parse(localStorage.getItem('user') || 'null')
 
 // User store
 export const user = writable(initialUser);
+export const authReady = writable(false);
 
 // Subscribe to user changes and update localStorage
 if (browser) {
@@ -18,9 +19,27 @@ if (browser) {
 	});
 }
 
+export const markAuthReady = () => {
+	authReady.set(true);
+};
+
 // Auth helper functions
 export const setUser = (userData) => {
 	user.set(userData);
+};
+
+export const updateUserPreferences = (preferences = {}) => {
+	user.update((currentUser) => {
+		if (!currentUser) return currentUser;
+
+		return {
+			...currentUser,
+			preferences: {
+				...(currentUser.preferences || {}),
+				...preferences
+			}
+		};
+	});
 };
 
 export const clearUser = () => {

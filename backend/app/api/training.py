@@ -4774,6 +4774,7 @@ def submit_soc_session(
 @router.post("/tasks/verbal-fluency/generate/{user_id}")
 def generate_verbal_fluency_session(
     user_id: int,
+    locale: str = "en",
     session: Session = Depends(get_session)
 ):
     """Generate a Verbal Fluency (COWAT) task session."""
@@ -4797,7 +4798,7 @@ def generate_verbal_fluency_session(
     difficulty = current_difficulty.get("planning", 1)
     
     # Generate session
-    session_data = verbal_fluency_task_service.generate_session(difficulty)
+    session_data = verbal_fluency_task_service.generate_session(difficulty, locale=locale)
     
     return {
         "session_data": session_data,

@@ -1,6 +1,13 @@
 import axios from 'axios';
+import { queueLocalizationRefresh } from '$lib/i18n';
 
-export const API_BASE_URL = 'http://127.0.0.1:8000';
+const resolveApiBaseUrl = () => {
+	if (typeof window === 'undefined') return 'http://127.0.0.1:8000';
+	const host = window.location.hostname === 'localhost' ? 'localhost' : '127.0.0.1';
+	return `${window.location.protocol}//${host}:8000`;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
 	baseURL: API_BASE_URL,
@@ -8,6 +15,17 @@ const api = axios.create({
 		'Content-Type': 'application/json'
 	}
 });
+
+api.interceptors.response.use(
+	(response) => {
+		queueLocalizationRefresh('pulse');
+		return response;
+	},
+	(error) => {
+		queueLocalizationRefresh('pulse');
+		return Promise.reject(error);
+	}
+);
 
 export const auth = {
 	register: async (email, password) => {

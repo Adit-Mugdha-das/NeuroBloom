@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
+	import { formatNumber, locale, translateText } from '$lib/i18n';
 	import { clearUser, user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -13,6 +14,14 @@
 	const unsubscribe = user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
 
 	onMount(() => {
 		if (!currentUser) {
@@ -62,7 +71,7 @@
 
 	function formatDate(iso) {
 		if (!iso) return '-';
-		return new Date(iso).toLocaleString('en-GB', {
+		return new Date(iso).toLocaleString($locale === 'bn' ? 'bn-BD' : 'en-US', {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
@@ -72,10 +81,10 @@
 	}
 
 	function typeLabel(type) {
-		if (type === 'announcement') return 'Announcement';
-		if (type === 'feature_update') return 'Feature Update';
-		if (type === 'research_invitation') return 'Research Invitation';
-		return 'Notice';
+		if (type === 'announcement') return t('Announcement');
+		if (type === 'feature_update') return t('Feature Update');
+		if (type === 'research_invitation') return t('Research Invitation');
+		return t('Notice');
 	}
 
 	function typeClass(type) {
@@ -84,41 +93,45 @@
 		if (type === 'research_invitation') return 'type-amber';
 		return 'type-blue';
 	}
+
+	function totalNoticesLabel(count) {
+		return $locale === 'bn' ? `${n(count)}টি মোট নোটিশ` : `${count} total notices`;
+	}
 </script>
 
-<div class="page-shell">
+<div class="page-shell" data-localize-skip>
 	<header class="topbar">
 		<div>
-			<p class="eyebrow">Patient Experience</p>
-			<h1>Notification Center</h1>
-			<p class="subtext">System announcements, feature updates, and research invitations from the NeuroBloom team.</p>
+			<p class="eyebrow">{t('Patient Experience')}</p>
+			<h1>{t('Notification Center')}</h1>
+			<p class="subtext">{t('System announcements, feature updates, and research invitations from the NeuroBloom team.')}</p>
 		</div>
 		<div class="topbar-actions">
-			<button class="ghost-btn" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
-			<button class="logout-btn" on:click={handleLogout}>Logout</button>
+			<button class="ghost-btn" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
+			<button class="logout-btn" on:click={handleLogout}>{t('Logout')}</button>
 		</div>
 	</header>
 
 	<main class="content">
 		<section class="hero-card">
 			<div>
-				<p class="hero-kicker">Stay Informed</p>
-				<h2>Your latest platform notices in one place</h2>
-				<p>Unread badges on the dashboard clear as soon as you open this page.</p>
+				<p class="hero-kicker">{t('Stay Informed')}</p>
+				<h2>{t('Your latest platform notices in one place')}</h2>
+				<p>{t('Unread badges on the dashboard clear as soon as you open this page.')}</p>
 			</div>
 			<div class="hero-meta">
-				<span class="meta-pill">{notifications.length} total notices</span>
+				<span class="meta-pill">{totalNoticesLabel(notifications.length)}</span>
 			</div>
 		</section>
 
 		{#if loading}
-			<div class="state-card">Loading notifications...</div>
+			<div class="state-card">{t('Loading notifications...')}</div>
 		{:else if error}
-			<div class="state-card error">{error}</div>
+			<div class="state-card error">{t(error)}</div>
 		{:else if notifications.length === 0}
 			<div class="state-card empty">
-				<h3>No notifications yet</h3>
-				<p>New notices from admins will appear here automatically.</p>
+				<h3>{t('No notifications yet')}</h3>
+				<p>{t('New notices from admins will appear here automatically.')}</p>
 			</div>
 		{:else}
 			<div class="notice-list">

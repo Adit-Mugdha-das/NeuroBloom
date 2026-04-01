@@ -1,6 +1,8 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
+	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
+	import { locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -85,22 +87,26 @@
 				<h2>Profile Information</h2>
 				<div class="info-grid">
 					<div class="info-item">
-						<label>Email</label>
+						<p class="info-label">Email</p>
 						<p>{profile.email}</p>
 					</div>
 					<div class="info-item">
-						<label>Full Name</label>
+						<p class="info-label">Full Name</p>
 						<p>{profile.full_name || 'Not provided'}</p>
 					</div>
 					<div class="info-item">
-						<label>Date of Birth</label>
+						<p class="info-label">Date of Birth</p>
 						<p>{profile.date_of_birth || 'Not provided'}</p>
 					</div>
 					<div class="info-item">
-						<label>Diagnosis</label>
+						<p class="info-label">Diagnosis</p>
 						<p>{profile.diagnosis || 'Not provided'}</p>
 					</div>
 				</div>
+			</section>
+
+			<section class="settings-section">
+				<LanguagePreferencePanel />
 			</section>
 
 			<!-- Privacy Settings -->
@@ -110,14 +116,17 @@
 					<div class="consent-info">
 						<h3>Share Data with Healthcare Providers</h3>
 						<p>
-							Allow your assigned doctor to view your training progress, test results, and
-							performance metrics. This helps your healthcare provider monitor your cognitive
-							health and adjust treatment plans accordingly.
+							{translateText(
+								'Allow your assigned doctor to view your training progress, test results, and performance metrics. This helps your healthcare provider monitor your cognitive health and adjust treatment plans accordingly.',
+								$locale
+							)}
 						</p>
 						{#if !profile.consent_to_share}
 							<p class="warning">
-								⚠️ Without consent, doctors cannot view your data or provide personalized
-								support.
+								⚠️ {translateText(
+									'Without consent, doctors cannot view your data or provide personalized support.',
+									$locale
+								)}
 							</p>
 						{/if}
 					</div>
@@ -133,7 +142,9 @@
 							<span class="slider"></span>
 						</label>
 						<span class="consent-status">
-							{profile.consent_to_share ? 'Enabled' : 'Disabled'}
+							{profile.consent_to_share
+								? translateText('Enabled', $locale)
+								: translateText('Disabled', $locale)}
 						</span>
 					</div>
 				</div>
@@ -213,7 +224,7 @@
 		gap: 1.5rem;
 	}
 
-	.info-item label {
+	.info-label {
 		display: block;
 		font-weight: 600;
 		color: #666;

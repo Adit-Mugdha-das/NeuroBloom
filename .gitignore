@@ -42,6 +42,11 @@ Thumbs.db
 .DS_Store
 
 frontend-svelte/.svelte-kit/
+frontend-svelte/build/
+frontend-svelte/dist/
+frontend-svelte/vite.config.js.timestamp-*.mjs
+frontend-svelte/build-err.log
+frontend-svelte/build-out.log
 node_modules/
 dist/
 build/

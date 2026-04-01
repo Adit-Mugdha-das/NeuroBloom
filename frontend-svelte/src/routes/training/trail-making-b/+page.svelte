@@ -3,6 +3,13 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import {
+		formatNumber,
+		formatPercent,
+		locale,
+		localizeStimulusSymbol,
+		translateText
+	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -40,6 +47,49 @@
 	let practiceIndex = 0;
 	let practiceFeedback = null;
 
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function marker(value) {
+		return localizeStimulusSymbol(value, $locale);
+	}
+
+	function secondsLabel(value, options = {}) {
+		const formatted = n(value, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+		return $locale === 'bn' ? `${formatted} সেকেন্ড` : `${formatted}s`;
+	}
+
+	function levelLabel(value = difficulty) {
+		return $locale === 'bn' ? `লেভেল ${n(value)}` : `Level ${value}`;
+	}
+
+	function sequencePreview(values = practiceSequence) {
+		return values.map((value) => marker(value)).join(' → ');
+	}
+
+	function difficultyChangeLabel(before, after) {
+		return $locale === 'bn'
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
+	}
+
 	// Subscribe to user store
 	user.subscribe((value) => {
 		currentUser = value;
@@ -72,7 +122,7 @@
 			loading = false;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load training session. Please ensure backend is running and baseline is completed.');
+			alert(t('Failed to load training session. Please ensure backend is running and baseline is completed.'));
 			loading = false;
 		}
 	}
@@ -141,7 +191,7 @@
 			ctx.font = 'bold 20px Arial';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
-			ctx.fillText(circle.label, circle.x, circle.y);
+			ctx.fillText(marker(circle.label), circle.x, circle.y);
 		});
 
 		// Draw connections - only between already clicked circles
@@ -176,7 +226,9 @@
 				practiceIndex++;
 				practiceFeedback = {
 					type: 'success',
-					message: `✓ Correct! Next: ${practiceIndex < practiceCircles.length ? practiceSequence[practiceIndex] : 'All done!'}`
+					message: $locale === 'bn'
+						? `✓ সঠিক! পরেরটি: ${practiceIndex < practiceCircles.length ? marker(practiceSequence[practiceIndex]) : 'সব সম্পন্ন!'}`
+						: `✓ Correct! Next: ${practiceIndex < practiceCircles.length ? practiceSequence[practiceIndex] : 'All done!'}`
 				};
 				
 				drawPracticeCanvas();
@@ -189,7 +241,9 @@
 			} else {
 				practiceFeedback = {
 					type: 'error',
-					message: `✗ Wrong! You clicked "${clicked.label}" but should click "${expected.label}"`
+					message: $locale === 'bn'
+						? `✗ ভুল! আপনি "${marker(clicked.label)}" ক্লিক করেছেন, কিন্তু "${marker(expected.label)}" ক্লিক করা উচিত ছিল`
+						: `✗ Wrong! You clicked "${clicked.label}" but should click "${expected.label}"`
 				};
 			}
 		}
@@ -269,7 +323,7 @@
 			ctx.font = `bold ${getFontSize()}px Arial`;
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
-			ctx.fillText(circle.label, circle.x, circle.y);
+			ctx.fillText(marker(circle.label), circle.x, circle.y);
 		});
 	}
 
@@ -417,7 +471,7 @@
 			phase = 'results';
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results. Please try again.');
+			alert(t('Failed to submit results. Please try again.'));
 		}
 	}
 
@@ -432,7 +486,7 @@
 </script>
 
 <svelte:head>
-	<title>Trail Making Test - Part B | NeuroBloom</title>
+	<title>{t('Trail Making Test - Part B')} | NeuroBloom</title>
 </svelte:head>
 
 <svelte:window on:keydown={(e) => e.key === 'Escape' && phase !== 'results' && returnToDashboard()} />
@@ -441,7 +495,7 @@
 	{#if loading}
 		<div class="loading-state">
 			<div class="spinner"></div>
-			<p>Loading Trail Making Test - Part B...</p>
+			<p>{t('Loading Trail Making Test - Part B...')}</p>
 		</div>
 
 	{:else if phase === 'intro'}
@@ -449,32 +503,34 @@
 		<div class="intro-container">
 			<div class="intro-header">
 				<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-					<h1>Trail Making Test - Part B</h1>
+					<h1>{t('Trail Making Test - Part B')}</h1>
 					<DifficultyBadge {difficulty} domain="Cognitive Flexibility" />
 				</div>
-				<div class="classic-badge">Executive Function & Cognitive Flexibility Test</div>
+				<div class="classic-badge">{t('Executive Function & Cognitive Flexibility Test')}</div>
 			</div>
 
 			<div class="intro-content">
 				<div class="info-section">
-					<h2>📋 About This Test</h2>
+					<h2>{t('About This Test')}</h2>
 					<p>
-						The Trail Making Test - Part B is a <strong>gold standard neuropsychological test</strong> 
-						that measures cognitive flexibility, set-shifting, and divided attention.
+						{$locale === 'bn'
+							? 'Trail Making Test - Part B একটি সুপরিচিত নিউরোসাইকোলজিক্যাল পরীক্ষা, যা কগনিটিভ ফ্লেক্সিবিলিটি, সেট-শিফটিং ও বিভক্ত মনোযোগ মূল্যায়ন করে।'
+							: 'The Trail Making Test - Part B is a gold standard neuropsychological test that measures cognitive flexibility, set-shifting, and divided attention.'}
 					</p>
 					<p>
-						This test is widely used in clinical practice and research to assess executive function, 
-						particularly in Multiple Sclerosis (MS) patients.
+						{$locale === 'bn'
+							? 'এক্সিকিউটিভ ফাংশন মূল্যায়নের জন্য এটি ক্লিনিক্যাল চর্চা ও গবেষণায়, বিশেষ করে এমএস রোগীদের ক্ষেত্রে, বহুল ব্যবহৃত।'
+							: 'This test is widely used in clinical practice and research to assess executive function, particularly in Multiple Sclerosis (MS) patients.'}
 					</p>
 				</div>
 
 				<div class="info-section">
-					<h2>🎯 What You'll Do</h2>
+					<h2>{t("What You'll Do")}</h2>
 					<ul class="task-steps">
-						<li>Connect circles in alternating order: <strong>1 → A → 2 → B → 3 → C...</strong></li>
-						<li>Click each circle in the correct sequence</li>
-						<li>Work as quickly as possible while staying accurate</li>
-						<li>Complete before the time limit</li>
+						<li>{$locale === 'bn' ? `ক্রম বদলিয়ে বৃত্ত যুক্ত করুন: ${sequencePreview(['1', 'A', '2', 'B', '3', 'C'])}...` : 'Connect circles in alternating order: 1 → A → 2 → B → 3 → C...'}</li>
+						<li>{t('Click each circle in the correct sequence')}</li>
+						<li>{t('Work as quickly as possible while staying accurate')}</li>
+						<li>{t('Complete before the time limit')}</li>
 					</ul>
 				</div>
 
@@ -501,87 +557,85 @@
 				</div>
 
 				<div class="difficulty-info">
-					<span class="difficulty-label">Current Level:</span>
-					<span class="difficulty-value">Level {difficulty}</span>
+					<span class="difficulty-label">{t('Current Level:')}</span>
+					<span class="difficulty-value">{levelLabel()}</span>
 					<span class="items-info">
-						{sessionData.total_items} items • 
-						{sessionData.time_limit_seconds / 60} minute{sessionData.time_limit_seconds > 60 ? 's' : ''} limit
+						{n(sessionData.total_items)} {t('items')} • 
+						{$locale === 'bn'
+							? `${n(sessionData.time_limit_seconds / 60)} মিনিটের সীমা`
+							: `${sessionData.time_limit_seconds / 60} minute${sessionData.time_limit_seconds > 60 ? 's' : ''} limit`}
 					</span>
 				</div>
 			</div>
 
 			<div class="intro-actions">
-				<button class="btn btn-secondary" on:click={returnToDashboard}>
-					← Back to Dashboard
-				</button>
-				<button class="btn btn-primary" on:click={startInstructions}>
-					Continue to Instructions →
-				</button>
+				<button class="btn btn-secondary" on:click={returnToDashboard}>← {t('Back to Dashboard')}</button>
+				<button class="btn btn-primary" on:click={startInstructions}>{t('Continue to Instructions')} →</button>
 			</div>
 		</div>
 
 	{:else if phase === 'instructions'}
 		<!-- Instructions Screen -->
 		<div class="instructions-container">
-			<h2>How to Complete the Trail Making Test - Part B</h2>
+			<h2>{t('How to Complete the Trail Making Test - Part B')}</h2>
 
 			<div class="instruction-steps">
 				<div class="step-card">
 					<div class="step-number">1</div>
 					<div class="step-content">
-						<h3>Alternating Pattern</h3>
-						<p>Connect numbers and letters in alternating order:</p>
+						<h3>{t('Alternating Pattern')}</h3>
+						<p>{t('Connect numbers and letters in alternating order:')}</p>
 						<div class="sequence-example">
-							<span class="seq-item">1</span>
+							<span class="seq-item">{marker('1')}</span>
 							<span class="arrow">→</span>
-							<span class="seq-item">A</span>
+							<span class="seq-item">{marker('A')}</span>
 							<span class="arrow">→</span>
-							<span class="seq-item">2</span>
+							<span class="seq-item">{marker('2')}</span>
 							<span class="arrow">→</span>
-							<span class="seq-item">B</span>
+							<span class="seq-item">{marker('B')}</span>
 							<span class="arrow">→</span>
-							<span class="seq-item">3</span>
+							<span class="seq-item">{marker('3')}</span>
 							<span class="arrow">→</span>
-							<span class="seq-item">C</span>
+							<span class="seq-item">{marker('C')}</span>
 						</div>
-						<p class="tip">Always alternate: number → letter → number → letter</p>
+						<p class="tip">{t('Always alternate: number → letter → number → letter')}</p>
 					</div>
 				</div>
 
 				<div class="step-card">
 					<div class="step-number">2</div>
 					<div class="step-content">
-						<h3>Click in Sequence</h3>
-						<p>Click circles one at a time in the correct order. A line will connect them as you go.</p>
-						<p class="tip">Your most recent click will be highlighted in yellow to show progress</p>
+						<h3>{t('Click in Sequence')}</h3>
+						<p>{t('Click circles one at a time in the correct order. A line will connect them as you go.')}</p>
+						<p class="tip">{t('Your most recent click will be highlighted in yellow to show progress')}</p>
 					</div>
 				</div>
 
 				<div class="step-card">
 					<div class="step-number">3</div>
 					<div class="step-content">
-						<h3>Speed & Accuracy</h3>
-						<p>Work as <strong>quickly as possible</strong> while staying accurate.</p>
-						<p>If you make a mistake, the circle will briefly flash red - keep going!</p>
+						<h3>{t('Speed & Accuracy')}</h3>
+						<p>{$locale === 'bn' ? 'যত দ্রুত সম্ভব কাজ করুন, তবে নির্ভুলতাও বজায় রাখুন।' : 'Work as quickly as possible while staying accurate.'}</p>
+						<p>{t('If you make a mistake, the circle will briefly flash red - keep going!')}</p>
 					</div>
 				</div>
 
 				<div class="step-card warning">
 					<div class="step-number">!</div>
 					<div class="step-content">
-						<h3>Watch Out for Distractors</h3>
-						<p>Some circles may contain numbers or letters NOT in the sequence.</p>
-						<p class="tip">Only click circles that belong in the alternating pattern</p>
+						<h3>{t('Watch Out for Distractors')}</h3>
+						<p>{t('Some circles may contain numbers or letters NOT in the sequence.')}</p>
+						<p class="tip">{t('Only click circles that belong in the alternating pattern')}</p>
 					</div>
 				</div>
 			</div>
 
 			<div class="instructions-actions">
 				<button class="btn btn-secondary" on:click={() => phase = 'intro'}>
-					← Back
+					← {t('Back')}
 				</button>
 				<button class="btn btn-primary" on:click={startPractice}>
-					Start Practice Round →
+					{t('Start Practice Round')} →
 				</button>
 			</div>
 		</div>
@@ -589,8 +643,8 @@
 	{:else if phase === 'practice'}
 		<!-- Practice Round -->
 		<div class="practice-container">
-			<h2>Practice Round</h2>
-			<p class="practice-subtitle">Connect: 1 → A → 2 → B → 3</p>
+			<h2>{t('Practice Round')}</h2>
+			<p class="practice-subtitle">{t('Connect:')} {sequencePreview()}</p>
 
 			<div class="canvas-wrapper">
 				<canvas
@@ -609,7 +663,7 @@
 			{/if}
 
 			<div class="practice-hint">
-				Click the circles in order: 1 → A → 2 → B → 3
+				{t('Click the circles in order:')} {sequencePreview()}
 			</div>
 		</div>
 
@@ -617,16 +671,16 @@
 		<!-- Main Test -->
 		<div class="test-container">
 			<div class="test-header">
-				<h2>Trail Making Test - Part B</h2>
+				<h2>{t('Trail Making Test - Part B')}</h2>
 				<div class="header-info">
 					<div class="progress-info">
 						<span class="progress-text">
-							Progress: {currentIndex}/{sessionData.correct_sequence.length}
+							{t('Progress:')} {n(currentIndex)}/{n(sessionData.correct_sequence.length)}
 						</span>
 					</div>
 					<div class="timer-display">
 						<span class="timer-icon">⏱️</span>
-						<span class="timer-value">{elapsedTime.toFixed(1)}s</span>
+						<span class="timer-value">{secondsLabel(elapsedTime)}</span>
 					</div>
 				</div>
 			</div>
@@ -643,7 +697,7 @@
 			</div>
 
 			<div class="test-instructions">
-				Connect in order: 1 → A → 2 → B → 3 → C... | Click circles to connect
+				{t('Connect in order:')} {sequencePreview(['1', 'A', '2', 'B', '3', 'C'])}... | {t('Click circles to connect')}
 			</div>
 		</div>
 
@@ -656,9 +710,9 @@
 			{/if}
 
 			<div class="results-header">
-				<h2>Trail Making Test - Part B Complete!</h2>
+				<h2>{t('Trail Making Test - Part B Complete!')}</h2>
 				<div class="performance-badge {performanceBadgeColor}">
-					{metrics.performance_level}
+					{t(metrics.performance_level)}
 				</div>
 			</div>
 
@@ -666,74 +720,74 @@
 			<div class="metrics-grid">
 				<!-- Completion Time -->
 				<div class="metric-card time-card">
-					<div class="metric-label">Completion Time</div>
-					<div class="metric-value">{(metrics?.completion_time_seconds || 0).toFixed(1)}s</div>
+					<div class="metric-label">{t('Completion Time')}</div>
+					<div class="metric-value">{secondsLabel(metrics?.completion_time_seconds || 0)}</div>
 					<div class="metric-detail">
-						{metrics?.completed ? 'Finished' : 'Incomplete'}
+						{metrics?.completed ? t('Finished') : t('Incomplete')}
 					</div>
 				</div>
 
 				<!-- Accuracy -->
 				<div class="metric-card accuracy-card">
-					<div class="metric-label">Accuracy</div>
-					<div class="metric-value">{(metrics?.accuracy || 0).toFixed(1)}%</div>
+					<div class="metric-label">{t('Accuracy')}</div>
+					<div class="metric-value">{pct(metrics?.accuracy || 0)}</div>
 					<div class="metric-detail">
-						{metrics?.items_completed || 0}/{metrics?.total_items || 0} correct
+						{n(metrics?.items_completed || 0)}/{n(metrics?.total_items || 0)} {t('correct')}
 					</div>
 				</div>
 
 				<!-- Total Errors -->
 				<div class="metric-card error-card">
-					<div class="metric-label">Total Errors</div>
-					<div class="metric-value">{metrics?.total_errors || 0}</div>
+					<div class="metric-label">{t('Total Errors')}</div>
+					<div class="metric-value">{n(metrics?.total_errors || 0)}</div>
 					<div class="metric-detail">
-						{metrics?.sequence_errors || 0} sequence • 
-						{metrics?.perseverative_errors || 0} perseverative
+						{n(metrics?.sequence_errors || 0)} {t('sequence')} • 
+						{n(metrics?.perseverative_errors || 0)} {t('perseverative')}
 					</div>
 				</div>
 
 				<!-- B-A Score (if available) -->
 				{#if metrics?.b_a_score !== null}
 					<div class="metric-card ba-score-card">
-						<div class="metric-label">B-A Score</div>
-						<div class="metric-value">{(metrics?.b_a_score || 0).toFixed(1)}s</div>
-						<div class="metric-detail">Part B - Part A time</div>
+						<div class="metric-label">{t('B-A Score')}</div>
+						<div class="metric-value">{secondsLabel(metrics?.b_a_score || 0)}</div>
+						<div class="metric-detail">{t('Part B - Part A time')}</div>
 					</div>
 				{/if}
 			</div>
 
 			<!-- Clinical Interpretation -->
 			<div class="interpretation-section">
-				<h3>📊 Performance Analysis</h3>
+				<h3>{t('Performance Analysis')}</h3>
 				<p class="interpretation-text">{metrics?.interpretation || ''}</p>
 				
 				{#if metrics?.clinical_note}
 					<div class="clinical-note">
-						<strong>Clinical Note:</strong> {metrics.clinical_note}
+						<strong>{t('Clinical Note:')}</strong> {t(metrics.clinical_note)}
 					</div>
 				{/if}
 			</div>
 
 			<!-- Performance Details -->
 			<div class="details-section">
-				<h3>📈 Detailed Breakdown</h3>
+				<h3>{t('Detailed Breakdown')}</h3>
 				
 				<div class="detail-grid">
 					<div class="detail-item">
-						<span class="detail-label">Percentile Rank:</span>
-						<span class="detail-value">{metrics?.percentile || 0}th</span>
+						<span class="detail-label">{t('Percentile Rank:')}</span>
+						<span class="detail-value">{$locale === 'bn' ? `${n(metrics?.percentile || 0)}তম` : `${metrics?.percentile || 0}th`}</span>
 					</div>
 					<div class="detail-item">
-						<span class="detail-label">Adjusted Time:</span>
-						<span class="detail-value">{(metrics?.adjusted_time_seconds || 0).toFixed(1)}s</span>
+						<span class="detail-label">{t('Adjusted Time:')}</span>
+						<span class="detail-value">{secondsLabel(metrics?.adjusted_time_seconds || 0)}</span>
 					</div>
 					<div class="detail-item">
-						<span class="detail-label">Items Completed:</span>
-						<span class="detail-value">{metrics?.items_completed || 0}/{metrics?.total_items || 0}</span>
+						<span class="detail-label">{t('Items Completed:')}</span>
+						<span class="detail-value">{n(metrics?.items_completed || 0)}/{n(metrics?.total_items || 0)}</span>
 					</div>
 					<div class="detail-item">
-						<span class="detail-label">Difficulty Level:</span>
-						<span class="detail-value">Level {metrics?.difficulty || 1}</span>
+						<span class="detail-label">{t('Difficulty Level:')}</span>
+						<span class="detail-value">{levelLabel(metrics?.difficulty || 1)}</span>
 					</div>
 				</div>
 			</div>
@@ -741,28 +795,28 @@
 			<!-- Error Analysis (if errors occurred) -->
 			{#if metrics?.total_errors > 0}
 				<div class="errors-section">
-					<h3>⚠️ Error Analysis</h3>
+					<h3>{t('Error Analysis')}</h3>
 					<div class="error-breakdown">
 						<div class="error-stat">
 							<span class="error-count">{metrics?.sequence_errors || 0}</span>
-							<span class="error-type">Sequence Errors</span>
-							<span class="error-desc">Wrong circle clicked</span>
+							<span class="error-type">{t('Sequence Errors')}</span>
+							<span class="error-desc">{t('Wrong circle clicked')}</span>
 						</div>
 						<div class="error-stat">
 							<span class="error-count">{metrics?.perseverative_errors || 0}</span>
-							<span class="error-type">Perseverative Errors</span>
-							<span class="error-desc">Clicked previous circle again</span>
+							<span class="error-type">{t('Perseverative Errors')}</span>
+							<span class="error-desc">{t('Clicked previous circle again')}</span>
 						</div>
 					</div>
 					<p class="error-tip">
-						💡 Tip: Focus on the alternating pattern (number-letter-number-letter) and take your time to verify before clicking.
+						{t('Tip: Focus on the alternating pattern (number-letter-number-letter) and take your time to verify before clicking.')}
 					</p>
 				</div>
 			{/if}
 
 			<div class="results-actions">
 				<button class="btn btn-secondary" on:click={returnToDashboard}>
-					← Back to Dashboard
+					← {t('Back to Dashboard')}
 				</button>
 			</div>
 		</div>

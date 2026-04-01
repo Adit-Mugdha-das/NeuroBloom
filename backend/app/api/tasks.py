@@ -333,10 +333,12 @@ def generate_verbal_fluency_session(
     try:
         difficulty = request.get("difficulty", 1)
         baseline_score = request.get("baseline_score")
+        locale = request.get("locale", "en")
         
         session_data = verbal_fluency_task_service.generate_session(
             difficulty=difficulty,
-            baseline_score=baseline_score
+            baseline_score=baseline_score,
+            locale=locale
         )
         return session_data
     except Exception as e:

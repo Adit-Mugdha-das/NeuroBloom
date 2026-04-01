@@ -215,9 +215,9 @@ class CategoryFluencyTask:
         """
         if not word or len(word.strip()) == 0:
             return False
-        
-        # Must contain at least one letter
-        return bool(re.search(r'[a-zA-Z]', word))
+
+        # Accept alphabetic input across scripts so Bangla responses work too.
+        return any(char.isalpha() for char in word.strip())
     
     @staticmethod
     def score_response(submitted_words: List[str], time_taken_seconds: float, difficulty: int) -> Dict[str, Any]:

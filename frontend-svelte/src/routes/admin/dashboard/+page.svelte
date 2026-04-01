@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
+	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -170,6 +171,13 @@
 				{/each}
 			</div>
 		{:else}
+			<div class="language-block">
+				<LanguagePreferencePanel
+					title="Language Preference"
+					description="Choose the admin workspace language for navigation, system dashboards, and visible metrics."
+				/>
+			</div>
+
 			<div class="stats-grid">
 				<div class="stat-card">
 					<div class="stat-icon-wrap blue">
@@ -337,6 +345,10 @@
 </div>
 
 <style>
+	.language-block {
+		margin-bottom: 1.5rem;
+	}
+
 	.admin-layout {
 		display: flex;
 		min-height: 100vh;

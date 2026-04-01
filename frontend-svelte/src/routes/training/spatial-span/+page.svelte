@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -27,6 +28,40 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function trialLabel(current, total) {
+		return $locale === 'bn' ? `ট্রায়াল ${n(current)} / ${n(total)}` : `Trial ${current} of ${total}`;
+	}
+
+	function spanModeLabel(mode) {
+		if (mode === 'backward') {
+			return $locale === 'bn' ? '⬅️ উল্টো ক্রম' : '⬅️ Backward';
+		}
+
+		return $locale === 'bn' ? '➡️ সামনের ক্রম' : '➡️ Forward';
+	}
+
+	function difficultyChangeLabel(before, after) {
+		return $locale === 'bn'
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
+	}
 
 	// Timings come from each trial's display_ms / interval_ms set by the backend
 	// based on the exact difficulty level — no coarse frontend brackets needed.
@@ -83,7 +118,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load task session');
+			alert(t('Failed to load task session'));
 			goto('/dashboard');
 		}
 	}
@@ -202,7 +237,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 		}
 	}
 
@@ -226,90 +261,86 @@
 	}
 </script>
 
-<div class="spatial-span-container">
+<div class="spatial-span-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading Spatial Span Task...</p>
+			<p>{t('Loading Spatial Span Task...')}</p>
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>🎯 Spatial Span Test (Corsi Blocks)</h1>
+				<h1>{t('Spatial Span Test (Corsi Blocks)')}</h1>
 				<DifficultyBadge {difficulty} domain="Working Memory" />
 			</div>
 
 			<div class="instruction-card">
-				<h2>How It Works</h2>
-				<p>Blocks will light up in a specific sequence. Your job is to remember the pattern.</p>
+				<h2>{t('How It Works')}</h2>
+				<p>{t('Blocks will light up in a specific sequence. Your job is to remember the pattern.')}</p>
 				
 				<div class="task-types">
 					<div class="type-card">
-						<h3>➡️ Forward Span</h3>
-						<p>Click blocks in the <strong>same order</strong> they lit up</p>
+						<h3>{t('Forward Span')}</h3>
+						<p>{t('Click blocks in the same order they lit up')}</p>
 					</div>
 					<div class="type-card">
-						<h3>⬅️ Backward Span</h3>
-						<p>Click blocks in <strong>reverse order</strong></p>
+						<h3>{t('Backward Span')}</h3>
+						<p>{t('Click blocks in reverse order')}</p>
 					</div>
 				</div>
 				
 				<div class="tips">
-					<h3>💡 Memory Strategies</h3>
+					<h3>{t('Memory Strategies')}</h3>
 					<ul>
-						<li><strong>Visualize the path:</strong> Imagine drawing a line connecting the blocks</li>
-						<li><strong>Spatial chunking:</strong> Group blocks into patterns (L-shape, diagonal, etc.)</li>
-						<li><strong>Mental rehearsal:</strong> Replay the sequence in your mind before responding</li>
+						<li><strong>{t('Visualize the path:')}</strong> {t('Imagine drawing a line connecting the blocks')}</li>
+						<li><strong>{t('Spatial chunking:')}</strong> {t('Group blocks into patterns (L-shape, diagonal, etc.)')}</li>
+						<li><strong>{t('Mental rehearsal:')}</strong> {t('Replay the sequence in your mind before responding')}</li>
 					</ul>
 				</div>
 			</div>
 			
 			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				Start Training Session
+				{t('Start Training Session')}
 			</button>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>Trial {currentTrialIndex + 1} of {trials.length}</h2>
+			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
 			{#if currentTrial}
-				<p class="span-type">
-					{currentTrial.span_type === 'backward' ? '⬅️ Backward' : '➡️ Forward'} Span
-				</p>
+				<p class="span-type">{spanModeLabel(currentTrial.span_type)} {t('Span')}</p>
 			{/if}
-			<p>Watch carefully...</p>
+			<p>{t('Watch carefully...')}</p>
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
 			<div class="header">
 				<div class="trial-info">
-					<span class="trial-number">Trial {currentTrialIndex + 1}/{trials.length}</span>
-					<span class="span-type">
-						{currentTrial.span_type === 'backward' ? '⬅️ Backward' : '➡️ Forward'}
-					</span>
+					<span class="trial-number">{$locale === 'bn' ? `ট্রায়াল ${n(currentTrialIndex + 1)}/${n(trials.length)}` : `Trial ${currentTrialIndex + 1}/${trials.length}`}</span>
+					<span class="span-type">{spanModeLabel(currentTrial.span_type)}</span>
 				</div>
 				<button class="help-button" on:click={toggleHelp}>?</button>
 			</div>
 
 			{#if state === STATE.SHOWING}
-				<p class="instruction">Watch the sequence...</p>
+				<p class="instruction">{t('Watch the sequence...')}</p>
 			{:else}
 				<div class="input-header">
 					<p class="instruction">
-						{#if currentTrial.span_type === 'backward'}
-							Click blocks in <strong>REVERSE</strong> order
-						{:else}
-							Click blocks in the <strong>SAME</strong> order
-						{/if}
+						{t(
+							currentTrial.span_type === 'backward'
+								? 'Click blocks in REVERSE order'
+								: 'Click blocks in the SAME order'
+						)}
 					</p>
 					<div class="control-buttons">
 						<button class="control-btn" on:click={undoLastClick} disabled={userResponse.length === 0}>
-							↶ Undo
+							↶ {t('Undo')}
 						</button>
 						<button class="control-btn" on:click={clearClicks} disabled={userResponse.length === 0}>
-							✕ Clear
+							✕ {t('Clear')}
 						</button>
 						<button class="submit-btn" on:click={completeResponse} disabled={userResponse.length === 0}>
-							Submit ✓
+							{t('Submit')} ✓
 						</button>
 					</div>
 				</div>
@@ -344,55 +375,52 @@
 				{checkCorrect() ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
-				{checkCorrect() ? 'Correct!' : 'Incorrect'}
+				{checkCorrect() ? t('Correct!') : t('Incorrect')}
 			</p>
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>Session Complete! 🎉</h1>
+			<h1>{t('Session Complete!')} 🎉</h1>
 			
 			<div class="results-grid">
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.score}</div>
-					<div class="result-label">Score</div>
+					<div class="result-value">{n(sessionResults.metrics.score)}</div>
+					<div class="result-label">{t('Score')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.accuracy.toFixed(1)}%</div>
-					<div class="result-label">Accuracy</div>
+					<div class="result-value">{pct(sessionResults.metrics.accuracy)}</div>
+					<div class="result-label">{t('Accuracy')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.longest_span}</div>
-					<div class="result-label">Longest Span</div>
+					<div class="result-value">{n(sessionResults.metrics.longest_span)}</div>
+					<div class="result-label">{t('Longest Span')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.consistency.toFixed(1)}%</div>
-					<div class="result-label">Consistency</div>
+					<div class="result-value">{pct(sessionResults.metrics.consistency)}</div>
+					<div class="result-label">{t('Consistency')}</div>
 				</div>
 			</div>
 
 			<div class="span-breakdown">
-				<h3>Performance Breakdown</h3>
+				<h3>{t('Performance Breakdown')}</h3>
 				<div class="breakdown-row">
-					<span>Forward Span:</span>
-					<span>{sessionResults.metrics.forward_accuracy.toFixed(1)}%</span>
+					<span>{t('Forward Span:')}</span>
+					<span>{pct(sessionResults.metrics.forward_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>Backward Span:</span>
-					<span>{sessionResults.metrics.backward_accuracy.toFixed(1)}%</span>
+					<span>{t('Backward Span:')}</span>
+					<span>{pct(sessionResults.metrics.backward_accuracy)}</span>
 				</div>
 			</div>
 
 			<div class="difficulty-info">
-				<p>
-					Difficulty: <strong>{sessionResults.difficulty_before}</strong> → 
-					<strong>{sessionResults.difficulty_after}</strong>
-				</p>
-				<p class="adaptation-reason">{sessionResults.adaptation_reason}</p>
+				<p>{difficultyChangeLabel(sessionResults.difficulty_before, sessionResults.difficulty_after)}</p>
+				<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
 			</div>
 
 			{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 				<div class="new-badges">
-					<h3>🏆 New Badges Earned!</h3>
+					<h3>{t('New Badges Earned!')}</h3>
 					{#each sessionResults.new_badges as badge}
 						<div class="badge">
 							<span class="badge-icon">{badge.icon}</span>
@@ -403,8 +431,8 @@
 			{/if}
 
 			<div class="actions">
-				<button on:click={() => goto('/training')}>Back to Training</button>
-				<button on:click={() => goto('/dashboard')}>View Dashboard</button>
+				<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
+				<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 			</div>
 		</div>
 	{/if}
@@ -424,27 +452,27 @@
 			on:click|stopPropagation
 			on:keydown|stopPropagation
 		>
-			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>Memory Strategies</h2>
+			<button class="close-button" on:click={toggleHelp}>&times;</button>
+			<h2>{t('Memory Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>🎨 Visual Imagery</h3>
-				<p>Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.</p>
+				<h3>🎨 {t('Visual Imagery')}</h3>
+				<p>{t('Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧩 Spatial Chunking</h3>
-				<p>Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.</p>
+				<h3>🧩 {t('Spatial Chunking')}</h3>
+				<p>{t('Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 Mental Rehearsal</h3>
-				<p>After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.</p>
+				<h3>🔄 {t('Mental Rehearsal')}</h3>
+				<p>{t('After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>📍 Landmark Method</h3>
-				<p>Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.</p>
+				<h3>📍 {t('Landmark Method')}</h3>
+				<p>{t('Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.')}</p>
 			</div>
 		</div>
 	</div>

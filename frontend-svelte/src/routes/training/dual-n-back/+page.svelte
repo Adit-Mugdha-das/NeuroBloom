@@ -1,8 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import { formatNumber, formatPercent, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { onMount } from 'svelte';
 
@@ -38,6 +40,79 @@
 	let newBadges = [];
 	let feedbackSummary = null;
 	let isDisposed = false;
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, options);
+	}
+
+	function stimulus(value) {
+		return localizeStimulusSymbol(value, $locale);
+	}
+
+	function roundLabel(current, total) {
+		return $locale === 'bn' ? `রাউন্ড ${n(current)} / ${n(total)}` : `Round ${current} of ${total}`;
+	}
+
+	function nBackLabel(value) {
+		return $locale === 'bn' ? `${n(value)}-ব্যাক` : `${value}-Back`;
+	}
+
+	function levelLabel(value) {
+		return $locale === 'bn' ? `লেভেল ${n(value)}` : `Level ${value}`;
+	}
+
+	function wholePercent(value, options = {}) {
+		return pct((Number(value) || 0) / 100, options);
+	}
+
+	function introSubtitle(level) {
+		if ($locale === 'bn') {
+			return `একই সঙ্গে চলমান ভিজ্যুয়াল অবস্থান এবং শোনা অক্ষর লক্ষ্য করুন। ${n(level)} ধাপ আগেরটির সঙ্গে মিললে উত্তর দিন।`;
+		}
+		return `Track a moving visual location and a spoken letter at the same time. Respond when either one matches what appeared ${level} steps back.`;
+	}
+
+	function observeInstruction(level) {
+		if ($locale === 'bn') {
+			return `${n(level)}টি আইটেম দেখা না হওয়া পর্যন্ত শুধু দেখুন এবং ক্রমটি মনে রাখুন।`;
+		}
+		return `Matches can happen separately or together. During the first ${level} items, just observe the stream and build the sequence in memory.`;
+	}
+
+	function roundIntroTitle(level) {
+		return $locale === 'bn' ? `${nBackLabel(level)} সিকোয়েন্স শুরু হচ্ছে` : `${level}-Back Sequence Incoming`;
+	}
+
+	function roundIntroSupport() {
+		return $locale === 'bn'
+			? 'মাঝখানে মনোযোগ রাখুন। গ্রিডের আলো আর শোনা সংকেত কয়েক মুহূর্তের মধ্যেই শুরু হবে।'
+			: 'Stay centered. The grid flash and the spoken cue will start in a moment.';
+	}
+
+	function focusRoundTitle(level) {
+		return $locale === 'bn' ? `${nBackLabel(level)} মনোযোগ রাউন্ড` : `${level}-Back Focus Round`;
+	}
+
+	function responseSupportLabel() {
+		if (responseEnabled) {
+			return t('Mark visual and audio matches before the next cue arrives.');
+		}
+		return $locale === 'bn'
+			? `${n(currentNLevel)}টি আইটেম না আসা পর্যন্ত শুধু লক্ষ্য করুন।`
+			: `Observe only until ${currentNLevel} items have appeared.`;
+	}
+
+	function adaptationReasonLabel(reason) {
+		return translateText(reason || '', $locale);
+	}
 
 	onMount(() => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -84,7 +159,7 @@
 			}
 
 			const queryDifficulty = Number.parseInt($page.url.searchParams.get('difficulty') || '', 10);
-			const planResponse = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
+			const planResponse = await fetch(`${API_BASE_URL}/api/training/training-plan/${userId}`);
 			const plan = await planResponse.json();
 
 			let userDifficulty = 5;
@@ -101,7 +176,7 @@
 			difficulty = userDifficulty;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/dual-n-back/generate/${userId}?difficulty=${difficulty}&num_trials=4`,
+				`${API_BASE_URL}/api/training/tasks/dual-n-back/generate/${userId}?difficulty=${difficulty}&num_trials=4`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -117,7 +192,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Dual N-Back session:', error);
-			alert('Failed to load Dual N-Back');
+			alert(t('Failed to load Dual N-Back'));
 			goto('/dashboard');
 		}
 	}
@@ -139,7 +214,9 @@
 
 		try {
 			window.speechSynthesis.cancel();
-			const utterance = new SpeechSynthesisUtterance(letter);
+			const spokenLetter = stimulus(letter);
+			const utterance = new SpeechSynthesisUtterance(spokenLetter);
+			utterance.lang = $locale === 'bn' ? 'bn-BD' : 'en-US';
 			utterance.rate = 0.85;
 			utterance.pitch = 1;
 			utterance.volume = 1;
@@ -240,7 +317,7 @@
 			const durationSeconds = Math.max(1, Math.round((Date.now() - sessionStartedAt) / 1000));
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/dual-n-back/submit/${userId}`,
+				`${API_BASE_URL}/api/training/tasks/dual-n-back/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -262,7 +339,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting Dual N-Back session:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 			goto('/dashboard');
 		}
 	}
@@ -286,50 +363,44 @@
 			: 0;
 </script>
 
-<div class="dual-n-back-page">
+<div class="dual-n-back-page" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
 		<section class="hero-card">
 			<div class="hero-header">
 				<div>
-					<p class="eyebrow">Working Memory Training</p>
-					<h1>Dual N-Back</h1>
-					<p class="subtitle">
-						Track a moving visual location and a spoken letter at the same time. Respond when either
-						one matches what appeared {sessionData.instructions.n_level} steps back.
-					</p>
+					<p class="eyebrow">{t('Working Memory Training')}</p>
+					<h1>{t('Dual N-Back')}</h1>
+					<p class="subtitle">{introSubtitle(sessionData.instructions.n_level)}</p>
 				</div>
 				<DifficultyBadge {difficulty} domain="Working Memory" />
 			</div>
 
 			<div class="intro-grid">
 				<div class="info-card emphasis">
-					<h2>How To Respond</h2>
+					<h2>{t('How To Respond')}</h2>
 					<div class="control-pills">
-						<span>Visual match: <strong>V</strong></span>
-						<span>Audio match: <strong>A</strong></span>
+						<span>{t('Visual match:')} <strong>V</strong></span>
+						<span>{t('Audio match:')} <strong>A</strong></span>
 					</div>
-					<p>
-						Matches can happen separately or together. During the first {sessionData.instructions.n_level}
-						items, just observe the stream and build the sequence in memory.
-					</p>
+					<p>{observeInstruction(sessionData.instructions.n_level)}</p>
 				</div>
 
 				<div class="info-card">
-					<h2>Session Layout</h2>
+					<h2>{t('Session Layout')}</h2>
 					<div class="stats-row">
 						<div>
-							<span class="stat-label">Rounds</span>
-							<strong>{sessionData.num_trials}</strong>
+							<span class="stat-label">{t('Rounds')}</span>
+							<strong>{n(sessionData.num_trials)}</strong>
 						</div>
 						<div>
-							<span class="stat-label">N-Level</span>
-							<strong>{sessionData.instructions.n_level}-back</strong>
+							<span class="stat-label">{t('N-Level')}</span>
+							<strong>{nBackLabel(sessionData.instructions.n_level)}</strong>
 						</div>
 						<div>
-							<span class="stat-label">Audio</span>
-							<strong>{speechEnabled ? 'Enabled' : 'Visual fallback only'}</strong>
+							<span class="stat-label">{t('Audio')}</span>
+							<strong>{speechEnabled ? t('Enabled') : t('Visual fallback only')}</strong>
 						</div>
 					</div>
 				</div>
@@ -337,47 +408,47 @@
 
 			<div class="tips-card">
 				<div class="tips-header">
-					<h2>Performance Tips</h2>
+					<h2>{t('Performance Tips')}</h2>
 					<button class="ghost-button" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Hide details' : 'Show details'}
+						{showHelp ? t('Hide details') : t('Show details')}
 					</button>
 				</div>
 				<ul>
-					<li>Keep your eyes on the grid center and let peripheral motion guide you.</li>
-					<li>Respond only when you are confident. False alarms make the task harder fast.</li>
-					<li>Use a steady internal rhythm rather than trying to rush each cue.</li>
+					<li>{t('Keep your eyes on the grid center and let peripheral motion guide you.')}</li>
+					<li>{t('Respond only when you are confident. False alarms make the task harder fast.')}</li>
+					<li>{t('Use a steady internal rhythm rather than trying to rush each cue.')}</li>
 				</ul>
 
 				{#if showHelp}
 					<div class="help-panel">
-						<p><strong>Warm-up phase:</strong> no responses needed until enough items have appeared.</p>
-						<p><strong>Dual matches:</strong> press both controls if both the position and letter repeat.</p>
-						<p><strong>Fallback:</strong> if speech synthesis is blocked by the browser, the task still runs but the audio load is reduced.</p>
+						<p><strong>{t('Warm-up phase:')}</strong> {t('no responses needed until enough items have appeared.')}</p>
+						<p><strong>{t('Dual matches:')}</strong> {t('press both controls if both the position and letter repeat.')}</p>
+						<p><strong>{t('Fallback:')}</strong> {t('if speech synthesis is blocked by the browser, the task still runs but the audio load is reduced.')}</p>
 					</div>
 				{/if}
 			</div>
 
 			<div class="action-row">
-				<button class="primary-button" on:click={startSession}>Start Dual N-Back</button>
-				<button class="secondary-button" on:click={() => goto('/training')}>Back to Training</button>
+				<button class="primary-button" on:click={startSession}>{t('Start Dual N-Back')}</button>
+				<button class="secondary-button" on:click={() => goto('/training')}>{t('Return to Training')}</button>
 			</div>
 		</section>
 	{:else if state === STATE.ROUND_INTRO}
 		<section class="play-card intro-state">
-			<p class="eyebrow">Round {currentTrialIndex + 1} of {trials.length}</p>
-			<h2>{currentNLevel}-Back Sequence Incoming</h2>
-			<p>Stay centered. The grid flash and the spoken cue will start in a moment.</p>
+			<p class="eyebrow">{roundLabel(currentTrialIndex + 1, trials.length)}</p>
+			<h2>{roundIntroTitle(currentNLevel)}</h2>
+			<p>{roundIntroSupport()}</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="play-card">
 			<div class="play-header">
 				<div>
-					<p class="eyebrow">Round {currentTrialIndex + 1} of {trials.length}</p>
-					<h2>{currentNLevel}-Back Focus Round</h2>
+					<p class="eyebrow">{roundLabel(currentTrialIndex + 1, trials.length)}</p>
+					<h2>{focusRoundTitle(currentNLevel)}</h2>
 				</div>
 				<div class="status-cluster">
-					<span class="status-chip">{currentStimulusIndex + 1} / {currentTrial.stimuli.length}</span>
-					<span class="status-chip muted">{responseEnabled ? 'Response live' : 'Warm-up'}</span>
+					<span class="status-chip">{n(currentStimulusIndex + 1)} / {n(currentTrial.stimuli.length)}</span>
+					<span class="status-chip muted">{responseEnabled ? t('Response live') : t('Warm-up')}</span>
 				</div>
 			</div>
 
@@ -387,7 +458,7 @@
 
 			<div class="arena">
 				<div class="grid-card">
-					<div class="grid-label">Visual Stream</div>
+					<div class="grid-label">{t('Visual Stream')}</div>
 					<div class="grid-board">
 						{#each Array(9) as _, index}
 							<div class={gridCellClasses(index)}></div>
@@ -396,13 +467,9 @@
 				</div>
 
 				<div class="cue-card">
-					<div class="cue-label">Audio Stream</div>
-					<div class="cue-letter">{speechEnabled ? 'Speaker cue active' : currentLetter}</div>
-					<p class="cue-support">
-						{responseEnabled
-							? 'Mark visual and audio matches before the next cue arrives.'
-							: `Observe only until ${currentNLevel} items have appeared.`}
-					</p>
+					<div class="cue-label">{t('Audio Stream')}</div>
+					<div class="cue-letter">{speechEnabled ? t('Speaker cue active') : stimulus(currentLetter)}</div>
+					<p class="cue-support">{responseSupportLabel()}</p>
 				</div>
 			</div>
 
@@ -413,7 +480,7 @@
 					disabled={!responseEnabled || responseLocked}
 				>
 					<span class="keycap">V</span>
-					<span>Visual Match</span>
+					<span>{t('Visual Match')}</span>
 				</button>
 
 				<button
@@ -422,37 +489,49 @@
 					disabled={!responseEnabled || responseLocked}
 				>
 					<span class="keycap">A</span>
-					<span>Audio Match</span>
+					<span>{t('Audio Match')}</span>
 				</button>
 			</div>
 		</section>
 	{:else if state === STATE.TRIAL_FEEDBACK}
 		<section class="play-card feedback-state">
-			<p class="eyebrow">Round {currentTrialIndex + 1} complete</p>
-			<h2>Round Review</h2>
+			<p class="eyebrow">
+				{$locale === 'bn'
+					? `রাউন্ড ${n(currentTrialIndex + 1)} সম্পন্ন`
+					: `Round ${currentTrialIndex + 1} complete`}
+			</p>
+			<h2>{t('Round Review')}</h2>
 			<div class="feedback-grid">
 				<div class="feedback-metric">
-					<span>Eligible cues</span>
-					<strong>{feedbackSummary.eligibleStimuli}</strong>
+					<span>{t('Eligible cues')}</span>
+					<strong>{n(feedbackSummary.eligibleStimuli)}</strong>
 				</div>
 				<div class="feedback-metric">
-					<span>Visual decisions correct</span>
-					<strong>{feedbackSummary.correctVisual}</strong>
+					<span>{t('Visual decisions correct')}</span>
+					<strong>{n(feedbackSummary.correctVisual)}</strong>
 				</div>
 				<div class="feedback-metric">
-					<span>Audio decisions correct</span>
-					<strong>{feedbackSummary.correctAudio}</strong>
+					<span>{t('Audio decisions correct')}</span>
+					<strong>{n(feedbackSummary.correctAudio)}</strong>
 				</div>
 			</div>
-			<p class="feedback-note">The next round keeps pressure on both accuracy and selective response control.</p>
+			<p class="feedback-note">
+				{$locale === 'bn'
+					? 'পরের রাউন্ডেও নির্ভুলতা এবং বেছে সাড়া দেওয়ার নিয়ন্ত্রণ সমান গুরুত্বপূর্ণ থাকবে।'
+					: 'The next round keeps pressure on both accuracy and selective response control.'}
+			</p>
 		</section>
 	{:else if state === STATE.COMPLETE}
 		<section class="hero-card complete-state">
 			<div class="hero-header">
 				<div>
-					<p class="eyebrow">Session Complete</p>
-					<h1>Dual N-Back Results</h1>
-					<p class="subtitle">Your working-memory score reflects both update accuracy and false-alarm control.</p>
+					<p class="eyebrow">{t('Session Complete')}</p>
+					<h1>{$locale === 'bn' ? 'ডুয়াল এন-ব্যাক ফলাফল' : 'Dual N-Back Results'}</h1>
+					<p class="subtitle">
+						{$locale === 'bn'
+							? 'আপনার ওয়ার্কিং মেমরি স্কোর আপডেটের নির্ভুলতা ও ভুল সংকেত নিয়ন্ত্রণ - দুটিকেই দেখায়।'
+							: 'Your working-memory score reflects both update accuracy and false-alarm control.'}
+					</p>
 				</div>
 			</div>
 
@@ -464,41 +543,41 @@
 
 			<div class="results-grid">
 				<div class="result-card primary">
-					<span>Overall score</span>
-					<strong>{sessionResults.metrics.score}</strong>
+					<span>{t('Overall score')}</span>
+					<strong>{n(sessionResults.metrics.score)}</strong>
 				</div>
 				<div class="result-card">
-					<span>Accuracy</span>
-					<strong>{sessionResults.metrics.accuracy.toFixed(1)}%</strong>
+					<span>{t('Accuracy')}</span>
+					<strong>{wholePercent(sessionResults.metrics.accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
 				</div>
 				<div class="result-card">
-					<span>Visual accuracy</span>
-					<strong>{sessionResults.metrics.visual_accuracy.toFixed(1)}%</strong>
+					<span>{t('Visual accuracy')}</span>
+					<strong>{wholePercent(sessionResults.metrics.visual_accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
 				</div>
 				<div class="result-card">
-					<span>Audio accuracy</span>
-					<strong>{sessionResults.metrics.audio_accuracy.toFixed(1)}%</strong>
+					<span>{t('Audio accuracy')}</span>
+					<strong>{wholePercent(sessionResults.metrics.audio_accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
 				</div>
 				<div class="result-card">
-					<span>Dual-match accuracy</span>
-					<strong>{sessionResults.metrics.dual_accuracy.toFixed(1)}%</strong>
+					<span>{t('Dual-match accuracy')}</span>
+					<strong>{wholePercent(sessionResults.metrics.dual_accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
 				</div>
 				<div class="result-card">
-					<span>Highest load</span>
-					<strong>{sessionResults.metrics.n_level}-back</strong>
+					<span>{t('Highest load')}</span>
+					<strong>{nBackLabel(sessionResults.metrics.n_level)}</strong>
 				</div>
 			</div>
 
 			<div class="difficulty-summary">
-				<div class="difficulty-pill">Level {sessionResults.difficulty_before}</div>
+				<div class="difficulty-pill">{levelLabel(sessionResults.difficulty_before)}</div>
 				<div class="difficulty-arrow">→</div>
-				<div class="difficulty-pill accent">Level {sessionResults.difficulty_after}</div>
+				<div class="difficulty-pill accent">{levelLabel(sessionResults.difficulty_after)}</div>
 			</div>
-			<p class="difficulty-reason">{sessionResults.adaptation_reason}</p>
+			<p class="difficulty-reason">{adaptationReasonLabel(sessionResults.adaptation_reason)}</p>
 
 			<div class="action-row">
-				<button class="primary-button" on:click={() => goto('/training')}>Return to Training</button>
-				<button class="secondary-button" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
+				<button class="primary-button" on:click={() => goto('/training')}>{t('Return to Training')}</button>
+				<button class="secondary-button" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
 			</div>
 		</section>
 	{/if}

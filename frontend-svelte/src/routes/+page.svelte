@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import { locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	
 	let currentUser = null;
@@ -11,6 +12,10 @@
 	function continueToDashboard() {
 		goto('/dashboard');
 	}
+
+	$: welcomeMessage = currentUser
+		? translateText(`Welcome back, ${currentUser.email}!`, $locale)
+		: '';
 </script>
 
 <div class="auth-container">
@@ -21,12 +26,12 @@
 		{#if currentUser}
 			<div style="margin-top: 30px;">
 				<p style="color: #667eea; font-weight: 600; margin-bottom: 20px;">
-					Welcome back, {currentUser.email}!
+					{welcomeMessage}
 				</p>
 				<button class="btn" on:click={continueToDashboard}>
 					Continue to Dashboard
 				</button>
-				<a href="/login">
+				<a href="/login?reset=1">
 					<button class="btn-secondary" style="width: 100%; margin-top: 10px;">
 						Switch Account
 					</button>

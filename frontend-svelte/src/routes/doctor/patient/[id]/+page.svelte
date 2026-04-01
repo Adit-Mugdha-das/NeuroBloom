@@ -319,10 +319,11 @@
 		<section class="hero-card">
 			<div>
 				<p class="eyebrow">Clinical Summary</p>
-				<h2>{patientData.patient_info.diagnosis || 'Diagnosis not recorded'}</h2>
+				<h2 data-localize-skip>{patientData.patient_info.diagnosis || 'Diagnosis not recorded'}</h2>
 				<p class="hero-copy">
 					{#if patientData.patient_info.treatment_goal}
-						Treatment goal: {patientData.patient_info.treatment_goal}
+						<span>Treatment goal:</span>
+						<span data-localize-skip> {patientData.patient_info.treatment_goal}</span>
 					{:else}
 						No explicit treatment goal has been recorded yet.
 					{/if}
@@ -452,14 +453,14 @@
 								<span class="type-pill">{formatDomainLabel(intervention.type)}</span>
 								<span class="date-copy">{formatDate(intervention.created_at)}</span>
 							</div>
-							<p class="intervention-copy">{intervention.description}</p>
+							<p class="intervention-copy" data-localize-skip>{intervention.description}</p>
 							{#if intervention.data}
 								<div class="intervention-meta">
 									{#if intervention.data.suggested_tasks}
-										<div><span>Suggested Tasks</span><strong>{intervention.data.suggested_tasks.join(', ')}</strong></div>
+										<div><span>Suggested Tasks</span><strong data-localize-skip>{intervention.data.suggested_tasks.join(', ')}</strong></div>
 									{/if}
 									{#if intervention.data.performance_goals}
-										<div><span>Goals</span><strong>{intervention.data.performance_goals}</strong></div>
+										<div><span>Goals</span><strong data-localize-skip>{intervention.data.performance_goals}</strong></div>
 									{/if}
 								</div>
 							{/if}

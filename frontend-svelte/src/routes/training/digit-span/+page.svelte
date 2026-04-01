@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { onMount } from 'svelte';
 
@@ -42,6 +43,34 @@
 	// Timing variables - will be set based on difficulty
 	let DIGIT_DISPLAY_TIME = 1400;
 	let INTER_DIGIT_INTERVAL = 600;
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, options);
+	}
+
+	function formatSequence(values, delimiter = ' → ') {
+		return values.map((value) => n(value)).join(delimiter);
+	}
+
+	function getSpanTypeLabel(spanType) {
+		return spanType === 'forward' ? t('Forward Span') : t('Backward Span');
+	}
+
+	function getSpanInputInstruction(spanType) {
+		return spanType === 'forward' ? `➡️ ${t('Type in same order')}` : `↩️ ${t('Type in reverse order')}`;
+	}
+
+	function displayDigit(value) {
+		return value === '' ? '' : n(value);
+	}
 
 	onMount(() => {
 		// Get taskId from URL params
@@ -115,7 +144,7 @@
 			currentState = STATE_INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load training session');
+			alert(t('Failed to load training session'));
 			goto('/dashboard');
 		}
 	}
@@ -286,22 +315,22 @@
 			currentState = STATE_COMPLETE;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 			goto('/dashboard');
 		}
 	}
 </script>
 
 
-<div class="digit-span-container">
+<div class="digit-span-container" data-localize-skip>
 	{#if currentState === STATE_LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if currentState === STATE_INSTRUCTIONS}
 		<div class="instructions-card">
 			<div class="header">
 				<div>
-					<h1>🧠 Digit Span Test</h1>
-					<p class="subtitle">Working Memory Training</p>
+					<h1>🧠 {t('Digit Span Test')}</h1>
+					<p class="subtitle">{t('Working Memory Training')}</p>
 				</div>
 				<button class="help-button" on:click={() => showHelp = !showHelp}>
 					{showHelp ? '✕' : '❓'}
@@ -309,97 +338,96 @@
 			</div>
 
 			<div class="info-section">
-				<h2>How It Works</h2>
-				<p>
-					You'll see a sequence of digits appear one at a time. Your job is to remember them and
-					type them back.
-				</p>
+				<h2>{t('How It Works')}</h2>
+				<p>{t("You'll see a sequence of digits appear one at a time. Your job is to remember them and type them back.")}</p>
 			</div>
 
 			<div class="instructions-grid">
 				<div class="instruction-item">
 					<div class="icon">➡️</div>
-					<h3>Forward Span</h3>
-					<p>Type the digits in the <strong>same order</strong> you saw them</p>
+					<h3>{t('Forward Span')}</h3>
+					<p>{t('Type the digits in the same order you saw them')}</p>
 					<div class="example">
-						<div class="example-label">You see:</div>
-						<div class="example-sequence">3 → 7 → 2</div>
-						<div class="example-label">You type:</div>
-						<div class="example-input">3 7 2</div>
+						<div class="example-label">{t('You see:')}</div>
+						<div class="example-sequence">{formatSequence([3, 7, 2])}</div>
+						<div class="example-label">{t('You type:')}</div>
+						<div class="example-input">{formatSequence([3, 7, 2], ' ')}</div>
 					</div>
 				</div>
 
 				<div class="instruction-item">
 					<div class="icon">↩️</div>
-					<h3>Backward Span</h3>
-					<p>Type the digits in <strong>reverse order</strong></p>
+					<h3>{t('Backward Span')}</h3>
+					<p>{t('Type the digits in reverse order')}</p>
 					<div class="example">
-						<div class="example-label">You see:</div>
-						<div class="example-sequence">5 → 1 → 9</div>
-						<div class="example-label">You type:</div>
-						<div class="example-input">9 1 5</div>
+						<div class="example-label">{t('You see:')}</div>
+						<div class="example-sequence">{formatSequence([5, 1, 9])}</div>
+						<div class="example-label">{t('You type:')}</div>
+						<div class="example-input">{formatSequence([9, 1, 5], ' ')}</div>
 					</div>
 				</div>
 			</div>
 
 			{#if showHelp}
 				<div class="help-modal">
-					<h3>💡 Helpful Tips</h3>
+					<h3>💡 {t('Helpful Tips')}</h3>
 					<ul>
-						<li><strong>Chunking:</strong> Group digits into pairs or triplets (e.g., 3-7-2 becomes "37, 2")</li>
-						<li><strong>Rehearsal:</strong> Repeat the numbers quietly to yourself</li>
-						<li><strong>Visualization:</strong> Picture the digits on a mental screen</li>
-						<li><strong>Relaxation:</strong> Take a breath between trials - stress reduces memory</li>
-						<li><strong>Practice:</strong> Your working memory will improve with regular training</li>
+						<li>{t('Chunking: Group digits into pairs or triplets')}</li>
+						<li>{t('Rehearsal: Repeat the numbers quietly to yourself')}</li>
+						<li>{t('Visualization: Picture the digits on a mental screen')}</li>
+						<li>{t('Relaxation: Take a breath between trials - stress reduces memory')}</li>
+						<li>{t('Practice: Your working memory will improve with regular training')}</li>
 					</ul>
-					<p class="help-note">This test adapts to your performance - don't worry about mistakes!</p>
+					<p class="help-note">{t("This test adapts to your performance - don't worry about mistakes!")}</p>
 				</div>
 			{/if}
 
 			<div class="tips">
-				<h3>💡 Tips</h3>
+				<h3>💡 {t('Tips')}</h3>
 				<ul>
-					<li>Take your time to remember the sequence before typing</li>
-					<li>Use chunking or visualization to hold the digits in mind</li>
-					<li>One box per digit — Backspace to correct the last entry</li>
-					<li>Don't worry about mistakes - the task adapts to your level</li>
+					<li>{t('Take your time to remember the sequence before typing')}</li>
+					<li>{t('Use chunking or visualization to hold the digits in mind')}</li>
+					<li>{t('One box per digit - Backspace to correct the last entry')}</li>
+					<li>{t("Don't worry about mistakes - the task adapts to your level")}</li>
 				</ul>
 			</div>
 
 			<div class="session-info">
 				<div class="info-item">
-					<span class="label">Difficulty Level:</span>
-					<span class="value">{sessionData.difficulty}/10</span>
+					<span class="label">{t('Difficulty Level:')}</span>
+					<span class="value">{n(sessionData.difficulty)}/{n(10)}</span>
 				</div>
 				<div class="info-item">
-					<span class="label">Trials:</span>
-					<span class="value">{sessionData.num_trials}</span>
+					<span class="label">{t('Trials:')}</span>
+					<span class="value">{n(sessionData.num_trials)}</span>
 				</div>
 			</div>
 
-			<button class="start-button" on:click={startSession}> Start Training </button>
+			<button class="start-button" on:click={startSession}>{t('Start Training')}</button>
 		</div>
 	{:else if currentState === STATE_READY}
 		<div class="ready-screen">
-			<h1 class="ready-text">Get Ready...</h1>
+			<h1 class="ready-text">{t('Get Ready...')}</h1>
 			<div class="trial-counter">
-				Trial {currentTrialIndex + 1} of {sessionData.trials.length}
+				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
 			</div>
 			{#if currentTrial}
 				<div class="span-type-indicator {currentTrial.span_type}">
-					{currentTrial.span_type === 'forward' ? '➡️ Forward Span' : '↩️ Backward Span'}
+					{currentTrial.span_type === 'forward'
+						? `➡️ ${t('Forward Span')}`
+						: `↩️ ${t('Backward Span')}`}
 				</div>
 			{/if}
 		</div>
 	{:else if currentState === STATE_SHOWING}
 		<div class="display-screen">
 			<div class="trial-counter">
-				Trial {currentTrialIndex + 1} of {sessionData.trials.length}
+				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
 			</div>
 
 			<div class="digit-display">
 				{#each displayedDigits as digit}
-					<div class="digit {digit === '' ? 'hidden' : 'visible'}">{digit || '·'}</div>
+					<div class="digit {digit === '' ? 'hidden' : 'visible'}">{digit === '' ? '·' : displayDigit(digit)}</div>
 				{/each}
 			</div>
 
@@ -412,13 +440,11 @@
 	{:else if currentState === STATE_INPUT}
 		<div class="input-screen">
 			<div class="trial-counter">
-				Trial {currentTrialIndex + 1} of {sessionData.trials.length}
+				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
 			</div>
 
 			<div class="span-type-reminder {currentTrial.span_type}">
-				{currentTrial.span_type === 'forward'
-					? '➡️ Type in same order'
-					: '↩️ Type in reverse order'}
+				{getSpanInputInstruction(currentTrial.span_type)}
 			</div>
 
 			<div class="slot-row">
@@ -428,7 +454,7 @@
 						type="text"
 						inputmode="numeric"
 						maxlength="1"
-						value={slot}
+						value={displayDigit(slot)}
 						on:keydown={(e) => handleSlotKeydown(e, i)}
 						on:focus={() => (activeSlot = i)}
 						readonly
@@ -438,7 +464,7 @@
 			</div>
 
 			<div class="input-hint">
-				Type each digit · Backspace to correct · auto-submits on last digit
+				{t('Type each digit • Backspace to correct • auto-submits on last digit')}
 			</div>
 
 			<button
@@ -446,21 +472,21 @@
 				on:click={submitResponse}
 				disabled={digitSlots.some((s) => s === '')}
 			>
-				Submit Answer
+				{t('Submit Answer')}
 			</button>
 		</div>
 	{:else if currentState === STATE_FEEDBACK}
 		<div class="feedback-screen {isCorrect ? 'correct' : 'incorrect'}">
 			<div class="feedback-icon">{isCorrect ? '✅' : '❌'}</div>
-			<div class="feedback-text">{isCorrect ? 'Correct!' : 'Incorrect'}</div>
+			<div class="feedback-text">{isCorrect ? t('Correct!') : t('Incorrect')}</div>
 
 			{#if !isCorrect}
 				<div class="correct-answer">
-					<div class="label">Correct answer:</div>
+					<div class="label">{t('Correct answer:')}</div>
 					<div class="answer">
 						{currentTrial.span_type === 'forward'
-							? currentTrial.sequence.join(' ')
-							: [...currentTrial.sequence].reverse().join(' ')}
+							? formatSequence(currentTrial.sequence, ' ')
+							: formatSequence([...currentTrial.sequence].reverse(), ' ')}
 					</div>
 				</div>
 			{/if}
@@ -468,8 +494,8 @@
 	{:else if currentState === STATE_COMPLETE}
 		<div class="complete-screen">
 			<div class="header">
-				<h1>🎉 Session Complete!</h1>
-				<p class="subtitle">Great work on completing your Digit Span training</p>
+				<h1>🎉 {t('Session Complete!')}</h1>
+				<p class="subtitle">{t('Great work on completing your Digit Span training')}</p>
 			</div>
 
 			{#if newBadges && newBadges.length > 0}
@@ -480,47 +506,47 @@
 
 			<div class="results-grid">
 				<div class="result-card primary">
-					<div class="result-label">Overall Score</div>
-					<div class="result-value">{sessionResults.metrics.score}</div>
+					<div class="result-label">{t('Overall Score')}</div>
+					<div class="result-value">{n(sessionResults.metrics.score)}</div>
 				</div>
 
 				<div class="result-card">
-					<div class="result-label">Accuracy</div>
-					<div class="result-value">{sessionResults.metrics.accuracy.toFixed(1)}%</div>
+					<div class="result-label">{t('Accuracy')}</div>
+					<div class="result-value">{pct(sessionResults.metrics.accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 				</div>
 
 				<div class="result-card">
-					<div class="result-label">Longest Span</div>
-					<div class="result-value">{sessionResults.metrics.longest_span} digits</div>
+					<div class="result-label">{t('Longest Span')}</div>
+					<div class="result-value">{n(sessionResults.metrics.longest_span)} {t('digits')}</div>
 				</div>
 
 				<div class="result-card">
-					<div class="result-label">Forward Accuracy</div>
-					<div class="result-value">{sessionResults.metrics.forward_accuracy.toFixed(1)}%</div>
+					<div class="result-label">{t('Forward Accuracy')}</div>
+					<div class="result-value">{pct(sessionResults.metrics.forward_accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 				</div>
 
 				<div class="result-card">
-					<div class="result-label">Backward Accuracy</div>
-					<div class="result-value">{sessionResults.metrics.backward_accuracy.toFixed(1)}%</div>
+					<div class="result-label">{t('Backward Accuracy')}</div>
+					<div class="result-value">{pct(sessionResults.metrics.backward_accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 				</div>
 			</div>
 
 			<div class="difficulty-info">
-				<h3>Difficulty Adjustment</h3>
+				<h3>{t('Difficulty Adjustment')}</h3>
 				<div class="difficulty-change">
-					<span class="before">Level {sessionResults.difficulty_before}</span>
+					<span class="before">{t('Level')} {n(sessionResults.difficulty_before)}</span>
 					<span class="arrow">→</span>
-					<span class="after">Level {sessionResults.difficulty_after}</span>
+					<span class="after">{t('Level')} {n(sessionResults.difficulty_after)}</span>
 				</div>
-				<p class="reason">{sessionResults.adaptation_reason}</p>
+				<p class="reason">{t(sessionResults.adaptation_reason)}</p>
 			</div>
 
 			<div class="actions">
 				<button class="secondary-button" on:click={() => goto('/dashboard')}>
-					Back to Dashboard
+					{t('Back to Dashboard')}
 				</button>
 				<button class="primary-button" on:click={() => window.location.reload()}>
-					Train Again
+					{t('Train Again')}
 				</button>
 			</div>
 		</div>

@@ -1,11 +1,15 @@
-		const lettersCorrect = JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
-		const mathCorrect = mathResponses.every((response, i) => response === currentTrial.items[i].is_correct);
-		return lettersCorrect && mathCorrect;
-				currentTrialIndex++;
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import {
+		formatNumber,
+		formatPercent,
+		locale,
+		localizeStimulusSequence,
+		localizeStimulusSymbol,
+		translateText
+	} from '$lib/i18n';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -48,6 +52,52 @@
 
 	// Available letters
 	const LETTERS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
+
+	function t(text) {
+		return translateText(text, $locale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value, options = {}) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+			...options
+		});
+	}
+
+	function symbol(value) {
+		return localizeStimulusSymbol(value, $locale);
+	}
+
+	function letterSequence(values = []) {
+		return localizeStimulusSequence(values, $locale).join(' - ');
+	}
+
+	function setLabel(current, total) {
+		return $locale === 'bn' ? `সেট ${n(current)} / ${n(total)}` : `Set ${current}/${total}`;
+	}
+
+	function problemLabel(current, total) {
+		return $locale === 'bn' ? `সমস্যা ${n(current)} / ${n(total)}` : `Problem ${current}/${total}`;
+	}
+
+	function pairCountLabel(count) {
+		return $locale === 'bn' ? `${n(count)}টি গণিত-অক্ষর জোড়া` : `${count} math-letter pairs`;
+	}
+
+	function letterProgressLabel(current, total) {
+		return $locale === 'bn' ? `অক্ষর ${n(current)} / ${n(total)}` : `Letter ${current} of ${total}`;
+	}
+
+	function difficultyChangeLabel(before, after) {
+		return $locale === 'bn'
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
+	}
 
 	onMount(async () => {
 		await loadSession();
@@ -99,7 +149,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
-			alert('Failed to load task session');
+			alert(t('Failed to load task session'));
 			goto('/dashboard');
 		}
 	}
@@ -231,7 +281,11 @@
 	}
 
 	function checkCorrect() {
-		return JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
+		const lettersCorrect = JSON.stringify(userLetters) === JSON.stringify(currentTrial.correct_letters);
+		const mathCorrect = mathResponses.every(
+			(response, i) => response === currentTrial.items[i].is_correct
+		);
+		return lettersCorrect && mathCorrect;
 	}
 
 	async function submitSession() {
@@ -260,7 +314,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting session:', error);
-			alert('Failed to submit results');
+			alert(t('Failed to submit results'));
 		}
 	}
 
@@ -269,56 +323,68 @@
 	}
 </script>
 
-<div class="ospan-container">
+<div class="ospan-container" data-localize-skip>
 	{#if state === STATE.LOADING}
 		<div class="loading">
 			<div class="spinner"></div>
-			<p>Loading Operation Span Task...</p>
+			<p>{t('Loading Operation Span Task...')}</p>
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="instructions">
 			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>🧮 Operation Span (OSPAN)</h1>
+				<h1>{t('Operation Span (OSPAN)')}</h1>
 				<DifficultyBadge {difficulty} domain="Working Memory" />
 			</div>
 
 			<div class="instruction-card">
-				<h2>Dual-Task Challenge</h2>
-				<p>This task measures your ability to juggle two mental tasks simultaneously:</p>
+				<h2>{t('Dual-Task Challenge')}</h2>
+				<p>
+					{$locale === 'bn'
+						? 'এই টাস্কে আপনাকে একই সঙ্গে দুটি মানসিক কাজ সামলাতে হবে।'
+						: 'This task measures your ability to juggle two mental tasks simultaneously:'}
+				</p>
 				
 				<div class="dual-tasks">
 					<div class="task-card math-card">
 						<div class="task-icon">🧮</div>
-						<h3>Task 1: Verify Math</h3>
-						<p>Decide if each equation is correct or incorrect</p>
+						<h3>{t('Task 1: Verify Math')}</h3>
+						<p>
+							{$locale === 'bn'
+								? 'প্রতিটি সমীকরণ সঠিক নাকি ভুল তা ঠিক করুন'
+								: 'Decide if each equation is correct or incorrect'}
+						</p>
 						<div class="task-example">
-							<div class="example-item">2 + 3 = 5 <span class="correct">✓ Correct</span></div>
-							<div class="example-item">4 + 2 = 7 <span class="incorrect">✗ Incorrect</span></div>
+							<div class="example-item">{t('2 + 3 = 5')} <span class="correct">✓ {t('Correct')}</span></div>
+							<div class="example-item">{t('4 + 2 = 7')} <span class="incorrect">✗ {t('Incorrect')}</span></div>
 						</div>
 					</div>
 					
 					<div class="task-card letter-card">
 						<div class="task-icon">🔤</div>
-						<h3>Task 2: Remember Letters</h3>
-						<p>After each equation, memorize a letter</p>
+						<h3>{t('Task 2: Remember Letters')}</h3>
+						<p>
+							{$locale === 'bn'
+								? 'প্রতিটি সমীকরণের পর একটি অক্ষর মনে রাখুন'
+								: 'After each equation, memorize a letter'}
+						</p>
 						<div class="task-example">
-							<div class="example-item">Remember: <strong>F</strong></div>
-							<div class="example-item">Remember: <strong>Q</strong></div>
+							<div class="example-item">{t('Remember:')} <strong>{symbol('F')}</strong></div>
+							<div class="example-item">{t('Remember:')} <strong>{symbol('Q')}</strong></div>
 						</div>
 					</div>
 				</div>
 
 				<div class="flow-diagram">
-					<h3>📋 How It Works</h3>
+					<h3>{t('How It Works')}</h3>
 					<div class="flow-steps">
 						<div class="flow-step">
 							<div class="step-number">1</div>
 							<div class="step-content">
-								<strong>Math Problem</strong>
-								<p>Is 2+3=5?</p>
+								<strong>{t('Math Problem')}</strong>
+								<p>{t('Is 2+3=5?')}</p>
 								<div class="step-buttons">
-									<span class="mini-btn correct">✓ Correct</span>
-									<span class="mini-btn incorrect">✗ Incorrect</span>
+									<span class="mini-btn correct">✓ {t('Correct')}</span>
+									<span class="mini-btn incorrect">✗ {t('Incorrect')}</span>
 								</div>
 							</div>
 						</div>
@@ -326,56 +392,56 @@
 						<div class="flow-step">
 							<div class="step-number">2</div>
 							<div class="step-content">
-								<strong>Remember Letter</strong>
-								<p class="big-letter">F</p>
+								<strong>{t('Remember Letter')}</strong>
+								<p class="big-letter">{symbol('F')}</p>
 							</div>
 						</div>
 						<div class="flow-arrow">→</div>
 						<div class="flow-step">
 							<div class="step-number">3</div>
 							<div class="step-content">
-								<strong>Repeat 2-8 times</strong>
-								<p>More math + letters</p>
+								<strong>{t('Repeat 2-8 times')}</strong>
+								<p>{t('More math + letters')}</p>
 							</div>
 						</div>
 						<div class="flow-arrow">→</div>
 						<div class="flow-step">
 							<div class="step-number">4</div>
 							<div class="step-content">
-								<strong>Recall Letters</strong>
-								<p>F - Q - M</p>
+								<strong>{t('Recall Letters')}</strong>
+								<p>{letterSequence(['F', 'Q', 'M'])}</p>
 							</div>
 						</div>
 					</div>
 				</div>
 				
 				<div class="tips">
-					<h3>💡 Pro Tips</h3>
+					<h3>{t('Pro Tips')}</h3>
 					<ul>
-						<li><strong>Balance both tasks:</strong> Don't sacrifice math for letters or vice versa</li>
-						<li><strong>Mental rehearsal:</strong> Silently repeat letters after each one</li>
-						<li><strong>Take your time:</strong> Use the full time to verify each equation</li>
-						<li><strong>Stay focused:</strong> This is mentally demanding - that's the point!</li>
+						<li><strong>{t('Balance both tasks:')}</strong> {$locale === 'bn' ? 'গণিতের জন্য অক্ষর বা অক্ষরের জন্য গণিত একেবারে ছেড়ে দেবেন না।' : "Don't sacrifice math for letters or vice versa"}</li>
+						<li><strong>{t('Mental rehearsal:')}</strong> {$locale === 'bn' ? 'প্রতিটি অক্ষর দেখার পর মনে মনে পুরো ধারাটি আবার বলুন।' : 'Silently repeat letters after each one'}</li>
+						<li><strong>{t('Take your time:')}</strong> {$locale === 'bn' ? 'প্রতিটি সমীকরণ যাচাই করতে পুরো সময় ব্যবহার করুন।' : 'Use the full time to verify each equation'}</li>
+						<li><strong>{t('Stay focused:')}</strong> {$locale === 'bn' ? 'এটি মানসিকভাবে চ্যালেঞ্জিং, তাই মনোযোগ ধরে রাখাই মূল বিষয়।' : "This is mentally demanding - that's the point!"}</li>
 					</ul>
 				</div>
 			</div>
 			
 			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				Start Training Session
+				{t('Start Training Session')}
 			</button>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>Set {currentTrialIndex + 1} of {trials.length}</h2>
-			<p class="set-info">{currentTrial.set_size} math-letter pairs</p>
-			<p>Get ready...</p>
+			<h2>{setLabel(currentTrialIndex + 1, trials.length)}</h2>
+			<p class="set-info">{pairCountLabel(currentTrial.set_size)}</p>
+			<p>{t('Get ready...')}</p>
 		</div>
 	{:else if state === STATE.MATH_PROBLEM}
 		<div class="math-screen">
 			<div class="header">
 				<div class="progress-info">
-					<span class="set-badge">Set {currentTrialIndex + 1}/{trials.length}</span>
-					<span class="item-badge">Problem {currentItemIndex + 1}/{currentTrial.set_size}</span>
+					<span class="set-badge">{setLabel(currentTrialIndex + 1, trials.length)}</span>
+					<span class="item-badge">{problemLabel(currentItemIndex + 1, currentTrial.set_size)}</span>
 				</div>
 				<button class="help-button" on:click={toggleHelp}>?</button>
 			</div>
@@ -385,8 +451,8 @@
 			</div>
 
 			<div class="math-problem-display">
-				<p class="instruction">Is this equation correct?</p>
-				<div class="equation">{currentItem.equation}</div>
+				<p class="instruction">{t('Is this equation correct?')}</p>
+				<div class="equation">{t(currentItem.equation)}</div>
 			</div>
 
 			<div class="math-buttons">
@@ -396,7 +462,7 @@
 					disabled={mathResponse !== null}
 				>
 					<span class="btn-icon">✓</span>
-					<span class="btn-label">Correct</span>
+					<span class="btn-label">{t('Correct')}</span>
 				</button>
 				<button 
 					class="math-btn incorrect-btn" 
@@ -404,33 +470,33 @@
 					disabled={mathResponse !== null}
 				>
 					<span class="btn-icon">✗</span>
-					<span class="btn-label">Incorrect</span>
+					<span class="btn-label">{t('Incorrect')}</span>
 				</button>
 			</div>
 		</div>
 	{:else if state === STATE.LETTER_DISPLAY}
 		<div class="letter-screen">
-			<p class="instruction">Remember this letter</p>
-			<div class="letter-display">{currentItem.letter}</div>
-			<div class="letter-count">Letter {currentItemIndex} of {currentTrial.set_size}</div>
+			<p class="instruction">{t('Remember this letter')}</p>
+			<div class="letter-display">{symbol(currentItem.letter)}</div>
+			<div class="letter-count">{letterProgressLabel(currentItemIndex + 1, currentTrial.set_size)}</div>
 		</div>
 	{:else if state === STATE.RECALL}
 		<div class="recall-screen">
 			<div class="header">
 				<div class="progress-info">
-					<span class="set-badge">Set {currentTrialIndex + 1}/{trials.length}</span>
+					<span class="set-badge">{setLabel(currentTrialIndex + 1, trials.length)}</span>
 				</div>
 				<button class="help-button" on:click={toggleHelp}>?</button>
 			</div>
 
-			<p class="instruction">Recall the letters in order</p>
+			<p class="instruction">{t('Recall the letters in order')}</p>
 
 			<div class="selected-letters">
 				{#if userLetters.length === 0}
-					<span class="placeholder">Click letters below...</span>
+					<span class="placeholder">{t('Click letters below...')}</span>
 				{:else}
 					{#each userLetters as letter, index}
-						<span class="selected-letter">{index + 1}. {letter}</span>
+						<span class="selected-letter">{n(index + 1)}. {symbol(letter)}</span>
 					{/each}
 				{/if}
 			</div>
@@ -443,17 +509,17 @@
 						disabled={userLetters.includes(letter) || userLetters.length >= currentTrial.set_size}
 						on:click={() => addLetter(letter)}
 					>
-						{letter}
+						{symbol(letter)}
 					</button>
 				{/each}
 			</div>
 
 			<div class="controls">
 				<button class="control-btn" on:click={removeLastLetter} disabled={userLetters.length === 0}>
-					↶ Undo
+					↶ {t('Undo')}
 				</button>
 				<button class="control-btn" on:click={clearLetters} disabled={userLetters.length === 0}>
-					✕ Clear
+					✕ {t('Clear')}
 				</button>
 			</div>
 
@@ -462,7 +528,7 @@
 				on:click={submitRecall}
 				disabled={userLetters.length === 0}
 			>
-				Submit Recall
+				{t('Submit Recall')}
 			</button>
 		</div>
 	{:else if state === STATE.FEEDBACK}
@@ -471,60 +537,57 @@
 				{lastTrialCorrect ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
-				{lastTrialCorrect ? 'Perfect!' : 'Not quite'}
+				{lastTrialCorrect ? t('Perfect!') : t('Not quite')}
 			</p>
 			{#if !lastTrialCorrect}
 				<div class="correct-answer">
-					<p>Correct letters: <strong>{lastTrial.correct_letters.join(' - ')}</strong></p>
+					<p>{t('Correct letters:')} <strong>{letterSequence(lastTrial.correct_letters)}</strong></p>
 				</div>
 			{/if}
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>Session Complete! 🎉</h1>
+			<h1>{t('Session Complete!')} 🎉</h1>
 			
 			<div class="results-grid">
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.score}</div>
-					<div class="result-label">Overall Score</div>
+					<div class="result-value">{n(sessionResults.metrics.score)}</div>
+					<div class="result-label">{t('Overall Score')}</div>
 				</div>
 				<div class="result-card">
-					<div class="result-value">{sessionResults.metrics.dual_task_performance.toFixed(1)}%</div>
-					<div class="result-label">Dual-Task Performance</div>
+					<div class="result-value">{pct(sessionResults.metrics.dual_task_performance)}</div>
+					<div class="result-label">{t('Dual-Task Performance')}</div>
 				</div>
 				<div class="result-card math-card-result">
-					<div class="result-value">{sessionResults.metrics.math_accuracy.toFixed(1)}%</div>
-					<div class="result-label">Math Accuracy</div>
+					<div class="result-value">{pct(sessionResults.metrics.math_accuracy)}</div>
+					<div class="result-label">{t('Math Accuracy')}</div>
 				</div>
 				<div class="result-card letter-card-result">
-					<div class="result-value">{sessionResults.metrics.letter_recall_accuracy.toFixed(1)}%</div>
-					<div class="result-label">Letter Recall</div>
+					<div class="result-value">{pct(sessionResults.metrics.letter_recall_accuracy)}</div>
+					<div class="result-label">{t('Letter Recall')}</div>
 				</div>
 			</div>
 
 			<div class="performance-breakdown">
-				<h3>📊 Performance Analysis</h3>
+				<h3>{t('Performance Analysis')}</h3>
 				<div class="breakdown-item">
-					<span>Perfect Sets (Both Tasks):</span>
-					<span class="value">{sessionResults.metrics.correct_count} / {sessionResults.metrics.total_trials}</span>
+					<span>{t('Perfect Sets (Both Tasks):')}</span>
+					<span class="value">{n(sessionResults.metrics.correct_count)} / {n(sessionResults.metrics.total_trials)}</span>
 				</div>
 				<div class="breakdown-item">
-					<span>Consistency:</span>
-					<span class="value">{sessionResults.metrics.consistency.toFixed(1)}%</span>
+					<span>{t('Consistency:')}</span>
+					<span class="value">{pct(sessionResults.metrics.consistency)}</span>
 				</div>
 			</div>
 
 			<div class="difficulty-info">
-				<p>
-					Difficulty: <strong>{sessionResults.difficulty_before}</strong> → 
-					<strong>{sessionResults.difficulty_after}</strong>
-				</p>
-				<p class="adaptation-reason">{sessionResults.adaptation_reason}</p>
+				<p>{difficultyChangeLabel(sessionResults.difficulty_before, sessionResults.difficulty_after)}</p>
+				<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
 			</div>
 
 			{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 				<div class="new-badges">
-					<h3>🏆 New Badges Earned!</h3>
+					<h3>{t('New Badges Earned!')}</h3>
 					{#each sessionResults.new_badges as badge}
 						<div class="badge">
 							<span class="badge-icon">{badge.icon}</span>
@@ -535,8 +598,8 @@
 			{/if}
 
 			<div class="actions">
-				<button on:click={() => goto('/training')}>Back to Training</button>
-				<button on:click={() => goto('/dashboard')}>View Dashboard</button>
+				<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
+				<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 			</div>
 		</div>
 	{/if}
@@ -546,31 +609,51 @@
 	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
 		<div class="help-content" on:click|stopPropagation role="document" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
 			<button class="close-button" on:click={toggleHelp}>×</button>
-			<h2>Success Strategies</h2>
+			<h2>{t('Success Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>⚖️ Balance Both Tasks</h3>
-				<p>Your score depends on BOTH math accuracy AND letter recall. Don't sacrifice one for the other - aim for high performance on both tasks.</p>
+				<h3>{t('Balance Both Tasks')}</h3>
+				<p>
+					{$locale === 'bn'
+						? 'আপনার স্কোর গণিতের নির্ভুলতা ও অক্ষর মনে রাখার ক্ষমতা দুটোর ওপরই নির্ভর করে। তাই একটি বাঁচাতে গিয়ে আরেকটি ছাড়বেন না।'
+						: "Your score depends on BOTH math accuracy AND letter recall. Don't sacrifice one for the other - aim for high performance on both tasks."}
+				</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧮 Math First, Letters After</h3>
-				<p>Quickly verify the equation, then immediately shift focus to encoding the letter. Don't dwell on the math after answering.</p>
+				<h3>{t('Math First, Letters After')}</h3>
+				<p>
+					{$locale === 'bn'
+						? 'আগে সমীকরণটি দ্রুত যাচাই করুন, তারপর সঙ্গে সঙ্গে অক্ষরটি মনে গেঁথে নিন। উত্তর দেওয়ার পর সমীকরণে আর আটকে থাকবেন না।'
+						: "Quickly verify the equation, then immediately shift focus to encoding the letter. Don't dwell on the math after answering."}
+				</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 Active Rehearsal</h3>
-				<p>After seeing each letter, silently rehearse ALL letters so far in order. This keeps them fresh in working memory.</p>
+				<h3>{t('Active Rehearsal')}</h3>
+				<p>
+					{$locale === 'bn'
+						? 'প্রতিটি অক্ষর দেখার পর এ পর্যন্ত দেখা সব অক্ষর মনে মনে ক্রমানুসারে আবার বলুন। এতে সেগুলো ওয়ার্কিং মেমরিতে সতেজ থাকে।'
+						: 'After seeing each letter, silently rehearse ALL letters so far in order. This keeps them fresh in working memory.'}
+				</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🎯 Accuracy Over Speed</h3>
-				<p>Use the full time available for each equation. Rushing leads to errors in both tasks.</p>
+				<h3>{t('Accuracy Over Speed')}</h3>
+				<p>
+					{$locale === 'bn'
+						? 'প্রতিটি সমীকরণের জন্য যে সময় দেওয়া আছে তা পুরোটা প্রয়োজনে ব্যবহার করুন। তাড়াহুড়া করলে দুই কাজেই ভুল বাড়ে।'
+						: 'Use the full time available for each equation. Rushing leads to errors in both tasks.'}
+				</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🧠 Chunking Strategy</h3>
-				<p>Group letters into chunks of 2-3 (e.g., "FK-MT-B" instead of "F-K-M-T-B"). This reduces memory load.</p>
+				<h3>{t('Chunking Strategy')}</h3>
+				<p>
+					{$locale === 'bn'
+						? `অক্ষরগুলোকে ২-৩টির ছোট দলে মনে রাখুন, যেমন "${letterSequence(['F', 'K'])} - ${letterSequence(['M', 'T'])} - ${symbol('B')}"। এতে মনে রাখার চাপ কমে।`
+						: 'Group letters into chunks of 2-3 (e.g., "FK-MT-B" instead of "F-K-M-T-B"). This reduces memory load.'}
+				</p>
 			</div>
 		</div>
 	</div>
