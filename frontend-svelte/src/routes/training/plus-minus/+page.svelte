@@ -3,7 +3,10 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount, onDestroy } from 'svelte';
 
@@ -28,6 +31,10 @@
 	let newBadges = [];
 	let currentUser = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
+	let recordedDifficulty = 1;
 
 	function t(text) {
 		return translateText(text ?? '', $locale);
@@ -105,6 +112,21 @@
 		currentUser = value;
 	});
 
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function restoreRecordedSession() {
+		if (recordedSessionData) {
+			sessionData = cloneData(recordedSessionData);
+		}
+		difficulty = recordedDifficulty;
+	}
+
 	async function loadSession() {
 		try {
 			loading = true;
@@ -144,9 +166,11 @@
 			);
 			if (!response.ok) throw new Error('Failed to load session');
 			sessionData = await response.json();
+			recordedSessionData = cloneData(sessionData);
 			
 			// Update difficulty from session data (in case it was adjusted)
 			difficulty = sessionData.difficulty;
+			recordedDifficulty = difficulty;
 		} catch (err) {
 			error = err.message;
 		} finally {
@@ -154,10 +178,19 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		restoreRecordedSession();
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = buildPracticePayload('plus-minus', recordedSessionData);
+		}
 		currentBlockIndex = 0;
 		currentTrialIndex = 0;
 		responses = [];
+		results = null;
+		showCue = false;
+		userAnswer = '';
 		currentBlock = sessionData.blocks.block_a;
 		phase = 'task';
 		startTime = Date.now();
@@ -268,16 +301,28 @@
 	}
 
 	async function submitSession() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			currentBlock = null;
+			currentBlockIndex = 0;
+			currentTrialIndex = 0;
+			responses = [];
+			showCue = false;
+			phase = 'intro';
+			await loadSession();
+			return;
+		}
+
 		try {
 			loading = true;
 			error = null;
 			const totalTime = Date.now() - startTime;
-
-			// Stop timer interval
-			if (timerInterval) {
-				clearInterval(timerInterval);
-				timerInterval = null;
-			}
 
 			taskId = $page.url.searchParams.get('taskId');
 			
@@ -403,14 +448,20 @@
 					</p>
 				</div>
 
-				<button 
-					on:click={startTask} 
-					style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-					{t('Start Test')}
-				</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={t('Start Test')}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
 			</div>
 		{:else if phase === 'block-transition'}
 			<div style="text-align: center; padding: 40px;">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #333;">
 					{blockTransitionTitle()}
 				</h2>
@@ -433,6 +484,10 @@
 				{@const trialNum = currentTrialIndex + 1}
 
 				<div>
+					{#if playMode === TASK_PLAY_MODE.PRACTICE}
+						<PracticeModeBanner locale={$locale} />
+					{/if}
+
 					<!-- Progress and Timer -->
 					<div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
 						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">

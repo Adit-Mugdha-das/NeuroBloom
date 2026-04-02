@@ -3,6 +3,10 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -34,6 +38,10 @@
 	let showSolution = false;
 	let solutionPath = [];
 	let actualMinMoves = 0;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
+	let recordedDifficulty = 1;
 
 	// Colors for disks
 	const DISK_COLORS = {
@@ -94,6 +102,25 @@
 		}
 	});
 
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function restoreRecordedSession() {
+		if (recordedSessionData) {
+			sessionData = cloneData(recordedSessionData);
+		}
+		difficulty = recordedDifficulty;
+	}
+
 	onMount(async () => {
 		if (!userId) {
 			goto('/login');
@@ -130,6 +157,8 @@
 
 			if (response.ok) {
 				sessionData = await response.json();
+				recordedSessionData = cloneData(sessionData);
+				recordedDifficulty = sessionData.difficulty || difficulty;
 				console.log('Session loaded:', sessionData);
 			}
 		} catch (error) {
@@ -137,7 +166,16 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		restoreRecordedSession();
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = buildPracticePayload('tower-of-london', recordedSessionData);
+		}
+		userSolutions = [];
+		results = null;
+		earnedBadges = [];
 		gamePhase = 'planning';
 		loadProblem(0);
 	}
@@ -289,6 +327,19 @@
 	}
 
 	async function finishSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			sessionData = null;
+			currentProblemIndex = 0;
+			currentProblem = null;
+			userSolutions = [];
+			selectedDisk = null;
+			gamePhase = 'intro';
+			await loadSession();
+			return;
+		}
+
 		try {
 			const response = await fetch('/api/tasks/tol/score', {
 				method: 'POST',
@@ -410,12 +461,14 @@
 					</div>
 
 					<div style="text-align: center;">
-						<button on:click={startTask}
-							style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; 
-							padding: 1rem 3rem; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: 600;
-							box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
-							Start Planning Challenge
-						</button>
+						<TaskPracticeActions
+							locale={$locale}
+							align="center"
+							startLabel={lt('Start Planning Challenge', 'পরিকল্পনা চ্যালেঞ্জ শুরু করুন')}
+							statusMessage={practiceStatusMessage}
+							on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+							on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+						/>
 					</div>
 				{:else}
 					<div style="text-align: center; padding: 2rem; color: #64748b;">
@@ -427,6 +480,10 @@
 
 		{:else if gamePhase === 'planning'}
 			<div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
 				<div style="text-align: center; margin-bottom: 2rem;">
 					<h2 style="color: #667eea; margin-bottom: 0.5rem;">
 						Problem {currentProblem.problem_number} of {sessionData.total_problems}
@@ -506,6 +563,10 @@
 
 		{:else if gamePhase === 'solving'}
 			<div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
 					<h2 style="color: #667eea; margin: 0;">
 						Problem {currentProblem.problem_number} of {sessionData.total_problems}
@@ -647,6 +708,10 @@
 
 		{:else if gamePhase === 'problem_complete'}
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
 				<div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
 				<h2 style="color: #22c55e; margin-bottom: 1rem;">Problem Solved!</h2>
 				

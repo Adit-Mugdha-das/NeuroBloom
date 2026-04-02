@@ -3,6 +3,10 @@
 	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 
@@ -23,6 +27,32 @@
 	let results = null;
 	let earnedBadges = [];
 	let showInstructions = true;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrialData = null;
+	let recordedDifficulty = 5;
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function applyTrialView(data) {
+		trialData = data;
+		items = data.items;
+		targetItem = data.target;
+		searchType = data.search_type;
+		setSize = data.set_size;
+		timeLimit = data.time_limit;
+		timeRemaining = timeLimit;
+	}
 
 	// Load trial on mount
 	onMount(async () => {
@@ -58,15 +88,10 @@
 			if (!response.ok) throw new Error('Failed to load trial');
 
 			const data = await response.json();
-			trialData = data.trial_data;
-			difficulty = data.difficulty;
-			
-			items = trialData.items;
-			targetItem = trialData.target;
-			searchType = trialData.search_type;
-			setSize = trialData.set_size;
-			timeLimit = trialData.time_limit;
-			timeRemaining = timeLimit;
+			recordedTrialData = cloneData(data.trial_data);
+			recordedDifficulty = data.difficulty;
+			difficulty = recordedDifficulty;
+			applyTrialView(cloneData(recordedTrialData));
 			
 			gamePhase = 'intro';
 		} catch (error) {
@@ -75,7 +100,16 @@
 		}
 	}
 
-	function startGame() {
+	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		difficulty = recordedDifficulty;
+		if (playMode === TASK_PLAY_MODE.PRACTICE && recordedTrialData) {
+			applyTrialView(buildPracticePayload('visual-search', recordedTrialData));
+		} else if (recordedTrialData) {
+			applyTrialView(cloneData(recordedTrialData));
+		}
+
 		startTime = Date.now();
 		gamePhase = 'playing';
 		userAnswer = null;
@@ -106,6 +140,16 @@
 	}
 
 	async function submitResults() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			results = null;
+			userAnswer = null;
+			gamePhase = 'loading';
+			await loadTrial();
+			return;
+		}
+
 		const reactionTime = (Date.now() - startTime) / 1000;
 
 		try {
@@ -303,16 +347,24 @@
 					</div>
 				{/if}
 
-				<button class="btn-start" on:click={startGame}>
-					<span class="btn-icon">▶</span>
-					Begin Task
-				</button>
+				<TaskPracticeActions
+					locale={$locale}
+					align="center"
+					startLabel={lt('Begin Task', 'কাজ শুরু করুন')}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startGame(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startGame(TASK_PLAY_MODE.PRACTICE)}
+				/>
 			</div>
 		</div>
 	{/if}
 
 	{#if gamePhase === 'playing'}
 		<div class="playing">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
+
 			<div class="game-controls">
 				<div class="control-panel">
 					<div class="timer-display">

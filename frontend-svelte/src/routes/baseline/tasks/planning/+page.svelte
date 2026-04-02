@@ -2,8 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { tasks, training } from '$lib/api';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -28,6 +31,9 @@
 	let firstMoveTime = 0;
 	let planningTime = 0;
 	let completed = false;
+	let isPracticeMode = false;
+	let practiceStatusMessage = '';
+	let recordedDiskCount = 3;
 
 	function t(text) {
 		return translateText(text ?? '', $locale);
@@ -115,6 +121,7 @@
 			diskCount = 3;
 		}
 
+		recordedDiskCount = diskCount;
 		refreshTowerState();
 	});
 	
@@ -126,7 +133,10 @@
 		}
 	}
 	
-	function startTest() {
+	function startTest(practice = false) {
+		isPracticeMode = practice;
+		practiceStatusMessage = '';
+		diskCount = practice ? 3 : recordedDiskCount;
 		stage = 'test';
 		refreshTowerState();
 		selectedTower = null;
@@ -177,6 +187,19 @@
 	
 	function calculateResults() {
 		const totalTime = Date.now() - startTime;
+
+		if (isPracticeMode) {
+			isPracticeMode = false;
+			diskCount = recordedDiskCount;
+			refreshTowerState();
+			selectedTower = null;
+			moves = 0;
+			completed = false;
+			planningTime = 0;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			stage = 'intro';
+			return;
+		}
 		
 		stage = 'results';
 		saveResults(totalTime);
@@ -289,9 +312,14 @@
 				</div>
 			</div>
 			
-			<button class="btn-primary" on:click={startTest} style="margin-top: 40px;">
-				{t('Start Test')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startTest(false)}
+				on:practice={() => startTest(true)}
+			/>
 			<button class="btn-secondary" on:click={backToDashboard}>
 				{t('Back to Dashboard')}
 			</button>
@@ -299,6 +327,9 @@
 	
 	{:else if stage === 'test'}
 		<div class="test-card">
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
 				<div class="timer">{moveSummaryLabel()}</div>
 				<button class="btn-secondary" on:click={resetTest} style="padding: 8px 20px; font-size: 14px;">

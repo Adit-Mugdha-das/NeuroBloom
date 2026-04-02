@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
 		formatNumber,
 		formatPercent,
@@ -11,6 +13,7 @@
 		translateText
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -46,6 +49,8 @@
 	let practiceSequence = ['1', 'A', '2', 'B', '3'];
 	let practiceIndex = 0;
 	let practiceFeedback = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -132,8 +137,18 @@
 	}
 
 	function startPractice() {
+		playMode = TASK_PLAY_MODE.PRACTICE;
+		practiceStatusMessage = '';
 		phase = 'practice';
 		setupPracticeCanvas();
+	}
+
+	function finishPractice() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceFeedback = null;
+		practiceIndex = 0;
+		phase = 'instructions';
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 
 	function setupPracticeCanvas() {
@@ -235,7 +250,7 @@
 				
 				if (practiceIndex >= practiceCircles.length) {
 					setTimeout(() => {
-						startTest();
+						finishPractice();
 					}, 1500);
 				}
 			} else {
@@ -250,6 +265,8 @@
 	}
 
 	function startTest() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = '';
 		phase = 'test';
 		currentIndex = 0;
 		userSequence = [];
@@ -640,9 +657,18 @@
 			</div>
 		</div>
 
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Start Actual Test')}
+				practiceVisible={false}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={startTest}
+			/>
 	{:else if phase === 'practice'}
 		<!-- Practice Round -->
 		<div class="practice-container">
+			<PracticeModeBanner locale={$locale} />
 			<h2>{t('Practice Round')}</h2>
 			<p class="practice-subtitle">{t('Connect:')} {sequencePreview()}</p>
 

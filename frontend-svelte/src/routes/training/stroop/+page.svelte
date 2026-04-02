@@ -3,8 +3,11 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -20,6 +23,8 @@
 	let metrics = null;
 	let newBadges = [];
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	// Practice state
 	let practiceTrials = [];
@@ -112,6 +117,9 @@
 			alert(t('Session data not loaded. Please refresh the page.'));
 			return;
 		}
+
+		playMode = TASK_PLAY_MODE.PRACTICE;
+		practiceStatusMessage = '';
 		
 		// Create practice trials (2 baseline, 2 congruent, 2 incongruent)
 		const colors = sessionData.colors.slice(0, 4); // Use 4 colors for practice
@@ -172,6 +180,14 @@
 		phase = 'practice';
 	}
 
+	function finishPractice() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceFeedback = null;
+		currentPractice = 0;
+		phase = 'instructions';
+		practiceStatusMessage = getPracticeCopy($locale).complete;
+	}
+
 	function handlePracticeAnswer(answer) {
 		const trial = practiceTrials[currentPractice];
 		const correct = answer === trial.correct_answer;
@@ -197,15 +213,16 @@
 				currentPractice++;
 				practiceFeedback = null;
 			} else {
-				// Practice complete
 				setTimeout(() => {
-					startTest();
+					finishPractice();
 				}, 1000);
 			}
 		}, 2000);
 	}
 
 	function startTest() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = '';
 		phase = 'test';
 		currentTrial = 0;
 		responses = [];
@@ -498,15 +515,21 @@
 
 			<div class="practice-prompt">
 				<p>{t("Let's practice with 6 trials to get familiar...")}</p>
-				<button class="start-button" on:click={startPractice}>
-					{t('Start Practice')}
-				</button>
 			</div>
+
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Start Actual Test')}
+				statusMessage={practiceStatusMessage}
+				on:start={startTest}
+				on:practice={startPractice}
+			/>
 		</div>
 
 	{:else if phase === 'practice'}
 		<!-- Practice Trials -->
 		<div class="trial-screen">
+			<PracticeModeBanner locale={$locale} />
 			<div class="trial-header">
 				<h2>{lt(`Practice Trial ${currentPractice + 1} of ${practiceTrials.length}`, `অনুশীলনী ট্রায়াল ${n(currentPractice + 1)} / ${n(practiceTrials.length)}`)}</h2>
 				<p class="condition-label">{t('Condition:')} <span>{conditionName}</span></p>

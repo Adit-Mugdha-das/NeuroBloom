@@ -4,6 +4,10 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const STATE = {
@@ -32,6 +36,9 @@
 	let sessionResults = null;
 	let newBadges = [];
 	let timerHandle;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	const keyLabels = {
 		'1': '1',
@@ -87,6 +94,7 @@
 
 			const data = await response.json();
 			sessionData = data.session;
+			recordedSessionData = data.session;
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Choice Reaction Time:', error);
@@ -95,10 +103,18 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('choice-reaction-time', recordedSessionData)
+				: structuredClone(recordedSessionData);
 		state = STATE.READY;
 		countdown = 3;
 		sessionStartedAt = Date.now();
+		currentTrialIndex = 0;
+		responses = [];
 
 		const countdownInterval = setInterval(() => {
 			countdown -= 1;
@@ -159,6 +175,14 @@
 	}
 
 	async function completeSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = recordedSessionData;
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 
 		try {
@@ -254,18 +278,30 @@
 			</div>
 
 			<div class="actions">
-				<button class="primary" on:click={startTask}>Start Task</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
 				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
 			</div>
 		</section>
 	{:else if state === STATE.READY}
 		<section class="panel ready">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<p class="eyebrow">Get Ready</p>
 			<h2>{countdown}</h2>
 			<p>Keep your eyes on the center and your fingers near the mapped keys.</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="play-header">
 				<div>
 					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>

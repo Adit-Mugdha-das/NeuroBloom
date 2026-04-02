@@ -2,7 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -28,6 +31,9 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrials = [];
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -109,11 +115,13 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map(t => ({
+			const mappedTrials = data.trials.map(t => ({
 				...t,
 				user_response: [],
 				reaction_time: 0
 			}));
+			trials = structuredClone(mappedTrials);
+			recordedTrials = structuredClone(mappedTrials);
 			
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -123,10 +131,15 @@
 		}
 	}
 
-	function startSession() {
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
 		console.log('Starting session, trials:', trials.length);
 		state = STATE.READY;
 		currentTrialIndex = 0;
+		trials = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('spatial-span', { trials: recordedTrials }).trials
+			: structuredClone(recordedTrials);
 		setTimeout(() => startTrial(), 1000);
 	}
 
@@ -212,6 +225,14 @@
 	}
 
 	async function submitSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trials = structuredClone(recordedTrials);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		
 		try {
@@ -299,12 +320,20 @@
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				{t('Start Training Session')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
 			{#if currentTrial}
 				<p class="span-type">{spanModeLabel(currentTrial.span_type)} {t('Span')}</p>
@@ -313,6 +342,9 @@
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="trial-info">
 					<span class="trial-number">{$locale === 'bn' ? `ট্রায়াল ${n(currentTrialIndex + 1)}/${n(trials.length)}` : `Trial ${currentTrialIndex + 1}/${trials.length}`}</span>
@@ -368,6 +400,9 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div
 				class="feedback-icon"
 				style="background: {checkCorrect() ? '#4CAF50' : '#f44336'}"
@@ -563,22 +598,6 @@
 	.tips li {
 		margin-bottom: 0.5rem;
 		color: #856404;
-	}
-
-	.start-button {
-		background: #4CAF50;
-		color: white;
-		border: none;
-		padding: 1rem 3rem;
-		font-size: 1.2rem;
-		border-radius: 8px;
-		cursor: pointer;
-		margin-top: 2rem;
-		transition: background 0.3s;
-	}
-
-	.start-button:hover {
-		background: #45a049;
 	}
 
 	.ready-screen {

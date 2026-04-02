@@ -3,8 +3,11 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -20,6 +23,8 @@
 	let metrics = null;
 	let newBadges = [];
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	// Practice state
 	let practiceTrials = [];
@@ -274,6 +279,8 @@
 	}
 
 	function startPractice() {
+		playMode = TASK_PLAY_MODE.PRACTICE;
+		practiceStatusMessage = '';
 		practiceTrials = buildPracticeTrials();
 
 		currentPractice = 0;
@@ -282,18 +289,30 @@
 		showNextPracticeTrial();
 	}
 
+	function finishPractice() {
+		clearTimeout(stimulusTimeout);
+		clearTimeout(interStimulusTimeout);
+		clearTimeout(trialTimeout);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		responded = false;
+		showStimulus = false;
+		practiceFeedback = null;
+		currentPractice = 0;
+		phase = 'instructions';
+		practiceStatusMessage = getPracticeCopy($locale).complete;
+	}
+
 	function showNextPracticeTrial() {
 		// Clear any existing timers
 		clearTimeout(stimulusTimeout);
 		
 		if (currentPractice >= practiceTrials.length) {
-			// Practice complete
 			practiceFeedback = {
 				type: 'success',
 				message: practiceCompleteMessage()
 			};
 			setTimeout(() => {
-				startTest();
+				finishPractice();
 			}, 2000);
 			return;
 		}
@@ -352,6 +371,8 @@
 	}
 
 	function startTest() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = '';
 		phase = 'test';
 		currentTrial = 0;
 		responses = [];
@@ -736,11 +757,20 @@
 					{lt('Start Practice', 'অনুশীলন শুরু করুন')}
 				</button>
 			</div>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={lt('Start Actual Task', 'আসল টাস্ক শুরু করুন')}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={startTest}
+				on:practice={startPractice}
+			/>
 		</div>
 
 	{:else if phase === 'practice'}
 		<!-- Practice Trials -->
 		<div class="trial-screen">
+			<PracticeModeBanner locale={$locale} />
 			<div class="trial-header">
 				<h2>{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>
 				<p class="instruction-reminder">{lt('Press ← or → to match the CENTER arrow direction', 'মাঝের তীরের দিক মিলিয়ে ← বা → চাপুন')}</p>
@@ -1461,6 +1491,10 @@
 	.practice-prompt {
 		text-align: center;
 		margin-top: 2rem;
+	}
+
+	.practice-prompt .start-button {
+		display: none;
 	}
 
 	.practice-prompt p {

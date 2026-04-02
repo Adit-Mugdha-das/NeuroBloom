@@ -4,6 +4,10 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	// Game states
@@ -39,6 +43,9 @@
 	// UI state
 	let showHelp = false;
 	let currentDifficulty = 5;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	// Timing variables - will be set based on difficulty
 	let DIGIT_DISPLAY_TIME = 1400;
@@ -141,6 +148,7 @@
 			if (!res.ok) throw new Error('Failed to load session');
 
 			sessionData = await res.json();
+			recordedSessionData = sessionData;
 			currentState = STATE_INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -149,7 +157,13 @@
 		}
 	}
 
-	function startSession() {
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('digit-span', recordedSessionData)
+				: structuredClone(recordedSessionData);
 		currentState = STATE_READY;
 		currentTrialIndex = 0;
 		completedTrials = [];
@@ -289,6 +303,14 @@
 	}
 
 	async function completeSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = recordedSessionData;
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			currentState = STATE_INSTRUCTIONS;
+			return;
+		}
+
 		currentState = STATE_LOADING;
 
 		try {
@@ -403,10 +425,19 @@
 				</div>
 			</div>
 
-			<button class="start-button" on:click={startSession}>{t('Start Training')}</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if currentState === STATE_READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h1 class="ready-text">{t('Get Ready...')}</h1>
 			<div class="trial-counter">
 				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
@@ -421,6 +452,9 @@
 		</div>
 	{:else if currentState === STATE_SHOWING}
 		<div class="display-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="trial-counter">
 				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
 			</div>
@@ -439,6 +473,9 @@
 		</div>
 	{:else if currentState === STATE_INPUT}
 		<div class="input-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="trial-counter">
 				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
 			</div>

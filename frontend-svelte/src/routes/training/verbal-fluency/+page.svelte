@@ -4,7 +4,10 @@
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { formatNumber, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { formatNumber, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -28,6 +31,9 @@
 	let allLetterResults = [];
 	let results = null;
 	let earnedBadges = [];
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	function taskLocale() {
 		return sessionData?.locale === 'bn' ? 'bn' : $locale;
@@ -215,7 +221,8 @@
 
 			if (!response.ok) throw new Error('Failed to load session');
 
-			sessionData = await response.json();
+			sessionData = structuredClone(await response.json());
+			recordedSessionData = structuredClone(sessionData);
 			gamePhase = 'intro';
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -223,7 +230,13 @@
 		}
 	}
 
-	function startFirstLetter() {
+	function startFirstLetter(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('verbal-fluency', recordedSessionData)
+			: structuredClone(recordedSessionData);
+		allLetterResults = [];
 		currentLetterIndex = 0;
 		startLetterRound();
 	}
@@ -296,6 +309,13 @@
 			gamePhase = 'between_letters';
 			setTimeout(() => startLetterRound(), 2000);
 		} else {
+			if (playMode === TASK_PLAY_MODE.PRACTICE) {
+				sessionData = structuredClone(recordedSessionData);
+				playMode = TASK_PLAY_MODE.RECORDED;
+				practiceStatusMessage = getPracticeCopy($locale).complete;
+				gamePhase = 'intro';
+				return;
+			}
 			finishSession();
 		}
 	}
@@ -409,7 +429,16 @@
 				</div>
 
 				<div style="text-align: center;">
+					<TaskPracticeActions
+						locale={$locale}
+						startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+						statusMessage={practiceStatusMessage}
+						align="center"
+						on:start={() => startFirstLetter(TASK_PLAY_MODE.RECORDED)}
+						on:practice={() => startFirstLetter(TASK_PLAY_MODE.PRACTICE)}
+					/>
 					<button
+						hidden
 						on:click={startFirstLetter}
 						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;
 						padding: 1.2rem 3rem; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: 600;
@@ -423,6 +452,9 @@
 			</div>
 		{:else if gamePhase === 'letter_round'}
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
 					<h2 style="color: #667eea; margin: 0;">
 						{taskLocale() === 'bn' ? 'অক্ষর:' : 'Letter:'}

@@ -2,6 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -26,6 +30,9 @@
 	let taskId = null;
 	
 	let showHelp = false;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	$: currentTrial = sessionData?.trials?.[currentTrialIndex];
 	$: progress = sessionData ? ((currentTrialIndex + 1) / sessionData.total_trials * 100) : 0;
@@ -83,7 +90,8 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			sessionData = data.session;
+			sessionData = structuredClone(data.session);
+			recordedSessionData = structuredClone(data.session);
 			
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -93,8 +101,15 @@
 		}
 	}
 
-	function startTest() {
+	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('pattern-comparison', recordedSessionData)
+			: structuredClone(recordedSessionData);
 		state = STATE.READY;
+		currentTrialIndex = 0;
+		responses = [];
 		countdown = 3;
 		
 		const countdownInterval = setInterval(() => {
@@ -136,6 +151,14 @@
 	}
 
 	async function completeSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = structuredClone(recordedSessionData);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		taskId = $page.url.searchParams.get('taskId');
 		
@@ -321,12 +344,20 @@
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startTest}>
-				Start Pattern Comparison
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startTest(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startTest(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h2>Get Ready!</h2>
 			<p class="ready-message">Compare patterns and decide: SAME or DIFFERENT</p>
 			<div class="ready-example">
@@ -345,6 +376,9 @@
 		</div>
 	{:else if state === STATE.TESTING}
 		<div class="testing-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="progress-bar-container">
 					<div class="progress-bar-fill" style="width: {progress}%"></div>

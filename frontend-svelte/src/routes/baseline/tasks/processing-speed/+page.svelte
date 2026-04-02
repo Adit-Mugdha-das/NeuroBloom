@@ -3,7 +3,10 @@
 	import { page } from '$app/stores';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { tasks, training } from '$lib/api';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	let stage = 'intro';
@@ -43,6 +46,9 @@
 		choiceStartTime = 0;
 	let validSimpleRTs = [],
 		finalScore = 0;
+	let recordedSettings = null;
+	let isPracticeMode = false;
+	let practiceStatusMessage = '';
 
 	function t(text) {
 		return translateText(text ?? '', $locale);
@@ -99,9 +105,29 @@
 			penalty,
 			shapeCount
 		];
+		recordedSettings = { simpleTrials, choiceTrials, delayMin, delayMax, earlyClickPenalty, choiceShapeCount };
 	});
 
-	function startSimpleTest() {
+	function startSimpleTest(practice = false) {
+		isPracticeMode = practice;
+		practiceStatusMessage = '';
+		if (practice) {
+			simpleTrials = 4;
+			choiceTrials = 4;
+			delayMin = 1500;
+			delayMax = 2500;
+			earlyClickPenalty = 'retry';
+			choiceShapeCount = Math.min(recordedSettings?.choiceShapeCount || 2, 2);
+		} else if (recordedSettings) {
+			({
+				simpleTrials,
+				choiceTrials,
+				delayMin,
+				delayMax,
+				earlyClickPenalty,
+				choiceShapeCount
+			} = recordedSettings);
+		}
 		stage = 'simple';
 		simpleCurrentTrial = 0;
 		simpleRTs = [];
@@ -201,8 +227,33 @@
 			simpleRTStd,
 			choiceAccScore
 		);
+		if (isPracticeMode) {
+			finishPractice();
+			return;
+		}
 		stage = 'results';
 		saveResults(simpleRTMean, simpleRTStd, choiceRTMean, choiceAccScore);
+	}
+
+	function finishPractice() {
+		isPracticeMode = false;
+		if (recordedSettings) {
+			({
+				simpleTrials,
+				choiceTrials,
+				delayMin,
+				delayMax,
+				earlyClickPenalty,
+				choiceShapeCount
+			} = recordedSettings);
+		}
+		stage = 'intro';
+		simpleCurrentTrial = 0;
+		choiceCurrentTrial = 0;
+		simpleRTs = [];
+		choiceRTs = [];
+		choiceAccuracy = [];
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 
 	async function saveResults(simpleRTMean, simpleRTStd, choiceRTMean, choiceAccScore) {
@@ -341,9 +392,13 @@
 					</ul>
 				</div>
 			</div>
-			<button class="btn-primary" on:click={startSimpleTest} style="margin-top: 40px;">
-				{t('Start Test')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Test', bn: 'আসল পরীক্ষা শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startSimpleTest(false)}
+				on:practice={() => startSimpleTest(true)}
+			/>
 			<button class="btn-secondary" on:click={backToDashboard}>
 				{t('Back to Dashboard')}
 			</button>
@@ -354,6 +409,9 @@
 			style="background: {simpleReady ? GREEN_COLOR : '#fff'}; transition: background 0.1s; cursor: pointer; min-height: 400px; display: flex; flex-direction: column; justify-content: center;"
 			on:click={handleSimpleClick}
 		>
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="timer" style="color: {simpleReady ? 'white' : '#666'};">
 				{trialLabel(simpleCurrentTrial + 1, simpleTrials)}
 			</div>
@@ -370,6 +428,9 @@
 		</div>
 	{:else if stage === 'choice'}
 		<div class="test-card">
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="timer">{trialLabel(choiceCurrentTrial + 1, choiceTrials)}</div>
 			<div style="margin: 60px 0;">
 				{#if choiceCurrentShape === 'circle'}

@@ -3,8 +3,11 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	let phase = 'intro';
@@ -31,6 +34,8 @@
 	let newBadges = [];
 	let currentUser = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	const COLORS = {
 		red: '#EF4444',
@@ -158,6 +163,8 @@
 	}
 
 	function startPractice() {
+		playMode = TASK_PLAY_MODE.PRACTICE;
+		practiceStatusMessage = '';
 		isPractice = true;
 		currentPracticeIndex = 0;
 		responses = [];
@@ -166,6 +173,8 @@
 	}
 
 	function startTest() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = '';
 		isPractice = false;
 		currentTrialIndex = 0;
 		responses = [];
@@ -173,6 +182,15 @@
 		phase = 'test';
 		startTime = Date.now();
 		trialStartTime = Date.now();
+	}
+
+	function finishPractice() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		isPractice = false;
+		showFeedback = false;
+		currentPracticeIndex = 0;
+		phase = 'instructions';
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 
 	function handleCardSelection(pileIndex) {
@@ -191,7 +209,7 @@
 				showFeedback = false;
 				currentPracticeIndex++;
 				if (currentPracticeIndex >= practiceTrials.length) {
-					phase = 'instructions-test';
+					finishPractice();
 				} else {
 					trialStartTime = Date.now();
 				}
@@ -399,9 +417,19 @@
 						? `অনুশীলনী রাউন্ড শুরু করুন (${n(practiceTrials.length)} ট্রায়াল)`
 						: `Start Practice Round (${practiceTrials.length} trials)`}
 				</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={$locale === 'bn'
+						? `আসল পরীক্ষা শুরু করুন (${n(sessionData.trial_cards.length)} ট্রায়াল)`
+						: `Begin Test (${sessionData.trial_cards.length} trials)`}
+					practiceVisible={false}
+					statusMessage={practiceStatusMessage}
+					on:start={startTest}
+				/>
 			</div>
 		{:else if phase === 'practice'}
 			<div>
+				<PracticeModeBanner locale={$locale} />
 				<div style="text-align: center; margin-bottom: 20px;">
 					<p style="color: #666;">{practiceModeLabel()}</p>
 					<p style="color: #0066cc; font-size: 14px; margin-top: 5px;">{ruleInstructionLabel()}</p>
