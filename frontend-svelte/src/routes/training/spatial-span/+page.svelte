@@ -1,7 +1,9 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { onMount } from 'svelte';
 
@@ -263,53 +265,110 @@
 
 <div class="spatial-span-container" data-localize-skip>
 	{#if state === STATE.LOADING}
-		<div class="loading">
-			<div class="spinner"></div>
-			<p>{t('Loading Spatial Span Task...')}</p>
+		<div class="loading-wrapper">
+			<LoadingSkeleton variant="card" count={3} />
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
-		<div class="instructions">
-			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>{t('Spatial Span Test (Corsi Blocks)')}</h1>
-				<DifficultyBadge {difficulty} domain="Working Memory" />
+		<div class="instructions-card">
+			<div class="header">
+				<div class="header-content">
+					<h1>🧠 {t('Spatial Span Test')}</h1>
+					<p class="subtitle">{t('Visuospatial Working Memory Training')}</p>
+					<div class="classic-badge">{t('Corsi Block Test · WMS-IV Component')}</div>
+				</div>
+				<div class="header-right">
+					<DifficultyBadge {difficulty} domain="Working Memory" />
+					<button class="help-btn" on:click={toggleHelp} aria-label={t('Help')}>?</button>
+				</div>
 			</div>
 
-			<div class="instruction-card">
-				<h2>{t('How It Works')}</h2>
-				<p>{t('Blocks will light up in a specific sequence. Your job is to remember the pattern.')}</p>
-				
-				<div class="task-types">
-					<div class="type-card">
-						<h3>{t('Forward Span')}</h3>
-						<p>{t('Click blocks in the same order they lit up')}</p>
-					</div>
-					<div class="type-card">
-						<h3>{t('Backward Span')}</h3>
-						<p>{t('Click blocks in reverse order')}</p>
-					</div>
+			<div class="task-concept">
+				<h2>{t('💡 Your Task: Remember the Block Sequence')}</h2>
+				<p>{t('Blocks on the grid will light up one at a time in a specific order. Watch carefully, then recreate the sequence by clicking the blocks — either in the same order or in reverse.')}</p>
+			</div>
+
+			<div class="instructions-grid">
+				<div class="instruction-item">
+					<div class="instruction-icon">➡️</div>
+					<h3>{t('Forward Span')}</h3>
+					<p>{t('Click blocks in the same order they lit up')}</p>
+					<div class="instruction-note">{t('Sequence: 1→2→3 → You click: 1→2→3')}</div>
 				</div>
-				
-				<div class="tips">
-					<h3>{t('Memory Strategies')}</h3>
-					<ul>
-						<li><strong>{t('Visualize the path:')}</strong> {t('Imagine drawing a line connecting the blocks')}</li>
-						<li><strong>{t('Spatial chunking:')}</strong> {t('Group blocks into patterns (L-shape, diagonal, etc.)')}</li>
-						<li><strong>{t('Mental rehearsal:')}</strong> {t('Replay the sequence in your mind before responding')}</li>
-					</ul>
+				<div class="instruction-item">
+					<div class="instruction-icon">⬅️</div>
+					<h3>{t('Backward Span')}</h3>
+					<p>{t('Click blocks in the reverse order they lit up')}</p>
+					<div class="instruction-note">{t('Sequence: 1→2→3 → You click: 3→2→1')}</div>
 				</div>
 			</div>
-			
-			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				{t('Start Training Session')}
-			</button>
+
+			<div class="info-grid">
+				<div class="info-section">
+					<h3>{t('💪 Tips for Success')}</h3>
+					<div class="tips-list">
+						<div class="tip-item">✓ <strong>{t('Visualize the path:')}</strong> {t('Imagine drawing a line connecting the blocks')}</div>
+						<div class="tip-item">✓ <strong>{t('Spatial chunking:')}</strong> {t('Group blocks into L-shapes, diagonals, etc.')}</div>
+						<div class="tip-item">✓ <strong>{t('Mental rehearsal:')}</strong> {t('Replay the sequence before clicking')}</div>
+						<div class="tip-item">✓ <strong>{t('Landmark method:')}</strong> {t('Use corner blocks as anchors')}</div>
+					</div>
+				</div>
+				<div class="info-section">
+					<h3>{t('📋 Session Info')}</h3>
+					<div class="structure-list">
+						<div class="structure-item">
+							<div class="structure-num">{n(difficulty)}</div>
+							<div class="structure-text">
+								<strong>{t('Difficulty Level')}</strong>
+								<span>{t('Adapts after each session')}</span>
+							</div>
+						</div>
+						<div class="structure-item">
+							<div class="structure-num">{n(trials.length)}</div>
+							<div class="structure-text">
+								<strong>{t('Total Trials')}</strong>
+								<span>{t('Forward & Backward mixed')}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clinical-info">
+				<h3>{t('📚 Clinical Significance')}</h3>
+				<div class="clinical-grid">
+					<div class="clinical-item">
+						<strong>{t('📜 Standard:')}</strong> {t('Corsi Block Test — neuropsychological gold standard since 1972')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🎯 Measures:')}</strong> {t('Visuospatial working memory — distinct from verbal memory')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🏥 MS Relevance:')}</strong> {t('Correlated with MS lesion load (Rao et al., 1991); WMS-IV component')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard in neuropsychological and rehabilitation assessments')}
+					</div>
+				</div>
+			</div>
+
+			<div class="button-group">
+				<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
+					{t('Begin Training')}
+				</button>
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
+					{t('Back to Dashboard')}
+				</button>
+			</div>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
-			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
+			<h1 class="ready-text">{t('Get Ready...')}</h1>
+			<div class="trial-counter">{trialLabel(currentTrialIndex + 1, trials.length)}</div>
 			{#if currentTrial}
-				<p class="span-type">{spanModeLabel(currentTrial.span_type)} {t('Span')}</p>
+				<div class="span-type-indicator {currentTrial.span_type}">
+					{spanModeLabel(currentTrial.span_type)} {t('Span')}
+				</div>
 			{/if}
-			<p>{t('Watch carefully...')}</p>
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
@@ -367,72 +426,72 @@
 			</div>
 		</div>
 	{:else if state === STATE.FEEDBACK}
-		<div class="feedback-screen">
-			<div
-				class="feedback-icon"
-				style="background: {checkCorrect() ? '#4CAF50' : '#f44336'}"
-			>
-				{checkCorrect() ? '✓' : '✗'}
-			</div>
-			<p class="feedback-text">
-				{checkCorrect() ? t('Correct!') : t('Incorrect')}
-			</p>
+		<div class="feedback-screen {checkCorrect() ? 'correct' : 'incorrect'}">
+			<div class="feedback-icon">{checkCorrect() ? '✅' : '❌'}</div>
+			<p class="feedback-text">{checkCorrect() ? t('Correct!') : t('Incorrect')}</p>
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>{t('Session Complete!')} 🎉</h1>
-			
-			<div class="results-grid">
-				<div class="result-card">
-					<div class="result-value">{n(sessionResults.metrics.score)}</div>
-					<div class="result-label">{t('Score')}</div>
-				</div>
-				<div class="result-card">
-					<div class="result-value">{pct(sessionResults.metrics.accuracy)}</div>
-					<div class="result-label">{t('Accuracy')}</div>
-				</div>
-				<div class="result-card">
-					<div class="result-value">{n(sessionResults.metrics.longest_span)}</div>
-					<div class="result-label">{t('Longest Span')}</div>
-				</div>
-				<div class="result-card">
-					<div class="result-value">{pct(sessionResults.metrics.consistency)}</div>
-					<div class="result-label">{t('Consistency')}</div>
-				</div>
-			</div>
-
-			<div class="span-breakdown">
-				<h3>{t('Performance Breakdown')}</h3>
-				<div class="breakdown-row">
-					<span>{t('Forward Span:')}</span>
-					<span>{pct(sessionResults.metrics.forward_accuracy)}</span>
-				</div>
-				<div class="breakdown-row">
-					<span>{t('Backward Span:')}</span>
-					<span>{pct(sessionResults.metrics.backward_accuracy)}</span>
-				</div>
-			</div>
-
-			<div class="difficulty-info">
-				<p>{difficultyChangeLabel(sessionResults.difficulty_before, sessionResults.difficulty_after)}</p>
-				<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
+			<div class="results-header">
+				<h1>{t('Session Complete!')}</h1>
+				<p class="subtitle">{t('Great work on your Spatial Span training')}</p>
 			</div>
 
 			{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
-				<div class="new-badges">
-					<h3>{t('New Badges Earned!')}</h3>
-					{#each sessionResults.new_badges as badge}
-						<div class="badge">
-							<span class="badge-icon">{badge.icon}</span>
-							<span class="badge-name">{badge.name}</span>
-						</div>
-					{/each}
+				<div class="badges-section">
+					<BadgeNotification badges={sessionResults.new_badges} />
 				</div>
 			{/if}
 
+			<div class="metrics-grid">
+				<div class="metric-card primary-card">
+					<div class="metric-label">{t('Overall Score')}</div>
+					<div class="metric-value">{n(sessionResults.metrics.score)}</div>
+				</div>
+				<div class="metric-card">
+					<div class="metric-label">{t('Accuracy')}</div>
+					<div class="metric-value">{pct(sessionResults.metrics.accuracy)}</div>
+				</div>
+				<div class="metric-card">
+					<div class="metric-label">{t('Longest Span')}</div>
+					<div class="metric-value">{n(sessionResults.metrics.longest_span)}</div>
+					<div class="metric-detail">{t('blocks')}</div>
+				</div>
+				<div class="metric-card">
+					<div class="metric-label">{t('Consistency')}</div>
+					<div class="metric-value">{pct(sessionResults.metrics.consistency)}</div>
+				</div>
+			</div>
+
+			<div class="breakdown-section">
+				<h3>{t('Performance Breakdown')}</h3>
+				<div class="breakdown-row">
+					<span>{t('➡️ Forward Span:')}</span>
+					<span class="breakdown-value">{pct(sessionResults.metrics.forward_accuracy)}</span>
+				</div>
+				<div class="breakdown-row">
+					<span>{t('⬅️ Backward Span:')}</span>
+					<span class="breakdown-value">{pct(sessionResults.metrics.backward_accuracy)}</span>
+				</div>
+			</div>
+
+			<div class="difficulty-adjust">
+				<h3>{t('Difficulty Adjustment')}</h3>
+				<div class="difficulty-change">
+					<span class="diff-before">{t('Level')} {n(sessionResults.difficulty_before)}</span>
+					<span class="diff-arrow">→</span>
+					<span class="diff-after">{t('Level')} {n(sessionResults.difficulty_after)}</span>
+				</div>
+				<p class="adaptation-reason">{t(sessionResults.adaptation_reason)}</p>
+			</div>
+
 			<div class="actions">
-				<button on:click={() => goto('/training')}>{t('Back to Training')}</button>
-				<button on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
+					{t('Back to Dashboard')}
+				</button>
+				<button class="start-button" on:click={() => window.location.reload()}>
+					{t('Train Again')}
+				</button>
 			</div>
 		</div>
 	{/if}
@@ -440,36 +499,32 @@
 
 {#if showHelp}
 	<div
-		class="help-modal"
+		class="modal-overlay"
 		role="presentation"
 		on:click={toggleHelp}
 		on:keydown={(e) => e.key === 'Escape' && toggleHelp()}
 	>
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
-			class="help-content"
+			class="modal-content"
 			role="document"
 			on:click|stopPropagation
 			on:keydown|stopPropagation
 		>
-			<button class="close-button" on:click={toggleHelp}>&times;</button>
+			<button class="close-btn" on:click={toggleHelp}>&times;</button>
 			<h2>{t('Memory Strategies')}</h2>
-			
 			<div class="strategy">
 				<h3>🎨 {t('Visual Imagery')}</h3>
 				<p>{t('Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.')}</p>
 			</div>
-			
 			<div class="strategy">
 				<h3>🧩 {t('Spatial Chunking')}</h3>
 				<p>{t('Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.')}</p>
 			</div>
-			
 			<div class="strategy">
 				<h3>🔄 {t('Mental Rehearsal')}</h3>
 				<p>{t('After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.')}</p>
 			</div>
-			
 			<div class="strategy">
 				<h3>📍 {t('Landmark Method')}</h3>
 				<p>{t('Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.')}</p>
@@ -486,178 +541,422 @@
 		min-height: 100vh;
 	}
 
-	.loading {
-		text-align: center;
-		padding: 4rem 0;
+	.loading-wrapper {
+		padding: 2rem 0;
 	}
 
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 4px solid #f3f3f3;
-		border-top: 4px solid #4CAF50;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 0 auto 1rem;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.instructions {
-		text-align: center;
-	}
-
-	.instructions h1 {
-		color: #2c3e50;
-		margin-bottom: 2rem;
-	}
-
-	.instruction-card {
+	/* ── Instructions ── */
+	.instructions-card {
 		background: white;
-		border-radius: 12px;
-		padding: 2rem;
-		margin: 2rem 0;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-		text-align: left;
-	}
-
-	.task-types {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-		margin: 1.5rem 0;
-	}
-
-	.type-card {
-		background: #f8f9fa;
-		padding: 1.5rem;
-		border-radius: 8px;
-		border-left: 4px solid #4CAF50;
-	}
-
-	.type-card h3 {
-		margin: 0 0 0.5rem 0;
-		color: #2c3e50;
-	}
-
-	.tips {
-		background: #fff3cd;
-		padding: 1.5rem;
-		border-radius: 8px;
-		margin-top: 1.5rem;
-	}
-
-	.tips h3 {
-		margin: 0 0 1rem 0;
-		color: #856404;
-	}
-
-	.tips ul {
-		margin: 0;
-		padding-left: 1.5rem;
-	}
-
-	.tips li {
-		margin-bottom: 0.5rem;
-		color: #856404;
-	}
-
-	.start-button {
-		background: #4CAF50;
-		color: white;
-		border: none;
-		padding: 1rem 3rem;
-		font-size: 1.2rem;
-		border-radius: 8px;
-		cursor: pointer;
-		margin-top: 2rem;
-		transition: background 0.3s;
-	}
-
-	.start-button:hover {
-		background: #45a049;
-	}
-
-	.ready-screen {
-		text-align: center;
-		padding: 4rem 0;
-	}
-
-	.span-type {
-		font-size: 1.5rem;
-		font-weight: bold;
-		color: #4CAF50;
-		margin: 1rem 0;
-	}
-
-	.trial-screen {
-		text-align: center;
+		border-radius: 16px;
+		padding: 3rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
 	.header {
 		display: flex;
 		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 1.5rem;
+		gap: 1rem;
+	}
+
+	.header-content h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.25rem;
+		color: #667eea;
+	}
+
+	.header-right {
+		display: flex;
+		gap: 0.75rem;
 		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.subtitle {
+		font-size: 1rem;
+		color: #64748b;
+		margin: 0;
+	}
+
+	.classic-badge {
+		display: inline-block;
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+		color: #667eea;
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 0.3rem 0.9rem;
+		border-radius: 20px;
+		border: 1px solid rgba(102, 126, 234, 0.25);
+		margin-top: 0.4rem;
+		letter-spacing: 0.02em;
+	}
+
+	.task-concept {
+		background: #f8fafc;
+		border-left: 4px solid #667eea;
+		padding: 1.25rem 1.5rem;
+		border-radius: 0 10px 10px 0;
 		margin-bottom: 2rem;
+	}
+
+	.task-concept h2 {
+		color: #1e293b;
+		font-size: 1.15rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.task-concept p {
+		color: #475569;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.instructions-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+		margin-bottom: 2rem;
+	}
+
+	.instruction-item {
+		padding: 1.5rem;
+		border: 2px solid #e2e8f0;
+		border-radius: 12px;
+		text-align: center;
+	}
+
+	.instruction-icon {
+		font-size: 2.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.instruction-item h3 {
+		color: #1e293b;
+		margin-bottom: 0.5rem;
+	}
+
+	.instruction-item p {
+		color: #475569;
+		font-size: 0.9rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.instruction-note {
+		background: #f8fafc;
+		padding: 0.5rem 0.75rem;
+		border-radius: 6px;
+		font-size: 0.82rem;
+		color: #64748b;
+		font-family: monospace;
+	}
+
+	/* Info grid */
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
+		margin: 2rem 0;
+	}
+
+	.info-section {
+		background: white;
+		padding: 1.5rem;
+		border-radius: 12px;
+		border: 2px solid #e5e7eb;
+	}
+
+	.info-section h3 {
+		color: #2c3e50;
+		font-size: 1.1rem;
+		margin-bottom: 1rem;
+	}
+
+	.tips-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
+	}
+
+	.tip-item {
+		background: #f0fdf4;
+		padding: 0.65rem 1rem;
+		border-radius: 8px;
+		color: #15803d;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+
+	.tip-item strong {
+		color: #166534;
+	}
+
+	.structure-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.structure-item {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		background: #f8f9fa;
+		padding: 0.875rem 1rem;
+		border-radius: 8px;
+	}
+
+	.structure-num {
+		width: 44px;
+		height: 44px;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.1rem;
+		font-weight: bold;
+		flex-shrink: 0;
+	}
+
+	.structure-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+
+	.structure-text strong {
+		font-size: 0.95rem;
+		color: #2c3e50;
+	}
+
+	.structure-text span {
+		font-size: 0.82rem;
+		color: #666;
+	}
+
+	/* Clinical info */
+	.clinical-info {
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+		padding: 1.5rem;
+		border-radius: 12px;
+		margin-top: 1.5rem;
+	}
+
+	.clinical-info h3 {
+		color: #667eea;
+		margin-bottom: 1rem;
+		font-size: 1.1rem;
+	}
+
+	.clinical-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 0.75rem;
+	}
+
+	.clinical-item {
+		background: white;
+		padding: 0.875rem;
+		border-radius: 8px;
+		font-size: 0.88rem;
+		line-height: 1.5;
+		color: #555;
+	}
+
+	.clinical-item strong {
+		color: #667eea;
+		display: block;
+		margin-bottom: 0.2rem;
+	}
+
+	/* Buttons */
+	.button-group {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		margin-top: 2rem;
+		flex-wrap: wrap;
+	}
+
+	.start-button {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		padding: 1.25rem 3rem;
+		font-size: 1.2rem;
+		font-weight: bold;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.3s;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+	}
+
+	.start-button:hover:not(:disabled) {
+		transform: translateY(-3px);
+		box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+	}
+
+	.start-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.btn-secondary {
+		background: #f3f4f6;
+		color: #4b5563;
+		border: none;
+		padding: 1.25rem 2.5rem;
+		font-size: 1.1rem;
+		font-weight: 600;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-secondary:hover {
+		background: #e5e7eb;
+	}
+
+	.help-btn {
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
+		border-radius: 50%;
+		width: 40px;
+		height: 40px;
+		font-size: 1.1rem;
+		font-weight: bold;
+		cursor: pointer;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.help-btn:hover {
+		background: #667eea;
+		color: white;
+	}
+
+	/* ── Ready Screen ── */
+	.ready-screen {
+		text-align: center;
+		background: white;
+		padding: 4rem;
+		border-radius: 16px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.ready-text {
+		font-size: 3rem;
+		color: #667eea;
+		margin-bottom: 1rem;
+		animation: pulse 1s ease-in-out;
+	}
+
+	.trial-counter {
+		font-size: 1.1rem;
+		color: #64748b;
+		margin-bottom: 1rem;
+	}
+
+	.span-type-indicator {
+		font-size: 1.3rem;
+		padding: 0.75rem 2rem;
+		border-radius: 12px;
+		display: inline-block;
+		margin-top: 1rem;
+		font-weight: 600;
+	}
+
+	.span-type-indicator.forward {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+
+	.span-type-indicator.backward {
+		background: #fce7f3;
+		color: #9f1239;
+	}
+
+	/* ── Trial Screen ── */
+	.trial-screen {
+		text-align: center;
+		background: white;
+		padding: 2rem;
+		border-radius: 16px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.trial-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
 	}
 
 	.trial-info {
 		display: flex;
-		gap: 1rem;
 		align-items: center;
+		gap: 0.75rem;
 	}
 
 	.trial-number {
-		background: #e8f5e9;
-		padding: 0.5rem 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		color: #64748b;
+	}
+
+	.span-badge {
+		font-size: 0.85rem;
+		font-weight: 600;
+		padding: 0.3rem 0.9rem;
 		border-radius: 20px;
-		font-weight: 500;
 	}
 
-	.help-button {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		border: 2px solid #4CAF50;
-		background: white;
-		color: #4CAF50;
-		font-size: 1.5rem;
-		font-weight: bold;
-		cursor: pointer;
-		transition: all 0.3s;
+	.span-badge.forward {
+		background: #dbeafe;
+		color: #1e40af;
 	}
 
-	.help-button:hover {
-		background: #4CAF50;
-		color: white;
-	}
-
-	.input-header {
-		margin-bottom: 1.5rem;
+	.span-badge.backward {
+		background: #fce7f3;
+		color: #9f1239;
 	}
 
 	.instruction {
-		font-size: 1.3rem;
-		margin-bottom: 1rem;
-		color: #555;
+		font-size: 1.2rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.instruction.watching {
+		color: #667eea;
+		font-weight: 600;
+	}
+
+	.instruction.responding {
+		color: #1e293b;
+		font-weight: 600;
+	}
+
+	.input-header {
+		margin-bottom: 1.25rem;
 	}
 
 	.control-buttons {
 		display: flex;
 		gap: 0.5rem;
 		justify-content: center;
-		margin-top: 0.5rem;
+		margin-top: 0.75rem;
 	}
 
 	.control-btn {
 		padding: 0.5rem 1rem;
-		border: 2px solid #2196F3;
+		border: 2px solid #667eea;
 		background: white;
-		color: #2196F3;
-		border-radius: 6px;
+		color: #667eea;
+		border-radius: 8px;
 		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -665,73 +964,72 @@
 	}
 
 	.control-btn:hover:not(:disabled) {
-		background: #2196F3;
+		background: #667eea;
 		color: white;
 		transform: translateY(-2px);
-		box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
 	}
 
 	.control-btn:disabled {
 		opacity: 0.3;
 		cursor: not-allowed;
-		border-color: #ccc;
-		color: #ccc;
+		border-color: #cbd5e1;
+		color: #94a3b8;
 	}
 
 	.submit-btn {
 		padding: 0.5rem 1.4rem;
-		border: 2px solid #4CAF50;
-		background: #4CAF50;
+		border: none;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
+		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
 	}
 
 	.submit-btn:hover:not(:disabled) {
-		background: #43a047;
-		border-color: #43a047;
 		transform: translateY(-2px);
-		box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 	}
 
 	.submit-btn:disabled {
 		opacity: 0.35;
 		cursor: not-allowed;
-		background: #ccc;
-		border-color: #ccc;
+		background: #cbd5e1;
+		box-shadow: none;
 	}
 
+	/* Grid */
 	.grid-container {
 		display: grid;
 		grid-template-columns: repeat(var(--grid-size), 1fr);
 		gap: 12px;
-		max-width: 500px;
+		max-width: 480px;
 		margin: 0 auto;
 		padding: 2rem;
 	}
 
 	.block {
 		aspect-ratio: 1;
-		background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
+		background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
 		border-radius: 12px;
-		border: 3px solid #bdbdbd;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		border: 3px solid #cbd5e1;
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 1.5rem;
 		font-weight: bold;
 		color: white;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 	}
 
 	.block.highlighted {
-		background: linear-gradient(145deg, #4CAF50, #45a049);
-		border-color: #2e7d32;
-		box-shadow: 0 0 25px rgba(76, 175, 80, 0.8), 0 4px 8px rgba(0,0,0,0.2);
+		background: linear-gradient(145deg, #667eea, #764ba2);
+		border-color: #4f46e5;
+		box-shadow: 0 0 28px rgba(102, 126, 234, 0.75), 0 4px 8px rgba(0, 0, 0, 0.15);
 		transform: scale(1.15);
 	}
 
@@ -740,22 +1038,17 @@
 	}
 
 	.block.clickable:hover:not(.clicked) {
-		background: linear-gradient(145deg, #e8f5e9, #c8e6c9);
-		border-color: #81c784;
+		background: linear-gradient(145deg, #eff6ff, #dbeafe);
+		border-color: #93c5fd;
 		transform: scale(1.05);
-		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+		box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
 	}
 
 	.block.clicked {
-		background: linear-gradient(145deg, #2196F3, #1976D2);
-		border-color: #1565C0;
-		box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4), inset 0 2px 4px rgba(0,0,0,0.2);
+		background: linear-gradient(145deg, #667eea, #4f46e5);
+		border-color: #4338ca;
+		box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.15);
 		transform: scale(0.95);
-	}
-
-	.block.clicked:hover {
-		background: linear-gradient(145deg, #42A5F5, #2196F3);
-		transform: scale(0.98);
 	}
 
 	.block.showing {
@@ -763,214 +1056,340 @@
 	}
 
 	.click-number {
-		font-size: 1.8rem;
+		font-size: 1.4rem;
 		font-weight: bold;
 		color: white;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 	}
 
-	.feedback-screen {
-		text-align: center;
-		padding: 4rem 0;
-	}
-
-	.feedback-icon {
-		width: 120px;
-		height: 120px;
-		border-radius: 50%;
+	/* Response progress indicator */
+	.response-progress {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 4rem;
-		margin: 0 auto 1rem;
-		color: white;
+		gap: 0.5rem;
+		margin-top: 1rem;
 	}
 
+	.progress-label {
+		font-size: 0.85rem;
+		color: #64748b;
+		font-weight: 500;
+	}
+
+	.progress-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: #e2e8f0;
+		transition: background 0.2s;
+	}
+
+	.progress-dot.filled {
+		background: #667eea;
+	}
+
+	.progress-text {
+		font-size: 0.85rem;
+		color: #64748b;
+		font-weight: 600;
+	}
+
+	/* ── Feedback ── */
+	.feedback-screen {
+		text-align: center;
+		background: white;
+		padding: 4rem;
+		border-radius: 16px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.feedback-icon {
+		font-size: 5rem;
+		margin-bottom: 1rem;
+		animation: scaleIn 0.3s ease-out;
+	}
 
 	.feedback-text {
 		font-size: 2rem;
-		font-weight: bold;
+		font-weight: 700;
 	}
 
+	.feedback-screen.correct .feedback-text {
+		color: #059669;
+	}
+
+	.feedback-screen.incorrect .feedback-text {
+		color: #dc2626;
+	}
+
+	/* ── Complete Screen ── */
 	.complete-screen {
-		text-align: center;
+		background: white;
+		border-radius: 16px;
+		padding: 3rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
-	.results-grid {
+	.results-header {
+		margin-bottom: 1.5rem;
+	}
+
+	.results-header h1 {
+		font-size: 2rem;
+		color: #1e293b;
+		margin-bottom: 0.25rem;
+	}
+
+	.badges-section {
+		margin: 1.5rem 0;
+	}
+
+	.metrics-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 		gap: 1rem;
 		margin: 2rem 0;
 	}
 
-	.result-card {
-		background: white;
+	.metric-card {
 		padding: 1.5rem;
+		background: #f8fafc;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		text-align: center;
+		border: 2px solid #e2e8f0;
 	}
 
-	.result-value {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #4CAF50;
+	.metric-card.primary-card {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		border: none;
+		color: white;
+	}
+
+	.metric-label {
+		font-size: 0.85rem;
+		color: #64748b;
 		margin-bottom: 0.5rem;
 	}
 
-	.result-label {
-		color: #666;
-		font-size: 0.9rem;
+	.metric-card.primary-card .metric-label {
+		color: rgba(255, 255, 255, 0.85);
 	}
 
-	.span-breakdown {
-		background: white;
+	.metric-value {
+		font-size: 2rem;
+		font-weight: 700;
+		color: #1e293b;
+	}
+
+	.metric-card.primary-card .metric-value {
+		color: white;
+	}
+
+	.metric-detail {
+		font-size: 0.8rem;
+		color: #94a3b8;
+		margin-top: 0.25rem;
+	}
+
+	.breakdown-section {
+		background: #f8fafc;
 		padding: 1.5rem;
 		border-radius: 12px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-		margin: 2rem 0;
+		margin: 1.5rem 0;
 	}
 
-	.span-breakdown h3 {
-		margin: 0 0 1rem 0;
-		color: #2c3e50;
+	.breakdown-section h3 {
+		color: #1e293b;
+		margin-bottom: 1rem;
+		font-size: 1rem;
 	}
 
 	.breakdown-row {
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
 		padding: 0.5rem 0;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid #e2e8f0;
+		color: #475569;
 	}
 
 	.breakdown-row:last-child {
 		border-bottom: none;
 	}
 
-	.difficulty-info {
-		background: #e3f2fd;
+	.breakdown-value {
+		font-weight: 700;
+		color: #667eea;
+	}
+
+	.difficulty-adjust {
+		background: #f8fafc;
 		padding: 1.5rem;
 		border-radius: 12px;
-		margin: 2rem 0;
+		margin: 1.5rem 0;
+		text-align: center;
+	}
+
+	.difficulty-adjust h3 {
+		color: #1e293b;
+		margin-bottom: 1rem;
+		font-size: 1rem;
+	}
+
+	.difficulty-change {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 1rem;
+		font-size: 1.4rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.diff-before,
+	.diff-after {
+		font-weight: 700;
+		color: #667eea;
+	}
+
+	.diff-arrow {
+		color: #94a3b8;
 	}
 
 	.adaptation-reason {
-		color: #666;
+		color: #64748b;
 		font-size: 0.9rem;
-		margin-top: 0.5rem;
-	}
-
-	.new-badges {
-		background: #fff3e0;
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.badge {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 0.5rem;
-		background: white;
-		border-radius: 8px;
-		margin: 0.5rem 0;
-	}
-
-	.badge-icon {
-		font-size: 2rem;
 	}
 
 	.actions {
 		display: flex;
 		gap: 1rem;
-		justify-content: center;
 		margin-top: 2rem;
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 
-	.actions button {
-		padding: 0.8rem 2rem;
-		border: none;
-		border-radius: 8px;
-		font-size: 1rem;
-		cursor: pointer;
-		transition: all 0.3s;
-	}
-
-	.actions button:first-child {
-		background: #2196F3;
-		color: white;
-	}
-
-	.actions button:first-child:hover {
-		background: #1976D2;
-	}
-
-	.actions button:last-child {
-		background: #4CAF50;
-		color: white;
-	}
-
-	.actions button:last-child:hover {
-		background: #45a049;
-	}
-
-	.help-modal {
+	/* ── Help Modal ── */
+	.modal-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
+		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 1000;
+		padding: 1rem;
 	}
 
-	.help-content {
+	.modal-content {
 		background: white;
 		padding: 2rem;
-		border-radius: 12px;
-		max-width: 600px;
+		border-radius: 16px;
+		max-width: 560px;
+		width: 100%;
 		max-height: 80vh;
 		overflow-y: auto;
 		position: relative;
 	}
 
-	.close-button {
+	.modal-content h2 {
+		color: #1e293b;
+		margin-bottom: 1.5rem;
+		font-size: 1.4rem;
+	}
+
+	.close-btn {
 		position: absolute;
 		top: 1rem;
 		right: 1rem;
-		width: 40px;
-		height: 40px;
+		width: 36px;
+		height: 36px;
 		border: none;
-		background: #f44336;
-		color: white;
-		font-size: 1.5rem;
+		background: #f1f5f9;
+		color: #475569;
+		font-size: 1.4rem;
 		border-radius: 50%;
 		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s;
 	}
 
-	.help-content h2 {
-		color: #2c3e50;
-		margin-bottom: 1.5rem;
+	.close-btn:hover {
+		background: #e2e8f0;
 	}
 
 	.strategy {
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.25rem;
 		padding: 1rem;
 		background: #f8f9fa;
 		border-radius: 8px;
-		border-left: 4px solid #4CAF50;
+		border-left: 4px solid #667eea;
 	}
 
 	.strategy h3 {
-		margin: 0 0 0.5rem 0;
-		color: #2c3e50;
+		margin: 0 0 0.4rem 0;
+		color: #1e293b;
+		font-size: 1rem;
 	}
 
 	.strategy p {
 		margin: 0;
 		color: #555;
 		line-height: 1.6;
+		font-size: 0.9rem;
+	}
+
+	/* ── Animations ── */
+	@keyframes pulse {
+		0%, 100% { transform: scale(1); }
+		50% { transform: scale(1.05); }
+	}
+
+	@keyframes scaleIn {
+		0% { transform: scale(0); }
+		50% { transform: scale(1.1); }
+		100% { transform: scale(1); }
+	}
+
+	/* ── Responsive ── */
+	@media (max-width: 768px) {
+		.spatial-span-container {
+			padding: 1rem;
+		}
+
+		.instructions-card,
+		.ready-screen,
+		.trial-screen,
+		.feedback-screen,
+		.complete-screen {
+			padding: 1.5rem;
+		}
+
+		.instructions-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.info-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.ready-text {
+			font-size: 2rem;
+		}
+
+		.metrics-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.actions {
+			flex-direction: column;
+		}
+
+		.button-group {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 </style>

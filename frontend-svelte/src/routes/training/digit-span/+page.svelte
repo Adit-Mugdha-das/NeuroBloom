@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import { onMount } from 'svelte';
@@ -328,18 +329,20 @@
 	{:else if currentState === STATE_INSTRUCTIONS}
 		<div class="instructions-card">
 			<div class="header">
-				<div>
+				<div class="header-content">
 					<h1>🧠 {t('Digit Span Test')}</h1>
 					<p class="subtitle">{t('Working Memory Training')}</p>
+					<div class="classic-badge">{t('WAIS-IV Standard · MACFIMS Battery')}</div>
 				</div>
-				<button class="help-button" on:click={() => showHelp = !showHelp}>
-					{showHelp ? '✕' : '❓'}
-				</button>
+				<div class="header-right">
+					<DifficultyBadge difficulty={sessionData.difficulty} domain="Working Memory" />
+					<button class="help-btn" on:click={() => (showHelp = !showHelp)} aria-label={t('Help')}>?</button>
+				</div>
 			</div>
 
-			<div class="info-section">
-				<h2>{t('How It Works')}</h2>
-				<p>{t("You'll see a sequence of digits appear one at a time. Your job is to remember them and type them back.")}</p>
+			<div class="task-concept">
+				<h2>{t('💡 Your Task: Remember & Reproduce Digit Sequences')}</h2>
+				<p>{t("You'll see digits appear on screen one at a time. Remember the sequence, then type it back — either in the same order or reversed. The sequence length adapts to your performance.")}</p>
 			</div>
 
 			<div class="instructions-grid">
@@ -368,42 +371,59 @@
 				</div>
 			</div>
 
-			{#if showHelp}
-				<div class="help-modal">
-					<h3>💡 {t('Helpful Tips')}</h3>
-					<ul>
-						<li>{t('Chunking: Group digits into pairs or triplets')}</li>
-						<li>{t('Rehearsal: Repeat the numbers quietly to yourself')}</li>
-						<li>{t('Visualization: Picture the digits on a mental screen')}</li>
-						<li>{t('Relaxation: Take a breath between trials - stress reduces memory')}</li>
-						<li>{t('Practice: Your working memory will improve with regular training')}</li>
-					</ul>
-					<p class="help-note">{t("This test adapts to your performance - don't worry about mistakes!")}</p>
+			<div class="info-grid">
+				<div class="info-section">
+					<h3>{t('💪 Tips for Success')}</h3>
+					<div class="tips-list">
+						<div class="tip-item">✓ <strong>{t('Chunking:')}</strong> {t('Group digits into pairs (3-7, 2-8)')}</div>
+						<div class="tip-item">✓ <strong>{t('Rehearsal:')}</strong> {t('Repeat them quietly to yourself')}</div>
+						<div class="tip-item">✓ <strong>{t('Visualization:')}</strong> {t('Picture digits on a mental screen')}</div>
+						<div class="tip-item">✓ <strong>{t('Relax:')}</strong> {t('Stress reduces memory — breathe between trials')}</div>
+					</div>
 				</div>
-			{/if}
-
-			<div class="tips">
-				<h3>💡 {t('Tips')}</h3>
-				<ul>
-					<li>{t('Take your time to remember the sequence before typing')}</li>
-					<li>{t('Use chunking or visualization to hold the digits in mind')}</li>
-					<li>{t('One box per digit - Backspace to correct the last entry')}</li>
-					<li>{t("Don't worry about mistakes - the task adapts to your level")}</li>
-				</ul>
-			</div>
-
-			<div class="session-info">
-				<div class="info-item">
-					<span class="label">{t('Difficulty Level:')}</span>
-					<span class="value">{n(sessionData.difficulty)}/{n(10)}</span>
-				</div>
-				<div class="info-item">
-					<span class="label">{t('Trials:')}</span>
-					<span class="value">{n(sessionData.num_trials)}</span>
+				<div class="info-section">
+					<h3>{t('📋 Session Info')}</h3>
+					<div class="structure-list">
+						<div class="structure-item">
+							<div class="structure-num">{n(sessionData.difficulty)}</div>
+							<div class="structure-text">
+								<strong>{t('Difficulty Level')}</strong>
+								<span>{t('Adapts after each session')}</span>
+							</div>
+						</div>
+						<div class="structure-item">
+							<div class="structure-num">{n(sessionData.num_trials)}</div>
+							<div class="structure-text">
+								<strong>{t('Total Trials')}</strong>
+								<span>{t('Forward & Backward mixed')}</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<button class="start-button" on:click={startSession}>{t('Start Training')}</button>
+			<div class="clinical-info">
+				<h3>{t('📚 Clinical Significance')}</h3>
+				<div class="clinical-grid">
+					<div class="clinical-item">
+						<strong>{t('📜 Standard:')}</strong> {t('WAIS-IV subtest, gold standard in neuropsychology')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🎯 Measures:')}</strong> {t('Verbal working memory capacity & manipulation')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🏥 MS Relevance:')}</strong> {t('Included in MACFIMS — sensitive to MS-related deficits (Benedict et al., 2006)')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard across neuropsychological assessments worldwide')}
+					</div>
+				</div>
+			</div>
+
+			<div class="button-group">
+				<button class="start-button" on:click={startSession}>{t('Begin Training')}</button>
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
+			</div>
 		</div>
 	{:else if currentState === STATE_READY}
 		<div class="ready-screen">
@@ -553,6 +573,44 @@
 	{/if}
 </div>
 
+{#if showHelp}
+	<div
+		class="modal-overlay"
+		role="presentation"
+		on:click={() => (showHelp = false)}
+		on:keydown={(e) => e.key === 'Escape' && (showHelp = false)}
+	>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="modal-content"
+			role="document"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+		>
+			<button class="close-btn" on:click={() => (showHelp = false)}>&times;</button>
+			<h2>{t('Memory Strategies')}</h2>
+
+			<div class="strategy">
+				<h3>🔢 {t('Chunking')}</h3>
+				<p>{t('Group digits into pairs or triplets (e.g., 3-7-2 becomes "37" and "2"). This reduces the number of items you need to hold in memory.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>🔁 {t('Verbal Rehearsal')}</h3>
+				<p>{t('Repeat the sequence quietly to yourself as each digit appears. Subvocalization strengthens the memory trace.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>🖼️ {t('Visualization')}</h3>
+				<p>{t('Picture the digits written on a whiteboard or chalkboard in your mind. Spatial encoding adds a second memory cue.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>😌 {t('Relaxation')}</h3>
+				<p>{t("Anxiety narrows working memory capacity. Take a slow breath between trials \u2014 you'll remember more.")}</p>
+			</div>
+			<p class="help-note">{t("This test adapts automatically to your level \u2014 don't worry about mistakes!")}</p>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.digit-span-container {
 		max-width: 800px;
@@ -575,90 +633,80 @@
 	.header {
 		display: flex;
 		justify-content: space-between;
-		align-items: start;
+		align-items: flex-start;
+		margin-bottom: 1.5rem;
+		gap: 1rem;
 	}
 
-	.header h1 {
+	.header-content h1 {
 		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
-		color: #2563eb;
+		margin-bottom: 0.25rem;
+		color: #667eea;
 	}
 
-	.help-button {
-		background: #3b82f6;
-		color: white;
-		border: none;
+	.header-right {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.classic-badge {
+		display: inline-block;
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+		color: #667eea;
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 0.3rem 0.9rem;
+		border-radius: 20px;
+		border: 1px solid rgba(102, 126, 234, 0.25);
+		margin-top: 0.4rem;
+		letter-spacing: 0.02em;
+	}
+
+	.task-concept {
+		background: #f8fafc;
+		border-left: 4px solid #667eea;
+		padding: 1.25rem 1.5rem;
+		border-radius: 0 10px 10px 0;
+		margin-bottom: 2rem;
+	}
+
+	.task-concept h2 {
+		color: #1e293b;
+		font-size: 1.15rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.task-concept p {
+		color: #475569;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.help-btn {
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
 		border-radius: 50%;
-		width: 48px;
-		height: 48px;
-		font-size: 1.5rem;
+		width: 40px;
+		height: 40px;
+		font-size: 1.1rem;
+		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	}
 
-	.help-button:hover {
-		background: #2563eb;
+	.help-btn:hover {
+		background: #667eea;
+		color: white;
 		transform: scale(1.1);
 	}
 
-	.help-modal {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 2rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-		box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-	}
-
-	.help-modal h3 {
-		margin-bottom: 1rem;
-		font-size: 1.5rem;
-	}
-
-	.help-modal ul {
-		list-style: none;
-		padding: 0;
-		margin-bottom: 1rem;
-	}
-
-	.help-modal li {
-		padding: 0.75rem 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-	}
-
-	.help-modal li:last-child {
-		border-bottom: none;
-	}
-
-	.help-modal strong {
-		color: #fbbf24;
-	}
-
-	.help-note {
-		background: rgba(255, 255, 255, 0.1);
-		padding: 1rem;
-		border-radius: 8px;
-		margin-top: 1rem;
-		font-style: italic;
-	}
-
 	.subtitle {
-		font-size: 1.1rem;
+		font-size: 1rem;
 		color: #64748b;
-		margin-bottom: 2rem;
-	}
-
-	.info-section {
-		margin-bottom: 2rem;
-		padding: 1.5rem;
-		background: #f8fafc;
-		border-radius: 12px;
-	}
-
-	.info-section h2 {
-		margin-bottom: 0.5rem;
-		color: #1e293b;
+		margin: 0;
 	}
 
 	.instructions-grid {
@@ -707,67 +755,167 @@
 		margin-bottom: 0.5rem;
 	}
 
-	.tips {
-		background: #fef3c7;
+	/* Info Grid - two-column layout */
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
+		margin: 2rem 0;
+	}
+
+	.info-section {
+		background: white;
 		padding: 1.5rem;
 		border-radius: 12px;
-		margin-bottom: 2rem;
+		border: 2px solid #e5e7eb;
 	}
 
-	.tips h3 {
+	.info-section h3 {
+		color: #2c3e50;
+		font-size: 1.1rem;
 		margin-bottom: 1rem;
-		color: #92400e;
 	}
 
-	.tips ul {
-		margin-left: 1.5rem;
-	}
-
-	.tips li {
-		margin-bottom: 0.5rem;
-		color: #78350f;
-	}
-
-	.session-info {
-		display: flex;
-		gap: 2rem;
-		justify-content: center;
-		margin-bottom: 2rem;
-	}
-
-	.info-item {
+	.tips-list {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		gap: 0.65rem;
 	}
 
-	.info-item .label {
+	.tip-item {
+		background: #f0fdf4;
+		padding: 0.65rem 1rem;
+		border-radius: 8px;
+		color: #15803d;
 		font-size: 0.9rem;
-		color: #64748b;
-		margin-bottom: 0.25rem;
+		line-height: 1.5;
 	}
 
-	.info-item .value {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #2563eb;
+	.tip-item strong {
+		color: #166534;
+	}
+
+	.structure-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.structure-item {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		background: #f8f9fa;
+		padding: 0.875rem 1rem;
+		border-radius: 8px;
+	}
+
+	.structure-num {
+		width: 44px;
+		height: 44px;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.1rem;
+		font-weight: bold;
+		flex-shrink: 0;
+	}
+
+	.structure-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+
+	.structure-text strong {
+		font-size: 0.95rem;
+		color: #2c3e50;
+	}
+
+	.structure-text span {
+		font-size: 0.82rem;
+		color: #666;
+	}
+
+	/* Clinical Info */
+	.clinical-info {
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+		padding: 1.5rem;
+		border-radius: 12px;
+		margin-top: 1.5rem;
+	}
+
+	.clinical-info h3 {
+		color: #667eea;
+		margin-bottom: 1rem;
+		font-size: 1.1rem;
+	}
+
+	.clinical-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 0.75rem;
+	}
+
+	.clinical-item {
+		background: white;
+		padding: 0.875rem;
+		border-radius: 8px;
+		font-size: 0.88rem;
+		line-height: 1.5;
+		color: #555;
+	}
+
+	.clinical-item strong {
+		color: #667eea;
+		display: block;
+		margin-bottom: 0.2rem;
+	}
+
+	/* Buttons */
+	.button-group {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		margin-top: 2rem;
+		flex-wrap: wrap;
 	}
 
 	.start-button {
-		width: 100%;
-		padding: 1rem 2rem;
-		background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		border-radius: 12px;
+		padding: 1.25rem 3rem;
 		font-size: 1.2rem;
-		font-weight: 600;
+		font-weight: bold;
+		border-radius: 12px;
 		cursor: pointer;
-		transition: transform 0.2s;
+		transition: all 0.3s;
+		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 	}
 
 	.start-button:hover {
-		transform: translateY(-2px);
+		transform: translateY(-3px);
+		box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+	}
+
+	.btn-secondary {
+		background: #f3f4f6;
+		color: #4b5563;
+		border: none;
+		padding: 1.25rem 2.5rem;
+		font-size: 1.1rem;
+		font-weight: 600;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-secondary:hover {
+		background: #e5e7eb;
 	}
 
 	/* Ready Screen */
@@ -1135,6 +1283,89 @@
 
 	.secondary-button:hover {
 		background: #f8fafc;
+	}
+
+	/* Help Modal Overlay */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1rem;
+	}
+
+	.modal-content {
+		background: white;
+		padding: 2rem;
+		border-radius: 16px;
+		max-width: 560px;
+		width: 100%;
+		max-height: 80vh;
+		overflow-y: auto;
+		position: relative;
+	}
+
+	.modal-content h2 {
+		color: #1e293b;
+		margin-bottom: 1.5rem;
+		font-size: 1.4rem;
+	}
+
+	.close-btn {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		width: 36px;
+		height: 36px;
+		border: none;
+		background: #f1f5f9;
+		color: #475569;
+		font-size: 1.4rem;
+		border-radius: 50%;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 0.2s;
+	}
+
+	.close-btn:hover {
+		background: #e2e8f0;
+	}
+
+	.strategy {
+		margin-bottom: 1.25rem;
+		padding: 1rem;
+		background: #f8f9fa;
+		border-radius: 8px;
+		border-left: 4px solid #667eea;
+	}
+
+	.strategy h3 {
+		margin: 0 0 0.4rem 0;
+		color: #1e293b;
+		font-size: 1rem;
+	}
+
+	.strategy p {
+		margin: 0;
+		color: #555;
+		line-height: 1.6;
+		font-size: 0.9rem;
+	}
+
+	.help-note {
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+		padding: 1rem;
+		border-radius: 8px;
+		color: #667eea;
+		font-style: italic;
+		font-size: 0.9rem;
+		text-align: center;
+		margin-top: 1rem;
 	}
 
 	/* Animations */
