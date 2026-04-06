@@ -1,17 +1,17 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
-		formatNumber,
-		formatPercent,
-		locale,
-		localeText,
-		localizeStimulusSequence,
-		localizeStimulusSymbol,
-		translateText
+	  formatNumber,
+	  formatPercent,
+	  locale,
+	  localeText,
+	  localizeStimulusSequence,
+	  localizeStimulusSymbol,
+	  translateText
 	} from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
@@ -346,116 +346,116 @@
 </script>
 
 <div class="ospan-container" data-localize-skip>
+<div class="ospan-inner">
 	{#if state === STATE.LOADING}
-		<div class="loading">
-			<div class="spinner"></div>
-			<p>{t('Loading Operation Span Task...')}</p>
+		<div class="loading-wrapper">
+			<LoadingSkeleton variant="card" count={3} />
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
-		<div class="instructions">
-			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>{t('Operation Span (OSPAN)')}</h1>
-				<DifficultyBadge {difficulty} domain="Working Memory" />
-			</div>
-
-			<div class="instruction-card">
-				<h2>{t('Dual-Task Challenge')}</h2>
-				<p>
-					{$locale === 'bn'
-						? 'এই টাস্কে আপনাকে একই সঙ্গে দুটি মানসিক কাজ সামলাতে হবে।'
-						: 'This task measures your ability to juggle two mental tasks simultaneously:'}
-				</p>
-				
-				<div class="dual-tasks">
-					<div class="task-card math-card">
-						<div class="task-icon">🧮</div>
-						<h3>{t('Task 1: Verify Math')}</h3>
-						<p>
-							{$locale === 'bn'
-								? 'প্রতিটি সমীকরণ সঠিক নাকি ভুল তা ঠিক করুন'
-								: 'Decide if each equation is correct or incorrect'}
-						</p>
-						<div class="task-example">
-							<div class="example-item">{t('2 + 3 = 5')} <span class="correct">✓ {t('Correct')}</span></div>
-							<div class="example-item">{t('4 + 2 = 7')} <span class="incorrect">✗ {t('Incorrect')}</span></div>
-						</div>
-					</div>
-					
-					<div class="task-card letter-card">
-						<div class="task-icon">🔤</div>
-						<h3>{t('Task 2: Remember Letters')}</h3>
-						<p>
-							{$locale === 'bn'
-								? 'প্রতিটি সমীকরণের পর একটি অক্ষর মনে রাখুন'
-								: 'After each equation, memorize a letter'}
-						</p>
-						<div class="task-example">
-							<div class="example-item">{t('Remember:')} <strong>{symbol('F')}</strong></div>
-							<div class="example-item">{t('Remember:')} <strong>{symbol('Q')}</strong></div>
-						</div>
-					</div>
+		<div class="instructions-card">
+			<div class="header">
+				<div class="header-content">
+					<h1>🧮 {t('Operation Span (OSPAN)')}</h1>
+					<p class="subtitle">{t('Dual-Task Executive Working Memory Training')}</p>
+					<div class="classic-badge">{t('OSPAN · Turner & Engle (1989) · MACFIMS Battery')}</div>
 				</div>
-
-				<div class="flow-diagram">
-					<h3>{t('How It Works')}</h3>
-					<div class="flow-steps">
-						<div class="flow-step">
-							<div class="step-number">1</div>
-							<div class="step-content">
-								<strong>{t('Math Problem')}</strong>
-								<p>{t('Is 2+3=5?')}</p>
-								<div class="step-buttons">
-									<span class="mini-btn correct">✓ {t('Correct')}</span>
-									<span class="mini-btn incorrect">✗ {t('Incorrect')}</span>
-								</div>
-							</div>
-						</div>
-						<div class="flow-arrow">→</div>
-						<div class="flow-step">
-							<div class="step-number">2</div>
-							<div class="step-content">
-								<strong>{t('Remember Letter')}</strong>
-								<p class="big-letter">{symbol('F')}</p>
-							</div>
-						</div>
-						<div class="flow-arrow">→</div>
-						<div class="flow-step">
-							<div class="step-number">3</div>
-							<div class="step-content">
-								<strong>{t('Repeat 2-8 times')}</strong>
-								<p>{t('More math + letters')}</p>
-							</div>
-						</div>
-						<div class="flow-arrow">→</div>
-						<div class="flow-step">
-							<div class="step-number">4</div>
-							<div class="step-content">
-								<strong>{t('Recall Letters')}</strong>
-								<p>{letterSequence(['F', 'Q', 'M'])}</p>
-							</div>
-						</div>
-					</div>
-				</div>
-				
-				<div class="tips">
-					<h3>{t('Pro Tips')}</h3>
-					<ul>
-						<li><strong>{t('Balance both tasks:')}</strong> {$locale === 'bn' ? 'গণিতের জন্য অক্ষর বা অক্ষরের জন্য গণিত একেবারে ছেড়ে দেবেন না।' : "Don't sacrifice math for letters or vice versa"}</li>
-						<li><strong>{t('Mental rehearsal:')}</strong> {$locale === 'bn' ? 'প্রতিটি অক্ষর দেখার পর মনে মনে পুরো ধারাটি আবার বলুন।' : 'Silently repeat letters after each one'}</li>
-						<li><strong>{t('Take your time:')}</strong> {$locale === 'bn' ? 'প্রতিটি সমীকরণ যাচাই করতে পুরো সময় ব্যবহার করুন।' : 'Use the full time to verify each equation'}</li>
-						<li><strong>{t('Stay focused:')}</strong> {$locale === 'bn' ? 'এটি মানসিকভাবে চ্যালেঞ্জিং, তাই মনোযোগ ধরে রাখাই মূল বিষয়।' : "This is mentally demanding - that's the point!"}</li>
-					</ul>
+				<div class="header-right">
+					<DifficultyBadge {difficulty} domain="Working Memory" />
+					<button class="help-btn" on:click={toggleHelp} aria-label={t('Help')}>?</button>
 				</div>
 			</div>
-			
-			<TaskPracticeActions
-				locale={$locale}
-				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
-				statusMessage={practiceStatusMessage}
-				align="center"
-				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
-				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
-			/>
+
+			<div class="task-concept">
+				<h2>{t('💡 Your Task: Juggle Math and Memory')}</h2>
+				<p>{$locale === 'bn' ? 'এই টাস্কে আপনাকে একই সঙ্গে গণিত যাচাই করতে হবে এবং অক্ষর মনে রাখতে হবে।' : 'Verify math equations AND memorize letters shown after each one. At the end of each set, recall all letters in order.'}</p>
+			</div>
+
+			<div class="rules-grid">
+				<div class="rule-card">
+					<div class="rule-icon">🧮</div>
+					<h3>{t('Step 1 — Verify Equation')}</h3>
+					<p>{t('Is each equation correct or incorrect?')}</p>
+					<div class="rule-example">{t('2 + 3 = 5')} ✓ &nbsp; {t('4 + 2 = 7')} ✗</div>
+				</div>
+				<div class="rule-card">
+					<div class="rule-icon">🔤</div>
+					<h3>{t('Step 2 — Remember Letter')}</h3>
+					<p>{t('A letter appears after each equation — memorize it')}</p>
+					<div class="rule-example">{symbol('F')} → {symbol('K')} → {symbol('M')}...</div>
+				</div>
+				<div class="rule-card">
+					<div class="rule-icon">🔁</div>
+					<h3>{t('Step 3 — Repeat')}</h3>
+					<p>{t('2–8 math-letter pairs per set, depending on difficulty')}</p>
+					<div class="rule-example">{t('Pairs adapt to your level')}</div>
+				</div>
+				<div class="rule-card">
+					<div class="rule-icon">📋</div>
+					<h3>{t('Step 4 — Recall Letters')}</h3>
+					<p>{t('Recall all letters in order at the end of the set')}</p>
+					<div class="rule-example">{letterSequence(['F', 'K', 'M'])}</div>
+				</div>
+			</div>
+
+			<div class="info-grid">
+				<div class="info-section">
+					<h3>{t('💪 Memory Strategies')}</h3>
+					<div class="tips-list">
+						<div class="tip-item">✓ <strong>{t('Balance both tasks:')}</strong> {$locale === 'bn' ? 'দুটি কাজের মধ্যে ভারসাম্য রাখুন।' : "Don't sacrifice math for letters or vice versa"}</div>
+						<div class="tip-item">✓ <strong>{t('Active rehearsal:')}</strong> {$locale === 'bn' ? 'প্রতিটি অক্ষর দেখার পর পুরো ধারাটি মনে মনে বলুন।' : 'Silently repeat all letters so far after each one'}</div>
+						<div class="tip-item">✓ <strong>{t('Math first:')}</strong> {$locale === 'bn' ? 'দ্রুত গণিত যাচাই করুন, তারপর অক্ষরে মনোযোগ দিন।' : 'Quickly verify math, then shift focus to the letter'}</div>
+						<div class="tip-item">✓ <strong>{t('Chunking:')}</strong> {$locale === 'bn' ? 'অক্ষরগুলো ২–৩টির দলে ভাগ করুন।' : 'Group letters into pairs (e.g. FK – MT – B)'}</div>
+					</div>
+				</div>
+				<div class="info-section">
+					<h3>{t('📋 Session Info')}</h3>
+					<div class="structure-list">
+						<div class="structure-item">
+							<div class="structure-num">{n(difficulty)}</div>
+							<div class="structure-text">
+								<strong>{t('Difficulty Level')}</strong>
+								<span>{t('Adapts after each session')}</span>
+							</div>
+						</div>
+						<div class="structure-item">
+							<div class="structure-num">6</div>
+							<div class="structure-text">
+								<strong>{t('Total Sets')}</strong>
+								<span>{t('Math + letter pairs per set')}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clinical-info">
+				<h3>{t('📚 Clinical Significance')}</h3>
+				<div class="clinical-grid">
+					<div class="clinical-item">
+						<strong>{t('📜 Standard:')}</strong> {t('OSPAN — Turner & Engle (1989); the most cited complex span task')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🎯 Measures:')}</strong> {t('Executive working memory — simultaneous storage and processing')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🏥 MS Relevance:')}</strong> {t('Highly sensitive to MS cognitive impairment (Rao et al., 1991); included in MACFIMS')}
+					</div>
+					<div class="clinical-item">
+						<strong>{t('🌍 Clinical Use:')}</strong> {t('Gold standard for assessing executive working memory in neuropsychology')}
+					</div>
+				</div>
+			</div>
+
+			<div class="button-group">
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Begin Training', bn: 'প্রশিক্ষণ শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					align="center"
+					on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+				/>
+			</div>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
@@ -646,6 +646,7 @@
 		</div>
 	{/if}
 </div>
+</div>
 
 {#if showHelp}
 	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
@@ -703,224 +704,245 @@
 
 <style>
 	.ospan-container {
-		max-width: 900px;
-		margin: 0 auto;
-		padding: 2rem;
+		background: #C8DEFA;
 		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		padding: 2rem 1rem;
 	}
 
-	.loading {
-		text-align: center;
-		padding: 4rem 0;
-		color: white;
+	.ospan-inner {
+		max-width: 960px;
+		margin: 0 auto;
 	}
 
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 4px solid rgba(255,255,255,0.3);
-		border-top: 4px solid white;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 0 auto 1rem;
+	.loading-wrapper {
+		padding: 3rem 0;
 	}
 
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.instructions {
-		text-align: center;
-	}
-
-	.instructions h1 {
-		color: white;
-		margin-bottom: 2rem;
-		font-size: 2.5rem;
-		text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-	}
-
-	.instruction-card {
+	/* Instructions Card */
+	.instructions-card {
 		background: white;
 		border-radius: 16px;
 		padding: 2.5rem;
-		margin: 2rem 0;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-		text-align: left;
-	}
-
-	.dual-tasks {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
-		margin: 2rem 0;
-	}
-
-	.task-card {
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-	}
-
-	.math-card {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-	}
-
-	.letter-card {
-		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-		color: white;
-	}
-
-	.task-icon {
-		font-size: 3rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.task-card h3 {
-		margin: 0.5rem 0;
-	}
-
-	.task-example {
-		margin-top: 1rem;
-		padding-top: 1rem;
-		border-top: 1px solid rgba(255,255,255,0.3);
-	}
-
-	.example-item {
-		padding: 0.5rem;
-		margin: 0.25rem 0;
-	}
-
-	.correct {
-		color: #4CAF50;
-		font-weight: bold;
-	}
-
-	.incorrect {
-		color: #f44336;
-		font-weight: bold;
-	}
-
-	.flow-diagram {
-		background: #f8f9fa;
-		padding: 2rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.flow-diagram h3 {
-		margin: 0 0 1.5rem 0;
-		color: #2c3e50;
-		text-align: center;
-	}
-
-	.flow-steps {
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
 		flex-wrap: wrap;
 	}
 
-	.flow-step {
-		background: white;
-		padding: 1rem;
-		border-radius: 8px;
-		min-width: 140px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	.header-content h1 {
+		font-size: 1.8rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.35rem;
 	}
 
-	.step-number {
-		width: 30px;
-		height: 30px;
-		background: #667eea;
-		color: white;
+	.header-content .subtitle {
+		font-size: 0.95rem;
+		color: #64748b;
+		margin: 0 0 0.5rem;
+	}
+
+	.classic-badge {
+		display: inline-block;
+		background: #f1f5f9;
+		color: #475569;
+		font-size: 0.75rem;
+		font-weight: 500;
+		padding: 0.25rem 0.75rem;
+		border-radius: 20px;
+	}
+
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.help-btn {
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
+		border: 2px solid #7c3aed;
+		background: white;
+		color: #7c3aed;
+		font-weight: 700;
+		font-size: 0.9rem;
+		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-weight: bold;
-		margin: 0 auto 0.5rem;
 	}
 
-	.step-content {
-		text-align: center;
-	}
-
-	.step-content strong {
-		display: block;
-		color: #2c3e50;
-		margin-bottom: 0.5rem;
-		font-size: 0.9rem;
-	}
-
-	.step-content p {
-		margin: 0.25rem 0;
-		font-size: 0.85rem;
-		color: #666;
-	}
-
-	.big-letter {
-		font-size: 2rem !important;
-		font-weight: bold !important;
-		color: #667eea !important;
-	}
-
-	.step-buttons {
-		display: flex;
-		gap: 0.25rem;
-		justify-content: center;
-		margin-top: 0.5rem;
-	}
-
-	.mini-btn {
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: bold;
-	}
-
-	.mini-btn.correct {
-		background: #e8f5e9;
-		color: #4CAF50;
-	}
-
-	.mini-btn.incorrect {
-		background: #ffebee;
-		color: #f44336;
-	}
-
-	.flow-arrow {
-		font-size: 1.5rem;
-		color: #667eea;
-		font-weight: bold;
-	}
-
-	.tips {
-		background: #fff3cd;
-		padding: 1.5rem;
+	.task-concept {
+		background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+		border: 1px solid #ddd6fe;
 		border-radius: 12px;
-		margin-top: 2rem;
+		padding: 1.25rem 1.5rem;
 	}
 
-	.tips h3 {
-		margin: 0 0 1rem 0;
-		color: #856404;
+	.task-concept h2 {
+		font-size: 1.05rem;
+		color: #5b21b6;
+		font-weight: 700;
+		margin: 0 0 0.4rem;
 	}
 
-	.tips ul {
+	.task-concept p {
+		font-size: 0.9rem;
+		color: #374151;
 		margin: 0;
-		padding-left: 1.5rem;
+		line-height: 1.5;
 	}
 
-	.tips li {
-		margin-bottom: 0.5rem;
-		color: #856404;
-		line-height: 1.6;
+	.rules-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+	}
+
+	.rule-card {
+		background: #fafafa;
+		border-left: 4px solid #7c3aed;
+		border-radius: 8px;
+		padding: 1rem;
+	}
+
+	.rule-icon {
+		font-size: 1.4rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.rule-card h3 {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.25rem;
+	}
+
+	.rule-card p {
+		font-size: 0.82rem;
+		color: #64748b;
+		margin: 0 0 0.4rem;
+		line-height: 1.4;
+	}
+
+	.rule-example {
+		background: #ede9fe;
+		border-radius: 6px;
+		padding: 0.3rem 0.6rem;
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: #5b21b6;
+		font-family: monospace;
+	}
+
+	.info-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.75rem;
+	}
+
+	.info-section {
+		background: #f8fafc;
+		border-radius: 10px;
+		padding: 1rem 1.25rem;
+	}
+
+	.info-section h3 {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.6rem;
+	}
+
+	.tips-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.tip-item {
+		font-size: 0.82rem;
+		color: #374151;
+		line-height: 1.4;
+	}
+
+	.structure-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.structure-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+	}
+
+	.structure-num {
+		background: #7c3aed;
+		color: white;
+		font-weight: 700;
+		font-size: 1rem;
+		border-radius: 8px;
+		padding: 0.2rem 0.6rem;
+		flex-shrink: 0;
+	}
+
+	.structure-text {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.structure-text strong {
+		font-size: 0.85rem;
+		color: #1e293b;
+	}
+
+	.structure-text span {
+		font-size: 0.8rem;
+		color: #64748b;
+	}
+
+	.clinical-info {
+		background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+		border: 1px solid #bbf7d0;
+		border-radius: 12px;
+		padding: 1.25rem 1.5rem;
+	}
+
+	.clinical-info h3 {
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: #166534;
+		margin: 0 0 0.75rem;
+	}
+
+	.clinical-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+	}
+
+	.clinical-item {
+		font-size: 0.82rem;
+		color: #374151;
+		line-height: 1.5;
+	}
+
+	.button-group {
+		display: flex;
+		justify-content: center;
+		padding-top: 0.5rem;
 	}
 
 	.ready-screen {
