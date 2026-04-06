@@ -3,7 +3,10 @@
 	import { page } from '$app/stores';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { tasks, training } from '$lib/api';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy } from '$lib/task-practice';
 	import { onDestroy, onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -28,6 +31,10 @@
 	let searchTime = 0;
 	let liveElapsedTime = 0;
 	let timerInterval = null;
+	let isPracticeMode = false;
+	let practiceStatusMessage = '';
+	let recordedGridSize = 10;
+	let recordedTargets = 5;
 
 	const LETTER_SETS = {
 		en: {
@@ -112,6 +119,9 @@
 			gridSize = 10 + (trainingDifficulty - 3); // 10-17 grid
 			totalTargets = 5 + Math.floor((trainingDifficulty - 3) / 2); // 5-8 targets
 		}
+
+		recordedGridSize = gridSize;
+		recordedTargets = totalTargets;
 	});
 	
 	function backToDashboard() {
@@ -122,7 +132,11 @@
 		}
 	}
 	
-	function startTest() {
+	function startTest(practice = false) {
+		isPracticeMode = practice;
+		practiceStatusMessage = '';
+		gridSize = practice ? 6 : recordedGridSize;
+		totalTargets = practice ? 3 : recordedTargets;
 		stage = 'test';
 		foundTargets = [];
 		searchTime = 0;
@@ -131,6 +145,18 @@
 		startTime = Date.now();
 		liveElapsedTime = 0;
 		startLiveTimer();
+	}
+
+	function finishPractice() {
+		isPracticeMode = false;
+		stage = 'intro';
+		foundTargets = [];
+		grid = [];
+		gridSize = recordedGridSize;
+		totalTargets = recordedTargets;
+		searchTime = 0;
+		liveElapsedTime = 0;
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 	
 	function generateGrid() {
@@ -177,6 +203,11 @@
 	}
 	
 	function calculateResults() {
+		if (isPracticeMode) {
+			finishPractice();
+			return;
+		}
+
 		stage = 'results';
 		saveResults();
 	}
@@ -274,9 +305,13 @@
 				</div>
 			</div>
 			
-			<button class="btn-primary" on:click={startTest} style="margin-top: 40px;">
-				{t('Start Test')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Test', bn: 'আসল পরীক্ষা শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTest(false)}
+				on:practice={() => startTest(true)}
+			/>
 			<button class="btn-secondary" on:click={backToDashboard}>
 				{t('Back to Dashboard')}
 			</button>
@@ -284,6 +319,9 @@
 	
 	{:else if stage === 'test'}
 		<div class="test-card">
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
 				<div class="timer">{targetsFoundLabel()}</div>
 				<div class="timer">

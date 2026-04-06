@@ -2,7 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -31,6 +34,9 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrial = null;
 
 	// Symbol display
 	let symbolDigitMapping = {};
@@ -112,7 +118,8 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trial = data.trial;
+			trial = structuredClone(data.trial);
+			recordedTrial = structuredClone(data.trial);
 			symbolDigitMapping = trial.symbol_digit_mapping;
 			testSequence = trial.test_sequence;
 			
@@ -124,7 +131,14 @@
 		}
 	}
 
-	function startTest() {
+	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		trial = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('sdmt', { trial: recordedTrial }).trial
+			: structuredClone(recordedTrial);
+		symbolDigitMapping = trial.symbol_digit_mapping;
+		testSequence = trial.test_sequence;
 		state = STATE.READY;
 		setTimeout(() => {
 			state = STATE.TESTING;
@@ -195,6 +209,16 @@
 	}
 
 	async function finishTest() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trial = structuredClone(recordedTrial);
+			symbolDigitMapping = trial.symbol_digit_mapping;
+			testSequence = trial.test_sequence;
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		if (timerInterval) clearInterval(timerInterval);
 		state = STATE.LOADING;
 		taskId = $page.url.searchParams.get('taskId');
@@ -354,12 +378,20 @@
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startTest}>
-				{t('Start SDMT Test')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startTest(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startTest(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h2>{t('Get Ready!')}</h2>
 			<p class="ready-message">{t('Study the symbol-digit key below')}</p>
 			<div class="key-display">
@@ -375,6 +407,9 @@
 		</div>
 	{:else if state === STATE.TESTING}
 		<div class="testing-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="progress-info">
 					<span class="count-badge">{lt(`Completed: ${currentIndex}`, `সম্পন্ন: ${n(currentIndex)}`)}</span>
@@ -843,25 +878,6 @@
 	.norm-item.practice {
 		background: linear-gradient(135deg, #f44336, #d32f2f);
 		color: white;
-	}
-
-	.start-button {
-		background: linear-gradient(135deg, #4CAF50, #45a049);
-		color: white;
-		border: none;
-		padding: 1.25rem 3.5rem;
-		font-size: 1.4rem;
-		font-weight: bold;
-		border-radius: 12px;
-		cursor: pointer;
-		margin-top: 2rem;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-	}
-
-	.start-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
 	}
 
 	.ready-screen {

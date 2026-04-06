@@ -4,6 +4,10 @@
 	import { generateMOTTrial, submitMOTResponse } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 
@@ -34,6 +38,8 @@
 	// Results
 	let results = null;
 	let earnedBadges = [];
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	// Phase timing
 	const HIGHLIGHT_DURATION = 2000; // 2 seconds to show targets
@@ -78,7 +84,14 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		selectedObjects = new Set();
+		results = null;
+		earnedBadges = [];
+		selectionStartTime = null;
+		selectionElapsed = 0;
 		phase = 'highlighting';
 		
 		// Show targets highlighted
@@ -229,6 +242,18 @@
 	}
 
 	function nextTrial() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			selectedObjects = new Set();
+			results = null;
+			earnedBadges = [];
+			selectionStartTime = null;
+			selectionElapsed = 0;
+			phase = 'intro';
+			return;
+		}
+
 		selectedObjects = new Set();
 		results = null;
 		earnedBadges = [];
@@ -341,7 +366,15 @@
 					</div>
 				</div>
 
-				<button class="start-button" on:click={startTask}>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					align="center"
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
+				<button class="start-button" on:click={startTask} hidden>
 					<span class="button-icon">▶</span>
 					Begin Tracking
 				</button>
@@ -352,6 +385,9 @@
 	<!-- Highlighting Phase -->
 	{#if phase === 'highlighting'}
 		<div class="phase-container tracking-phase">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="phase-instruction">
 				<h2 class="phase-title">👀 Remember These Targets</h2>
 				<p class="phase-subtitle">The yellow circles are your targets to track</p>
@@ -376,6 +412,9 @@
 	<!-- Tracking Phase -->
 	{#if phase === 'tracking'}
 		<div class="phase-container tracking-phase">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="tracking-controls">
 				<div class="timer-display" class:critical={timeRemaining < 3}>
 					<span class="timer-icon">⏱️</span>
@@ -404,6 +443,9 @@
 	<!-- Selection Phase -->
 	{#if phase === 'selection'}
 		<div class="phase-container selection-phase">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="phase-instruction">
 				<h2 class="phase-title">🎯 Select the Targets</h2>
 				<p class="phase-subtitle">
@@ -513,7 +555,7 @@
 
 			<div class="results-actions">
 				<button class="next-button" on:click={nextTrial}>
-					Next Trial
+					{playMode === TASK_PLAY_MODE.PRACTICE ? 'Finish Practice' : 'Next Trial'}
 				</button>
 				<button class="exit-button" on:click={exitTask}>
 					Exit Task

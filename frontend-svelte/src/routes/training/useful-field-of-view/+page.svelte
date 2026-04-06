@@ -3,6 +3,10 @@
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { generateUFOVTrial, submitUFOVResponse } from '$lib/api.js';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onDestroy, onMount } from 'svelte';
 	
 	// User ID from localStorage
@@ -25,6 +29,8 @@
 	let results = null;
 	let loading = false;
 	let error = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 	
 	// Stimulus timing
 	let stimulusTimer = null;
@@ -50,7 +56,10 @@
 		if (fixationTimer) clearTimeout(fixationTimer);
 	});
 	
-	async function startTask() {
+	async function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		trialsCompleted = 0;
 		await loadTrial();
 	}
 	
@@ -159,6 +168,15 @@
 	}
 	
 	function nextTrial() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			results = null;
+			trialsCompleted = 0;
+			gamePhase = 'intro';
+			return;
+		}
+
 		if (trialsCompleted >= TRIALS_PER_SESSION) {
 			// Session complete - return to training page to show updated progress
 			goto('/training');
@@ -293,9 +311,14 @@
 					<p class="difficulty-level">Current Level: <strong>{difficulty}</strong>/10</p>
 				</div>
 				
-				<button class="start-button" on:click={startTask}>
-					Begin UFOV Assessment
-				</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					align="center"
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
 			</div>
 		</div>
 	{/if}
@@ -303,6 +326,9 @@
 	{#if gamePhase === 'ready'}
 		<div class="ready-phase">
 			<div class="ready-card">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
 				<h2>Get Ready</h2>
 				<p class="trial-info">Trial {trialsCompleted + 1} of {TRIALS_PER_SESSION}</p>
 				<p class="subtest-name">{trialData?.description}</p>
@@ -322,6 +348,9 @@
 	
 	{#if gamePhase === 'stimulus'}
 		<div class="stimulus-phase">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="stimulus-arena">
 				{#if showStimulus}
 					<!-- Central target -->
@@ -381,6 +410,9 @@
 	
 	{#if gamePhase === 'response'}
 		<div class="response-phase">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="response-card">
 				<h2>What Did You See?</h2>
 				<p class="response-instruction">{trialData?.instructions}</p>
@@ -620,7 +652,11 @@
 					</div>
 					
 					<div class="action-buttons">
-						{#if trialsCompleted < TRIALS_PER_SESSION}
+						{#if playMode === TASK_PLAY_MODE.PRACTICE}
+							<button class="primary-button" on:click={nextTrial}>
+								Finish Practice
+							</button>
+						{:else if trialsCompleted < TRIALS_PER_SESSION}
 							<button class="primary-button" on:click={nextTrial}>
 								Next Trial ({TRIALS_PER_SESSION - trialsCompleted} remaining)
 							</button>
@@ -848,24 +884,6 @@
 	.difficulty-level {
 		color: #667eea;
 		font-size: 1.1rem;
-	}
-	
-	.start-button {
-		width: 100%;
-		background: linear-gradient(135deg, #667eea, #764ba2);
-		color: white;
-		border: none;
-		padding: 1.25rem;
-		border-radius: 12px;
-		font-size: 1.2rem;
-		font-weight: bold;
-		cursor: pointer;
-		transition: transform 0.2s, box-shadow 0.2s;
-	}
-	
-	.start-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 	}
 	
 	/* Ready phase */

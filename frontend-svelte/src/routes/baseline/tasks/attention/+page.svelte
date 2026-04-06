@@ -2,7 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 	
 	let currentUser = null;
@@ -33,6 +37,9 @@
 	let falseAlarms = 0;
 	let accuracy = 0;
 	let meanRT = 0;
+	let isPracticeMode = false;
+	let practiceStatusMessage = '';
+	let recordedTotalTrials = 60;
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -52,6 +59,8 @@
 		if (isTrainingMode && trainingDifficulty > 3) {
 			totalTrials = 60 + (trainingDifficulty - 3) * 10; // 60-130 trials
 		}
+
+		recordedTotalTrials = totalTrials;
 	});
 	
 	function backToDashboard() {
@@ -62,10 +71,34 @@
 		}
 	}
 	
-	function startTest() {
+	function startTest(practice = false) {
+		isPracticeMode = practice;
+		practiceStatusMessage = '';
+		totalTrials = practice ? 12 : recordedTotalTrials;
+		currentTrial = 0;
+		responses = [];
+		reactionTimes = [];
+		targetsShown = 0;
+		targetsHit = 0;
+		misses = 0;
+		falseAlarms = 0;
+		accuracy = 0;
+		meanRT = 0;
 		stage = 'test';
 		generateSequence();
 		showNextTrial();
+	}
+
+	function finishPractice() {
+		isPracticeMode = false;
+		stage = 'intro';
+		currentTrial = 0;
+		currentLetter = '';
+		previousLetter = '';
+		responses = [];
+		reactionTimes = [];
+		totalTrials = recordedTotalTrials;
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 	
 	function generateSequence() {
@@ -153,6 +186,11 @@
 		});
 		meanRT = validRTs.length > 0 ? validRTs.reduce((a, b) => a + b, 0) / validRTs.length : 0;
 		
+		if (isPracticeMode) {
+			finishPractice();
+			return;
+		}
+
 		stage = 'results';
 		saveResults();
 	}
@@ -251,9 +289,13 @@
 				</div>
 			</div>
 			
-			<button class="btn-primary" on:click={startTest} style="margin-top: 40px;">
-				Start Test
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Test', bn: 'আসল পরীক্ষা শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTest(false)}
+				on:practice={() => startTest(true)}
+			/>
 			<button class="btn-secondary" on:click={backToDashboard}>
 				Back to Dashboard
 			</button>
@@ -261,6 +303,9 @@
 	
 	{:else if stage === 'test'}
 		<div class="test-card">
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="timer">
 				Trial {currentTrial + 1} / {totalTrials}
 			</div>

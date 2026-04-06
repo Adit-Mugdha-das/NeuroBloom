@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { tasks, training } from '$lib/api';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
 		formatNumber,
 		formatPercent,
@@ -10,6 +12,7 @@
 		translateText
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { getPracticeCopy } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -40,6 +43,10 @@
 	let falseAlarms = 0;
 	let accuracy = 0;
 	let meanRT = 0;
+	let isPracticeMode = false;
+	let practiceStatusMessage = '';
+	let recordedNBackLevel = 1;
+	let recordedTotalTrials = 20;
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -145,12 +152,39 @@
 		if (isTrainingMode && trainingDifficulty > 1) {
 			nBackLevel = Math.min(Math.floor(trainingDifficulty / 3) + 1, 3);
 		}
+
+		recordedNBackLevel = nBackLevel;
+		recordedTotalTrials = totalTrials;
 	});
 	
-	function startTest() {
+	function startTest(practice = false) {
+		isPracticeMode = practice;
+		practiceStatusMessage = '';
+		nBackLevel = practice ? 1 : recordedNBackLevel;
+		totalTrials = practice ? 6 : recordedTotalTrials;
+		currentTrial = 0;
+		responses = [];
+		reactionTimes = [];
+		correctHits = 0;
+		misses = 0;
+		falseAlarms = 0;
+		accuracy = 0;
+		meanRT = 0;
 		stage = 'test';
 		generateSequence();
 		showNextTrial();
+	}
+
+	function finishPractice() {
+		isPracticeMode = false;
+		stage = 'intro';
+		currentTrial = 0;
+		currentLetter = '';
+		responses = [];
+		reactionTimes = [];
+		nBackLevel = recordedNBackLevel;
+		totalTrials = recordedTotalTrials;
+		practiceStatusMessage = getPracticeCopy($locale).complete;
 	}
 	
 	function generateSequence() {
@@ -223,6 +257,11 @@
 		const validRTs = reactionTimes.filter(rt => rt < 2000);
 		meanRT = validRTs.length > 0 ? validRTs.reduce((a, b) => a + b, 0) / validRTs.length : 0;
 		
+		if (isPracticeMode) {
+			finishPractice();
+			return;
+		}
+
 		stage = 'results';
 		saveResults();
 	}
@@ -414,7 +453,7 @@
 			</div>
 			
 			<div class="button-group">
-				<button class="btn-primary btn-large" on:click={startTest}>
+				<button class="btn-primary btn-large legacy-start" on:click={startTest}>
 					🚀 {t('Start Test')}
 				</button>
 				<button class="btn-secondary" on:click={backToDashboard}>
@@ -423,8 +462,18 @@
 			</div>
 		</div>
 	
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Start Actual Test')}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTest(false)}
+				on:practice={() => startTest(true)}
+			/>
 	{:else if stage === 'test'}
 		<div class="test-card test-active">
+			{#if isPracticeMode}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="progress-bar">
 				<div class="progress-fill" style="width: {(currentTrial / totalTrials) * 100}%"></div>
 			</div>
@@ -1013,6 +1062,7 @@
 		flex-wrap: wrap;
 	}
 
+
 	.btn-primary {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
@@ -1041,6 +1091,10 @@
 	.btn-large {
 		padding: 1.25rem 3rem;
 		font-size: 1.2rem;
+	}
+
+	.legacy-start {
+		display: none;
 	}
 
 	.btn-match {

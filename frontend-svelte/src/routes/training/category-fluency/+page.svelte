@@ -4,7 +4,10 @@
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { formatNumber, locale, translateText } from '$lib/i18n';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -19,6 +22,9 @@
 	let submittedWords = [];
 	let results = null;
 	let earnedBadges = [];
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrialData = null;
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -149,7 +155,8 @@
 			if (!response.ok) throw new Error('Failed to load trial');
 			
 			const data = await response.json();
-			trialData = data.trial_data;
+			trialData = structuredClone(data.trial_data);
+			recordedTrialData = structuredClone(data.trial_data);
 			gamePhase = 'intro';
 		} catch (error) {
 			console.error('Error loading trial:', error);
@@ -157,7 +164,12 @@
 		}
 	}
 
-	function startTrial() {
+	function startTrial(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		trialData = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('category-fluency', recordedTrialData)
+			: structuredClone(recordedTrialData);
 		timeRemaining = trialData?.time_limit_seconds || 60;
 		currentInput = '';
 		submittedWords = [];
@@ -205,6 +217,15 @@
 	async function endTrial() {
 		clearInterval(timer);
 		const timeTaken = (Date.now() - startTime) / 1000;
+
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trialData = structuredClone(recordedTrialData);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			gamePhase = 'intro';
+			return;
+		}
+
 		taskId = $page.url.searchParams.get('taskId');
 		
 		try {
@@ -342,7 +363,16 @@
 				</div>
 
 				<div style="text-align: center;">
+					<TaskPracticeActions
+						locale={$locale}
+						startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+						statusMessage={practiceStatusMessage}
+						align="center"
+						on:start={() => startTrial(TASK_PLAY_MODE.RECORDED)}
+						on:practice={() => startTrial(TASK_PLAY_MODE.PRACTICE)}
+					/>
 					<button on:click={startTrial}
+						hidden
 						style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; border: none; 
 						padding: 1.2rem 3rem; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: 600; 
 						box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4); transition: all 0.3s;"
@@ -355,6 +385,9 @@
 
 		{:else if gamePhase === 'trial'}
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
 					<h2 style="color: #8b5cf6; margin: 0;">
 						{t('Category:')} <span style="font-size: 2rem; font-weight: 800;">{localizedCategoryName()}</span>

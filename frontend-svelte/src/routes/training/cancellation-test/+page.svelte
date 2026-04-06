@@ -4,6 +4,10 @@
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -19,6 +23,8 @@
 	
 	let results = null;
 	let earnedBadges = [];
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 
 	// Fixed large cell size for optimal visibility - prioritizes accessibility
 	// Scrollable container allows larger grids while keeping cells readable
@@ -56,7 +62,9 @@
 		}
 	}
 
-	function startGame() {
+	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
 		markedPositions = [];
 		startTime = Date.now();
 		elapsedTime = 0;
@@ -94,6 +102,13 @@
 	}
 
 	async function submitResults() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			gamePhase = 'intro';
+			return;
+		}
+
 		const completionTime = (Date.now() - startTime) / 1000;
 		taskId = $page.url.searchParams.get('taskId');
 		
@@ -215,25 +230,6 @@
 		transform: scale(0.98);
 	}
 
-	/* Button styles to avoid inline style mutations */
-	.btn-primary {
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-		color: white;
-		border: none;
-		padding: 1.5rem 4rem;
-		font-size: 1.3rem;
-		border-radius: 12px;
-		cursor: pointer;
-		font-weight: 700;
-		box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-		transition: all 0.3s;
-	}
-
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-	}
-
 	.btn-success {
 		background: #10b981;
 		color: white;
@@ -320,15 +316,21 @@
 					</div>
 				</div>
 
-				<div style="text-align: center;">
-					<button on:click={startGame} class="btn-primary">
-						Start Task
-					</button>
-				</div>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					align="center"
+					on:start={() => startGame(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startGame(TASK_PLAY_MODE.PRACTICE)}
+				/>
 			</div>
 
 		{:else if gamePhase === 'playing'}
 			<div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
 				
 				<!-- Header -->
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0;">

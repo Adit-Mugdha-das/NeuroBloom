@@ -2,7 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -37,6 +40,9 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let countdown = 3;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrial = null;
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -136,7 +142,8 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trial = data.trial;
+			trial = structuredClone(data.trial);
+			recordedTrial = structuredClone(data.trial);
 			
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -146,7 +153,12 @@
 		}
 	}
 
-	function startTest() {
+	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		trial = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('trail-making-a', { trial: recordedTrial }).trial
+			: structuredClone(recordedTrial);
 		state = STATE.READY;
 		countdown = 3;
 		
@@ -357,6 +369,14 @@
 	}
 
 	async function submitResults() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trial = structuredClone(recordedTrial);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		taskId = $page.url.searchParams.get('taskId');
 		
@@ -512,10 +532,20 @@
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startTest}>{t('Start Trail Making Test')}</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startTest(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startTest(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h2>{t('Get Ready!')}</h2>
 			<p class="ready-message">{t('Connect the numbered circles in order as fast as you can')}</p>
 			<div class="ready-sequence">
@@ -531,6 +561,9 @@
 		</div>
 	{:else if state === STATE.TESTING}
 		<div class="testing-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="progress-info">
 					<span class="next-badge">{t('Next:')} {n(currentNumber)}</span>
@@ -967,25 +1000,6 @@
 		color: #666;
 		font-style: italic;
 		text-align: center;
-	}
-
-	.start-button {
-		background: linear-gradient(135deg, #4CAF50, #45a049);
-		color: white;
-		border: none;
-		padding: 1.25rem 3.5rem;
-		font-size: 1.4rem;
-		font-weight: bold;
-		border-radius: 12px;
-		cursor: pointer;
-		margin-top: 2rem;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-	}
-
-	.start-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
 	}
 
 	.ready-screen {

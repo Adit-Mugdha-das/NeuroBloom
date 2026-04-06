@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
 		formatNumber,
 		formatPercent,
@@ -13,6 +15,7 @@
 	} from '$lib/i18n';
 	import { getTaskDifficultyDescription } from '$lib/i18n/task-ui.js';
 	import { user } from '$lib/stores.js';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -49,6 +52,8 @@
 	
 	// Help modal
 	let showHelp = false;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
 	
 	// Timer for digit presentation
 	let digitTimer = null;
@@ -211,6 +216,8 @@
 	}
 
 	function startPractice() {
+		playMode = TASK_PLAY_MODE.PRACTICE;
+		practiceStatusMessage = '';
 		showInstructions = false;
 		showPractice = true;
 		practiceIndex = 0;
@@ -219,9 +226,20 @@
 		runPracticeTrial();
 	}
 
+	function finishPractice() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		showPractice = false;
+		practiceComplete = false;
+		waitingForAnswer = false;
+		currentDigit = null;
+		userAnswer = '';
+		showInstructions = true;
+		practiceStatusMessage = getPracticeCopy($locale).complete;
+	}
+
 	async function runPracticeTrial() {
 		if (practiceIndex >= practiceDigits.length) {
-			practiceComplete = true;
+			finishPractice();
 			return;
 		}
 		
@@ -269,6 +287,8 @@
 	}
 
 	function startTest() {
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = '';
 		showPractice = false;
 		practiceComplete = false;
 		testStarted = true;
@@ -558,8 +578,17 @@
 				</button>
 			</div>
 		</div>
+		<TaskPracticeActions
+			locale={$locale}
+			startLabel={actualTestButtonLabel(sessionData.total_trials)}
+			practiceVisible={false}
+			statusMessage={practiceStatusMessage}
+			align="center"
+			on:start={startTest}
+		/>
 	{:else if showPractice}
 		<div class="practice-panel">
+			<PracticeModeBanner locale={$locale} />
 			<h2>🎓 {t('Practice Mode')}</h2>
 			<p class="practice-intro">{t("Let's practice with 4 digits. Take your time to understand the pattern.")}</p>
 			

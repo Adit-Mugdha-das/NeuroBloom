@@ -4,6 +4,10 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -28,6 +32,9 @@
 	let newBadges = [];
 	let stimulusShownAt = 0;
 	let showHelp = false;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	onMount(async () => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -71,7 +78,8 @@
 			if (!response.ok) throw new Error('Failed to load Rule Shift session');
 
 			const data = await response.json();
-			sessionData = data.session_data;
+			sessionData = structuredClone(data.session_data);
+			recordedSessionData = structuredClone(data.session_data);
 			currentTrial = sessionData.trials[0];
 			currentBlock = sessionData.blocks[0];
 			state = STATE.INSTRUCTIONS;
@@ -82,7 +90,13 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('rule-shift', recordedSessionData)
+			: structuredClone(recordedSessionData);
+		responses = [];
 		currentTrialIndex = 0;
 		currentTrial = sessionData.trials[0];
 		currentBlock = sessionData.blocks[0];
@@ -143,6 +157,17 @@
 	}
 
 	async function completeSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = structuredClone(recordedSessionData);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			currentTrialIndex = 0;
+			currentTrial = sessionData.trials[0];
+			currentBlock = sessionData.blocks[0];
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -237,12 +262,21 @@
 			</div>
 
 			<div class="actions">
-				<button class="primary" on:click={startTask}>Start Rule Shift</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
 				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
 			</div>
 		</section>
 	{:else if state === STATE.BLOCK_INTRO}
 		<section class="panel block-intro">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<p class="eyebrow">Block {currentBlock.block_index + 1} of {sessionData.blocks.length}</p>
 			<h2>{currentBlock.instruction}</h2>
 			<div class="rule-grid">
@@ -264,6 +298,9 @@
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="play-header">
 				<div>
 					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>

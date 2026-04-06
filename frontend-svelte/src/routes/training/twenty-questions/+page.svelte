@@ -4,6 +4,10 @@
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -20,6 +24,12 @@
 	
 	let results = null;
 	let earnedBadges = [];
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+
+	function lt(en, bn) {
+		return localeText({ en, bn }, $locale);
+	}
 
 	// Load game on mount
 	onMount(async () => {
@@ -51,7 +61,9 @@
 		}
 	}
 
-	function startGame() {
+	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
 		questionsAsked = 0;
 		questionsHistory = [];
 		questionInput = '';
@@ -140,6 +152,16 @@
 	}
 
 	async function endGame(correctlyIdentified, userGuess) {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			results = null;
+			earnedBadges = [];
+			gamePhase = 'loading';
+			await loadGame();
+			return;
+		}
+
 		try {
 			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/twenty-questions/submit/${$user.id}`, {
@@ -284,19 +306,23 @@
 				</div>
 
 				<div style="text-align: center;">
-					<button on:click={startGame}
-						style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; 
-						padding: 1.2rem 3rem; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: 600; 
-						box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); transition: all 0.3s;"
-						on:mouseenter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-						on:mouseleave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-						Start Game →
-					</button>
+					<TaskPracticeActions
+						locale={$locale}
+						align="center"
+						startLabel={lt('Start Game', 'গেম শুরু করুন')}
+						statusMessage={practiceStatusMessage}
+						on:start={() => startGame(TASK_PLAY_MODE.RECORDED)}
+						on:practice={() => startGame(TASK_PLAY_MODE.PRACTICE)}
+					/>
 				</div>
 			</div>
 
 		{:else if gamePhase === 'playing'}
 			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
 				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
 					<h2 style="color: #f59e0b; margin: 0;">
 						🤔 I'm thinking of something...

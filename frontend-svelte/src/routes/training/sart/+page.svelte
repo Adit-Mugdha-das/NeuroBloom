@@ -4,6 +4,10 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -33,6 +37,9 @@
 	let newBadges = [];
 	let countdown = 3;
 	let showHelp = false;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedSessionData = null;
 
 	onMount(async () => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -78,7 +85,8 @@
 			if (!response.ok) throw new Error('Failed to load SART session');
 
 			const data = await response.json();
-			sessionData = data.session_data;
+			sessionData = structuredClone(data.session_data);
+			recordedSessionData = structuredClone(data.session_data);
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading SART session:', error);
@@ -87,7 +95,18 @@
 		}
 	}
 
-	function startTask() {
+	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('sart', recordedSessionData)
+			: structuredClone(recordedSessionData);
+		currentTrialIndex = 0;
+		responses = [];
+		currentTrial = null;
+		currentDigit = null;
+		showDigit = false;
+		waitingForResponse = false;
 		state = STATE.READY;
 		countdown = 3;
 		const countdownInterval = setInterval(() => {
@@ -151,6 +170,14 @@
 	}
 
 	async function completeSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			sessionData = structuredClone(recordedSessionData);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		try {
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -228,18 +255,30 @@
 			</div>
 
 			<div class="actions">
-				<button class="primary" on:click={startTask}>Start SART</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
 				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
 			</div>
 		</section>
 	{:else if state === STATE.READY}
 		<section class="panel ready">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<p class="eyebrow">Get Ready</p>
 			<h2>{countdown}</h2>
 			<p>Remember: press for every digit except {sessionData.target_digit}.</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="play-header">
 				<div>
 					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>

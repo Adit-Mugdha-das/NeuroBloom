@@ -2,14 +2,18 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
 		formatNumber,
 		formatPercent,
 		locale,
+		localeText,
 		localizeStimulusSequence,
 		localizeStimulusSymbol,
 		translateText
 	} from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	// Task states
@@ -49,6 +53,9 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrials = [];
 
 	// Available letters
 	const LETTERS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -139,12 +146,14 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map(t => ({
+			const mappedTrials = data.trials.map(t => ({
 				...t,
 				user_letters: [],
 				math_responses: [],
 				reaction_time: 0
 			}));
+			trials = structuredClone(mappedTrials);
+			recordedTrials = structuredClone(mappedTrials);
 			
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -154,9 +163,14 @@
 		}
 	}
 
-	function startSession() {
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
 		state = STATE.LOADING;
 		currentTrialIndex = 0;
+		trials = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('operation-span', { trials: recordedTrials }).trials
+			: structuredClone(recordedTrials);
 		setTimeout(() => startTrial(), 500);
 	}
 
@@ -289,6 +303,14 @@
 	}
 
 	async function submitSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trials = structuredClone(recordedTrials);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 		
 		try {
@@ -426,18 +448,29 @@
 				</div>
 			</div>
 			
-			<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-				{t('Start Training Session')}
-			</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<h2>{setLabel(currentTrialIndex + 1, trials.length)}</h2>
 			<p class="set-info">{pairCountLabel(currentTrial.set_size)}</p>
 			<p>{t('Get ready...')}</p>
 		</div>
 	{:else if state === STATE.MATH_PROBLEM}
 		<div class="math-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="progress-info">
 					<span class="set-badge">{setLabel(currentTrialIndex + 1, trials.length)}</span>
@@ -476,12 +509,18 @@
 		</div>
 	{:else if state === STATE.LETTER_DISPLAY}
 		<div class="letter-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<p class="instruction">{t('Remember this letter')}</p>
 			<div class="letter-display">{symbol(currentItem.letter)}</div>
 			<div class="letter-count">{letterProgressLabel(currentItemIndex + 1, currentTrial.set_size)}</div>
 		</div>
 	{:else if state === STATE.RECALL}
 		<div class="recall-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="header">
 				<div class="progress-info">
 					<span class="set-badge">{setLabel(currentTrialIndex + 1, trials.length)}</span>
@@ -533,6 +572,9 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="feedback-icon {lastTrialCorrect ? 'correct' : 'incorrect'}">
 				{lastTrialCorrect ? '✓' : '✗'}
 			</div>
@@ -879,30 +921,6 @@
 		margin-bottom: 0.5rem;
 		color: #856404;
 		line-height: 1.6;
-	}
-
-	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		padding: 1rem 3rem;
-		font-size: 1.3rem;
-		font-weight: bold;
-		border-radius: 12px;
-		cursor: pointer;
-		margin-top: 2rem;
-		transition: all 0.3s;
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-	}
-
-	.start-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-	}
-
-	.start-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
 	}
 
 	.ready-screen {

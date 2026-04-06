@@ -4,8 +4,11 @@
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, formatPercent, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const STATE = {
@@ -40,6 +43,10 @@
 	let newBadges = [];
 	let feedbackSummary = null;
 	let isDisposed = false;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrials = [];
+	let recordedSessionData = null;
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -188,7 +195,9 @@
 			}
 
 			sessionData = await response.json();
-			trials = structuredClone(sessionData.trials);
+			recordedSessionData = structuredClone(sessionData);
+			recordedTrials = structuredClone(sessionData.trials);
+			trials = structuredClone(recordedTrials);
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Dual N-Back session:', error);
@@ -226,7 +235,14 @@
 		}
 	}
 
-	async function startSession() {
+	async function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('dual-n-back', recordedSessionData)
+				: structuredClone(recordedSessionData);
+		trials = structuredClone(sessionData.trials);
 		sessionStartedAt = Date.now();
 		currentTrialIndex = 0;
 		await startTrial();
@@ -309,6 +325,15 @@
 	}
 
 	async function submitSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			playMode = TASK_PLAY_MODE.RECORDED;
+			sessionData = structuredClone(recordedSessionData);
+			trials = structuredClone(recordedTrials);
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 
 		try {
@@ -429,18 +454,30 @@
 			</div>
 
 			<div class="action-row">
-				<button class="primary-button" on:click={startSession}>{t('Start Dual N-Back')}</button>
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={t('Start Actual Task')}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+				/>
 				<button class="secondary-button" on:click={() => goto('/training')}>{t('Return to Training')}</button>
 			</div>
 		</section>
 	{:else if state === STATE.ROUND_INTRO}
 		<section class="play-card intro-state">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<p class="eyebrow">{roundLabel(currentTrialIndex + 1, trials.length)}</p>
 			<h2>{roundIntroTitle(currentNLevel)}</h2>
 			<p>{roundIntroSupport()}</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="play-card">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="play-header">
 				<div>
 					<p class="eyebrow">{roundLabel(currentTrialIndex + 1, trials.length)}</p>

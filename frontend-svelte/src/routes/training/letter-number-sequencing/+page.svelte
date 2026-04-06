@@ -3,15 +3,22 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+<<<<<<< HEAD
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+=======
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+>>>>>>> ed2558175d01470eebd7f72c6220168adb0d88f6
 	import {
 		formatNumber,
 		formatPercent,
 		locale,
+		localeText,
 		localizeStimulusSequence,
 		localizeStimulusSymbol,
 		translateText
 	} from '$lib/i18n';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const STATE = {
@@ -36,6 +43,9 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let recordedTrials = [];
 
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 	const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -144,12 +154,14 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map((trial) => ({
+			const mappedTrials = data.trials.map((trial) => ({
 				...trial,
 				user_numbers: [],
 				user_letters: [],
 				reaction_time: 0
 			}));
+			trials = structuredClone(mappedTrials);
+			recordedTrials = structuredClone(mappedTrials);
 
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -159,9 +171,14 @@
 		}
 	}
 
-	function startSession() {
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		playMode = nextMode;
+		practiceStatusMessage = '';
 		state = STATE.LOADING;
 		currentTrialIndex = 0;
+		trials = nextMode === TASK_PLAY_MODE.PRACTICE
+			? buildPracticePayload('letter-number-sequencing', { trials: recordedTrials }).trials
+			: structuredClone(recordedTrials);
 		setTimeout(() => startTrial(), 500);
 	}
 
@@ -252,6 +269,14 @@
 	}
 
 	async function submitSession() {
+		if (playMode === TASK_PLAY_MODE.PRACTICE) {
+			trials = structuredClone(recordedTrials);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = getPracticeCopy($locale).complete;
+			state = STATE.INSTRUCTIONS;
+			return;
+		}
+
 		state = STATE.LOADING;
 
 		try {
@@ -393,6 +418,7 @@
 					</div>
 				</div>
 			</div>
+<<<<<<< HEAD
 
 			<div class="button-group">
 				<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
@@ -413,6 +439,32 @@
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
 			<div class="trial-header">
+=======
+			
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
+		</div>
+	{:else if state === STATE.READY}
+		<div class="ready-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
+			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
+			<p>{t('Watch the sequence carefully...')}</p>
+		</div>
+	{:else if state === STATE.SHOWING || state === STATE.INPUT}
+		<div class="trial-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
+			<div class="header">
+>>>>>>> ed2558175d01470eebd7f72c6220168adb0d88f6
 				<div class="trial-info">
 					<span class="trial-number">{compactTrialLabel(currentTrialIndex + 1, trials.length)}</span>
 					<span class="span-badge">{levelLabel(difficulty)}</span>
@@ -522,6 +574,9 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
 			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
 				{checkCorrect() ? '✅' : '❌'}
 			</div>
