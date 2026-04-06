@@ -264,6 +264,7 @@
 </script>
 
 <div class="spatial-span-container" data-localize-skip>
+<div class="spatial-span-inner">
 	{#if state === STATE.LOADING}
 		<div class="loading-wrapper">
 			<LoadingSkeleton variant="card" count={3} />
@@ -287,18 +288,18 @@
 				<p>{t('Blocks on the grid will light up one at a time in a specific order. Watch carefully, then recreate the sequence by clicking the blocks — either in the same order or in reverse.')}</p>
 			</div>
 
-			<div class="instructions-grid">
-				<div class="instruction-item">
-					<div class="instruction-icon">➡️</div>
+			<div class="rules-grid">
+				<div class="rule-card">
+					<div class="rule-icon">➡️</div>
 					<h3>{t('Forward Span')}</h3>
 					<p>{t('Click blocks in the same order they lit up')}</p>
-					<div class="instruction-note">{t('Sequence: 1→2→3 → You click: 1→2→3')}</div>
+					<div class="rule-example">{t('Sequence: 1→2→3 → You click: 1→2→3')}</div>
 				</div>
-				<div class="instruction-item">
-					<div class="instruction-icon">⬅️</div>
+				<div class="rule-card">
+					<div class="rule-icon">⬅️</div>
 					<h3>{t('Backward Span')}</h3>
 					<p>{t('Click blocks in the reverse order they lit up')}</p>
-					<div class="instruction-note">{t('Sequence: 1→2→3 → You click: 3→2→1')}</div>
+					<div class="rule-example">{t('Sequence: 1→2→3 → You click: 3→2→1')}</div>
 				</div>
 			</div>
 
@@ -496,6 +497,7 @@
 		</div>
 	{/if}
 </div>
+</div>
 
 {#if showHelp}
 	<div
@@ -535,10 +537,14 @@
 
 <style>
 	.spatial-span-container {
+		background: #C8DEFA;
+		min-height: 100vh;
+		padding: 2rem 1rem;
+	}
+
+	.spatial-span-inner {
 		max-width: 900px;
 		margin: 0 auto;
-		padding: 2rem;
-		min-height: 100vh;
 	}
 
 	.loading-wrapper {
@@ -547,10 +553,10 @@
 
 	/* ── Instructions ── */
 	.instructions-card {
-		background: white;
+		background: #FFFFFF;
 		border-radius: 16px;
-		padding: 3rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
 	}
 
 	.header {
@@ -559,133 +565,133 @@
 		align-items: flex-start;
 		margin-bottom: 1.5rem;
 		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	.header-content h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.25rem;
-		color: #667eea;
+		font-size: 1.8rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.25rem;
 	}
 
 	.header-right {
 		display: flex;
-		gap: 0.75rem;
 		align-items: center;
+		gap: 0.75rem;
 		flex-shrink: 0;
 	}
 
 	.subtitle {
-		font-size: 1rem;
 		color: #64748b;
-		margin: 0;
+		margin: 0 0 0.75rem;
+		font-size: 0.95rem;
 	}
 
 	.classic-badge {
 		display: inline-block;
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+		background: rgba(102, 126, 234, 0.12);
 		color: #667eea;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		font-weight: 600;
-		padding: 0.3rem 0.9rem;
+		padding: 0.3rem 0.75rem;
 		border-radius: 20px;
-		border: 1px solid rgba(102, 126, 234, 0.25);
-		margin-top: 0.4rem;
-		letter-spacing: 0.02em;
 	}
 
 	.task-concept {
-		background: #f8fafc;
-		border-left: 4px solid #667eea;
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+		border: 1px solid rgba(102, 126, 234, 0.2);
+		border-radius: 12px;
 		padding: 1.25rem 1.5rem;
-		border-radius: 0 10px 10px 0;
-		margin-bottom: 2rem;
+		margin-bottom: 1.5rem;
 	}
 
 	.task-concept h2 {
-		color: #1e293b;
-		font-size: 1.15rem;
-		margin-bottom: 0.5rem;
+		font-size: 1rem;
+		font-weight: 700;
+		color: #667eea;
+		margin: 0 0 0.5rem;
 	}
 
 	.task-concept p {
-		color: #475569;
-		line-height: 1.6;
+		color: #374151;
 		margin: 0;
+		line-height: 1.6;
 	}
 
-	.instructions-grid {
+	.rules-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
-		margin-bottom: 2rem;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
 	}
 
-	.instruction-item {
-		padding: 1.5rem;
-		border: 2px solid #e2e8f0;
+	.rule-card {
+		background: #f8fafc;
+		padding: 1.25rem;
 		border-radius: 12px;
+		border-left: 4px solid #667eea;
 		text-align: center;
 	}
 
-	.instruction-icon {
-		font-size: 2.5rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.instruction-item h3 {
-		color: #1e293b;
+	.rule-icon {
+		font-size: 2rem;
 		margin-bottom: 0.5rem;
 	}
 
-	.instruction-item p {
-		color: #475569;
-		font-size: 0.9rem;
-		margin-bottom: 0.75rem;
+	.rule-card h3 {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.35rem;
 	}
 
-	.instruction-note {
-		background: #f8fafc;
-		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		font-size: 0.82rem;
+	.rule-card p {
 		color: #64748b;
-		font-family: monospace;
+		font-size: 0.85rem;
+		margin: 0 0 0.5rem;
+	}
+
+	.rule-example {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #667eea;
 	}
 
 	/* Info grid */
 	.info-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin: 2rem 0;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
 	}
 
 	.info-section {
-		background: white;
-		padding: 1.5rem;
+		background: #f8fafc;
 		border-radius: 12px;
-		border: 2px solid #e5e7eb;
+		padding: 1.25rem;
 	}
 
 	.info-section h3 {
-		color: #2c3e50;
-		font-size: 1.1rem;
-		margin-bottom: 1rem;
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: #1e293b;
+		margin: 0 0 0.75rem;
 	}
 
 	.tips-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.65rem;
+		gap: 0.5rem;
 	}
 
 	.tip-item {
 		background: #f0fdf4;
-		padding: 0.65rem 1rem;
+		padding: 0.5rem 0.75rem;
 		border-radius: 8px;
 		color: #15803d;
-		font-size: 0.9rem;
-		line-height: 1.5;
+		font-size: 0.85rem;
+		line-height: 1.4;
 	}
 
 	.tip-item strong {
@@ -695,81 +701,74 @@
 	.structure-list {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.6rem;
 	}
 
 	.structure-item {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		background: #f8f9fa;
-		padding: 0.875rem 1rem;
-		border-radius: 8px;
+		gap: 0.75rem;
 	}
 
 	.structure-num {
-		width: 44px;
-		height: 44px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
+		background: linear-gradient(135deg, #667eea, #764ba2);
+		color: white;
+		font-weight: 700;
+		font-size: 0.9rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.1rem;
-		font-weight: bold;
 		flex-shrink: 0;
 	}
 
 	.structure-text {
 		display: flex;
 		flex-direction: column;
-		gap: 0.2rem;
 	}
 
 	.structure-text strong {
-		font-size: 0.95rem;
-		color: #2c3e50;
+		font-size: 0.85rem;
+		color: #1e293b;
 	}
 
 	.structure-text span {
-		font-size: 0.82rem;
-		color: #666;
+		font-size: 0.8rem;
+		color: #64748b;
 	}
 
 	/* Clinical info */
 	.clinical-info {
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-		padding: 1.5rem;
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.06), rgba(118, 75, 162, 0.06));
+		border: 1px solid rgba(102, 126, 234, 0.15);
 		border-radius: 12px;
-		margin-top: 1.5rem;
+		padding: 1.25rem 1.5rem;
+		margin-bottom: 1.5rem;
 	}
 
 	.clinical-info h3 {
+		font-size: 0.9rem;
+		font-weight: 700;
 		color: #667eea;
-		margin-bottom: 1rem;
-		font-size: 1.1rem;
+		margin: 0 0 0.75rem;
 	}
 
 	.clinical-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 0.75rem;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.6rem;
 	}
 
 	.clinical-item {
-		background: white;
-		padding: 0.875rem;
-		border-radius: 8px;
-		font-size: 0.88rem;
-		line-height: 1.5;
-		color: #555;
+		font-size: 0.82rem;
+		color: #4b5563;
+		line-height: 1.4;
 	}
 
 	.clinical-item strong {
-		color: #667eea;
-		display: block;
-		margin-bottom: 0.2rem;
+		color: #374151;
 	}
 
 	/* Buttons */
@@ -777,60 +776,65 @@
 		display: flex;
 		gap: 1rem;
 		justify-content: center;
-		margin-top: 2rem;
 		flex-wrap: wrap;
+		margin-top: 1.5rem;
 	}
 
 	.start-button {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		border: none;
-		padding: 1.25rem 3rem;
-		font-size: 1.2rem;
-		font-weight: bold;
-		border-radius: 12px;
+		padding: 0.9rem 2.5rem;
+		font-size: 1rem;
+		font-weight: 600;
+		border-radius: 10px;
 		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+		transition: all 0.2s;
 	}
 
 	.start-button:hover:not(:disabled) {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
 	}
 
 	.start-button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+		transform: none;
 	}
 
 	.btn-secondary {
-		background: #f3f4f6;
-		color: #4b5563;
-		border: none;
-		padding: 1.25rem 2.5rem;
-		font-size: 1.1rem;
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
+		padding: 0.9rem 2rem;
+		font-size: 1rem;
 		font-weight: 600;
-		border-radius: 12px;
+		border-radius: 10px;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
 
 	.btn-secondary:hover {
-		background: #e5e7eb;
+		background: rgba(102, 126, 234, 0.06);
+		transform: translateY(-2px);
 	}
 
 	.help-btn {
+		width: 38px;
+		height: 38px;
+		border-radius: 50%;
+		border: 2px solid #667eea;
 		background: white;
 		color: #667eea;
-		border: 2px solid #667eea;
-		border-radius: 50%;
-		width: 40px;
-		height: 40px;
-		font-size: 1.1rem;
+		font-size: 1.2rem;
 		font-weight: bold;
 		cursor: pointer;
 		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		flex-shrink: 0;
 	}
 
@@ -1359,6 +1363,10 @@
 			padding: 1rem;
 		}
 
+		.spatial-span-inner {
+			max-width: 100%;
+		}
+
 		.instructions-card,
 		.ready-screen,
 		.trial-screen,
@@ -1367,7 +1375,7 @@
 			padding: 1.5rem;
 		}
 
-		.instructions-grid {
+		.rules-grid {
 			grid-template-columns: 1fr;
 		}
 

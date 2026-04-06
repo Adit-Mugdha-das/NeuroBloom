@@ -664,7 +664,7 @@
 <style>
 	/* ────── Layout ────── */
 	.lns-container {
-		background: #EAF2FB;
+		background: #C8DEFA;
 		min-height: 100vh;
 		padding: 2rem 1rem;
 	}

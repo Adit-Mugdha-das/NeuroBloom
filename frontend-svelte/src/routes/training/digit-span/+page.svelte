@@ -324,6 +324,7 @@
 
 
 <div class="digit-span-container" data-localize-skip>
+<div class="digit-span-inner">
 	{#if currentState === STATE_LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if currentState === STATE_INSTRUCTIONS}
@@ -572,6 +573,7 @@
 		</div>
 	{/if}
 </div>
+</div>
 
 {#if showHelp}
 	<div
@@ -613,13 +615,14 @@
 
 <style>
 	.digit-span-container {
-		max-width: 800px;
-		margin: 0 auto;
-		padding: 2rem;
+		background: #C8DEFA;
 		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		padding: 2rem 1rem;
+	}
+
+	.digit-span-inner {
+		max-width: 920px;
+		margin: 0 auto;
 	}
 
 	/* Instructions */
@@ -1410,6 +1413,10 @@
 
 		.digit-span-container {
 			padding: 1rem;
+		}
+
+		.digit-span-inner {
+			max-width: 100%;
 		}
 
 		.instructions-card,
