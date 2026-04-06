@@ -3,22 +3,15 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-<<<<<<< HEAD
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
-=======
-	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
-	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
->>>>>>> ed2558175d01470eebd7f72c6220168adb0d88f6
 	import {
-		formatNumber,
-		formatPercent,
-		locale,
-		localeText,
-		localizeStimulusSequence,
-		localizeStimulusSymbol,
-		translateText
+	  formatNumber,
+	  formatPercent,
+	  locale,
+	  localizeStimulusSequence,
+	  localizeStimulusSymbol,
+	  translateText
 	} from '$lib/i18n';
-	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 
 	const STATE = {
@@ -43,9 +36,6 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
-	let playMode = TASK_PLAY_MODE.RECORDED;
-	let practiceStatusMessage = '';
-	let recordedTrials = [];
 
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 	const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -154,14 +144,12 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			const mappedTrials = data.trials.map((trial) => ({
+			trials = data.trials.map((trial) => ({
 				...trial,
 				user_numbers: [],
 				user_letters: [],
 				reaction_time: 0
 			}));
-			trials = structuredClone(mappedTrials);
-			recordedTrials = structuredClone(mappedTrials);
 
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -171,14 +159,9 @@
 		}
 	}
 
-	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
-		playMode = nextMode;
-		practiceStatusMessage = '';
+	function startSession() {
 		state = STATE.LOADING;
 		currentTrialIndex = 0;
-		trials = nextMode === TASK_PLAY_MODE.PRACTICE
-			? buildPracticePayload('letter-number-sequencing', { trials: recordedTrials }).trials
-			: structuredClone(recordedTrials);
 		setTimeout(() => startTrial(), 500);
 	}
 
@@ -269,14 +252,6 @@
 	}
 
 	async function submitSession() {
-		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			trials = structuredClone(recordedTrials);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
-			return;
-		}
-
 		state = STATE.LOADING;
 
 		try {
@@ -312,7 +287,7 @@
 </script>
 
 <div class="lns-container" data-localize-skip>
-<div class="lns-content">
+<div class="lns-inner">
 	{#if state === STATE.LOADING}
 		<div class="loading-wrapper">
 			<LoadingSkeleton variant="card" count={3} />
@@ -418,7 +393,6 @@
 					</div>
 				</div>
 			</div>
-<<<<<<< HEAD
 
 			<div class="button-group">
 				<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
@@ -439,32 +413,6 @@
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
 		<div class="trial-screen">
 			<div class="trial-header">
-=======
-			
-			<TaskPracticeActions
-				locale={$locale}
-				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
-				statusMessage={practiceStatusMessage}
-				align="center"
-				on:start={() => startSession(TASK_PLAY_MODE.RECORDED)}
-				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
-			/>
-		</div>
-	{:else if state === STATE.READY}
-		<div class="ready-screen">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
-			{/if}
-			<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
-			<p>{t('Watch the sequence carefully...')}</p>
-		</div>
-	{:else if state === STATE.SHOWING || state === STATE.INPUT}
-		<div class="trial-screen">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
-			{/if}
-			<div class="header">
->>>>>>> ed2558175d01470eebd7f72c6220168adb0d88f6
 				<div class="trial-info">
 					<span class="trial-number">{compactTrialLabel(currentTrialIndex + 1, trials.length)}</span>
 					<span class="span-badge">{levelLabel(difficulty)}</span>
@@ -566,7 +514,7 @@
 					<button class="submit-btn" on:click={submitResponse}>
 						{t('Submit Answer')}
 					</button>
-					<button class="skip-btn" on:click={() => { clearNumbers(); clearLetters(); submitResponse(); }}>
+					<button class="skip-btn" on:click={startTrial}>
 						{t('Skip Trial')}
 					</button>
 				</div>
@@ -574,9 +522,6 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
-			{/if}
 			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
 				{checkCorrect() ? '✅' : '❌'}
 			</div>
@@ -719,17 +664,13 @@
 <style>
 	/* ────── Layout ────── */
 	.lns-container {
-		width: 100%;
+		background: #EAF2FB;
 		min-height: 100vh;
-		background: #f1f5f9;
-		background-image:
-			radial-gradient(ellipse at 0% 0%, rgba(102, 126, 234, 0.06) 0%, transparent 60%),
-			radial-gradient(ellipse at 100% 100%, rgba(118, 75, 162, 0.06) 0%, transparent 60%);
 		padding: 2rem 1rem;
 	}
 
-	.lns-content {
-		max-width: 900px;
+	.lns-inner {
+		max-width: 960px;
 		margin: 0 auto;
 	}
 
@@ -740,7 +681,7 @@
 
 	/* ────── Instructions ────── */
 	.instructions-card {
-		background: white;
+		background: #FFFFFF;
 		border-radius: 16px;
 		padding: 2.5rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -1113,7 +1054,7 @@
 	}
 
 	.ready-card {
-		background: white;
+		background: #FFFFFF;
 		border-radius: 16px;
 		padding: 3rem 2rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
@@ -1377,10 +1318,11 @@
 	/* ────── Submit ────── */
 	.submit-section {
 		margin-top: 1.5rem;
+		text-align: center;
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.25rem;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 
 	.submit-btn {
@@ -1408,22 +1350,21 @@
 	}
 
 	.skip-btn {
-		background: transparent;
-		color: #94a3b8;
-		border: 1px dashed #cbd5e1;
-		padding: 0.6rem 1.5rem;
-		font-size: 0.85rem;
-		font-weight: 500;
-		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.15);
+		color: #64748b;
+		border: 2px solid #e2e8f0;
+		padding: 0.9rem 2rem;
+		font-size: 0.9rem;
+		font-weight: 600;
+		border-radius: 10px;
 		cursor: pointer;
 		transition: all 0.2s;
-		margin-top: 0.5rem;
 	}
 
 	.skip-btn:hover {
-		color: #64748b;
+		background: #f1f5f9;
 		border-color: #94a3b8;
-		background: #f8fafc;
+		color: #475569;
 	}
 
 	/* ────── Feedback ────── */
@@ -1495,7 +1436,7 @@
 
 	/* ────── Complete screen ────── */
 	.complete-screen {
-		background: white;
+		background: #FFFFFF;
 		border-radius: 16px;
 		padding: 2.5rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
