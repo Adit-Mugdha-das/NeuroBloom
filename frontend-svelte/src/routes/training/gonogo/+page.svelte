@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
@@ -542,1556 +543,873 @@
 		: 'from-gray-500';
 </script>
 
+<svelte:head>
+	<title>{lt('Go/No-Go Task - NeuroBloom', 'গো/নো-গো টাস্ক - NeuroBloom')}</title>
+</svelte:head>
+
 <svelte:window on:keydown={handleKeyPress} />
 
 <div class="gonogo-container" data-localize-skip>
-	{#if loading}
-		<div class="loading">
-			<div class="spinner"></div>
-			<p>{lt('Loading task...', 'টাস্ক লোড হচ্ছে...')}</p>
-		</div>
-	{:else if phase === 'intro'}
-		<!-- Introduction Screen -->
-		<div class="instructions">
-			<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-				<h1>{lt('Go/No-Go Task', 'গো/নো-গো টাস্ক')}</h1>
-				<DifficultyBadge {difficulty} domain="Attention" />
-			</div>
-			<div class="classic-badge">{lt('Response Inhibition & Impulse Control Assessment', 'প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযম মূল্যায়ন')}</div>
-			
-			<div class="instruction-card">
-				<div class="task-header">
-					<h2>{lt('Your Mission: Respond Fast, But Not Always!', 'আপনার লক্ষ্য: দ্রুত সাড়া দিন, তবে সবসময় নয়')}</h2>
-				</div>
-				
-				<p class="importance">
-					{@html lt(
-						'This task measures your ability to <strong>control impulses</strong>, a critical executive function. You need to respond quickly to targets while <strong>withholding responses</strong> to non-targets.',
-						'এই টাস্কটি আপনার <strong>আবেগ সংযম</strong> ও প্রতিক্রিয়া নিয়ন্ত্রণের ক্ষমতা মাপে, যা নির্বাহী কার্যকারিতার একটি গুরুত্বপূর্ণ অংশ। এখানে লক্ষ্যবস্তু দেখলে দ্রুত সাড়া দিতে হবে, আর অ-লক্ষ্যবস্তু দেখলে <strong>প্রতিক্রিয়া থামিয়ে রাখতে</strong> হবে।'
-					)}
-				</p>
-				
-				<!-- Visual Examples -->
-				<div class="stimulus-examples">
-					<div class="example-card go-card">
-						<div class="example-label">{lt('GO Trial (75%)', 'গো ট্রায়াল (৭৫%)')}</div>
-						<div class="stimulus-display go-stimulus">{goDisplayStimulus}</div>
-						<div class="example-action">{lt('PRESS SPACEBAR', 'স্পেসবার চাপুন')}</div>
-						<div class="example-note">{lt('Respond as quickly as possible.', 'যত দ্রুত সম্ভব সাড়া দিন।')}</div>
+	<div class="gonogo-inner">
+
+		{#if loading}
+			<LoadingSkeleton variant="card" count={3} />
+
+		{:else if phase === 'intro'}
+			<div class="instructions-card">
+				<div class="header-content">
+					<div class="title-row">
+						<h1>{lt('Go/No-Go Task', 'গো/নো-গো টাস্ক')}</h1>
+						<DifficultyBadge {difficulty} domain="Attention" />
 					</div>
-					
-					<div class="example-card nogo-card">
-						<div class="example-label">{lt('NO-GO Trial (25%)', 'নো-গো ট্রায়াল (২৫%)')}</div>
-						<div class="stimulus-display nogo-stimulus">{nogoDisplayStimulus}</div>
-						<div class="example-action">{lt("DON'T PRESS", 'চাপবেন না')}</div>
-						<div class="example-note">{lt('Resist the urge to respond.', 'সাড়া দেওয়ার তাড়না থামিয়ে রাখুন।')}</div>
+					<p class="subtitle">{lt('Response Inhibition and Impulse Control Assessment', 'প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযম মূল্যায়ন')}</p>
+					<div class="classic-badge">{lt('Executive Function — Response Inhibition (Diamond, 2013)', 'নির্বাহী দক্ষতা — প্রতিক্রিয়া নিয়ন্ত্রণ (Diamond, 2013)')}</div>
+				</div>
+
+				<div class="task-concept">
+					<h3>{lt('The Core Principle', 'মূল নীতি')}</h3>
+					<p>{lt('Most trials require a response, quickly building a habit. The challenge is suppressing that habit when the No-Go signal appears — this directly tests impulse control and prefrontal inhibition.', 'বেশিরভাগ ট্রায়ালে সাড়া দিতে হয়, দ্রুত একটি অভ্যাস তৈরি হয়। চ্যালেঞ্জ হলো নো-গো সংকেত দেখলে সেই অভ্যাস দমন করা — এটি সরাসরি আবেগ সংযম ও প্রিফ্রন্টাল নিয়ন্ত্রণ যাচাই করে।')}</p>
+					<div class="stimulus-examples">
+						<div class="ex-card ex-go">
+							<div class="ex-type">{lt('GO Trial (75%)', 'গো ট্রায়াল (৭৫%)')}</div>
+							<div class="stimulus-demo go-demo">{goDisplayStimulus}</div>
+							<div class="ex-action go-action">{lt('PRESS SPACEBAR', 'স্পেসবার চাপুন')}</div>
+							<div class="ex-note">{lt('Respond as quickly as possible', 'যত দ্রুত সম্ভব সাড়া দিন')}</div>
+						</div>
+						<div class="ex-card ex-nogo">
+							<div class="ex-type">{lt('NO-GO Trial (25%)', 'নো-গো ট্রায়াল (২৫%)')}</div>
+							<div class="stimulus-demo nogo-demo">{nogoDisplayStimulus}</div>
+							<div class="ex-action nogo-action">{lt("DON'T PRESS", 'চাপবেন না')}</div>
+							<div class="ex-note">{lt('Resist the automatic response', 'স্বয়ংক্রিয় সাড়া থামিয়ে রাখুন')}</div>
+						</div>
+					</div>
+					<div class="key-rule-box">
+						<strong>{lt('The Challenge:', 'মূল চ্যালেঞ্জ:')}</strong>
+						{lt('75% of trials are GO — your brain builds a pressing habit. On NO-GO trials, you must override that habit. This tests executive inhibitory control.', '৭৫% ট্রায়ালই গো — মস্তিষ্ক দ্রুত একটি চাপার অভ্যাস গড়ে তোলে। নো-গো ট্রায়ালে সেই অভ্যাস ভেঙে বেরিয়ে আসতে হবে। এটিই নির্বাহী নিয়ন্ত্রণ ক্ষমতা যাচাই করে।')}
 					</div>
 				</div>
-				
-				<div class="rule-box">
-					<strong>{lt('The Challenge:', 'মূল চ্যালেঞ্জ:')}</strong>
-					{lt(
-						'Most trials require a response, so a response habit quickly builds up. When the NO-GO stimulus appears, you must inhibit that automatic response. This directly tests impulse control.',
-						'বেশিরভাগ ট্রায়ালে সাড়া দিতে হয়, তাই খুব দ্রুত একটি অভ্যাস তৈরি হয়। কিন্তু নো-গো উদ্দীপক দেখলে সেই স্বয়ংক্রিয় প্রতিক্রিয়াটিই থামিয়ে রাখতে হবে। এখানেই আপনার আবেগ সংযম ও প্রতিক্রিয়া নিয়ন্ত্রণ যাচাই হয়।'
-					)}
+
+				<div class="rules-grid">
+					<div class="rule-card">
+						<span class="rule-num">1</span>
+						<div class="rule-text">
+							<strong>{lt('Watch the Screen', 'স্ক্রিনে নজর রাখুন')}</strong>
+							<span>{lt('A stimulus appears briefly on screen', 'স্ক্রিনে অল্প সময়ের জন্য একটি উদ্দীপক দেখা যাবে')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">2</span>
+						<div class="rule-text">
+							<strong>{lt('Identify Quickly', 'দ্রুত চিহ্নিত করুন')}</strong>
+							<span>{lt('Is it a GO or NO-GO stimulus?', 'এটি গো নাকি নো-গো উদ্দীপক?')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">3</span>
+						<div class="rule-text">
+							<strong>{lt('Respond or Withhold', 'সাড়া দিন বা থামুন')}</strong>
+							<span>{lt('Press SPACEBAR for GO, do nothing for NO-GO', 'গো-তে স্পেসবার চাপুন, নো-গো-তে কিছু করবেন না')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">4</span>
+						<div class="rule-text">
+							<strong>{lt('Stay Consistent', 'ধারাবাহিক থাকুন')}</strong>
+							<span>{lt('Speed and accuracy both measured throughout', 'পুরো টাস্ক জুড়ে গতি ও নির্ভুলতা উভয়ই মূল্যায়ন করা হয়')}</span>
+						</div>
+					</div>
 				</div>
-				
-				<!-- Two Column Layout -->
+
 				<div class="info-grid">
 					<div class="info-section">
-						<h3>{lt("What You'll Do", 'আপনি কী করবেন')}</h3>
-						<div class="steps-list">
-							<div class="step-item">
-								<span class="step-num">1</span>
-								<div class="step-text">
-									<strong>{lt('Watch the screen', 'স্ক্রিনে নজর রাখুন')}</strong>
-									<span>{lt('Stimuli appear briefly.', 'উদ্দীপক খুব অল্প সময়ের জন্য দেখা যাবে।')}</span>
-								</div>
-							</div>
-							<div class="step-item">
-								<span class="step-num">2</span>
-								<div class="step-text">
-									<strong>{lt('Identify quickly', 'দ্রুত চিহ্নিত করুন')}</strong>
-									<span>{lt('Decide whether it is GO or NO-GO.', 'এটি গো নাকি নো-গো তা ঠিক করুন।')}</span>
-								</div>
-							</div>
-							<div class="step-item">
-								<span class="step-num">3</span>
-								<div class="step-text">
-									<strong>{lt('Respond or withhold', 'সাড়া দিন বা থামিয়ে রাখুন')}</strong>
-									<span>{lt("Press or don't press.", 'চাপুন বা চাপা থেকে বিরত থাকুন।')}</span>
-								</div>
-							</div>
-						</div>
+						<h4>{lt('What It Measures', 'এটি কী মাপে')}</h4>
+						<ul class="tips-list">
+							<li><strong>{lt('Response Speed:', 'প্রতিক্রিয়ার গতি:')}</strong> {lt('GO trial reaction time', 'গো ট্রায়ালে প্রতিক্রিয়ার সময়')}</li>
+							<li><strong>{lt('Impulse Control:', 'আবেগ সংযম:')}</strong> {lt('NO-GO trial accuracy', 'নো-গো ট্রায়ালে নির্ভুলতা')}</li>
+							<li><strong>{lt('Sustained Attention:', 'টেকসই মনোযোগ:')}</strong> {lt('Consistency over all trials', 'সকল ট্রায়াল জুড়ে ধারাবাহিকতা')}</li>
+							<li><strong>{lt('d-prime:', 'd-prime:')}</strong> {lt('Signal detection sensitivity (higher = better)', 'সংকেত শনাক্তকরণ সংবেদনশীলতা (বেশি = ভালো)')}</li>
+						</ul>
 					</div>
-					
 					<div class="info-section">
-						<h3>{lt('What It Measures', 'এটি কী মাপে')}</h3>
-						<div class="measures-list">
-							<div class="measure-item">{lt('Response Speed:', 'প্রতিক্রিয়ার গতি:')} {lt('Go trial reaction time', 'গো ট্রায়ালে প্রতিক্রিয়ার সময়')}</div>
-							<div class="measure-item">{lt('Impulse Control:', 'আবেগ সংযম:')} {lt('No-Go accuracy', 'নো-গো নির্ভুলতা')}</div>
-							<div class="measure-item">{lt('Sustained Attention:', 'টেকসই মনোযোগ:')} {lt('Consistency', 'ধারাবাহিকতা')}</div>
-							<div class="measure-item">{lt('Executive Function:', 'নির্বাহী কার্যকারিতা:')} {lt('Inhibition ability', 'প্রতিক্রিয়া থামিয়ে রাখার দক্ষতা')}</div>
-						</div>
+						<h4>{lt('Tips for Success', 'সফল হওয়ার টিপস')}</h4>
+						<ul class="structure-list">
+							<li>
+								<span class="struct-key">{lt('Finger Ready', 'আঙ্গুল প্রস্তুত')}</span>
+								<span class="struct-val">{lt('Keep thumb on spacebar', 'বুড়ো আঙুল স্পেসবারে রাখুন')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{lt('Eyes Focused', 'দৃষ্টি কেন্দ্রীভূত')}</span>
+								<span class="struct-val">{lt('Screen center at all times', 'সর্বদা স্ক্রিনের মাঝে')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{lt('No Guessing', 'অনুমান নয়')}</span>
+								<span class="struct-val">{lt('Wait and see the stimulus', 'অপেক্ষা করুন, উদ্দীপক দেখুন')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{lt('Stay Alert', 'সতর্ক থাকুন')}</span>
+								<span class="struct-val">{lt('Consistency matters most', 'ধারাবাহিকতাই সবচেয়ে গুরুত্বপূর্ণ')}</span>
+							</li>
+						</ul>
 					</div>
 				</div>
-				
-				<!-- Clinical Context -->
+
 				<div class="clinical-info">
-					<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
+					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>{lt('Standard Test:', 'স্ট্যান্ডার্ড মূল্যায়ন:')}</strong> {lt('Used in ADHD, frontal lobe, and MS assessment', 'ADHD, ফ্রন্টাল লোব এবং MS মূল্যায়নে ব্যবহৃত হয়')}
+							<strong>{lt('Standard Use', 'মানক ব্যবহার')}</strong>
+							<span>{lt('ADHD, frontal lobe, and MS neuropsychological assessment', 'ADHD, ফ্রন্টাল লোব এবং MS মূল্যায়নে মানক পরীক্ষা')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{lt('Brain Regions:', 'মস্তিষ্কের অংশ:')}</strong> {lt('Tests prefrontal cortex function', 'প্রিফ্রন্টাল কর্টেক্সের কার্যকারিতা মাপে')}
+							<strong>{lt('Brain Region', 'মস্তিষ্কের অংশ')}</strong>
+							<span>{lt('Prefrontal cortex — inhibitory control circuits', 'প্রিফ্রন্টাল কর্টেক্স — নিয়ন্ত্রণমূলক সার্কিট')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{lt('MS Relevance:', 'MS-এ প্রাসঙ্গিকতা:')}</strong> {lt('Sensitive to attention deficits and executive dysfunction', 'মনোযোগ ঘাটতি ও নির্বাহী কার্যকারিতার সমস্যার প্রতি সংবেদনশীল')}
+							<strong>{lt('MS Relevance', 'MS-এ প্রাসঙ্গিকতা')}</strong>
+							<span>{lt('Sensitive to attention deficits and executive dysfunction', 'মনোযোগ ঘাটতি ও নির্বাহী কার্যকারিতার সমস্যায় সংবেদনশীল')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{lt('Training Benefits:', 'অনুশীলনের উপকার:')}</strong> {lt('Improves real-world impulse control', 'বাস্তব জীবনের আবেগ সংযম উন্নত করতে সহায়তা করে')}
+							<strong>{lt('Training Benefits', 'অনুশীলনের উপকার')}</strong>
+							<span>{lt('Strengthens real-world impulse control and decision-making', 'বাস্তব জীবনের আবেগ সংযম ও সিদ্ধান্ত নেওয়া জোরদার করে')}</span>
 						</div>
 					</div>
 				</div>
-			</div>
-			
-			<div class="button-group">
-				<button class="start-button" on:click={startInstructions}>
-					{lt('Start Task', 'টাস্ক শুরু করুন')}
-				</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
-				</button>
-			</div>
-		</div>
 
-	{:else if phase === 'instructions'}
-		<!-- Quick Instructions -->
-		<div class="quick-instructions">
-			<h2>{lt('Quick Instructions', 'দ্রুত নির্দেশনা')}</h2>
-
-			<div class="key-reminder">
-				<div class="key-icon">{lt('SPACEBAR', 'স্পেসবার')}</div>
-				<p>{@html lt(`Press <strong>SPACEBAR</strong> when you see: <span class="inline-stimulus">${goDisplayStimulus}</span>`, `এটি দেখলে <strong>স্পেসবার</strong> চাপুন: <span class="inline-stimulus">${goDisplayStimulus}</span>`)}</p>
-				<p>{@html lt(`<strong>DON'T PRESS</strong> when you see: <span class="inline-stimulus nogo">${nogoDisplayStimulus}</span>`, `এটি দেখলে <strong>চাপবেন না</strong>: <span class="inline-stimulus nogo">${nogoDisplayStimulus}</span>`)}</p>
-			</div>
-
-			<div class="instructions-flow">
-				<div class="flow-step">
-					<div class="flow-number">1</div>
-					<div class="flow-content">
-						<p class="flow-title">{lt('Stimulus Appears', 'উদ্দীপক দেখা যায়')}</p>
-						<p class="flow-desc">{lt('A symbol flashes on screen briefly.', 'একটি চিহ্ন অল্প সময়ের জন্য স্ক্রিনে দেখা যায়।')}</p>
+				<div class="perf-guide">
+					<h4>{lt('Performance Reference (No-Go Accuracy)', 'পারফরম্যান্স রেফারেন্স (নো-গো নির্ভুলতা)')}</h4>
+					<div class="norm-bars">
+						<div class="norm-bar norm-excellent"><span class="norm-label">{lt('Excellent', 'চমৎকার')}</span><span class="norm-val">&ge;90%</span></div>
+						<div class="norm-bar norm-good"><span class="norm-label">{lt('Good', 'ভালো')}</span><span class="norm-val">75–89%</span></div>
+						<div class="norm-bar norm-avg"><span class="norm-label">{lt('Average', 'গড়')}</span><span class="norm-val">60–74%</span></div>
+						<div class="norm-bar norm-fair"><span class="norm-label">{lt('Fair', 'মোটামুটি')}</span><span class="norm-val">45–59%</span></div>
+						<div class="norm-bar norm-needs"><span class="norm-label">{lt('Developing', 'উন্নতির সুযোগ আছে')}</span><span class="norm-val">&lt;45%</span></div>
 					</div>
+					<p class="norm-note">* {lt('Some commission errors are expected — the task is designed to induce them.', 'কিছু ভুল চাপা স্বাভাবিক — টাস্কটি ইচ্ছাকৃতভাবে এটি ঘটানোর জন্য ডিজাইন করা হয়েছে।')}</p>
 				</div>
 
-				<div class="flow-arrow">→</div>
-
-				<div class="flow-step">
-					<div class="flow-number">2</div>
-					<div class="flow-content">
-						<p class="flow-title">{lt('Identify It', 'চিনে নিন')}</p>
-						<p class="flow-desc">{lt('Is it GO or NO-GO?', 'এটি গো নাকি নো-গো?')}</p>
-					</div>
-				</div>
-
-				<div class="flow-arrow">→</div>
-
-				<div class="flow-step">
-					<div class="flow-number">3</div>
-					<div class="flow-content">
-						<p class="flow-title">{lt('Respond or Wait', 'সাড়া দিন বা অপেক্ষা করুন')}</p>
-						<p class="flow-desc">{lt('Press SPACEBAR or withhold.', 'স্পেসবার চাপুন অথবা সাড়া থামিয়ে রাখুন।')}</p>
-					</div>
+				<div class="button-group">
+					<button class="start-button" on:click={startInstructions}>{lt('Start Task', 'টাস্ক শুরু করুন')}</button>
+					<button class="btn-secondary" on:click={() => goto('/dashboard')}>{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
+					<button class="help-link" on:click={() => showHelp = true}>{lt('More Information', 'আরো তথ্য')}</button>
 				</div>
 			</div>
 
-			<div class="tips-box">
-				<h3>{lt('Success Tips', 'সফল হওয়ার টিপস')}</h3>
-				<ul>
-					<li>{@html lt('<strong>Stay focused</strong> - Stimuli appear quickly', '<strong>মনোযোগ ধরে রাখুন</strong> - উদ্দীপক দ্রুত দেখা যায়')}</li>
-					<li>{@html lt('<strong>Be ready</strong> - Most trials are GO trials', '<strong>প্রস্তুত থাকুন</strong> - বেশিরভাগ ট্রায়ালই গো ট্রায়াল')}</li>
-					<li>{@html lt('<strong>Control impulses</strong> - Resist pressing on NO-GO trials', '<strong>আবেগ সংযম রাখুন</strong> - নো-গো ট্রায়ালে চাপা থেকে বিরত থাকুন')}</li>
-					<li>{@html lt('<strong>Speed matters</strong> - Respond quickly to GO trials', '<strong>গতি গুরুত্বপূর্ণ</strong> - গো ট্রায়ালে দ্রুত সাড়া দিন')}</li>
-				</ul>
-			</div>
+		{:else if phase === 'instructions'}
+			<div class="screen-card quick-instructions">
+				<h2>{lt('Quick Instructions', 'দ্রুত নির্দেশনা')}</h2>
+				<p class="instr-subtitle">{lt('Press SPACEBAR for GO — withhold for NO-GO.', 'গো দেখলে স্পেসবার চাপুন — নো-গো দেখলে থামুন।')}</p>
 
-			<div class="practice-prompt">
-				<p>{lt("Let's practice with 6 trials to get comfortable...", 'স্বচ্ছন্দ হতে আগে ৬টি অনুশীলনী ট্রায়াল করা যাক...')}</p>
-				<button class="start-button" on:click={startPractice}>
-					{lt('Start Practice', 'অনুশীলন শুরু করুন')}
-				</button>
-			</div>
-			<TaskPracticeActions
-				locale={$locale}
-				startLabel={lt('Start Actual Task', 'à¦†à¦¸à¦² à¦Ÿà¦¾à¦¸à§à¦• à¦¶à§à¦°à§ à¦•à¦°à§à¦¨')}
-				statusMessage={practiceStatusMessage}
-				align="center"
-				on:start={startTest}
-				on:practice={startPractice}
-			/>
-		</div>
-
-	{:else if phase === 'practice'}
-		<!-- Practice Trials -->
-		<div class="trial-screen">
-			<PracticeModeBanner locale={$locale} />
-			<div class="trial-header">
-				<h2>{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>
-				<p class="instruction-reminder">{lt(`Press SPACEBAR for GO (${goDisplayStimulus}), withhold for NO-GO (${nogoDisplayStimulus})`, `গো (${goDisplayStimulus}) দেখলে স্পেসবার চাপুন, নো-গো (${nogoDisplayStimulus}) দেখলে সাড়া থামিয়ে রাখুন`)}</p>
-			</div>
-
-			<!-- Stimulus Display -->
-			<div class="stimulus-area">
-				{#if showStimulus}
-					<div class="stimulus-large" class:go={practiceTrials[currentPractice].trial_type === 'go'} class:nogo={practiceTrials[currentPractice].trial_type === 'nogo'}>
-						{displayStimulus(practiceTrials[currentPractice])}
+				<div class="key-reminder">
+					<div class="key-row">
+						<div class="key-box go-key">{lt('SPACEBAR', 'স্পেসবার')}</div>
+						<span class="key-for">{lt('when you see', 'যখন দেখবেন')}</span>
+						<span class="inline-stim go-stim">{goDisplayStimulus}</span>
 					</div>
-				{:else}
-					<div class="fixation">+</div>
+					<div class="key-row">
+						<div class="key-box nogo-key">{lt('DO NOTHING', 'কিছু করবেন না')}</div>
+						<span class="key-for">{lt('when you see', 'যখন দেখবেন')}</span>
+						<span class="inline-stim nogo-stim">{nogoDisplayStimulus}</span>
+					</div>
+				</div>
+
+				<div class="steps-grid">
+					<div class="step-card">
+						<span class="step-num">1</span>
+						<strong>{lt('Stimulus Appears', 'উদ্দীপক দেখা যায়')}</strong>
+						<span>{lt('A symbol flashes briefly on screen', 'একটি চিহ্ন অল্প সময়ের জন্য দেখা যায়')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">2</span>
+						<strong>{lt('Identify It', 'চিনে নিন')}</strong>
+						<span>{lt('GO or NO-GO?', 'গো নাকি নো-গো?')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">3</span>
+						<strong>{lt('Respond or Wait', 'সাড়া দিন বা অপেক্ষা')}</strong>
+						<span>{lt('Press SPACEBAR or stay still', 'স্পেসবার চাপুন বা থামুন')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">4</span>
+						<strong>{lt('Stay Consistent', 'ধারাবাহিক থাকুন')}</strong>
+						<span>{lt('Maintain focus until the end', 'শেষ পর্যন্ত মনোযোগ ধরে রাখুন')}</span>
+					</div>
+				</div>
+
+				<div class="remember-box">
+					<strong>{lt('Key reminder:', 'গুরুত্বপূর্ণ:')}</strong>
+					{lt('Most trials are GO — you will build a pressing habit fast. Stay vigilant for NO-GO signals and resist.', 'বেশিরভাগ ট্রায়ালই গো — তাড়াতাড়ি চাপার অভ্যাস তৈরি হবে। নো-গো সংকেতের জন্য সজাগ থাকুন এবং সংযত থাকুন।')}
+				</div>
+
+				{#if practiceStatusMessage}
+					<div class="practice-note">{practiceStatusMessage}</div>
+				{/if}
+
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={lt('Start Actual Task', 'আসল টাস্ক শুরু করুন')}
+					statusMessage={practiceStatusMessage}
+					on:start={startTest}
+					on:practice={startPractice}
+				/>
+			</div>
+
+		{:else if phase === 'practice'}
+			<div class="screen-card trial-screen">
+				<PracticeModeBanner locale={$locale} />
+				<div class="trial-header">
+					<span class="trial-badge">{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</span>
+					<span class="instr-mini">{lt(`SPACEBAR = ${goDisplayStimulus} | Withhold = ${nogoDisplayStimulus}`, `স্পেসবার = ${goDisplayStimulus} | থামুন = ${nogoDisplayStimulus}`)}</span>
+				</div>
+
+				<div class="stimulus-area">
+					{#if showStimulus}
+						<div class="stimulus-large"
+							class:stim-go={practiceTrials[currentPractice]?.trial_type === 'go'}
+							class:stim-nogo={practiceTrials[currentPractice]?.trial_type === 'nogo'}>
+							{displayStimulus(practiceTrials[currentPractice])}
+						</div>
+					{:else}
+						<div class="fixation">+</div>
+					{/if}
+				</div>
+
+				{#if practiceFeedback}
+					<div class="feedback-box feedback-{practiceFeedback.type}">
+						{practiceFeedback.message}
+					</div>
 				{/if}
 			</div>
 
-			<!-- Feedback -->
-			{#if practiceFeedback}
-				<div class="feedback-box {practiceFeedback.type}">
-					<p>{practiceFeedback.message}</p>
-				</div>
-			{/if}
-		</div>
-
-	{:else if phase === 'test'}
-		<!-- Test Trials -->
-		<div class="trial-screen">
-			<!-- Progress Header -->
-			<div class="progress-header">
-				<div class="progress-top">
-					<h2>{trialLabel(currentTrial + 1, sessionData.trials.length)}</h2>
-					<div class="progress-badges">
-						<span class="badge-remaining">{remainingTrialsLabel(trialsRemaining)}</span>
+		{:else if phase === 'test'}
+			<div class="screen-card trial-screen">
+				<div class="test-header">
+					<div class="test-badges">
+						<span class="trial-badge">{trialLabel(currentTrial + 1, sessionData.trials.length)}</span>
+						<span class="remaining-badge">{remainingTrialsLabel(trialsRemaining)}</span>
 					</div>
-				</div>
-				<div class="progress-bar-container">
-					<div class="progress-bar-fill" style="width: {progress}%"></div>
-				</div>
-			</div>
-
-			<!-- Stimulus Display -->
-			<div class="stimulus-area">
-				{#if showStimulus && currentTrial < sessionData.trials.length}
-					<div class="stimulus-xlarge">
-						{displayStimulus(sessionData.trials[currentTrial])}
+					<div class="progress-track">
+						<div class="progress-fill" style="width: {progress}%;"></div>
 					</div>
-				{:else}
-					<div class="fixation">+</div>
-				{/if}
-			</div>
-
-			<div class="reminder-text">
-				{lt(`Press SPACEBAR for ${goDisplayStimulus} | Don't press for ${nogoDisplayStimulus}`, `${goDisplayStimulus} দেখলে স্পেসবার চাপুন | ${nogoDisplayStimulus} দেখলে চাপবেন না`)}
-			</div>
-		</div>
-
-	{:else if phase === 'results'}
-		<!-- Results Screen -->
-		<div class="results-container">
-			<div class="results-header">
-				<h2>{lt('Go/No-Go Task Complete!', 'গো/নো-গো টাস্ক সম্পন্ন হয়েছে')}</h2>
-				<div class="performance-badge {performanceBadgeColor}">
-					{performanceLevelLabel(metrics.performance_level)}
-				</div>
-			</div>
-
-			<!-- Key Metrics Grid -->
-			<div class="metrics-grid">
-				<!-- Overall Accuracy -->
-				<div class="metric-card accuracy-card">
-					<div class="metric-label">{lt('Overall Accuracy', 'সামগ্রিক নির্ভুলতা')}</div>
-					<div class="metric-value">{pct(metrics.overall_accuracy || 0)}</div>
-					<div class="metric-detail">{n(metrics.total_correct || 0)}/{n(metrics.total_trials || 0)} {lt('correct', 'সঠিক')}</div>
+					<button class="help-btn-sm" on:click={() => showHelp = true} aria-label={lt('Help', 'সহায়তা')}>?</button>
 				</div>
 
-				<!-- Go Trial Speed -->
-				<div class="metric-card speed-card">
-					<div class="metric-label">{lt('Go Trial Speed', 'গো ট্রায়ালের গতি')}</div>
-					<div class="metric-value">{msText(metrics.go_mean_rt || 0)}</div>
-					<div class="metric-detail">{lt('Processing speed', 'প্রসেসিং গতি')}</div>
-				</div>
-
-				<!-- No-Go Accuracy -->
-				<div class="metric-card inhibition-card">
-					<div class="metric-label">{lt('Inhibition Control', 'প্রতিক্রিয়া নিয়ন্ত্রণ')}</div>
-					<div class="metric-value">{pct(metrics.nogo_accuracy || 0)}</div>
-					<div class="metric-detail">{lt('No-Go accuracy', 'নো-গো নির্ভুলতা')}</div>
-				</div>
-
-				<!-- d-prime -->
-				<div class="metric-card dprime-card">
-					<div class="metric-label">{lt('d-prime (Sensitivity)', 'ডি-প্রাইম (সংবেদনশীলতা)')}</div>
-					<div class="metric-value">{n((metrics.d_prime || 0).toFixed(2), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-					<div class="metric-detail">{lt('Signal detection', 'সংকেত শনাক্তকরণ')}</div>
-				</div>
-			</div>
-
-			<!-- Trial Type Breakdown -->
-			<div class="breakdown-section">
-				<h3>{lt('Performance by Trial Type', 'ট্রায়ালভেদে পারফরম্যান্স')}</h3>
-				<div class="breakdown-grid">
-					<!-- Go Trials -->
-					<div class="breakdown-card go-card">
-						<p class="breakdown-title">{lt(`GO Trials (${n(sessionData.go_trials)} trials)`, `গো ট্রায়াল (${n(sessionData.go_trials)}টি)` )}</p>
-						<p class="breakdown-stat">{lt('Hits:', 'সঠিক সাড়া:')} <span>{n(metrics.go_hits || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Misses:', 'মিস:')} <span>{n(metrics.go_misses || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics.go_accuracy || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Mean RT:', 'গড় প্রতিক্রিয়ার সময়:')} <span>{msText(metrics.go_mean_rt || 0)}</span></p>
-						<p class="breakdown-note">{lt('Tests processing speed and attention', 'প্রসেসিং গতি ও মনোযোগ মাপে')}</p>
-					</div>
-
-					<!-- No-Go Trials -->
-					<div class="breakdown-card nogo-card">
-						<p class="breakdown-title">{lt(`NO-GO Trials (${n(sessionData.nogo_trials)} trials)`, `নো-গো ট্রায়াল (${n(sessionData.nogo_trials)}টি)` )}</p>
-						<p class="breakdown-stat">{lt('Correct Withholds:', 'সফল বিরত থাকা:')} <span>{n(metrics.nogo_correct || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Commission Errors:', 'ভুল চাপা:')} <span class="error-count">{n(metrics.nogo_commission_errors || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Accuracy:', 'নির্ভুলতা:')} <span>{pct(metrics.nogo_accuracy || 0)}</span></p>
-						<p class="breakdown-stat">{lt('Hit Rate:', 'হিট রেট:')} <span>{pct(metrics.hit_rate || 0)}</span></p>
-						<p class="breakdown-note success">{lt('Tests impulse control and inhibition', 'আবেগ সংযম ও প্রতিক্রিয়া নিয়ন্ত্রণ মাপে')}</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- Interpretation -->
-			<div class="interpretation-section">
-				<h3>{lt('What This Means', 'এর অর্থ কী')}</h3>
-				<p class="feedback-text">{resultsSummaryText()}</p>
-				
-				<div class="insights-list">
-					{#if metrics.nogo_accuracy >= 90}
-						<p class="insight success">
-							{@html lt('<strong>Excellent inhibitory control:</strong> You successfully withheld responses on NO-GO trials.', '<strong>চমৎকার প্রতিক্রিয়া নিয়ন্ত্রণ:</strong> আপনি নো-গো ট্রায়ালে সাড়া থামিয়ে রাখতে পেরেছেন।')}
-						</p>
-					{:else if metrics.nogo_accuracy >= 75}
-						<p class="insight good">
-							{@html lt('<strong>Good impulse control:</strong> Managing inhibition effectively.', '<strong>ভালো আবেগ সংযম:</strong> আপনি বেশ কার্যকরভাবে প্রতিক্রিয়া নিয়ন্ত্রণ করেছেন।')}
-						</p>
-					{:else if metrics.nogo_accuracy >= 60}
-						<p class="insight moderate">
-							{@html lt('<strong>Moderate inhibition:</strong> There is room to improve impulse control.', '<strong>মাঝারি নিয়ন্ত্রণ:</strong> আবেগ সংযমে আরও উন্নতির সুযোগ আছে।')}
-						</p>
+				<div class="stimulus-area">
+					{#if showStimulus && currentTrial < sessionData.trials.length}
+						<div class="stimulus-xlarge">{displayStimulus(sessionData.trials[currentTrial])}</div>
 					{:else}
-						<p class="insight high">
-							{@html lt('<strong>Challenging inhibition:</strong> Practice will strengthen impulse control.', '<strong>চ্যালেঞ্জিং নিয়ন্ত্রণ:</strong> অনুশীলন এই দক্ষতাকে আরও শক্তিশালী করবে।')}
-						</p>
-					{/if}
-
-					{#if metrics.go_mean_rt < 400}
-						<p class="insight success">
-							{@html lt('<strong>Fast processing speed:</strong> Quick reactions to GO trials.', '<strong>দ্রুত প্রসেসিং গতি:</strong> গো ট্রায়ালে আপনার প্রতিক্রিয়া দ্রুত ছিল।')}
-						</p>
-					{:else if metrics.go_mean_rt < 600}
-						<p class="insight good">
-							{@html lt('<strong>Good response speed:</strong> Adequate processing time.', '<strong>ভালো প্রতিক্রিয়ার গতি:</strong> আপনার প্রসেসিং সময় যথাযথ ছিল।')}
-						</p>
-					{:else}
-						<p class="insight moderate">
-							{@html lt('<strong>Slower responses:</strong> Practice can improve speed.', '<strong>তুলনামূলক ধীর প্রতিক্রিয়া:</strong> অনুশীলন গতি বাড়াতে সাহায্য করবে।')}
-						</p>
-					{/if}
-
-					{#if metrics.d_prime >= 2.0}
-						<p class="insight success">
-							{@html lt('<strong>High sensitivity:</strong> Excellent discrimination between GO and NO-GO.', '<strong>উচ্চ সংবেদনশীলতা:</strong> আপনি গো ও নো-গো উদ্দীপক খুব ভালোভাবে আলাদা করতে পেরেছেন।')}
-						</p>
-					{:else if metrics.d_prime >= 1.0}
-						<p class="insight good">
-							{@html lt('<strong>Good discrimination:</strong> Solid signal detection ability.', '<strong>ভালো পার্থক্য নির্ণয়:</strong> আপনার সংকেত শনাক্তকরণ ক্ষমতা নির্ভরযোগ্য ছিল।')}
-						</p>
+						<div class="fixation">+</div>
 					{/if}
 				</div>
+
+				<p class="reminder-text">{lt(`Press SPACEBAR for ${goDisplayStimulus} | Don't press for ${nogoDisplayStimulus}`, `${goDisplayStimulus} দেখলে স্পেসবার চাপুন | ${nogoDisplayStimulus} দেখলে চাপবেন না`)}</p>
 			</div>
 
-			<!-- Clinical Context -->
-			<div class="clinical-context">
-				<h3>{lt('About the Go/No-Go Task', 'গো/নো-গো টাস্ক সম্পর্কে')}</h3>
-				<div class="clinical-content">
-					<p>
-						{@html lt('<strong>Response Inhibition</strong> is a core executive function that allows you to control impulsive responses. This task measures your ability to withhold prepotent (automatic) responses.', '<strong>প্রতিক্রিয়া নিয়ন্ত্রণ</strong> হলো একটি মৌলিক নির্বাহী দক্ষতা, যা আপনাকে হঠাৎ করে সাড়া দেওয়ার প্রবণতা নিয়ন্ত্রণ করতে সাহায্য করে। এই টাস্কটি আপনার স্বয়ংক্রিয় প্রতিক্রিয়া থামিয়ে রাখার ক্ষমতা মাপে।')}
-					</p>
-					<p>
-						{@html lt('<strong>For MS:</strong> Go/No-Go tasks are sensitive to frontal lobe dysfunction and attention deficits. Regular practice can strengthen inhibitory control circuits in the prefrontal cortex.', '<strong>MS-এর ক্ষেত্রে:</strong> গো/নো-গো টাস্ক ফ্রন্টাল লোবের সমস্যা ও মনোযোগ ঘাটতি শনাক্ত করতে সংবেদনশীল। নিয়মিত অনুশীলন প্রিফ্রন্টাল কর্টেক্সের নিয়ন্ত্রণমূলক সার্কিটকে শক্তিশালী করতে সাহায্য করতে পারে।')}
-					</p>
-					<p>
-						{@html lt('<strong>Real-World Impact:</strong> Better impulse control relates to improved decision-making, safer driving, and better emotional regulation in daily life.', '<strong>বাস্তব জীবনের প্রভাব:</strong> ভালো আবেগ সংযম মানে উন্নত সিদ্ধান্ত নেওয়া, নিরাপদ চালনা, এবং দৈনন্দিন জীবনে ভালো আবেগ নিয়ন্ত্রণ।')}
-					</p>
-					<p>
-						{@html lt('<strong>d-prime (d\')</strong> measures how accurately you distinguish between targets and non-targets without being overly biased toward pressing or withholding. Higher values indicate better discrimination.', '<strong>d-prime (d\')</strong> দেখায় আপনি লক্ষ্যবস্তু ও অ-লক্ষ্যবস্তুকে কতটা নির্ভুলভাবে আলাদা করতে পারছেন, অতিরিক্ত চাপা বা না-চাপার পক্ষপাত ছাড়াই। মান যত বেশি, পার্থক্য ধরার ক্ষমতা তত ভালো।')}
-					</p>
-				</div>
-			</div>
-
-			<!-- Difficulty Adaptation -->
-			{#if metrics.difficulty_after !== difficulty}
-				<div class="difficulty-change">
-					<p>
-						<strong>{difficultyChangeText(difficulty, metrics.difficulty_after)}</strong>
-					</p>
-				</div>
-			{/if}
-
-			<!-- New Badges -->
-			{#if newBadges.length > 0}
-				<div class="badges-section">
-					<h3>{lt('New Badges Earned!', 'নতুন ব্যাজ অর্জিত হয়েছে')}</h3>
-					<BadgeNotification badges={newBadges} />
-				</div>
-			{/if}
-
-			<!-- Actions -->
-			<div class="results-actions">
-				<button on:click={returnToDashboard} class="return-button">
-					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
-				</button>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Help Button -->
-	{#if phase !== 'results'}
-		<button on:click={() => showHelp = true} class="help-button" aria-label={lt('Help', 'সহায়তা')}>
-			?
-		</button>
-	{/if}
-
-	<!-- Help Modal -->
-	{#if showHelp}
-		<div class="modal-overlay" on:click|self={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="dialog" aria-modal="true" aria-labelledby="gonogo-help-title" tabindex="0">
-			<div class="modal-content" role="document">
-				<h2 class="modal-title" id="gonogo-help-title">{lt('Go/No-Go Task Help', 'গো/নো-গো টাস্ক সহায়তা')}</h2>
-
-				<div class="help-sections">
-					<div class="help-section">
-						<h3>{lt('What is the Go/No-Go Task?', 'গো/নো-গো টাস্ক কী?')}</h3>
-						<p>
-							{lt('A widely-used test of response inhibition and impulse control. It measures your ability to suppress automatic responses when appropriate.', 'এটি প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযমের বহুল ব্যবহৃত একটি পরীক্ষা। উপযুক্ত সময়ে স্বয়ংক্রিয় প্রতিক্রিয়া থামিয়ে রাখার ক্ষমতা এতে মূল্যায়ন করা হয়।')}
-						</p>
+		{:else if phase === 'results'}
+			<div class="screen-card complete-screen">
+				{#if metrics}
+					<div class="perf-banner">
+						<div class="perf-level">{performanceLevelLabel(metrics.performance_level)}</div>
+						<div class="perf-subtitle">{lt('Go/No-Go Task Complete', 'গো/নো-গো টাস্ক সম্পন্ন')}</div>
 					</div>
 
-					<div class="help-section">
-						<h3>{lt('Why Is It Used in MS?', 'MS-এ এটি কেন ব্যবহার করা হয়?')}</h3>
-						<ul>
-							<li>{lt('Tests executive function and frontal lobe integrity', 'নির্বাহী কার্যকারিতা ও ফ্রন্টাল লোবের সক্ষমতা যাচাই করে')}</li>
-							<li>{lt('Measures sustained attention and vigilance', 'টেকসই মনোযোগ ও সতর্কতা মাপে')}</li>
-							<li>{lt('Sensitive to cognitive slowing and inhibition deficits', 'জ্ঞানগত ধীরগতি ও নিয়ন্ত্রণ ঘাটতির প্রতি সংবেদনশীল')}</li>
-							<li>{lt('Predicts real-world functional outcomes', 'বাস্তব জীবনের কার্যকারিতার ইঙ্গিত দেয়')}</li>
-						</ul>
-					</div>
-
-					<div class="help-section">
-						<h3>{lt('Understanding Your Metrics', 'আপনার সূচকগুলো বুঝে নিন')}</h3>
-						<div class="metrics-explain">
-							<p>{@html lt('<strong>Go Trial Speed:</strong> How quickly you respond to target stimuli.', '<strong>গো ট্রায়ালের গতি:</strong> লক্ষ্যবস্তু দেখলে আপনি কত দ্রুত সাড়া দেন।')}</p>
-							<p>{@html lt('<strong>No-Go Accuracy:</strong> Your ability to withhold inappropriate responses.', '<strong>নো-গো নির্ভুলতা:</strong> অপ্রয়োজনীয় সাড়া থামিয়ে রাখার সক্ষমতা।')}</p>
-							<p>{@html lt('<strong>Commission Errors:</strong> False alarms when you press by mistake.', '<strong>ভুল চাপা:</strong> যেখানে চাপা উচিত ছিল না, সেখানে ভুল করে চাপা।')}</p>
-							<p>{@html lt('<strong>d-prime:</strong> Signal detection sensitivity, where higher is better.', '<strong>d-prime:</strong> সংকেত আলাদা করে ধরার সংবেদনশীলতা, যেখানে বেশি মান ভালো।')}</p>
+					<div class="metrics-grid">
+						<div class="metric-card highlight">
+							<div class="metric-value">{pct(metrics.overall_accuracy || 0)}</div>
+							<div class="metric-label">{lt('Overall Accuracy', 'সামগ্রিক নির্ভুলতা')}</div>
+							<div class="metric-sub">{lt(`${n(metrics.total_correct || 0)}/${n(metrics.total_trials || 0)} correct`, `${n(metrics.total_correct || 0)}/${n(metrics.total_trials || 0)} সঠিক`)}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{msText(metrics.go_mean_rt || 0)}</div>
+							<div class="metric-label">{lt('Go Trial Speed', 'গো ট্রায়ালের গতি')}</div>
+							<div class="metric-sub">{lt('Processing speed', 'প্রসেসিং গতি')}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{pct(metrics.nogo_accuracy || 0)}</div>
+							<div class="metric-label">{lt('Inhibition Control', 'প্রতিক্রিয়া নিয়ন্ত্রণ')}</div>
+							<div class="metric-sub">{lt('No-Go accuracy', 'নো-গো নির্ভুলতা')}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{n((metrics.d_prime || 0).toFixed(2), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+							<div class="metric-label">{lt("d-prime (Sensitivity)", "ডি-প্রাইম (সংবেদনশীলতা)")}</div>
+							<div class="metric-sub">{lt('Signal detection', 'সংকেত শনাক্তকরণ')}</div>
 						</div>
 					</div>
 
-					<div class="help-section">
-						<h3>{lt('Tips for Success', 'ভালো করার টিপস')}</h3>
-						<ul>
-							<li>{lt('Keep your finger ready over SPACEBAR', 'স্পেসবারের ওপর আঙুল প্রস্তুত রাখুন')}</li>
-							<li>{lt('Focus on the center of the screen', 'স্ক্রিনের মাঝখানে মনোযোগ রাখুন')}</li>
-							<li>{lt("Don't anticipate, wait to see the stimulus", 'আগাম অনুমান না করে উদ্দীপক দেখার জন্য অপেক্ষা করুন')}</li>
-							<li>{lt('Resist the urge to press on NO-GO trials', 'নো-গো ট্রায়ালে চাপার তাড়না সামলান')}</li>
-							<li>{lt('Stay alert throughout, consistency matters', 'শুরু থেকে শেষ পর্যন্ত সতর্ক থাকুন, ধারাবাহিকতা গুরুত্বপূর্ণ')}</li>
-						</ul>
+					<div class="breakdown">
+						<h3>{lt('Performance by Trial Type', 'ট্রায়ালভেদে পারফরম্যান্স')}</h3>
+						<div class="condition-row condition-go">
+							<div class="cond-header">
+								<span class="cond-dot" style="background: #059669;"></span>
+								<strong>{lt(`GO Trials (${n(sessionData.go_trials || 0)} trials)`, `গো ট্রায়াল (${n(sessionData.go_trials || 0)}টি)`)}</strong>
+							</div>
+							<div class="cond-stats">
+								<span>{lt('Hits:', 'সঠিক সাড়া:')} <strong>{n(metrics.go_hits || 0)}</strong></span>
+								<span>{lt('Misses:', 'মিস:')} <strong>{n(metrics.go_misses || 0)}</strong></span>
+								<span>{lt('Accuracy:', 'নির্ভুলতা:')} <strong>{pct(metrics.go_accuracy || 0)}</strong></span>
+								<span>{lt('Mean RT:', 'গড় RT:')} <strong>{msText(metrics.go_mean_rt || 0)}</strong></span>
+								<span class="cond-note">{lt('Tests processing speed and attention', 'প্রসেসিং গতি ও মনোযোগ মাপে')}</span>
+							</div>
+						</div>
+						<div class="condition-row condition-nogo">
+							<div class="cond-header">
+								<span class="cond-dot" style="background: #dc2626;"></span>
+								<strong>{lt(`NO-GO Trials (${n(sessionData.nogo_trials || 0)} trials)`, `নো-গো ট্রায়াল (${n(sessionData.nogo_trials || 0)}টি)`)}</strong>
+							</div>
+							<div class="cond-stats">
+								<span>{lt('Correct Withholds:', 'সফল বিরত:')} <strong>{n(metrics.nogo_correct || 0)}</strong></span>
+								<span>{lt('Commission Errors:', 'ভুল চাপা:')} <strong class="err-val">{n(metrics.nogo_commission_errors || 0)}</strong></span>
+								<span>{lt('Accuracy:', 'নির্ভুলতা:')} <strong>{pct(metrics.nogo_accuracy || 0)}</strong></span>
+								<span class="cond-note">{lt('Tests impulse control and inhibition', 'আবেগ সংযম ও প্রতিক্রিয়া নিয়ন্ত্রণ মাপে')}</span>
+							</div>
+						</div>
 					</div>
-				</div>
 
-				<button on:click={() => showHelp = false} class="modal-close-btn">
-					{lt('Close', 'বন্ধ করুন')}
-				</button>
+					<div class="interpretation-section">
+						<h3>{lt('What This Means', 'এর অর্থ কী')}</h3>
+						<p class="feedback-text">{resultsSummaryText()}</p>
+						<div class="insights">
+							{#if metrics.nogo_accuracy >= 90}
+								<div class="insight insight-good"><strong>{lt('Excellent inhibitory control:', 'চমৎকার প্রতিক্রিয়া নিয়ন্ত্রণ:')}</strong> {lt('You successfully withheld responses on NO-GO trials.', 'নো-গো ট্রায়ালে আপনি সাড়া থামিয়ে রাখতে পেরেছেন।')}</div>
+							{:else if metrics.nogo_accuracy >= 75}
+								<div class="insight insight-good"><strong>{lt('Good impulse control:', 'ভালো আবেগ সংযম:')}</strong> {lt('Managing inhibition effectively.', 'বেশ কার্যকরভাবে প্রতিক্রিয়া নিয়ন্ত্রণ করেছেন।')}</div>
+							{:else if metrics.nogo_accuracy >= 60}
+								<div class="insight insight-moderate"><strong>{lt('Moderate inhibition:', 'মাঝারি নিয়ন্ত্রণ:')}</strong> {lt('Room to improve impulse control with practice.', 'অনুশীলনের মাধ্যমে আবেগ সংযমে আরও উন্নতির সুযোগ আছে।')}</div>
+							{:else}
+								<div class="insight insight-high"><strong>{lt('Challenging inhibition:', 'চ্যালেঞ্জিং নিয়ন্ত্রণ:')}</strong> {lt('Practice will strengthen impulse control.', 'অনুশীলন এই দক্ষতাকে আরও শক্তিশালী করবে।')}</div>
+							{/if}
+							{#if metrics.go_mean_rt < 400}
+								<div class="insight insight-good"><strong>{lt('Fast processing speed:', 'দ্রুত প্রসেসিং:')}</strong> {lt('Quick reactions to GO trials.', 'গো ট্রায়ালে দ্রুত প্রতিক্রিয়া।')}</div>
+							{:else if metrics.go_mean_rt < 600}
+								<div class="insight insight-good"><strong>{lt('Good response speed:', 'ভালো প্রতিক্রিয়ার গতি:')}</strong> {lt('Adequate processing time.', 'যথাযথ প্রসেসিং সময়।')}</div>
+							{:else}
+								<div class="insight insight-moderate"><strong>{lt('Slower responses:', 'তুলনামূলক ধীর:')}</strong> {lt('Practice can improve speed.', 'অনুশীলন গতি বাড়াতে সাহায্য করবে।')}</div>
+							{/if}
+							{#if metrics.d_prime >= 2.0}
+								<div class="insight insight-good"><strong>{lt('High sensitivity:', 'উচ্চ সংবেদনশীলতা:')}</strong> {lt('Excellent discrimination between GO and NO-GO.', 'গো ও নো-গো উদ্দীপক চমৎকারভাবে আলাদা করতে পেরেছেন।')}</div>
+							{:else if metrics.d_prime >= 1.0}
+								<div class="insight insight-good"><strong>{lt('Good discrimination:', 'ভালো পার্থক্য:')}</strong> {lt('Solid signal detection ability.', 'নির্ভরযোগ্য সংকেত শনাক্তকরণ।')}</div>
+							{/if}
+						</div>
+					</div>
+
+					<div class="clinical-note">
+						<h4>{lt('About the Go/No-Go Task', 'গো/নো-গো টাস্ক সম্পর্কে')}</h4>
+						<p><strong>{lt('Response Inhibition:', 'প্রতিক্রিয়া নিয়ন্ত্রণ:')}</strong> {lt('A core executive function allowing you to control impulsive responses by suppressing prepotent (automatic) reactions.', 'একটি মূল নির্বাহী দক্ষতা যা স্বয়ংক্রিয় প্রতিক্রিয়া দমন করে আবেগ নিয়ন্ত্রণ করতে সাহায্য করে।')}</p>
+						<p class="why-matters"><strong>{lt('For MS:', 'MS-এর ক্ষেত্রে:')}</strong> {lt('Sensitive to frontal lobe dysfunction and attention deficits. Regular practice strengthens inhibitory control circuits in the prefrontal cortex.', 'ফ্রন্টাল লোবের সমস্যা ও মনোযোগ ঘাটতিতে সংবেদনশীল। নিয়মিত অনুশীলন প্রিফ্রন্টাল কর্টেক্সের নিয়ন্ত্রণমূলক সার্কিটকে শক্তিশালী করে।')}</p>
+						<p><strong>{lt('d-prime:', 'd-prime:')}</strong> {lt("Measures your ability to distinguish targets from non-targets without bias. Higher values mean better discrimination.", "পক্ষপাত ছাড়াই লক্ষ্যবস্তু ও অ-লক্ষ্যবস্তু আলাদা করার ক্ষমতা মাপে। বেশি মান মানে ভালো পার্থক্য করার সক্ষমতা।")}</p>
+					</div>
+
+					{#if metrics.difficulty_after !== undefined && metrics.difficulty_after !== difficulty}
+						<div class="difficulty-info">
+							<span>{lt('Difficulty:', 'কঠিনতা:')} <strong>{n(difficulty)}</strong> → <strong>{n(metrics.difficulty_after)}</strong></span>
+						</div>
+					{/if}
+
+					{#if newBadges.length > 0}
+						<BadgeNotification badges={newBadges} />
+					{/if}
+
+					<div class="button-group">
+						<button class="start-button" on:click={returnToDashboard}>{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
+						<button class="btn-secondary" on:click={() => goto('/training')}>{lt('Back to Training', 'ট্রেনিংয়ে ফিরে যান')}</button>
+					</div>
+				{/if}
 			</div>
-		</div>
-	{/if}
+		{/if}
+
+		{#if phase !== 'results' && phase !== 'intro'}
+			<button class="help-fab" on:click={() => showHelp = true} aria-label={lt('Help', 'সহায়তা')}>?</button>
+		{/if}
+	</div>
 </div>
 
+{#if showHelp}
+	<div class="modal-overlay" on:click={() => showHelp = false} role="presentation">
+		<div class="modal-content" role="dialog" tabindex="-1"
+			on:click|stopPropagation
+			on:keydown={(e) => e.key === 'Escape' && (showHelp = false)}>
+			<button class="close-btn" on:click={() => showHelp = false}>×</button>
+			<h2>{lt('Go/No-Go Task — Help', 'গো/নো-গো টাস্ক — সহায়তা')}</h2>
+			<div class="strategy">
+				<h3>{lt('What is the Go/No-Go Task?', 'গো/নো-গো টাস্ক কী?')}</h3>
+				<p>{lt('A widely-used test of response inhibition and impulse control. Measures your ability to suppress automatic responses when appropriate.', 'প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযমের বহুল ব্যবহৃত পরীক্ষা। উপযুক্ত সময়ে স্বয়ংক্রিয় প্রতিক্রিয়া দমনের সক্ষমতা মাপে।')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{lt('Why Used for MS?', 'MS-এ কেন ব্যবহার করা হয়?')}</h3>
+				<p>{lt('Tests executive function and frontal lobe integrity. Measures sustained attention and vigilance. Sensitive to cognitive slowing and inhibition deficits common in MS.', 'নির্বাহী কার্যকারিতা ও ফ্রন্টাল লোবের সক্ষমতা যাচাই করে। টেকসই মনোযোগ ও সতর্কতা মাপে। MS-এ সাধারণ জ্ঞানগত ধীরগতি ও নিয়ন্ত্রণ ঘাটতির প্রতি সংবেদনশীল।')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{lt('Understanding Your Metrics', 'আপনার সূচকগুলো বোঝা')}</h3>
+				<p><strong>{lt('Go Trial Speed:', 'গো ট্রায়ালের গতি:')}</strong> {lt('How quickly you respond to target stimuli.', 'লক্ষ্যবস্তু দেখলে কত দ্রুত সাড়া দেন।')}</p>
+				<p><strong>{lt('No-Go Accuracy:', 'নো-গো নির্ভুলতা:')}</strong> {lt('Your ability to withhold inappropriate responses.', 'অপ্রয়োজনীয় সাড়া থামিয়ে রাখার সক্ষমতা।')}</p>
+				<p><strong>{lt('Commission Errors:', 'ভুল চাপা:')}</strong> {lt('False alarms — pressing when you should not have.', 'ভুল সংকেত — যেখানে চাপা উচিত ছিল না, সেখানে চাপা।')}</p>
+				<p><strong>{lt("d-prime:", "d-prime:")}</strong> {lt('Signal detection sensitivity. Higher is better.', 'সংকেত শনাক্তকরণ সংবেদনশীলতা। বেশি মান ভালো।')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{lt('Tips for Better Performance', 'ভালো পারফরম্যান্সের টিপস')}</h3>
+				<p>{lt('Keep your finger resting on SPACEBAR. Focus on the center of the screen. Do not anticipate — wait to see the actual stimulus. Resist the urge to press on NO-GO trials. Stay alert throughout; consistency matters.', 'স্পেসবারে আঙুল রাখুন। স্ক্রিনের মাঝখানে ফোকাস করুন। আগাম অনুমান করবেন না। নো-গো ট্রায়ালে চাপার তাড়না সামলান। শুরু থেকে শেষ পর্যন্ত সতর্ক থাকুন।')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{lt('Real-World Relevance', 'বাস্তব জীবনের প্রাসঙ্গিকতা')}</h3>
+				<p>{lt('Better impulse control relates to improved decision-making, safer driving, and better emotional regulation in daily life. Regular practice strengthens prefrontal inhibitory circuits.', 'ভালো আবেগ সংযম মানে উন্নত সিদ্ধান্ত নেওয়া, নিরাপদ চালানো, এবং দৈনন্দিন জীবনে ভালো আবেগ নিয়ন্ত্রণ। নিয়মিত অনুশীলন প্রিফ্রন্টাল নিয়ন্ত্রণমূলক সার্কিটকে শক্তিশালী করে।')}</p>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
+	/* ── Container ─────────────────────────────────────────── */
 	.gonogo-container {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
 		min-height: 100vh;
+		background: #C8DEFA;
 		padding: 2rem 1rem;
 	}
 
-	.loading {
-		background: white;
-		padding: 3rem;
-		border-radius: 16px;
-		text-align: center;
-		max-width: 400px;
+	.gonogo-inner {
+		max-width: 960px;
 		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+		position: relative;
 	}
 
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 4px solid #f3f3f3;
-		border-top: 4px solid #3b82f6;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 0 auto 1rem auto;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.instructions {
+	/* ── Instructions card ─────────────────────────────────── */
+	.instructions-card {
 		background: white;
 		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 1000px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
 	}
 
-	.instructions h1 {
-		text-align: center;
-		color: #3b82f6;
-		font-size: 2.5rem;
-		margin-bottom: 1rem;
+	.header-content { text-align: center; }
+
+	.title-row {
+		display: flex; align-items: center; justify-content: center;
+		gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
 	}
+
+	.header-content h1 { font-size: 1.8rem; font-weight: 700; color: #1e293b; margin: 0; }
+
+	.subtitle { color: #64748b; font-size: 1rem; margin: 0.4rem 0 0.8rem; }
 
 	.classic-badge {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
-		color: #3b82f6;
-		padding: 0.75rem 1.5rem;
-		border-radius: 25px;
-		text-align: center;
-		font-weight: 600;
-		margin: 0 auto 2rem auto;
-		max-width: fit-content;
-		display: block;
-	}
-
-	.instruction-card {
-		background: #f8f9fa;
-		padding: 2rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.task-header h2 {
-		color: #2c3e50;
-		margin-bottom: 1rem;
-		font-size: 1.8rem;
-		text-align: center;
-	}
-
-	.importance {
-		font-size: 1.1rem;
-		line-height: 1.7;
-		color: #555;
-		margin-bottom: 2rem;
-		text-align: center;
-	}
-
-	.importance :global(strong) {
-		color: #3b82f6;
-	}
-
-	/* Stimulus Examples */
-	.stimulus-examples {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin: 2rem 0;
-	}
-
-	.example-card {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-	}
-
-	.example-card.go-card {
-		border: 3px solid #10b981;
-	}
-
-	.example-card.nogo-card {
-		border: 3px solid #ef4444;
-	}
-
-	.example-label {
-		font-size: 0.75rem;
-		font-weight: bold;
-		color: #666;
-		margin-bottom: 1rem;
-		text-transform: uppercase;
-	}
-
-	.stimulus-display {
-		font-size: 4rem;
-		font-weight: bold;
-		margin: 1rem 0;
-		min-height: 100px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.stimulus-display.go-stimulus {
-		color: #10b981;
-	}
-
-	.stimulus-display.nogo-stimulus {
-		color: #ef4444;
-	}
-
-	.example-action {
-		font-size: 1.1rem;
+		display: inline-block;
+		background: rgba(5, 150, 105, 0.1);
+		color: #059669;
+		border: 1px solid rgba(5, 150, 105, 0.3);
+		border-radius: 20px;
+		padding: 0.3rem 1rem;
+		font-size: 0.82rem;
 		font-weight: 700;
-		margin: 1rem 0;
+		letter-spacing: 0.03em;
 	}
 
-	.go-card .example-action {
-		color: #10b981;
-	}
-
-	.nogo-card .example-action {
-		color: #ef4444;
-	}
-
-	.example-note {
-		font-size: 0.9rem;
-		color: #666;
-		font-style: italic;
-	}
-
-	/* Rule Box */
-	.rule-box {
-		background: #fef3c7;
-		border-left: 4px solid #f59e0b;
-		padding: 1.25rem;
-		border-radius: 8px;
-		margin: 2rem 0;
-		color: #92400e;
-		line-height: 1.6;
-	}
-
-	.rule-box strong {
-		font-size: 1.1rem;
-		display: block;
-		margin-bottom: 0.5rem;
-	}
-
-	/* Info Grid */
-	.info-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin: 2rem 0;
-	}
-
-	.info-section {
-		background: white;
-		padding: 1.5rem;
+	/* ── Task concept ──────────────────────────────────────── */
+	.task-concept {
+		background: linear-gradient(135deg, #ecfdf5, #a7f3d0);
+		border: 1px solid #6ee7b7;
 		border-radius: 12px;
-		border: 2px solid #e5e7eb;
+		padding: 1.5rem;
 	}
 
-	.info-section h3 {
-		color: #2c3e50;
-		font-size: 1.2rem;
-		margin-bottom: 1rem;
+	.task-concept h3 { font-size: 1rem; font-weight: 700; color: #065f46; margin: 0 0 0.5rem; }
+	.task-concept > p { color: #047857; margin: 0 0 1.2rem; line-height: 1.6; }
+
+	.stimulus-examples {
+		display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+		background: white; border-radius: 10px; padding: 1.2rem;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.2rem;
 	}
 
-	/* Steps List */
-	.steps-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
+	.ex-card {
+		display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+		background: #f8fafc; border-radius: 10px; padding: 1rem 1.5rem;
+		min-width: 150px; text-align: center; flex: 1;
 	}
 
-	.step-item {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		background: #f8f9fa;
-		padding: 1rem;
-		border-radius: 8px;
+	.ex-go  { border: 2px solid #10b981; }
+	.ex-nogo{ border: 2px solid #ef4444; }
+
+	.ex-type { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+
+	.stimulus-demo {
+		font-size: 3.5rem; font-weight: 900; line-height: 1;
+		min-height: 60px; display: flex; align-items: center; justify-content: center;
+	}
+	.go-demo   { color: #10b981; }
+	.nogo-demo { color: #ef4444; }
+
+	.ex-action { font-size: 0.88rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 6px; }
+	.go-action  { background: #d1fae5; color: #065f46; }
+	.nogo-action{ background: #fee2e2; color: #991b1b; }
+
+	.ex-note { font-size: 0.78rem; color: #64748b; }
+
+	.key-rule-box {
+		background: #fefce8; border: 1px solid #fde047; border-radius: 8px;
+		padding: 0.75rem 1rem; font-size: 0.88rem; color: #854d0e; line-height: 1.5;
 	}
 
-	.step-num {
-		width: 40px;
-		height: 40px;
-		background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 1.3rem;
-		font-weight: bold;
-		flex-shrink: 0;
+	/* ── Rules grid ────────────────────────────────────────── */
+	.rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+	.rule-card {
+		display: flex; align-items: flex-start; gap: 0.8rem;
+		padding: 1rem; background: #f8fafc; border-radius: 10px;
+		border-left: 4px solid #059669;
 	}
 
-	.step-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
+	.rule-num {
+		width: 28px; height: 28px; border-radius: 50%;
+		background: #059669; color: white;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
 	}
 
-	.step-text strong {
-		font-size: 1rem;
-		color: #2c3e50;
-	}
+	.rule-text { display: flex; flex-direction: column; gap: 0.2rem; }
+	.rule-text strong { font-size: 0.9rem; color: #1e293b; }
+	.rule-text span   { font-size: 0.82rem; color: #64748b; line-height: 1.4; }
 
-	.step-text span {
-		font-size: 0.875rem;
-		color: #666;
-	}
+	/* ── Info grid ─────────────────────────────────────────── */
+	.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-	/* Measures List */
-	.measures-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
+	.info-section { background: #f8fafc; border-radius: 10px; padding: 1.2rem; }
+	.info-section h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
 
-	.measure-item {
-		background: #eff6ff;
-		padding: 0.75rem 1rem;
-		border-radius: 8px;
-		color: #1e40af;
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
+	.tips-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+	.tips-list li { font-size: 0.85rem; color: #475569; line-height: 1.4; }
 
-	/* Clinical Info */
+	.structure-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+	.structure-list li {
+		display: flex; justify-content: space-between; align-items: center;
+		font-size: 0.85rem; padding: 0.3rem 0; border-bottom: 1px solid #e2e8f0;
+	}
+	.structure-list li:last-child { border-bottom: none; }
+	.struct-key { color: #64748b; }
+	.struct-val { font-weight: 600; color: #1e293b; text-align: right; max-width: 60%; }
+
+	/* ── Clinical info ─────────────────────────────────────── */
 	.clinical-info {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(147, 51, 234, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-top: 1.5rem;
+		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+		border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.2rem;
 	}
+	.clinical-info h4 { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 0.8rem; }
+	.clinical-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+	.clinical-item { display: flex; flex-direction: column; gap: 0.2rem; }
+	.clinical-item strong { font-size: 0.82rem; color: #166534; }
+	.clinical-item span   { font-size: 0.8rem; color: #15803d; }
 
-	.clinical-info h3 {
-		color: #3b82f6;
-		margin-bottom: 1rem;
-		font-size: 1.1rem;
+	/* ── Perf guide ────────────────────────────────────────── */
+	.perf-guide { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.perf-guide h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
+	.norm-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+	.norm-bar {
+		display: flex; justify-content: space-between; align-items: center;
+		padding: 0.5rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
 	}
+	.norm-excellent { background: #dcfce7; color: #166534; }
+	.norm-good      { background: #d1fae5; color: #065f46; }
+	.norm-avg       { background: #fef9c3; color: #854d0e; }
+	.norm-fair      { background: #ffedd5; color: #9a3412; }
+	.norm-needs     { background: #fee2e2; color: #991b1b; }
+	.norm-label { font-weight: 700; }
+	.norm-val   { font-weight: 400; font-size: 0.82rem; }
+	.norm-note  { font-size: 0.78rem; color: #94a3b8; font-style: italic; margin: 0.5rem 0 0; text-align: center; }
 
-	.clinical-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 0.75rem;
-	}
-
-	.clinical-item {
-		background: white;
-		padding: 0.875rem;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		line-height: 1.5;
-		color: #555;
-	}
-
-	.clinical-item strong {
-		color: #3b82f6;
-		display: block;
-		margin-bottom: 0.25rem;
-	}
-
-	/* Buttons */
+	/* ── Buttons ───────────────────────────────────────────── */
 	.button-group {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		margin-top: 2rem;
-		flex-wrap: wrap;
+		display: flex; justify-content: center; gap: 1rem;
+		flex-wrap: wrap; padding-top: 0.5rem; align-items: center;
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
-		color: white;
-		border: none;
-		padding: 1.25rem 3rem;
-		font-size: 1.2rem;
-		font-weight: bold;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white; border: none; border-radius: 10px;
+		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
+		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+		box-shadow: 0 4px 14px rgba(102,126,234,0.4);
 	}
-
-	.start-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6);
-	}
+	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5); }
 
 	.btn-secondary {
-		background: #f3f4f6;
-		color: #4b5563;
-		border: none;
-		padding: 1.25rem 2.5rem;
-		font-size: 1.1rem;
-		font-weight: 600;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
+		background: white; color: #667eea;
+		border: 2px solid #667eea; border-radius: 10px;
+		padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;
+		cursor: pointer; transition: all 0.15s;
+	}
+	.btn-secondary:hover { background: rgba(102,126,234,0.08); }
+
+	.help-link {
+		background: none; border: none; color: #667eea;
+		font-size: 0.9rem; cursor: pointer; text-decoration: underline;
+		padding: 0.5rem; font-weight: 600; transition: color 0.15s;
+	}
+	.help-link:hover { color: #4f46e5; }
+
+	/* ── Screen card ───────────────────────────────────────── */
+	.screen-card {
+		background: white; border-radius: 16px; padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
 	}
 
-	.btn-secondary:hover {
-		background: #e5e7eb;
-		transform: translateY(-2px);
-	}
-
-	/* Quick Instructions */
-	.quick-instructions {
-		background: white;
-		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 800px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-	}
-
-	.quick-instructions h2 {
-		text-align: center;
-		color: #3b82f6;
-		font-size: 2rem;
-		margin-bottom: 2rem;
-	}
+	/* ── Quick instructions ────────────────────────────────── */
+	.quick-instructions { text-align: center; }
+	.quick-instructions h2 { font-size: 1.6rem; font-weight: 700; color: #1e293b; margin: 0 0 0.4rem; }
+	.instr-subtitle { color: #64748b; margin: 0 0 1.5rem; }
 
 	.key-reminder {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		margin-bottom: 2rem;
+		background: #f0fdf4; border: 1px solid #a7f3d0;
+		border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem;
+		display: flex; flex-direction: column; gap: 0.75rem;
 	}
 
-	.key-icon {
-		display: inline-block;
-		background: #3b82f6;
-		color: white;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-size: 1.2rem;
-		font-weight: bold;
-		margin-bottom: 1rem;
+	.key-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+
+	.key-box {
+		padding: 0.5rem 1.2rem; border-radius: 8px;
+		font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
+	}
+	.go-key   { background: #059669; color: white; }
+	.nogo-key { background: #dc2626; color: white; }
+
+	.key-for { font-size: 0.88rem; color: #64748b; }
+
+	.inline-stim {
+		font-size: 1.8rem; font-weight: 900;
+		padding: 0.2rem 0.6rem; border-radius: 6px;
+	}
+	.go-stim  { color: #10b981; background: rgba(16,185,129,0.08); }
+	.nogo-stim{ color: #ef4444; background: rgba(239,68,68,0.08); }
+
+	.steps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: left; }
+
+	.step-card {
+		display: flex; flex-direction: column; gap: 0.3rem;
+		background: #f8fafc; border-radius: 10px; padding: 1rem;
+		border-left: 4px solid #059669;
 	}
 
-	.key-reminder p {
-		font-size: 1.1rem;
-		color: #2c3e50;
-		margin: 0.5rem 0;
+	.step-num {
+		width: 26px; height: 26px; border-radius: 50%;
+		background: #059669; color: white;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.82rem; font-weight: 700; margin-bottom: 0.2rem;
 	}
 
-	.inline-stimulus {
-		display: inline-block;
-		font-size: 1.5rem;
-		font-weight: bold;
-		color: #10b981;
-		padding: 0.25rem 0.75rem;
-		background: rgba(16, 185, 129, 0.1);
-		border-radius: 6px;
+	.step-card strong { font-size: 0.9rem; color: #1e293b; }
+	.step-card span   { font-size: 0.82rem; color: #64748b; }
+
+	.remember-box {
+		background: #fef9c3; border: 1px solid #fde047; border-radius: 10px;
+		padding: 0.9rem 1.2rem; font-size: 0.9rem; color: #854d0e; line-height: 1.6;
+		margin-bottom: 1.5rem; text-align: left;
 	}
 
-	.inline-stimulus.nogo {
-		color: #ef4444;
-		background: rgba(239, 68, 68, 0.1);
+	.practice-note {
+		background: #fef9c3; border: 1px solid #fde047;
+		border-radius: 8px; padding: 0.6rem 1rem;
+		color: #854d0e; font-size: 0.88rem; margin-bottom: 1rem;
 	}
 
-	.instructions-flow {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
-		margin: 2rem 0;
-		flex-wrap: wrap;
-	}
-
-	.flow-step {
-		background: #f8f9fa;
-		padding: 1.5rem;
-		border-radius: 12px;
-		min-width: 180px;
-		text-align: center;
-	}
-
-	.flow-number {
-		width: 50px;
-		height: 50px;
-		background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 1.8rem;
-		font-weight: bold;
-		margin: 0 auto 1rem auto;
-	}
-
-	.flow-title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.5rem;
-	}
-
-	.flow-desc {
-		font-size: 0.9rem;
-		color: #666;
-		margin: 0;
-	}
-
-	.flow-arrow {
-		font-size: 2rem;
-		color: #3b82f6;
-		font-weight: bold;
-	}
-
-	.tips-box {
-		background: #ecfdf5;
-		border-left: 4px solid #10b981;
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.tips-box h3 {
-		color: #065f46;
-		margin-bottom: 1rem;
-	}
-
-	.tips-box ul {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.tips-box li {
-		padding: 0.5rem 0;
-		color: #047857;
-		font-size: 0.95rem;
-	}
-
-	.tips-box li :global(strong) {
-		color: #064e3b;
-	}
-
-	.practice-prompt {
-		text-align: center;
-		margin-top: 2rem;
-	}
-
-	.practice-prompt .start-button {
-		display: none;
-	}
-
-	.practice-prompt p {
-		font-size: 1.1rem;
-		color: #555;
-		margin-bottom: 1.5rem;
-	}
-
-	/* Trial Screen */
-	.trial-screen {
-		background: white;
-		border-radius: 16px;
-		padding: 2rem;
-		max-width: 900px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-	}
+	/* ── Trial screen ──────────────────────────────────────── */
+	.trial-screen { text-align: center; }
 
 	.trial-header {
-		text-align: center;
-		margin-bottom: 2rem;
+		display: flex; justify-content: center; align-items: center;
+		gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;
 	}
 
-	.trial-header h2 {
-		color: #2c3e50;
-		font-size: 1.5rem;
-		margin-bottom: 0.5rem;
+	.test-header {
+		display: flex; justify-content: space-between; align-items: center;
+		margin-bottom: 1.5rem; gap: 0.75rem; flex-wrap: wrap;
 	}
 
-	.instruction-reminder {
-		color: #666;
-		font-size: 0.95rem;
-		margin-top: 0.5rem;
+	.test-badges { display: flex; gap: 0.5rem; flex: 1; align-items: center; flex-wrap: wrap; }
+
+	.progress-track {
+		flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px;
+		overflow: hidden; min-width: 80px;
+	}
+	.progress-fill { height: 100%; background: linear-gradient(90deg, #059669, #10b981); border-radius: 3px; transition: width 0.3s; }
+
+	.help-btn-sm {
+		width: 36px; height: 36px; border-radius: 50%;
+		border: 2px solid #667eea; background: white; color: #667eea;
+		font-size: 1.1rem; font-weight: 700; cursor: pointer;
+		display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+	}
+	.help-btn-sm:hover { background: #667eea; color: white; }
+
+	.trial-badge {
+		background: rgba(102,126,234,0.12); color: #667eea;
+		padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+	}
+	.remaining-badge {
+		background: rgba(5,150,105,0.12); color: #047857;
+		padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
 	}
 
-	.progress-header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
+	.instr-mini { font-size: 0.82rem; color: #94a3b8; }
 
-	.progress-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-		flex-wrap: wrap;
-		gap: 1rem;
-	}
-
-	.progress-top h2 {
-		color: #2c3e50;
-		font-size: 1.5rem;
-		margin: 0;
-	}
-
-	.progress-badges {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.badge-remaining {
-		background: #dbeafe;
-		color: #1e40af;
-		padding: 0.5rem 1rem;
-		border-radius: 20px;
-		font-size: 0.875rem;
-		font-weight: 600;
-	}
-
-	.progress-bar-container {
-		width: 100%;
-		height: 10px;
-		background: #e5e7eb;
-		border-radius: 10px;
-		overflow: hidden;
-	}
-
-	.progress-bar-fill {
-		height: 100%;
-		background: linear-gradient(90deg, #3b82f6 0%, #9333ea 100%);
-		transition: width 0.3s ease;
-	}
-
+	/* ── Stimulus area ─────────────────────────────────────── */
 	.stimulus-area {
-		min-height: 350px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 2rem 0;
+		min-height: 300px;
+		display: flex; align-items: center; justify-content: center;
+		margin: 1.5rem auto 2rem;
 	}
 
 	.stimulus-large {
-		font-size: 8rem;
-		font-weight: 900;
-		text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+		font-size: 8rem; font-weight: 900;
+		line-height: 1; transition: color 0.1s;
 	}
-
-	.stimulus-large.go {
-		color: #10b981;
-	}
-
-	.stimulus-large.nogo {
-		color: #ef4444;
-	}
+	.stim-go   { color: #10b981; }
+	.stim-nogo { color: #ef4444; }
 
 	.stimulus-xlarge {
-		font-size: 10rem;
-		font-weight: 900;
-		text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
-		color: #3b82f6;
+		font-size: 10rem; font-weight: 900; line-height: 1;
+		color: #059669;
 	}
 
-	.fixation {
-		font-size: 5rem;
-		color: #d1d5db;
-		font-weight: bold;
-	}
+	.fixation { font-size: 5rem; color: #cbd5e1; font-weight: 300; }
 
-	.reminder-text {
-		text-align: center;
-		color: #666;
-		font-size: 1rem;
-		margin-top: 2rem;
-	}
+	.reminder-text { font-size: 0.9rem; color: #94a3b8; margin: 0; }
 
-	.feedback-box {
-		margin-top: 2rem;
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		font-size: 1.1rem;
-		font-weight: 600;
-		animation: fadeIn 0.3s ease;
-	}
+	/* ── Feedback ──────────────────────────────────────────── */
+	.feedback-box { margin-top: 1.5rem; padding: 1rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; line-height: 1.5; }
+	.feedback-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+	.feedback-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
-	.feedback-box.success {
-		background: #d1fae5;
-		color: #065f46;
-		border: 2px solid #10b981;
-	}
+	/* ── Complete screen ───────────────────────────────────── */
+	.complete-screen { display: flex; flex-direction: column; gap: 1.5rem; }
 
-	.feedback-box.error {
-		background: #fee2e2;
-		color: #991b1b;
-		border: 2px solid #ef4444;
+	.perf-banner {
+		text-align: center; padding: 1.5rem;
+		background: linear-gradient(135deg, #ecfdf5, #a7f3d0);
+		border: 2px solid #6ee7b7; border-radius: 14px;
 	}
+	.perf-level    { font-size: 1.8rem; font-weight: 800; color: #065f46; }
+	.perf-subtitle { font-size: 0.95rem; color: #64748b; margin-top: 0.3rem; }
 
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(-10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	/* Results Page */
-	.results-container {
-		background: white;
-		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 1100px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-	}
-
-	.results-header {
-		text-align: center;
-		margin-bottom: 2.5rem;
-	}
-
-	.results-header h2 {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 1.5rem;
-	}
-
-	.performance-badge {
-		display: inline-block;
-		padding: 1rem 2rem;
-		border-radius: 50px;
-		font-size: 1.3rem;
-		font-weight: bold;
-		color: white;
-		box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-	}
-
-	.performance-badge.from-green-500 {
-		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-	}
-
-	.performance-badge.from-blue-500 {
-		background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-	}
-
-	.performance-badge.from-yellow-500 {
-		background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%);
-	}
-
-	.performance-badge.from-gray-500 {
-		background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-	}
-
-	/* Metrics Grid */
-	.metrics-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 1.25rem;
-		margin-bottom: 2.5rem;
-	}
-
+	.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
 	.metric-card {
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 2px solid;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+		background: #f8fafc; border: 1px solid #e2e8f0;
+		border-radius: 12px; padding: 1.2rem; text-align: center;
+	}
+	.metric-card.highlight {
+		background: linear-gradient(135deg, #059669, #047857);
+		border-color: transparent; color: white;
+	}
+	.metric-value { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 0.2rem; }
+	.metric-card.highlight .metric-value,
+	.metric-card.highlight .metric-label,
+	.metric-card.highlight .metric-sub { color: white; }
+	.metric-label { font-size: 0.82rem; font-weight: 600; color: #64748b; }
+	.metric-sub   { font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem; }
+
+	/* ── Breakdown ─────────────────────────────────────────── */
+	.breakdown { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.breakdown h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem; }
+
+	.condition-row {
+		padding: 0.9rem; border-radius: 10px; margin-bottom: 0.75rem;
+		border: 1px solid #e2e8f0;
+	}
+	.condition-row:last-child { margin-bottom: 0; }
+	.condition-go  { background: #f0fdf4; border-color: #a7f3d0; }
+	.condition-nogo{ background: #fff1f2; border-color: #fda4af; }
+
+	.cond-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+	.cond-header strong { font-size: 0.88rem; color: #1e293b; }
+	.cond-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+	.cond-stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.85rem; color: #475569; }
+	.cond-note { font-style: italic; color: #94a3b8; }
+	.err-val   { color: #dc2626; }
+
+	/* ── Interpretation ────────────────────────────────────── */
+	.interpretation-section { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.interpretation-section h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 0.6rem; }
+	.feedback-text { font-size: 0.9rem; color: #475569; margin: 0 0 1rem; line-height: 1.6; }
+
+	.insights { display: flex; flex-direction: column; gap: 0.5rem; }
+	.insight { padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; }
+	.insight-good     { background: #dcfce7; color: #166534; }
+	.insight-moderate { background: #fef9c3; color: #854d0e; }
+	.insight-high     { background: #fee2e2; color: #991b1b; }
+
+	/* ── Clinical note ─────────────────────────────────────── */
+	.clinical-note {
+		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+		border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.2rem;
+	}
+	.clinical-note h4 { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 0.5rem; }
+	.clinical-note p { font-size: 0.9rem; color: #15803d; line-height: 1.6; margin: 0 0 0.5rem; }
+	.clinical-note p:last-child { margin: 0; }
+	.why-matters { font-style: italic; }
+
+	/* ── Difficulty info ───────────────────────────────────── */
+	.difficulty-info {
+		background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 10px;
+		padding: 0.75rem 1.2rem; font-size: 0.88rem; font-weight: 600; color: #065f46;
 	}
 
-	.accuracy-card {
-		background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-		border-color: #10b981;
+	/* ── FAB help button ───────────────────────────────────── */
+	.help-fab {
+		position: fixed; bottom: 2rem; right: 2rem;
+		width: 48px; height: 48px; border-radius: 50%;
+		background: white; border: 2px solid #667eea; color: #667eea;
+		font-size: 1.3rem; font-weight: 700; cursor: pointer;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+		display: flex; align-items: center; justify-content: center;
+		transition: all 0.2s;
 	}
+	.help-fab:hover { background: #667eea; color: white; }
 
-	.speed-card {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-		border-color: #3b82f6;
-	}
-
-	.inhibition-card {
-		background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
-		border-color: #ef4444;
-	}
-
-	.dprime-card {
-		background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(126, 34, 206, 0.1));
-		border-color: #9333ea;
-	}
-
-	.metric-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: #555;
-		margin-bottom: 0.5rem;
-	}
-
-	.metric-value {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 0.25rem;
-	}
-
-	.metric-detail {
-		font-size: 0.8rem;
-		color: #666;
-	}
-
-	/* Breakdown Section */
-	.breakdown-section {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(147, 51, 234, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.breakdown-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1.25rem;
-	}
-
-	.breakdown-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1rem;
-	}
-
-	.breakdown-card {
-		background: white;
-		padding: 1.25rem;
-		border-radius: 10px;
-		border: 2px solid;
-	}
-
-	.breakdown-card.go-card {
-		border-color: #10b981;
-	}
-
-	.breakdown-card.nogo-card {
-		border-color: #ef4444;
-	}
-
-	.breakdown-title {
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.75rem;
-		font-size: 1rem;
-	}
-
-	.breakdown-stat {
-		font-size: 0.9rem;
-		color: #555;
-		margin-bottom: 0.5rem;
-	}
-
-	.breakdown-stat span {
-		font-weight: 700;
-	}
-
-	.breakdown-stat .error-count {
-		color: #ef4444;
-	}
-
-	.breakdown-note {
-		font-size: 0.85rem;
-		color: #666;
-		margin-top: 0.75rem;
-		font-style: italic;
-	}
-
-	.breakdown-note.success {
-		color: #059669;
-		font-weight: 600;
-	}
-
-	/* Interpretation Section */
-	.interpretation-section {
-		background: white;
-		border: 2px solid #3b82f6;
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.interpretation-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	.feedback-text {
-		color: #555;
-		line-height: 1.6;
-		margin-bottom: 1.5rem;
-		font-size: 1.05rem;
-	}
-
-	.insights-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.insight {
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
-
-	.insight.success {
-		color: #059669;
-	}
-
-	.insight.good {
-		color: #2563eb;
-	}
-
-	.insight.moderate {
-		color: #ca8a04;
-	}
-
-	.insight.high {
-		color: #ea580c;
-	}
-
-	/* Clinical Context */
-	.clinical-context {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(147, 51, 234, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.clinical-context h3 {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	.clinical-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.clinical-content p {
-		font-size: 0.9rem;
-		color: #555;
-		line-height: 1.6;
-	}
-
-	/* Difficulty Change */
-	.difficulty-change {
-		background: #dbeafe;
-		border-left: 4px solid #3b82f6;
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
-	}
-
-	.difficulty-change p {
-		font-size: 0.9rem;
-		color: #1e3a8a;
-		margin: 0;
-	}
-
-	/* Badges Section */
-	.badges-section {
-		margin-bottom: 2rem;
-	}
-
-	.badges-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	/* Results Actions */
-	.results-actions {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
-		margin-top: 2rem;
-	}
-
-	.return-button {
-		background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
-		color: white;
-		padding: 1.25rem 3rem;
-		font-size: 1.1rem;
-		font-weight: 700;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-	}
-
-	.return-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6);
-	}
-
-	/* Help Button */
-	.help-button {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		width: 56px;
-		height: 56px;
-		background: #3b82f6;
-		color: white;
-		border: none;
-		border-radius: 50%;
-		font-size: 2rem;
-		cursor: pointer;
-		box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-		transition: all 0.3s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.help-button:hover {
-		background: #2563eb;
-		transform: scale(1.1);
-	}
-
-	/* Modal */
+	/* ── Modal ─────────────────────────────────────────────── */
 	.modal-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		z-index: 1000;
+		position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+		display: flex; align-items: center; justify-content: center;
+		z-index: 1000; padding: 1rem;
 	}
-
 	.modal-content {
-		background: white;
-		border-radius: 16px;
-		padding: 2rem;
-		max-width: 650px;
-		max-height: 90vh;
-		overflow-y: auto;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+		background: white; border-radius: 16px; padding: 2rem;
+		max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto;
+		position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 	}
-
-	.modal-title {
-		font-size: 1.8rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 1.5rem;
+	.close-btn {
+		position: absolute; top: 1rem; right: 1rem;
+		width: 36px; height: 36px; border: none; background: #f1f5f9;
+		color: #475569; font-size: 1.4rem; border-radius: 50%; cursor: pointer;
+		display: flex; align-items: center; justify-content: center;
 	}
-
-	.help-sections {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+	.close-btn:hover { background: #e2e8f0; }
+	.modal-content h2 {
+		font-size: 1.2rem; font-weight: 700; color: #1e293b;
+		margin: 0 0 1.2rem; padding-right: 2.5rem;
 	}
-
-	.help-section h3 {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.75rem;
+	.strategy {
+		padding: 0.9rem 1rem; background: #f8fafc;
+		border-radius: 8px; border-left: 4px solid #059669; margin-bottom: 0.75rem;
 	}
+	.strategy h3 { font-size: 0.88rem; font-weight: 700; color: #1e293b; margin: 0 0 0.3rem; }
+	.strategy p  { font-size: 0.84rem; color: #64748b; margin: 0 0 0.3rem; line-height: 1.5; }
+	.strategy p:last-child { margin: 0; }
 
-	.help-section p {
-		color: #555;
-		line-height: 1.6;
-	}
-
-	.help-section ul {
-		list-style: disc;
-		padding-left: 1.5rem;
-		color: #555;
-	}
-
-	.help-section li {
-		margin-bottom: 0.5rem;
-		line-height: 1.5;
-	}
-
-	.metrics-explain {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.metrics-explain p {
-		font-size: 0.95rem;
-	}
-
-	.modal-close-btn {
-		margin-top: 1.5rem;
-		width: 100%;
-		padding: 1rem 1.5rem;
-		background: #3b82f6;
-		color: white;
-		border: none;
-		border-radius: 12px;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-	}
-
-	.modal-close-btn:hover {
-		background: #2563eb;
-	}
-
-	/* Responsive */
-	@media (max-width: 768px) {
-		.instructions {
-			padding: 1.5rem 1rem;
-		}
-
-		.instructions h1 {
-			font-size: 2rem;
-		}
-
-		.stimulus-examples {
-			grid-template-columns: 1fr;
-		}
-
-		.info-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.stimulus-large {
-			font-size: 5rem;
-		}
-
-		.stimulus-xlarge {
-			font-size: 6rem;
-		}
-
-		.flow-arrow {
-			transform: rotate(90deg);
-		}
+	/* ── Responsive ────────────────────────────────────────── */
+	@media (max-width: 640px) {
+		.instructions-card { padding: 1.5rem; gap: 1.2rem; }
+		.rules-grid         { grid-template-columns: 1fr; }
+		.info-grid          { grid-template-columns: 1fr; }
+		.clinical-grid      { grid-template-columns: 1fr; }
+		.metrics-grid       { grid-template-columns: repeat(2, 1fr); }
+		.steps-grid         { grid-template-columns: 1fr; }
+		.header-content h1  { font-size: 1.4rem; }
+		.screen-card        { padding: 1.25rem; }
+		.stimulus-large     { font-size: 5rem; }
+		.stimulus-xlarge    { font-size: 7rem; }
+		.stimulus-examples  { gap: 0.5rem; }
+		.ex-card            { min-width: 110px; padding: 0.75rem; }
+		.key-row            { flex-direction: column; gap: 0.4rem; }
 	}
 </style>

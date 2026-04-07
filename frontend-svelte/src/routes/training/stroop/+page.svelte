@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
@@ -341,1627 +342,895 @@
 		: 'from-gray-500 to-gray-600';
 </script>
 
+<svelte:head>
+	<title>{lt('Stroop Test - NeuroBloom', 'স্ট্রুপ পরীক্ষা - NeuroBloom')}</title>
+</svelte:head>
+
 <div class="stroop-container" data-localize-skip>
-	{#if loading}
-		<div class="loading">
-			<div class="spinner"></div>
-			<p>{t('Loading task...')}</p>
-		</div>
-	{:else if phase === 'intro'}
-			<!-- Introduction Screen -->
-		<div class="instructions">
-			<div class="header-with-badge">
-				<h1>🧠 {t('Stroop Color-Word Test')}</h1>
-				<DifficultyBadge {difficulty} domain="Attention" />
-			</div>
-			<div class="classic-badge">{t('Classic Attention & Inhibitory Control Assessment')}</div>
-			
-			<div class="instruction-card">
-				<div class="task-header">
-					<h2>{t('💡 Your Task: Name the Color, NOT the Word!')}</h2>
+	<div class="stroop-inner">
+
+		{#if loading}
+			<LoadingSkeleton variant="card" count={3} />
+
+		{:else if phase === 'intro'}
+			<div class="instructions-card">
+				<div class="header-content">
+					<div class="title-row">
+						<h1>{t('Stroop Color-Word Test')}</h1>
+						<DifficultyBadge {difficulty} domain="Attention" />
+					</div>
+					<p class="subtitle">{t('Selective Attention and Inhibitory Control Assessment')}</p>
+					<div class="classic-badge">{t('Classic Neuropsychological Assessment — Stroop, 1935')}</div>
 				</div>
-				
-				<p class="importance">
-					{t("Your brain automatically reads words - it's involuntary! This test measures your ability to inhibit this automatic response and focus on the ink color instead.")}
-				</p>
-				
-				<!-- Visual Examples -->
-				<div class="stroop-examples">
-					<div class="example-card baseline">
-						<div class="example-label">{t('Type 1: Baseline')}</div>
-						<div class="color-patch"></div>
-						<div class="example-desc">{t('Just a color patch')}</div>
-						<div class="example-note">{t('✓ Easy - No interference')}</div>
+
+				<div class="task-concept">
+					<h3>{t('The Core Principle')}</h3>
+					<p>{t('Your brain reads words automatically and involuntarily. This test measures your ability to suppress that automatic response and name the ink color instead.')}</p>
+					<div class="stroop-examples">
+						<div class="ex-card ex-baseline">
+							<div class="ex-type">{t('Baseline')}</div>
+							<div class="color-patch-demo" style="background: {COLOR_MAP['red']};"></div>
+							<div class="ex-label">{t('Name the color')}</div>
+							<div class="ex-verdict ex-easy">{t('No conflict')}</div>
+						</div>
+						<div class="ex-card ex-congruent">
+							<div class="ex-type">{t('Congruent')}</div>
+							<div class="word-demo" style="color: {COLOR_MAP['green']};">{displayStimulusWord('green')}</div>
+							<div class="ex-label">{t('Word = Ink color')}</div>
+							<div class="ex-verdict ex-easy">{t('Easy — no conflict')}</div>
+						</div>
+						<div class="ex-card ex-incongruent">
+							<div class="ex-type">{t('Incongruent')}</div>
+							<div class="word-demo" style="color: {COLOR_MAP['blue']};">{displayStimulusWord('red')}</div>
+							<div class="ex-label">{t('Answer: Blue (not Red!)')}</div>
+							<div class="ex-verdict ex-hard">{t('The real challenge')}</div>
+						</div>
 					</div>
-					
-					<div class="example-card congruent">
-						<div class="example-label">{t('Type 2: Congruent')}</div>
-						<div class="stroop-word" style="color: #dc2626;">{displayStimulusWord('RED')}</div>
-						<div class="example-desc">{t('Word matches color')}</div>
-						<div class="example-note">{t('✓ Easy - No conflict')}</div>
-					</div>
-					
-					<div class="example-card incongruent">
-						<div class="example-label">{t('Type 3: Incongruent ⚡')}</div>
-						<div class="stroop-word" style="color: #2563eb;">{displayStimulusWord('RED')}</div>
-						<div class="example-desc">{t('Word conflicts with color!')}</div>
-						<div class="example-note">{t('🎯 The REAL challenge!')}</div>
+					<div class="key-rule-box">
+						<strong>{t('Rule:')}</strong> {t('Always name the INK COLOR — never read the word aloud.')}
 					</div>
 				</div>
-				
-				<div class="rule-box">
-					<strong>{t('⚡ The Rule:')}</strong>
-					{t('Always name the INK COLOR, not the word!')}<br>
-					{t('In the example above, the correct answer is')} <strong>"{displayStimulusWord('BLUE')}"</strong> {t('(ignore the word "RED")')}
+
+				<div class="rules-grid">
+					<div class="rule-card">
+						<span class="rule-num">1</span>
+						<div class="rule-text">
+							<strong>{t('See the Stimulus')}</strong>
+							<span>{t('A color patch or a colored word appears on screen')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">2</span>
+						<div class="rule-text">
+							<strong>{t('Identify Ink Color')}</strong>
+							<span>{t('Ignore the word meaning — focus only on the ink color')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">3</span>
+						<div class="rule-text">
+							<strong>{t('Click the Button')}</strong>
+							<span>{t('Tap the color button that matches the ink color')}</span>
+						</div>
+					</div>
+					<div class="rule-card">
+						<span class="rule-num">4</span>
+						<div class="rule-text">
+							<strong>{t('Respond Quickly')}</strong>
+							<span>{t('Accuracy first, then speed — both are measured')}</span>
+						</div>
+					</div>
 				</div>
-				
-				<!-- Two Column Layout -->
+
 				<div class="info-grid">
 					<div class="info-section">
-						<h3>{t('📋 Test Structure')}</h3>
-						<div class="structure-list">
-							<div class="structure-item">
-								<div class="structure-num">1</div>
-								<div class="structure-text">
-									<strong>{t('Color Patches')}</strong>
-									<span>{t('Baseline speed')}</span>
-								</div>
-							</div>
-							<div class="structure-item">
-								<div class="structure-num">2</div>
-								<div class="structure-text">
-									<strong>{t('Matching Words')}</strong>
-									<span>{t('Word = Color')}</span>
-								</div>
-							</div>
-							<div class="structure-item">
-								<div class="structure-num">3</div>
-								<div class="structure-text">
-									<strong>{t('Conflicting Words')}</strong>
-									<span>{t('The real test!')}</span>
-								</div>
-							</div>
-						</div>
+						<h4>{t('Tips for Success')}</h4>
+						<ul class="tips-list">
+							<li><strong>{t('Focus on the color:')}</strong> {t('not the letters')}</li>
+							<li><strong>{t('Do not read aloud:')}</strong> {t('your brain will try automatically')}</li>
+							<li><strong>{t('Stay composed:')}</strong> {t('interference is universal — even experts feel it')}</li>
+							<li><strong>{t('Errors are expected:')}</strong> {t('on conflicting trials especially')}</li>
+						</ul>
 					</div>
-					
 					<div class="info-section">
-						<h3>{t('💪 Tips for Success')}</h3>
-						<div class="tips-list">
-							<div class="tip-item">✓ <strong>{t('Focus on the color')}</strong> - {t('Not the letters')}</div>
-							<div class="tip-item">✓ <strong>{t("Don't read")}</strong> - {t('Your brain will try!')}</div>
-							<div class="tip-item">✓ <strong>{t('Stay focused')}</strong> - {t('Concentration is key')}</div>
-							<div class="tip-item">✓ <strong>{t('Speed matters')}</strong> - {t('Quick but accurate')}</div>
-							<div class="tip-item">✓ <strong>{t('Practice helps')}</strong> - {t('Trains your brain!')}</div>
-						</div>
+						<h4>{t('Test Structure')}</h4>
+						<ul class="structure-list">
+							<li>
+								<span class="struct-key">{t('Phase 1')}</span>
+								<span class="struct-val">{t('Color patches (baseline)')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{t('Phase 2')}</span>
+								<span class="struct-val">{t('Matching words (congruent)')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{t('Phase 3')}</span>
+								<span class="struct-val">{t('Conflicting words (key measure)')}</span>
+							</li>
+							<li>
+								<span class="struct-key">{t('Response')}</span>
+								<span class="struct-val">{t('Color buttons — no typing')}</span>
+							</li>
+						</ul>
 					</div>
 				</div>
-				
-				<!-- Clinical Context -->
+
 				<div class="clinical-info">
-					<h3>{t('📚 Clinical Significance')}</h3>
+					<h4>{t('Clinical Significance')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>{t('📜 History:')}</strong> {t("Stroop, 1935 - Psychology's most famous experiment")}
+							<strong>{t('History')}</strong>
+							<span>{t('Stroop, 1935 — psychology\'s most studied paradigm')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{t('🎯 Measures:')}</strong> {t('Attention, inhibition, cognitive control')}
+							<strong>{t('Measures')}</strong>
+							<span>{t('Selective attention, inhibitory control, cognitive flexibility')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{t('🏥 MS Relevance:')}</strong> {t('Sensitive to frontal lobe changes (Parmenter et al., 2007)')}
+							<strong>{t('MS Relevance')}</strong>
+							<span>{t('Sensitive to frontal lobe changes (Parmenter et al., 2007)')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard in neuropsych assessments worldwide')}
+							<strong>{t('Clinical Use')}</strong>
+							<span>{t('Standard component of MS neuropsychological batteries')}</span>
 						</div>
 					</div>
 				</div>
+
+				<div class="perf-guide">
+					<h4>{t('Performance Reference (Accuracy)')}</h4>
+					<div class="norm-bars">
+						<div class="norm-bar norm-excellent"><span class="norm-label">{t('Excellent')}</span><span class="norm-val">&ge;92%</span></div>
+						<div class="norm-bar norm-good"><span class="norm-label">{t('Good')}</span><span class="norm-val">82–91%</span></div>
+						<div class="norm-bar norm-avg"><span class="norm-label">{t('Average')}</span><span class="norm-val">70–81%</span></div>
+						<div class="norm-bar norm-fair"><span class="norm-label">{t('Fair')}</span><span class="norm-val">55–69%</span></div>
+						<div class="norm-bar norm-needs"><span class="norm-label">{t('Developing')}</span><span class="norm-val">&lt;55%</span></div>
+					</div>
+					<p class="norm-note">* {t('Incongruent accuracy is always lower than baseline — that is expected.')}</p>
+				</div>
+
+				<div class="button-group">
+					<button class="start-button" on:click={startInstructions}>{t('Begin Test')}</button>
+					<button class="btn-secondary" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
+					<button class="help-link" on:click={() => showHelp = true}>{t('More Information')}</button>
+				</div>
 			</div>
-			
-			<div class="button-group">
-				<button class="start-button" on:click={startInstructions}>
-					{t('Begin Test')}
-				</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{t('Back to Dashboard')}
-				</button>
-			</div>
-		</div>
 
 		{:else if phase === 'instructions'}
-			<!-- Quick Instructions Before Practice -->
-		<div class="quick-instructions">
-			<h2>{t('Quick Instructions')}</h2>
+			<div class="screen-card quick-instructions">
+				<h2>{t('Quick Instructions')}</h2>
+				<p class="instr-subtitle">{t('Name the ink color — ignore the word meaning.')}</p>
 
-			<div class="instructions-steps">
-				<div class="instruction-step step-1">
-					<span class="step-number">1</span>
-					<div class="step-content">
-						<p class="step-title">{t('See the Stimulus')}</p>
-						<p class="step-desc">{t('Color patch or colored word appears')}</p>
+				<div class="steps-grid">
+					<div class="step-card">
+						<span class="step-num">1</span>
+						<strong>{t('See the Stimulus')}</strong>
+						<span>{t('Color patch or colored word appears')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">2</span>
+						<strong>{t('Identify Ink Color')}</strong>
+						<span>{t('Ignore what the word says')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">3</span>
+						<strong>{t('Click the Button')}</strong>
+						<span>{t('Tap the matching color button')}</span>
+					</div>
+					<div class="step-card">
+						<span class="step-num">4</span>
+						<strong>{t('Respond Quickly')}</strong>
+						<span>{t('Speed and accuracy both measured')}</span>
 					</div>
 				</div>
 
-				<div class="instruction-step step-2">
-					<span class="step-number">2</span>
-					<div class="step-content">
-						<p class="step-title">{t('Identify Ink Color')}</p>
-						<p class="step-desc">{t('Ignore what the word says - focus on the COLOR')}</p>
-					</div>
+				<div class="remember-box">
+					<strong>{t('Remember:')}</strong>
+					{t('On conflicting trials your brain will try to read the word.')}
+					<strong> {t('Resist this — name the ink color only.')}</strong>
 				</div>
 
-				<div class="instruction-step step-3">
-					<span class="step-number">3</span>
-					<div class="step-content">
-						<p class="step-title">{t('Click the Color Button')}</p>
-						<p class="step-desc">{t('Click the button matching the ink color')}</p>
-					</div>
-				</div>
-
-				<div class="instruction-step step-4">
-					<span class="step-number">4</span>
-					<div class="step-content">
-						<p class="step-title">{t('Respond Quickly')}</p>
-						<p class="step-desc">{t('Speed matters - but stay accurate!')}</p>
-					</div>
-				</div>
-			</div>
-
-			<div class="remember-box">
-				<p class="remember-title">{t('Remember:')}</p>
-				<p class="remember-text">
-					{t('In conflicting trials, your brain will want to read the word.')} 
-					<strong>{t('Resist this impulse!')}</strong> {t('Focus only on the ink color. This is what makes it challenging!')}
-				</p>
-				</div>
-
-			<div class="practice-prompt">
-				<p>{t("Let's practice with 6 trials to get familiar...")}</p>
-			</div>
-
-			<TaskPracticeActions
-				locale={$locale}
-				startLabel={t('Start Actual Test')}
-				statusMessage={practiceStatusMessage}
-				on:start={startTest}
-				on:practice={startPractice}
-			/>
-		</div>
-
-	{:else if phase === 'practice'}
-		<!-- Practice Trials -->
-		<div class="trial-screen">
-			<PracticeModeBanner locale={$locale} />
-			<div class="trial-header">
-				<h2>{lt(`Practice Trial ${currentPractice + 1} of ${practiceTrials.length}`, `অনুশীলনী ট্রায়াল ${n(currentPractice + 1)} / ${n(practiceTrials.length)}`)}</h2>
-				<p class="condition-label">{t('Condition:')} <span>{conditionName}</span></p>
-			</div>
-
-			<!-- Stimulus Display -->
-			<div class="stimulus-area">
-				{#if currentTrialData.condition === 'baseline'}
-					<!-- Color patch -->
-					<div 
-						class="color-patch-large"
-						style="background-color: {COLOR_MAP[currentTrialData.display_color]};"
-					></div>
-				{:else}
-					<!-- Word in color -->
-					<div 
-						class="stroop-word-large"
-						style="color: {COLOR_MAP[currentTrialData.display_color]};"
-					>
-						{displayStimulusWord(currentTrialData.word_text)}
-					</div>
+				{#if practiceStatusMessage}
+					<div class="practice-note">{practiceStatusMessage}</div>
 				{/if}
+
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={t('Start Actual Test')}
+					statusMessage={practiceStatusMessage}
+					on:start={startTest}
+					on:practice={startPractice}
+				/>
 			</div>
 
-			<!-- Color Buttons -->
-			<div class="color-buttons">
-				{#each sessionData.colors.slice(0, 4) as color}
-					<button
-						on:click={() => handleColorClick(color)}
-						disabled={practiceFeedback !== null}
-						class="color-btn"
-						style="background-color: {COLOR_MAP[color]};"
-					>
-						{getDisplayColorLabel(color)}
-					</button>
-				{/each}
-			</div>
-
-			<!-- Feedback -->
-			{#if practiceFeedback}
-				<div class="feedback-box {practiceFeedback.type}">
-					<p>{practiceFeedback.message}</p>
+		{:else if phase === 'practice'}
+			<div class="screen-card trial-screen">
+				<PracticeModeBanner locale={$locale} />
+				<div class="trial-header">
+					<span class="trial-badge">
+						{lt(`Practice ${currentPractice + 1} / ${practiceTrials.length}`,
+							`অনুশীলন ${n(currentPractice + 1)} / ${n(practiceTrials.length)}`)}
+					</span>
+					<span class="condition-badge condition-{currentTrialData?.condition}">{conditionName}</span>
 				</div>
-			{/if}
-		</div>
 
-	{:else if phase === 'test'}
-		<!-- Test Trials -->
-		<div class="trial-screen">
-			<!-- Progress Header -->
-			<div class="progress-header">
-				<div class="progress-top">
-					<h2>{lt(`Trial ${currentTrial + 1} of ${sessionData.trials.length}`, `ট্রায়াল ${n(currentTrial + 1)} / ${n(sessionData.trials.length)}`)}</h2>
-					<div class="progress-badges">
-						<span class="badge-remaining">{lt(`${trialsRemaining} remaining`, `${n(trialsRemaining)}টি বাকি`)}</span>
-						<span class="badge-condition">{conditionName}</span>
-					</div>
-				</div>
-				<div class="progress-bar-container">
-					<div 
-						class="progress-bar-fill"
-						style="width: {progress}%"
-					></div>
-				</div>
-			</div>
-
-			<!-- Stimulus Display -->
-			{#if showStimulus && currentTrialData}
 				<div class="stimulus-area">
-					{#if currentTrialData.condition === 'baseline'}
-						<!-- Color patch -->
-						<div 
-							class="color-patch-xlarge"
-							style="background-color: {COLOR_MAP[currentTrialData.display_color]};"
-						></div>
+					{#if currentTrialData?.condition === 'baseline'}
+						<div class="color-patch-large" style="background: {COLOR_MAP[currentTrialData.display_color]};"></div>
 					{:else}
-						<!-- Word in color -->
-						<div 
-							class="stroop-word-xlarge"
-							style="color: {COLOR_MAP[currentTrialData.display_color]};"
-						>
+						<div class="stroop-word-large" style="color: {COLOR_MAP[currentTrialData.display_color]};">
 							{displayStimulusWord(currentTrialData.word_text)}
 						</div>
-						{#if currentTrialData.condition === 'incongruent'}
-							<p class="hint-text">
-								{t('(Ignore the word - name the INK color!)')}
-							</p>
-						{/if}
 					{/if}
 				</div>
 
-				<!-- Color Buttons -->
-				<div class="color-buttons color-buttons-test">
-					{#each sessionData.colors as color}
+				<div class="color-buttons">
+					{#each sessionData.colors.slice(0, 4) as color}
 						<button
-							on:click={() => handleColorClick(color)}
 							class="color-btn"
-							style="background-color: {COLOR_MAP[color]};"
+							style="background: {COLOR_MAP[color]};"
+							disabled={practiceFeedback !== null}
+							on:click={() => handleColorClick(color)}
 						>
 							{getDisplayColorLabel(color)}
 						</button>
 					{/each}
 				</div>
-			{/if}
-		</div>
 
-	{:else if phase === 'results'}
-		<!-- Results Screen -->
-		<div class="results-container">
-			<div class="results-header">
-				<h2>{t('Stroop Test Complete!')}</h2>
-				<div class="performance-badge {performanceBadgeColor}">
-					{t(metrics.performance_level)}
-				</div>
+				{#if practiceFeedback}
+					<div class="feedback-box feedback-{practiceFeedback.type}">
+						{practiceFeedback.message}
+					</div>
+				{/if}
 			</div>
 
-				<!-- Key Metrics Grid -->
-			<div class="metrics-grid">
-				<!-- Overall Accuracy -->
-				<div class="metric-card accuracy-card">
-					<div class="metric-label">{t('Overall Accuracy')}</div>
-					<div class="metric-value">{n(metrics.overall_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
-					<div class="metric-detail">{lt(`${metrics.correct_trials}/${metrics.total_trials} correct`, `${n(metrics.correct_trials)}/${n(metrics.total_trials)} ${t('correct')}`)}</div>
+		{:else if phase === 'test'}
+			<div class="screen-card trial-screen">
+				<div class="test-header">
+					<div class="test-badges">
+						<span class="trial-badge">
+							{lt(`Trial ${currentTrial + 1} / ${sessionData.trials.length}`,
+								`ট্রায়াল ${n(currentTrial + 1)} / ${n(sessionData.trials.length)}`)}
+						</span>
+						<span class="condition-badge condition-{currentTrialData?.condition}">{conditionName}</span>
+					</div>
+					<div class="progress-track">
+						<div class="progress-fill" style="width: {progress}%;"></div>
+					</div>
+					<button class="help-btn-sm" on:click={() => showHelp = true}>?</button>
 				</div>
 
-				<!-- Stroop Effect -->
-				<div class="metric-card stroop-card">
-					<div class="metric-label">{t('Stroop Effect')}</div>
-					<div class="metric-value">{n(metrics.stroop_effect.toFixed(0))} {lt('ms', 'মি.সে')}</div>
-					<div class="metric-detail">{t('Conflict - Congruent RT')}</div>
-				</div>
-
-				<!-- Interference Cost -->
-				<div class="metric-card interference-card">
-					<div class="metric-label">{t('Interference Cost')}</div>
-					<div class="metric-value">{n(metrics.interference_cost.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
-					<div class="metric-detail">{t('vs Baseline')}</div>
-				</div>
-
-				<!-- Consistency -->
-				<div class="metric-card consistency-card">
-					<div class="metric-label">{t('Consistency')}</div>
-					<div class="metric-value">{n(metrics.consistency.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
-					<div class="metric-detail">{t('Response stability')}</div>
-				</div>
-			</div>
-
-				<!-- Condition Breakdown -->
-			<div class="conditions-section">
-				<h3>{t('Performance by Condition')}</h3>
-				<div class="conditions-grid">
-					<!-- Baseline -->
-					<div class="condition-card baseline-card">
-						<p class="condition-title">{t('Color Patches (Baseline)')}</p>
-						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.baseline_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
-						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.baseline_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
-						<p class="condition-note">{t('Pure processing speed')}</p>
+				{#if showStimulus && currentTrialData}
+					<div class="stimulus-area">
+						{#if currentTrialData.condition === 'baseline'}
+							<div class="color-patch-large" style="background: {COLOR_MAP[currentTrialData.display_color]};"></div>
+						{:else}
+							<div class="stroop-word-large" style="color: {COLOR_MAP[currentTrialData.display_color]};">
+								{displayStimulusWord(currentTrialData.word_text)}
+							</div>
+						{/if}
+						{#if currentTrialData.condition === 'incongruent'}
+							<p class="conflict-hint">{t('Name the ink color — ignore the word')}</p>
+						{/if}
 					</div>
 
-					<!-- Congruent -->
-					<div class="condition-card congruent-card">
-						<p class="condition-title">{t('Matching Words (Congruent)')}</p>
-						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.congruent_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
-						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.congruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
-						<p class="condition-note success">
-							{#if metrics.facilitation_effect > 0}
-								✓ {lt(`${metrics.facilitation_effect.toFixed(0)} ms faster than baseline!`, `${n(metrics.facilitation_effect.toFixed(0))} মি.সে বেসলাইনের চেয়ে দ্রুত!`)}
-							{:else}
-								{t('No facilitation effect')}
-							{/if}
-						</p>
+					<div class="color-buttons">
+						{#each sessionData.colors as color}
+							<button
+								class="color-btn"
+								style="background: {COLOR_MAP[color]};"
+								on:click={() => handleColorClick(color)}
+							>
+								{getDisplayColorLabel(color)}
+							</button>
+						{/each}
 					</div>
-
-					<!-- Incongruent -->
-					<div class="condition-card incongruent-card">
-						<p class="condition-title">{t('Conflicting Words (Incongruent)')}</p>
-						<p class="condition-stat">{t('Accuracy:')} <span>{n(metrics.incongruent_accuracy.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span></p>
-						<p class="condition-stat">{t('Avg RT:')} <span>{n(metrics.incongruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</span></p>
-						<p class="condition-note warning">
-							{#if metrics.stroop_effect > 0}
-								⚡ {lt(`${metrics.stroop_effect.toFixed(0)} ms interference penalty`, `${n(metrics.stroop_effect.toFixed(0))} মি.সে হস্তক্ষেপজনিত বিলম্ব`)}
-							{:else}
-								{t('Excellent interference control!')}
-							{/if}
-						</p>
-					</div>
-				</div>
+				{/if}
 			</div>
 
-				<!-- Interpretation -->
-			<div class="interpretation-section">
-				<h3>{t('What This Means')}</h3>
-				<p class="feedback-text">{t(metrics.feedback)}</p>
-				
-				<div class="insights-list">
-					{#if metrics.interference_cost < 20}
-						<p class="insight success">
-							✓ <strong>{t('Excellent inhibitory control:')}</strong> {t('Minimal interference from word reading')}
-						</p>
-					{:else if metrics.interference_cost < 40}
-						<p class="insight good">
-							✓ <strong>{t('Good cognitive control:')}</strong> {t('Managing interference effectively')}
-						</p>
-					{:else if metrics.interference_cost < 60}
-						<p class="insight moderate">
-							⚡ <strong>{t('Moderate interference:')}</strong> {t('Word reading affecting performance - normal!')}
-						</p>
-					{:else}
-						<p class="insight high">
-							⚡ <strong>{t('High interference effect:')}</strong> {t('Word reading strongly competing with color naming')}
-						</p>
-					{/if}
-
-					{#if metrics.stroop_effect < 100}
-						<p class="insight success">
-							✓ <strong>{t('Minimal Stroop effect:')}</strong> {t('Fast conflict resolution')}
-						</p>
-					{:else if metrics.stroop_effect < 200}
-						<p class="insight good">
-							✓ <strong>{t('Normal Stroop effect:')}</strong> {t('Expected interference range')}
-						</p>
-					{:else}
-						<p class="insight moderate">
-							⚡ <strong>{t('Significant Stroop effect:')}</strong> {t('Conflicts taking extra processing time')}
-						</p>
-					{/if}
-				</div>
-			</div>
-
-				<!-- Clinical Context -->
-			<div class="clinical-context">
-				<h3>{t('About the Stroop Test')}</h3>
-				<div class="clinical-content">
-					<p>
-						<strong>{t('The Stroop Effect')}</strong> {t('demonstrates automatic processing (word reading) versus controlled processing (color naming). Everyone experiences this interference!')}
-					</p>
-					<p>
-						<strong>{t('For MS:')}</strong> {t('This test is sensitive to frontal lobe dysfunction and executive control deficits. Regular practice can improve inhibitory control and selective attention.')}
-					</p>
-					<p>
-						<strong>{t("Why It's Hard:")}</strong> {t('Your brain has practiced reading for years - it happens automatically. Suppressing this automatic response requires focused attention and cognitive control.')}
-					</p>
-					<p>
-						<strong>{t('Training Benefits:')}</strong> {t('Repeated Stroop practice strengthens prefrontal circuits involved in inhibitory control, which can improve real-world attention and focus.')}
-					</p>
-				</div>
-			</div>
-
-			<!-- Difficulty Adaptation Info -->
-			{#if metrics.difficulty_after !== difficulty}
-				<div class="difficulty-change">
-					<p>
-						<strong>{t('Difficulty Adjusted:')}</strong> {lt(`Level ${difficulty} → Level ${metrics.difficulty_after}`, `লেভেল ${n(difficulty)} → লেভেল ${n(metrics.difficulty_after)}`)}
-					</p>
-				</div>
-			{/if}
-
-			<!-- New Badges -->
-			{#if newBadges.length > 0}
-				<div class="badges-section">
-					<h3>{t('New Badges Earned!')}</h3>
-					<BadgeNotification badges={newBadges} />
-				</div>
-			{/if}
-
-			<!-- Actions -->
-			<div class="results-actions">
-				<button on:click={returnToDashboard} class="return-button">
-					{t('Return to Dashboard')}
-				</button>
-			</div>
-		</div>
-		{/if}
-
-		<!-- Help Button (always visible) -->
-	{#if phase !== 'results'}
-		<button on:click={() => showHelp = true} class="help-button" aria-label={t('Help')}>
-			?
-		</button>
-	{/if}
-
-	<!-- Help Modal -->
-	{#if showHelp}
-		<div class="modal-overlay" on:click|self={() => showHelp = false} on:keydown={(e) => e.key === 'Escape' && (showHelp = false)} role="dialog" aria-label={t('Close help dialog')} tabindex="0">
-			<div class="modal-content" role="document" tabindex="0">
-				<h2 class="modal-title">{t('Stroop Test Help')}</h2>
-
-				<div class="help-sections">
-					<div class="help-section">
-						<h3>{t('What is the Stroop Test?')}</h3>
-						<p>
-							{t('A classic psychological test measuring selective attention and cognitive interference. It demonstrates how automatic processes (reading) can interfere with task goals (naming colors).')}
-						</p>
+		{:else if phase === 'results'}
+			<div class="screen-card complete-screen">
+				{#if metrics}
+					<div class="perf-banner">
+						<div class="perf-level">{t(metrics.performance_level)}</div>
+						<div class="perf-subtitle">{metrics.overall_accuracy.toFixed(1)}% {t('accuracy')} — {t('Stroop Test Complete')}</div>
 					</div>
 
-					<div class="help-section">
-						<h3>{t('Why Is It Used in MS?')}</h3>
-						<ul>
-							<li>{t('Sensitive to frontal lobe and executive function changes')}</li>
-							<li>{t('Measures inhibitory control (suppressing automatic responses)')}</li>
-							<li>{t('Assesses selective attention and cognitive flexibility')}</li>
-							<li>{t('Standard in neuropsychological MS assessments')}</li>
-							<li>{t('Training can improve real-world attention control')}</li>
-						</ul>
-					</div>
-
-					<div class="help-section">
-						<h3>{t('Understanding Your Metrics')}</h3>
-						<div class="metrics-explain">
-							<p><strong>{t('Stroop Effect:')}</strong> {t('Difference between conflicting and matching trials. Lower is better.')}</p>
-							<p><strong>{t('Interference Cost:')}</strong> {t('How much slower you are on conflict trials vs. baseline. Measures inhibitory control.')}</p>
-							<p><strong>{t('Facilitation Effect:')}</strong> {t('How much faster matching words are vs. baseline. Shows word reading benefit.')}</p>
-							<p><strong>{t('Consistency:')}</strong> {t('How stable your response times are across trials.')}</p>
+					<div class="metrics-grid">
+						<div class="metric-card highlight">
+							<div class="metric-value">{metrics.overall_accuracy.toFixed(1)}%</div>
+							<div class="metric-label">{t('Overall Accuracy')}</div>
+							<div class="metric-sub">{lt(`${metrics.correct_trials}/${metrics.total_trials} correct`, `${n(metrics.correct_trials)}/${n(metrics.total_trials)} সঠিক`)}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{n(metrics.stroop_effect.toFixed(0))} {lt('ms', 'মি.সে')}</div>
+							<div class="metric-label">{t('Stroop Effect')}</div>
+							<div class="metric-sub">{t('Conflict minus congruent RT')}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{metrics.interference_cost.toFixed(1)}%</div>
+							<div class="metric-label">{t('Interference Cost')}</div>
+							<div class="metric-sub">{t('vs. Baseline speed')}</div>
+						</div>
+						<div class="metric-card">
+							<div class="metric-value">{metrics.consistency.toFixed(1)}%</div>
+							<div class="metric-label">{t('Consistency')}</div>
+							<div class="metric-sub">{t('Response stability')}</div>
 						</div>
 					</div>
 
-					<div class="help-section">
-						<h3>{t('Strategies for Success')}</h3>
-						<ul>
-							<li>{t('Look at the color of the letters/ink, not their meaning')}</li>
-							<li>{t('Try slightly unfocusing your eyes to blur the word')}</li>
-							<li>{t('Practice saying color names aloud during practice')}</li>
-							<li>{t('Stay focused - concentration improves inhibitory control')}</li>
-							<li>{t("Don't worry about mistakes - interference is universal!")}</li>
-						</ul>
+					<div class="breakdown">
+						<h3>{t('Performance by Condition')}</h3>
+						<div class="condition-row condition-baseline">
+							<div class="cond-header">
+								<span class="cond-dot" style="background: #64748b;"></span>
+								<strong>{t('Baseline (Color Patches)')}</strong>
+							</div>
+							<div class="cond-stats">
+								<span>{t('Accuracy:')} <strong>{metrics.baseline_accuracy.toFixed(1)}%</strong></span>
+								<span>{t('Avg RT:')} <strong>{n(metrics.baseline_rt.toFixed(0))} {lt('ms', 'মি.সে')}</strong></span>
+								<span class="cond-note">{t('Pure processing speed')}</span>
+							</div>
+						</div>
+						<div class="condition-row condition-congruent">
+							<div class="cond-header">
+								<span class="cond-dot" style="background: #16a34a;"></span>
+								<strong>{t('Congruent (Matching Words)')}</strong>
+							</div>
+							<div class="cond-stats">
+								<span>{t('Accuracy:')} <strong>{metrics.congruent_accuracy.toFixed(1)}%</strong></span>
+								<span>{t('Avg RT:')} <strong>{n(metrics.congruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</strong></span>
+								{#if metrics.facilitation_effect > 0}
+									<span class="cond-note cond-positive">{lt(`${metrics.facilitation_effect.toFixed(0)}ms faster than baseline`, `${n(metrics.facilitation_effect.toFixed(0))}মি.সে বেসলাইনের চেয়ে দ্রুত`)}</span>
+								{:else}
+									<span class="cond-note">{t('No facilitation effect')}</span>
+								{/if}
+							</div>
+						</div>
+						<div class="condition-row condition-incongruent">
+							<div class="cond-header">
+								<span class="cond-dot" style="background: #e11d48;"></span>
+								<strong>{t('Incongruent (Conflicting Words)')}</strong>
+							</div>
+							<div class="cond-stats">
+								<span>{t('Accuracy:')} <strong>{metrics.incongruent_accuracy.toFixed(1)}%</strong></span>
+								<span>{t('Avg RT:')} <strong>{n(metrics.incongruent_rt.toFixed(0))} {lt('ms', 'মি.সে')}</strong></span>
+								{#if metrics.stroop_effect > 0}
+									<span class="cond-note cond-warning">{lt(`${metrics.stroop_effect.toFixed(0)}ms interference penalty`, `${n(metrics.stroop_effect.toFixed(0))}মি.সে হস্তক্ষেপ বিলম্ব`)}</span>
+								{:else}
+									<span class="cond-note cond-positive">{t('Excellent interference control')}</span>
+								{/if}
+							</div>
+						</div>
 					</div>
 
-					<div class="help-section">
-						<h3>{t('Historical Note')}</h3>
-						<p>
-							{t('John Ridley Stroop published this effect in 1935. It remains one of the most widely used tests in psychology and neuropsychology, with thousands of research papers published!')}
-						</p>
+					<div class="interpretation-section">
+						<h3>{t('What This Means')}</h3>
+						<p class="feedback-text">{t(metrics.feedback)}</p>
+						<div class="insights">
+							{#if metrics.interference_cost < 20}
+								<div class="insight insight-good"><strong>{t('Excellent inhibitory control:')}</strong> {t('Minimal interference from word reading')}</div>
+							{:else if metrics.interference_cost < 40}
+								<div class="insight insight-good"><strong>{t('Good cognitive control:')}</strong> {t('Managing interference effectively')}</div>
+							{:else if metrics.interference_cost < 60}
+								<div class="insight insight-moderate"><strong>{t('Moderate interference:')}</strong> {t('Word reading affecting performance — this is normal')}</div>
+							{:else}
+								<div class="insight insight-high"><strong>{t('High interference effect:')}</strong> {t('Word reading is strongly competing with color naming')}</div>
+							{/if}
+							{#if metrics.stroop_effect < 100}
+								<div class="insight insight-good"><strong>{t('Minimal Stroop effect:')}</strong> {t('Fast conflict resolution')}</div>
+							{:else if metrics.stroop_effect < 200}
+								<div class="insight insight-moderate"><strong>{t('Normal Stroop effect:')}</strong> {t('Expected interference range')}</div>
+							{:else}
+								<div class="insight insight-high"><strong>{t('Significant Stroop effect:')}</strong> {t('Conflicts require extra processing time')}</div>
+							{/if}
+						</div>
 					</div>
-				</div>
 
-				<button on:click={() => showHelp = false} class="modal-close-btn">
-					{t('Close')}
-				</button>
+					<div class="clinical-note">
+						<h4>{t('About the Stroop Effect')}</h4>
+						<p><strong>{t('Automatic vs. Controlled Processing:')}</strong> {t('The Stroop Effect demonstrates how reading (automatic) interferes with color naming (controlled). Everyone experiences this interference.')}</p>
+						<p class="why-matters"><strong>{t('For MS:')}</strong> {t('This test is sensitive to frontal lobe dysfunction. Regular Stroop practice strengthens prefrontal inhibitory circuits, which can improve real-world attention and focus.')}</p>
+					</div>
+
+					{#if metrics.difficulty_after !== undefined && metrics.difficulty_after !== difficulty}
+						<div class="difficulty-info">
+							<span>{t('Difficulty:')} <strong>{n(difficulty)}</strong> → <strong>{n(metrics.difficulty_after)}</strong></span>
+						</div>
+					{/if}
+
+					{#if newBadges.length > 0}
+						<BadgeNotification badges={newBadges} />
+					{/if}
+
+					<div class="button-group">
+						<button class="start-button" on:click={returnToDashboard}>{t('Return to Dashboard')}</button>
+						<button class="btn-secondary" on:click={() => goto('/training')}>{t('Back to Training')}</button>
+					</div>
+				{/if}
 			</div>
-		</div>
-	{/if}
+		{/if}
+
+		{#if phase !== 'results' && phase !== 'intro'}
+			<button class="help-fab" on:click={() => showHelp = true} aria-label={t('Help')}>?</button>
+		{/if}
+	</div>
 </div>
 
+{#if showHelp}
+	<div class="modal-overlay" on:click={() => showHelp = false} role="presentation">
+		<div class="modal-content" role="dialog" tabindex="-1"
+			on:click|stopPropagation
+			on:keydown={(e) => e.key === 'Escape' && (showHelp = false)}>
+			<button class="close-btn" on:click={() => showHelp = false}>×</button>
+			<h2>{t('Stroop Test — Strategies and Information')}</h2>
+			<div class="strategy">
+				<h3>{t('What is the Stroop Test?')}</h3>
+				<p>{t('A classic test measuring selective attention and cognitive interference, demonstrating how automatic word reading can interfere with the goal of naming ink colors.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{t('Why Used for MS?')}</h3>
+				<p>{t('Sensitive to frontal lobe and executive function changes common in MS. Measures inhibitory control — the ability to suppress an automatic response. Standard in MS neuropsychological batteries.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{t('Understanding Your Scores')}</h3>
+				<p><strong>{t('Stroop Effect:')}</strong> {t('Gap between conflicting and matching trials. Lower is better.')}</p>
+				<p><strong>{t('Interference Cost:')}</strong> {t('How much slower you are on conflict vs. baseline. Measures inhibitory control.')}</p>
+				<p><strong>{t('Facilitation Effect:')}</strong> {t('How much faster matching words are vs. baseline.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{t('Practical Strategies')}</h3>
+				<p>{t('Look at the color of the ink rather than the shape of the letters. Try slightly defocusing your gaze to blur the word. Do not try to read — override it consciously.')}</p>
+			</div>
+			<div class="strategy">
+				<h3>{t('Historical Note')}</h3>
+				<p>{t('John Ridley Stroop published this paradigm in 1935. It remains one of the most cited experiments in all of psychology, used in thousands of clinical and research studies worldwide.')}</p>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
+	/* ── Container ─────────────────────────────────────────── */
 	.stroop-container {
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
 		min-height: 100vh;
+		background: #C8DEFA;
 		padding: 2rem 1rem;
 	}
 
-	.loading {
-		background: white;
-		padding: 3rem;
-		border-radius: 16px;
-		text-align: center;
-		max-width: 400px;
+	.stroop-inner {
+		max-width: 960px;
 		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+		position: relative;
 	}
 
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 4px solid #f3f3f3;
-		border-top: 4px solid #667eea;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 0 auto 1rem auto;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.instructions {
+	/* ── Instructions card ─────────────────────────────────── */
+	.instructions-card {
 		background: white;
 		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 1000px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-	}
-
-	.header-with-badge {
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1.5rem;
-		flex-wrap: wrap;
-		margin-bottom: 1rem;
+		flex-direction: column;
+		gap: 1.8rem;
 	}
 
-	.instructions h1 {
-		text-align: center;
-		color: #667eea;
-		font-size: 2.5rem;
-		margin-bottom: 0;
+	.header-content { text-align: center; }
+
+	.title-row {
+		display: flex; align-items: center; justify-content: center;
+		gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;
 	}
+
+	.header-content h1 { font-size: 1.8rem; font-weight: 700; color: #1e293b; margin: 0; }
+
+	.subtitle { color: #64748b; font-size: 1rem; margin: 0.4rem 0 0.8rem; }
 
 	.classic-badge {
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-		color: #667eea;
-		padding: 0.75rem 1.5rem;
-		border-radius: 25px;
-		text-align: center;
-		font-weight: 600;
-		margin: 0 auto 2rem auto;
-		max-width: fit-content;
-		display: block;
+		display: inline-block;
+		background: rgba(225, 29, 72, 0.1);
+		color: #e11d48;
+		border: 1px solid rgba(225, 29, 72, 0.3);
+		border-radius: 20px;
+		padding: 0.3rem 1rem;
+		font-size: 0.82rem;
+		font-weight: 700;
+		letter-spacing: 0.03em;
 	}
 
-	.instruction-card {
-		background: #f8f9fa;
-		padding: 2rem;
+	/* ── Task concept ──────────────────────────────────────── */
+	.task-concept {
+		background: linear-gradient(135deg, #fff1f2, #fecdd3);
+		border: 1px solid #fda4af;
 		border-radius: 12px;
-		margin-bottom: 2rem;
+		padding: 1.5rem;
 	}
 
-	.task-header h2 {
-		color: #2c3e50;
-		margin-bottom: 1rem;
-		font-size: 1.8rem;
-		text-align: center;
-	}
+	.task-concept h3 { font-size: 1rem; font-weight: 700; color: #be123c; margin: 0 0 0.5rem; }
+	.task-concept > p { color: #9f1239; margin: 0 0 1.2rem; line-height: 1.6; }
 
-	.importance {
-		font-size: 1.1rem;
-		line-height: 1.7;
-		color: #555;
-		margin-bottom: 2rem;
-		text-align: center;
-	}
-
-	.importance strong {
-		color: #667eea;
-	}
-
-	/* Stroop Examples */
 	.stroop-examples {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1.5rem;
-		margin: 2rem 0;
+		display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+		background: white; border-radius: 10px; padding: 1.2rem;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.2rem;
 	}
 
-	.example-card {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+	.ex-card {
+		display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+		background: #f8fafc; border-radius: 10px; padding: 1rem 1.2rem;
+		min-width: 140px; text-align: center;
 	}
 
-	.example-card.baseline {
-		border: 3px solid #9ca3af;
+	.ex-type { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+
+	.color-patch-demo {
+		width: 80px; height: 48px; border-radius: 8px;
+		box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 	}
 
-	.example-card.congruent {
-		border: 3px solid #16a34a;
+	.word-demo { font-size: 2rem; font-weight: 800; line-height: 1; }
+
+	.ex-label { font-size: 0.8rem; color: #64748b; }
+
+	.ex-verdict {
+		font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem;
+		border-radius: 10px;
+	}
+	.ex-easy { background: #dcfce7; color: #166534; }
+	.ex-hard { background: #fee2e2; color: #991b1b; }
+
+	.key-rule-box {
+		background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+		padding: 0.75rem 1rem; font-size: 0.88rem; color: #991b1b; line-height: 1.5;
 	}
 
-	.example-card.incongruent {
-		border: 4px solid #f59e0b;
-		box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+	/* ── Rules grid ────────────────────────────────────────── */
+	.rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+	.rule-card {
+		display: flex; align-items: flex-start; gap: 0.8rem;
+		padding: 1rem; background: #f8fafc; border-radius: 10px;
+		border-left: 4px solid #e11d48;
 	}
 
-	.example-label {
-		font-size: 0.75rem;
-		font-weight: bold;
-		color: #666;
-		margin-bottom: 1rem;
-		text-transform: uppercase;
+	.rule-num {
+		width: 28px; height: 28px; border-radius: 50%;
+		background: #e11d48; color: white;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
 	}
 
-	.incongruent .example-label {
-		color: #ea580c;
-	}
+	.rule-text { display: flex; flex-direction: column; gap: 0.2rem; }
+	.rule-text strong { font-size: 0.9rem; color: #1e293b; }
+	.rule-text span   { font-size: 0.82rem; color: #64748b; line-height: 1.4; }
 
-	.color-patch {
-		width: 80px;
-		height: 80px;
-		background-color: #2563eb;
-		border-radius: 12px;
-		margin: 1rem auto;
-		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-	}
+	/* ── Info grid ─────────────────────────────────────────── */
+	.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-	.stroop-word {
-		font-size: 3.5rem;
-		font-weight: bold;
-		margin: 0.5rem 0;
-		line-height: 1.2;
-	}
+	.info-section { background: #f8fafc; border-radius: 10px; padding: 1.2rem; }
+	.info-section h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
 
-	.example-desc {
-		font-size: 0.95rem;
-		font-weight: 600;
-		color: #2c3e50;
-		margin: 0.75rem 0;
-	}
+	.tips-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+	.tips-list li { font-size: 0.85rem; color: #475569; line-height: 1.4; }
 
-	.example-note {
-		font-size: 0.85rem;
-		font-weight: 600;
-		margin-top: 0.5rem;
+	.structure-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+	.structure-list li {
+		display: flex; justify-content: space-between; align-items: center;
+		font-size: 0.85rem; padding: 0.3rem 0; border-bottom: 1px solid #e2e8f0;
 	}
+	.structure-list li:last-child { border-bottom: none; }
+	.struct-key { color: #64748b; }
+	.struct-val { font-weight: 600; color: #1e293b; text-align: right; }
 
-	.baseline .example-note {
-		color: #16a34a;
-	}
-
-	.congruent .example-note {
-		color: #16a34a;
-	}
-
-	.incongruent .example-note {
-		color: #ea580c;
-	}
-
-	/* Rule Box */
-	.rule-box {
-		background: #fef2f2;
-		border-left: 4px solid #dc2626;
-		padding: 1.25rem;
-		border-radius: 8px;
-		margin: 2rem 0;
-		color: #991b1b;
-		line-height: 1.6;
-	}
-
-	.rule-box strong {
-		font-size: 1.1rem;
-		display: block;
-		margin-bottom: 0.5rem;
-	}
-
-	/* Info Grid */
-	.info-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin: 2rem 0;
-	}
-
-	.info-section {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 2px solid #e5e7eb;
-	}
-
-	.info-section h3 {
-		color: #2c3e50;
-		font-size: 1.2rem;
-		margin-bottom: 1rem;
-	}
-
-	/* Structure List */
-	.structure-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.structure-item {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		background: #f8f9fa;
-		padding: 1rem;
-		border-radius: 8px;
-	}
-
-	.structure-num {
-		width: 45px;
-		height: 45px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 1.5rem;
-		font-weight: bold;
-		flex-shrink: 0;
-	}
-
-	.structure-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.structure-text strong {
-		font-size: 1rem;
-		color: #2c3e50;
-	}
-
-	.structure-text span {
-		font-size: 0.875rem;
-		color: #666;
-	}
-
-	/* Tips List */
-	.tips-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.tip-item {
-		background: #f0fdf4;
-		padding: 0.75rem 1rem;
-		border-radius: 8px;
-		color: #15803d;
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
-
-	.tip-item strong {
-		color: #166534;
-	}
-
-	/* Clinical Info */
+	/* ── Clinical info ─────────────────────────────────────── */
 	.clinical-info {
-		background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-top: 1.5rem;
+		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+		border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.2rem;
 	}
+	.clinical-info h4 { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 0.8rem; }
+	.clinical-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+	.clinical-item { display: flex; flex-direction: column; gap: 0.2rem; }
+	.clinical-item strong { font-size: 0.82rem; color: #166534; }
+	.clinical-item span   { font-size: 0.8rem; color: #15803d; }
 
-	.clinical-info h3 {
-		color: #667eea;
-		margin-bottom: 1rem;
-		font-size: 1.1rem;
+	/* ── Perf guide ────────────────────────────────────────── */
+	.perf-guide { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.perf-guide h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
+	.norm-bars { display: flex; flex-direction: column; gap: 0.4rem; }
+	.norm-bar {
+		display: flex; justify-content: space-between; align-items: center;
+		padding: 0.5rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
 	}
+	.norm-excellent { background: #dcfce7; color: #166534; }
+	.norm-good      { background: #d1fae5; color: #065f46; }
+	.norm-avg       { background: #fef9c3; color: #854d0e; }
+	.norm-fair      { background: #ffedd5; color: #9a3412; }
+	.norm-needs     { background: #fee2e2; color: #991b1b; }
+	.norm-label { font-weight: 700; }
+	.norm-val   { font-weight: 400; font-size: 0.82rem; }
+	.norm-note  { font-size: 0.78rem; color: #94a3b8; font-style: italic; margin: 0.5rem 0 0; text-align: center; }
 
-	.clinical-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 0.75rem;
-	}
-
-	.clinical-item {
-		background: white;
-		padding: 0.875rem;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		line-height: 1.5;
-		color: #555;
-	}
-
-	.clinical-item strong {
-		color: #667eea;
-		display: block;
-		margin-bottom: 0.25rem;
-	}
-
-	/* Buttons */
+	/* ── Buttons ───────────────────────────────────────────── */
 	.button-group {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		margin-top: 2rem;
-		flex-wrap: wrap;
+		display: flex; justify-content: center; gap: 1rem;
+		flex-wrap: wrap; padding-top: 0.5rem; align-items: center;
 	}
 
 	.start-button {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		padding: 1.25rem 3rem;
-		font-size: 1.2rem;
-		font-weight: bold;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		color: white; border: none; border-radius: 10px;
+		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
+		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+		box-shadow: 0 4px 14px rgba(102,126,234,0.4);
 	}
-
-	.start-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-	}
+	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5); }
 
 	.btn-secondary {
-		background: #f3f4f6;
-		color: #4b5563;
-		border: none;
-		padding: 1.25rem 2.5rem;
-		font-size: 1.1rem;
-		font-weight: 600;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
+		background: white; color: #667eea;
+		border: 2px solid #667eea; border-radius: 10px;
+		padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;
+		cursor: pointer; transition: all 0.15s;
+	}
+	.btn-secondary:hover { background: rgba(102,126,234,0.08); }
+
+	.help-link {
+		background: none; border: none; color: #667eea;
+		font-size: 0.9rem; cursor: pointer; text-decoration: underline;
+		padding: 0.5rem; font-weight: 600; transition: color 0.15s;
+	}
+	.help-link:hover { color: #4f46e5; }
+
+	/* ── Screen card ───────────────────────────────────────── */
+	.screen-card {
+		background: white; border-radius: 16px; padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
 	}
 
-	.btn-secondary:hover {
-		background: #e5e7eb;
-		transform: translateY(-2px);
+	/* ── Quick instructions ────────────────────────────────── */
+	.quick-instructions { text-align: center; }
+	.quick-instructions h2 { font-size: 1.6rem; font-weight: 700; color: #1e293b; margin: 0 0 0.4rem; }
+	.instr-subtitle { color: #64748b; margin: 0 0 2rem; }
+
+	.steps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: left; }
+
+	.step-card {
+		display: flex; flex-direction: column; gap: 0.3rem;
+		background: #f8fafc; border-radius: 10px; padding: 1rem;
+		border-left: 4px solid #e11d48;
 	}
 
-	/* Quick Instructions Page */
-	.quick-instructions {
-		background: white;
-		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 800px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+	.step-num {
+		width: 26px; height: 26px; border-radius: 50%;
+		background: #e11d48; color: white;
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.82rem; font-weight: 700; margin-bottom: 0.2rem;
 	}
 
-	.quick-instructions h2 {
-		text-align: center;
-		color: #667eea;
-		font-size: 2rem;
-		margin-bottom: 2rem;
-	}
-
-	.instructions-steps {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.instruction-step {
-		display: flex;
-		align-items: center;
-		gap: 1.5rem;
-		background: #f8f9fa;
-		padding: 1.5rem;
-		border-radius: 12px;
-		transition: all 0.3s;
-	}
-
-	.instruction-step:hover {
-		transform: translateX(8px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-	}
-
-	.step-number {
-		width: 60px;
-		height: 60px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 2rem;
-		font-weight: bold;
-		flex-shrink: 0;
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-	}
-
-	.step-content {
-		flex: 1;
-	}
-
-	.step-title {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.5rem;
-	}
-
-	.step-desc {
-		font-size: 1rem;
-		color: #666;
-		margin: 0;
-	}
+	.step-card strong { font-size: 0.9rem; color: #1e293b; }
+	.step-card span   { font-size: 0.82rem; color: #64748b; }
 
 	.remember-box {
-		background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
-		border-left: 4px solid #f59e0b;
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.remember-title {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #ea580c;
-		margin-bottom: 0.75rem;
-	}
-
-	.remember-text {
-		font-size: 1rem;
-		color: #78350f;
-		line-height: 1.6;
-		margin: 0;
-	}
-
-	.remember-text strong {
-		color: #dc2626;
-	}
-
-	.practice-prompt {
-		text-align: center;
-		margin-top: 2rem;
-	}
-
-	.practice-prompt p {
-		font-size: 1.1rem;
-		color: #555;
+		background: #fff1f2; border: 1px solid #fda4af; border-radius: 10px;
+		padding: 0.9rem 1.2rem; font-size: 0.9rem; color: #9f1239; line-height: 1.6;
 		margin-bottom: 1.5rem;
 	}
 
-	/* Trial Screen */
-	.trial-screen {
-		background: white;
-		border-radius: 16px;
-		padding: 2rem;
-		max-width: 900px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+	.practice-note {
+		background: #fef9c3; border: 1px solid #fde047;
+		border-radius: 8px; padding: 0.6rem 1rem;
+		color: #854d0e; font-size: 0.88rem; margin-bottom: 1rem;
 	}
 
-	.trial-header, .progress-header {
-		text-align: center;
-		margin-bottom: 2rem;
+	/* ── Trial screen ──────────────────────────────────────── */
+	.trial-screen { text-align: center; }
+
+	.trial-header {
+		display: flex; justify-content: center; align-items: center;
+		gap: 0.75rem; flex-wrap: wrap; margin-bottom: 2rem;
 	}
 
-	.trial-header h2, .progress-header h2 {
-		color: #2c3e50;
-		font-size: 1.5rem;
-		margin-bottom: 0.5rem;
+	.test-header {
+		display: flex; justify-content: space-between; align-items: center;
+		margin-bottom: 2rem; gap: 0.75rem; flex-wrap: wrap;
 	}
 
-	.condition-label {
-		color: #666;
-		font-size: 1rem;
+	.test-badges { display: flex; gap: 0.5rem; flex: 1; align-items: center; flex-wrap: wrap; }
+
+	.progress-track {
+		flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px;
+		overflow: hidden; min-width: 80px;
+	}
+	.progress-fill { height: 100%; background: linear-gradient(90deg, #e11d48, #f43f5e); border-radius: 3px; transition: width 0.3s; }
+
+	.help-btn-sm {
+		width: 36px; height: 36px; border-radius: 50%;
+		border: 2px solid #667eea; background: white; color: #667eea;
+		font-size: 1.1rem; font-weight: 700; cursor: pointer;
+		display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+	}
+	.help-btn-sm:hover { background: #667eea; color: white; }
+
+	.trial-badge {
+		background: rgba(102,126,234,0.12); color: #667eea;
+		padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
 	}
 
-	.condition-label span {
-		font-weight: 700;
-		color: #667eea;
+	.condition-badge {
+		padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
 	}
+	.condition-baseline   { background: #f1f5f9; color: #475569; }
+	.condition-congruent  { background: #dcfce7; color: #166534; }
+	.condition-incongruent{ background: #fee2e2; color: #991b1b; }
 
-	.progress-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-		flex-wrap: wrap;
-		gap: 1rem;
-	}
-
-	.progress-badges {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.badge-remaining {
-		background: #e0e7ff;
-		color: #4338ca;
-		padding: 0.5rem 1rem;
-		border-radius: 20px;
-		font-size: 0.875rem;
-		font-weight: 600;
-	}
-
-	.badge-condition {
-		background: #ddd6fe;
-		color: #6d28d9;
-		padding: 0.5rem 1rem;
-		border-radius: 20px;
-		font-size: 0.875rem;
-		font-weight: 600;
-	}
-
-	.progress-bar-container {
-		width: 100%;
-		height: 10px;
-		background: #e5e7eb;
-		border-radius: 10px;
-		overflow: hidden;
-	}
-
-	.progress-bar-fill {
-		height: 100%;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-		transition: width 0.3s ease;
-	}
-
-	.stimulus-area {
-		min-height: 300px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		margin: 3rem 0;
-	}
+	/* ── Stimulus area ─────────────────────────────────────── */
+	.stimulus-area { margin: 1.5rem auto 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
 
 	.color-patch-large {
-		width: 200px;
-		height: 200px;
-		border-radius: 20px;
-		box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-	}
-
-	.color-patch-xlarge {
-		width: 250px;
-		height: 250px;
-		border-radius: 24px;
-		box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+		width: 160px; height: 100px; border-radius: 14px;
+		box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 	}
 
 	.stroop-word-large {
-		font-size: 5rem;
-		font-weight: 900;
-		text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+		font-size: 5rem; font-weight: 900; line-height: 1;
+		letter-spacing: -0.02em;
 	}
 
-	.stroop-word-xlarge {
-		font-size: 6rem;
-		font-weight: 900;
-		text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-	}
+	.conflict-hint { font-size: 0.88rem; color: #94a3b8; font-style: italic; margin: 0; }
 
-	.hint-text {
-		margin-top: 1rem;
-		font-size: 0.9rem;
-		color: #666;
-		font-style: italic;
-	}
-
+	/* ── Color buttons ─────────────────────────────────────── */
 	.color-buttons {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-		gap: 1rem;
-		max-width: 600px;
-		margin: 0 auto;
-	}
-
-	.color-buttons-test {
-		max-width: 700px;
+		display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 0.5rem;
 	}
 
 	.color-btn {
-		padding: 1.5rem 1rem;
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: white;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.2s;
+		padding: 0.65rem 1.6rem; border: none; border-radius: 10px;
+		font-size: 0.95rem; font-weight: 700; color: white; cursor: pointer;
+		text-shadow: 0 1px 2px rgba(0,0,0,0.35);
 		box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-		text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+		transition: transform 0.1s, box-shadow 0.1s;
+		min-width: 90px;
 	}
+	.color-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.28); }
+	.color-btn:active:not(:disabled) { transform: translateY(0); }
+	.color-btn:disabled { opacity: 0.5; cursor: default; }
 
-	.color-btn:hover:not(:disabled) {
-		transform: translateY(-4px);
-		box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+	/* ── Feedback ──────────────────────────────────────────── */
+	.feedback-box { margin-top: 1.5rem; padding: 1rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.95rem; line-height: 1.5; }
+	.feedback-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+	.feedback-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+	/* ── Complete screen ───────────────────────────────────── */
+	.complete-screen { display: flex; flex-direction: column; gap: 1.5rem; }
+
+	.perf-banner {
+		text-align: center; padding: 1.5rem;
+		background: linear-gradient(135deg, #fff1f2, #fecdd3);
+		border: 2px solid #fda4af; border-radius: 14px;
 	}
+	.perf-level    { font-size: 1.8rem; font-weight: 800; color: #e11d48; }
+	.perf-subtitle { font-size: 0.95rem; color: #64748b; margin-top: 0.3rem; }
 
-	.color-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.feedback-box {
-		margin-top: 2rem;
-		padding: 1.5rem;
-		border-radius: 12px;
-		text-align: center;
-		font-size: 1.1rem;
-		font-weight: 600;
-		animation: fadeIn 0.3s ease;
-	}
-
-	.feedback-box.success {
-		background: #d1fae5;
-		color: #065f46;
-		border: 2px solid #10b981;
-	}
-
-	.feedback-box.error {
-		background: #fee2e2;
-		color: #991b1b;
-		border: 2px solid #ef4444;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(-10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	/* Results Page */
-	.results-container {
-		background: white;
-		border-radius: 16px;
-		padding: 2.5rem 2rem;
-		max-width: 1100px;
-		margin: 0 auto;
-		box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-	}
-
-	.results-header {
-		text-align: center;
-		margin-bottom: 2.5rem;
-	}
-
-	.results-header h2 {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 1.5rem;
-	}
-
-	.performance-badge {
-		display: inline-block;
-		padding: 1rem 2rem;
-		border-radius: 50px;
-		font-size: 1.3rem;
-		font-weight: bold;
-		color: white;
-		box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-	}
-
-	.performance-badge.from-green-500 {
-		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-	}
-
-	.performance-badge.from-blue-500 {
-		background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
-	}
-
-	.performance-badge.from-yellow-500 {
-		background: linear-gradient(135deg, #eab308 0%, #f59e0b 100%);
-	}
-
-	.performance-badge.from-gray-500 {
-		background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-	}
-
-	/* Metrics Grid */
-	.metrics-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 1.25rem;
-		margin-bottom: 2.5rem;
-	}
-
+	.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
 	.metric-card {
-		padding: 1.5rem;
-		border-radius: 12px;
-		border: 2px solid;
-		box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+		background: #f8fafc; border: 1px solid #e2e8f0;
+		border-radius: 12px; padding: 1.2rem; text-align: center;
+	}
+	.metric-card.highlight {
+		background: linear-gradient(135deg, #e11d48, #be123c);
+		border-color: transparent; color: white;
+	}
+	.metric-value { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 0.2rem; }
+	.metric-card.highlight .metric-value,
+	.metric-card.highlight .metric-label,
+	.metric-card.highlight .metric-sub { color: white; }
+	.metric-label { font-size: 0.82rem; font-weight: 600; color: #64748b; }
+	.metric-sub   { font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem; }
+
+	/* ── Breakdown ─────────────────────────────────────────── */
+	.breakdown { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.breakdown h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem; }
+
+	.condition-row {
+		padding: 0.9rem; border-radius: 10px; margin-bottom: 0.75rem;
+		border: 1px solid #e2e8f0;
+	}
+	.condition-row:last-child { margin-bottom: 0; }
+	.condition-baseline   { background: #f8fafc; }
+	.condition-congruent  { background: #f0fdf4; border-color: #bbf7d0; }
+	.condition-incongruent{ background: #fff1f2; border-color: #fda4af; }
+
+	.cond-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+	.cond-header strong { font-size: 0.88rem; color: #1e293b; }
+	.cond-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+	.cond-stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.85rem; color: #475569; }
+	.cond-note { font-style: italic; color: #94a3b8; }
+	.cond-positive { color: #16a34a; font-weight: 600; font-style: normal; }
+	.cond-warning  { color: #dc2626; font-weight: 600; font-style: normal; }
+
+	/* ── Interpretation ────────────────────────────────────── */
+	.interpretation-section { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
+	.interpretation-section h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 0.6rem; }
+	.feedback-text { font-size: 0.9rem; color: #475569; margin: 0 0 1rem; line-height: 1.6; }
+
+	.insights { display: flex; flex-direction: column; gap: 0.5rem; }
+	.insight { padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; }
+	.insight-good     { background: #dcfce7; color: #166534; }
+	.insight-moderate { background: #fef9c3; color: #854d0e; }
+	.insight-high     { background: #fee2e2; color: #991b1b; }
+
+	/* ── Clinical note ─────────────────────────────────────── */
+	.clinical-note {
+		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+		border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.2rem;
+	}
+	.clinical-note h4 { font-size: 0.9rem; font-weight: 700; color: #166534; margin: 0 0 0.5rem; }
+	.clinical-note p { font-size: 0.9rem; color: #15803d; line-height: 1.6; margin: 0 0 0.5rem; }
+	.clinical-note p:last-child { margin: 0; }
+	.why-matters { font-style: italic; }
+
+	/* ── Difficulty info ───────────────────────────────────── */
+	.difficulty-info {
+		background: #fff1f2; border: 1px solid #fda4af; border-radius: 10px;
+		padding: 0.75rem 1.2rem; font-size: 0.88rem; font-weight: 600; color: #be123c;
 	}
 
-	.accuracy-card {
-		background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-		border-color: #10b981;
+	/* ── FAB help button ───────────────────────────────────── */
+	.help-fab {
+		position: fixed; bottom: 2rem; right: 2rem;
+		width: 48px; height: 48px; border-radius: 50%;
+		background: white; border: 2px solid #667eea; color: #667eea;
+		font-size: 1.3rem; font-weight: 700; cursor: pointer;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+		display: flex; align-items: center; justify-content: center;
+		transition: all 0.2s;
 	}
+	.help-fab:hover { background: #667eea; color: white; }
 
-	.stroop-card {
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
-		border-color: #a855f7;
-	}
-
-	.interference-card {
-		background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(239, 68, 68, 0.1));
-		border-color: #fb923c;
-	}
-
-	.consistency-card {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(79, 70, 229, 0.1));
-		border-color: #3b82f6;
-	}
-
-	.metric-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: #555;
-		margin-bottom: 0.5rem;
-	}
-
-	.metric-value {
-		font-size: 2.5rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 0.25rem;
-	}
-
-	.metric-detail {
-		font-size: 0.8rem;
-		color: #666;
-	}
-
-	/* Conditions Section */
-	.conditions-section {
-		background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.conditions-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1.25rem;
-	}
-
-	.conditions-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1rem;
-	}
-
-	.condition-card {
-		background: white;
-		padding: 1.25rem;
-		border-radius: 10px;
-		border: 2px solid;
-	}
-
-	.baseline-card {
-		border-color: #9ca3af;
-	}
-
-	.congruent-card {
-		border-color: #10b981;
-	}
-
-	.incongruent-card {
-		border-color: #ef4444;
-	}
-
-	.condition-title {
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.75rem;
-		font-size: 1rem;
-	}
-
-	.condition-stat {
-		font-size: 0.9rem;
-		color: #555;
-		margin-bottom: 0.5rem;
-	}
-
-	.condition-stat span {
-		font-weight: 700;
-	}
-
-	.condition-note {
-		font-size: 0.85rem;
-		color: #666;
-		margin-top: 0.75rem;
-	}
-
-	.condition-note.success {
-		color: #059669;
-		font-weight: 600;
-	}
-
-	.condition-note.warning {
-		color: #ea580c;
-		font-weight: 600;
-	}
-
-	/* Interpretation Section */
-	.interpretation-section {
-		background: white;
-		border: 2px solid #a855f7;
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.interpretation-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	.feedback-text {
-		color: #555;
-		line-height: 1.6;
-		margin-bottom: 1.5rem;
-	}
-
-	.insights-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.insight {
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
-
-	.insight.success {
-		color: #059669;
-	}
-
-	.insight.good {
-		color: #2563eb;
-	}
-
-	.insight.moderate {
-		color: #ca8a04;
-	}
-
-	.insight.high {
-		color: #ea580c;
-	}
-
-	/* Clinical Context */
-	.clinical-context {
-		background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08));
-		padding: 1.5rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.clinical-context h3 {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	.clinical-content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.clinical-content p {
-		font-size: 0.9rem;
-		color: #555;
-		line-height: 1.6;
-	}
-
-	/* Difficulty Change */
-	.difficulty-change {
-		background: #dbeafe;
-		border-left: 4px solid #3b82f6;
-		padding: 1rem;
-		border-radius: 8px;
-		margin-bottom: 1.5rem;
-	}
-
-	.difficulty-change p {
-		font-size: 0.9rem;
-		color: #1e3a8a;
-	}
-
-	/* Badges Section */
-	.badges-section {
-		margin-bottom: 2rem;
-	}
-
-	.badges-section h3 {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 1rem;
-	}
-
-	/* Results Actions */
-	.results-actions {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
-		margin-top: 2rem;
-	}
-
-	.return-button {
-		background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
-		color: white;
-		padding: 1.25rem 3rem;
-		font-size: 1.1rem;
-		font-weight: 700;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
-	}
-
-	.return-button:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(147, 51, 234, 0.6);
-	}
-
-	/* Help Button */
-	.help-button {
-		position: fixed;
-		bottom: 2rem;
-		right: 2rem;
-		width: 56px;
-		height: 56px;
-		background: #9333ea;
-		color: white;
-		border: none;
-		border-radius: 50%;
-		font-size: 2rem;
-		cursor: pointer;
-		box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
-		transition: all 0.3s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.help-button:hover {
-		background: #7c3aed;
-		transform: scale(1.1);
-	}
-
-	/* Modal */
+	/* ── Modal ─────────────────────────────────────────────── */
 	.modal-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		z-index: 1000;
+		position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+		display: flex; align-items: center; justify-content: center;
+		z-index: 1000; padding: 1rem;
 	}
-
 	.modal-content {
-		background: white;
-		border-radius: 16px;
-		padding: 2rem;
-		max-width: 650px;
-		max-height: 90vh;
-		overflow-y: auto;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+		background: white; border-radius: 16px; padding: 2rem;
+		max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto;
+		position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 	}
-
-	.modal-title {
-		font-size: 1.8rem;
-		font-weight: bold;
-		color: #2c3e50;
-		margin-bottom: 1.5rem;
+	.close-btn {
+		position: absolute; top: 1rem; right: 1rem;
+		width: 36px; height: 36px; border: none; background: #f1f5f9;
+		color: #475569; font-size: 1.4rem; border-radius: 50%; cursor: pointer;
+		display: flex; align-items: center; justify-content: center;
 	}
-
-	.help-sections {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+	.close-btn:hover { background: #e2e8f0; }
+	.modal-content h2 {
+		font-size: 1.2rem; font-weight: 700; color: #1e293b;
+		margin: 0 0 1.2rem; padding-right: 2.5rem;
 	}
-
-	.help-section h3 {
-		font-size: 1.1rem;
-		font-weight: 700;
-		color: #2c3e50;
-		margin-bottom: 0.75rem;
+	.strategy {
+		padding: 0.9rem 1rem; background: #f8fafc;
+		border-radius: 8px; border-left: 4px solid #e11d48; margin-bottom: 0.75rem;
 	}
+	.strategy h3 { font-size: 0.88rem; font-weight: 700; color: #1e293b; margin: 0 0 0.3rem; }
+	.strategy p  { font-size: 0.84rem; color: #64748b; margin: 0 0 0.3rem; line-height: 1.5; }
+	.strategy p:last-child { margin: 0; }
 
-	.help-section p {
-		color: #555;
-		line-height: 1.6;
-	}
-
-	.help-section ul {
-		list-style: disc;
-		padding-left: 1.5rem;
-		color: #555;
-	}
-
-	.help-section li {
-		margin-bottom: 0.5rem;
-		line-height: 1.5;
-	}
-
-	.metrics-explain {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.metrics-explain p {
-		font-size: 0.95rem;
-	}
-
-	.modal-close-btn {
-		margin-top: 1.5rem;
-		width: 100%;
-		padding: 1rem 1.5rem;
-		background: #9333ea;
-		color: white;
-		border: none;
-		border-radius: 12px;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-	}
-
-	.modal-close-btn:hover {
-		background: #7c3aed;
-	}
-
-	/* Responsive */
-	@media (max-width: 768px) {
-		.instructions {
-			padding: 1.5rem 1rem;
-		}
-
-		.instructions h1 {
-			font-size: 2rem;
-		}
-
-		.stroop-examples {
-			grid-template-columns: 1fr;
-		}
-
-		.info-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.stroop-word {
-			font-size: 2.5rem;
-		}
+	/* ── Responsive ────────────────────────────────────────── */
+	@media (max-width: 640px) {
+		.instructions-card { padding: 1.5rem; gap: 1.2rem; }
+		.rules-grid         { grid-template-columns: 1fr; }
+		.info-grid          { grid-template-columns: 1fr; }
+		.clinical-grid      { grid-template-columns: 1fr; }
+		.metrics-grid       { grid-template-columns: repeat(2, 1fr); }
+		.steps-grid         { grid-template-columns: 1fr; }
+		.header-content h1  { font-size: 1.4rem; }
+		.screen-card        { padding: 1.25rem; }
+		.stroop-word-large  { font-size: 3.5rem; }
+		.color-patch-large  { width: 120px; height: 75px; }
+		.stroop-examples    { gap: 0.5rem; }
+		.ex-card            { min-width: 100px; padding: 0.75rem; }
+		.color-btn          { padding: 0.55rem 1.1rem; font-size: 0.88rem; min-width: 75px; }
 	}
 </style>
