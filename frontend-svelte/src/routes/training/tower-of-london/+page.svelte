@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { locale, localeText } from '$lib/i18n';
@@ -14,21 +15,23 @@
 	let baselineScore = 0;
 	let difficulty = 1;
 	let taskId = null;
-	
+	let loading = false;
+
 	let sessionData = null;
 	let currentProblemIndex = 0;
 	let currentProblem = null;
-	
+
 	// Game state
-	let currentState = []; // Current disk positions [[disk_ids on peg 0], [peg 1], [peg 2]]
+	let currentState = [];
 	let goalState = [];
-	let selectedDisk = null; // {pegIndex, diskIndex, color}
+	let selectedDisk = null;
 	let moveHistory = [];
 	let problemStartTime = null;
 	let totalMoves = 0;
-	
+	let pegFullWarning = -1;
+
 	// UI state
-	let gamePhase = 'intro'; // intro, planning, solving, problem_complete, results
+	let gamePhase = 'intro';
 	let planningTimeRemaining = 0;
 	let planningTimer = null;
 	let userSolutions = [];
@@ -38,16 +41,16 @@
 	let showSolution = false;
 	let solutionPath = [];
 	let actualMinMoves = 0;
+	/** @type {string} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
 	let recordedDifficulty = 1;
 
-	// Colors for disks
 	const DISK_COLORS = {
-		0: '#ef4444', // red
-		1: '#3b82f6', // blue
-		2: '#22c55e'  // green
+		0: '#ef4444',
+		1: '#3b82f6',
+		2: '#22c55e'
 	};
 
 	const PEG_CAPACITIES = [3, 2, 1];
@@ -56,50 +59,34 @@
 	function findOptimalSolution(startState, goalState) {
 		const stateKey = (state) => JSON.stringify(state);
 		const isGoal = (state) => stateKey(state) === stateKey(goalState);
-
-		const queue = [{state: startState.map(peg => [...peg]), moves: 0, path: []}];
+		const queue = [{ state: startState.map(peg => [...peg]), moves: 0, path: [] }];
 		const visited = new Set([stateKey(startState)]);
 
 		while (queue.length > 0) {
-			const {state, moves, path} = queue.shift();
+			const { state, moves, path } = queue.shift();
+			if (isGoal(state)) return { minMoves: moves, path };
 
-			if (isGoal(state)) {
-				return {minMoves: moves, path};
-			}
-
-			// Try all possible moves
 			for (let fromPeg = 0; fromPeg < 3; fromPeg++) {
 				if (state[fromPeg].length === 0) continue;
-
 				for (let toPeg = 0; toPeg < 3; toPeg++) {
 					if (fromPeg === toPeg) continue;
 					if (state[toPeg].length >= PEG_CAPACITIES[toPeg]) continue;
-
-					// Make move
 					const newState = state.map(peg => [...peg]);
 					const disk = newState[fromPeg].pop();
 					newState[toPeg].push(disk);
-
 					const key = stateKey(newState);
 					if (!visited.has(key)) {
 						visited.add(key);
-						queue.push({
-							state: newState,
-							moves: moves + 1,
-							path: [...path, {from: fromPeg, to: toPeg, disk}]
-						});
+						queue.push({ state: newState, moves: moves + 1, path: [...path, { from: fromPeg, to: toPeg, disk }] });
 					}
 				}
 			}
 		}
-
-		return {minMoves: -1, path: []}; // No solution found
+		return { minMoves: -1, path: [] };
 	}
 
 	user.subscribe(value => {
-		if (value) {
-			userId = value.id;
-		}
+		if (value) userId = value.id;
 	});
 
 	function lt(en, bn) {
@@ -107,18 +94,23 @@
 	}
 
 	function cloneData(value) {
-		if (typeof structuredClone === 'function') {
-			return structuredClone(value);
-		}
-
+		if (typeof structuredClone === 'function') return structuredClone(value);
 		return JSON.parse(JSON.stringify(value));
 	}
 
 	function restoreRecordedSession() {
-		if (recordedSessionData) {
-			sessionData = cloneData(recordedSessionData);
-		}
+		if (recordedSessionData) sessionData = cloneData(recordedSessionData);
 		difficulty = recordedDifficulty;
+	}
+
+	function getDifficultyInfo() {
+		if (!sessionData) return '';
+		const maxMoves = Math.max(...sessionData.problems.map(p => p.minimum_moves));
+		if (maxMoves <= 2) return lt('Simple 2-move problems', 'সহজ ২-পদক্ষেপের সমস্যা');
+		if (maxMoves <= 3) return lt('3-move planning challenges', '৩-পদক্ষেপের পরিকল্পনা চ্যালেঞ্জ');
+		if (maxMoves <= 4) return lt('4-move complex planning', '৪-পদক্ষেপের জটিল পরিকল্পনা');
+		if (maxMoves <= 5) return lt('5-move advanced problems', '৫-পদক্ষেপের উন্নত সমস্যা');
+		return lt('6+ move expert challenges', '৬+ পদক্ষেপের বিশেষজ্ঞ চ্যালেঞ্জ');
 	}
 
 	onMount(async () => {
@@ -131,13 +123,11 @@
 
 	async function loadSession() {
 		try {
-			// Fetch baseline to determine difficulty
+			loading = true;
 			const baselineRes = await fetch(`/api/baseline/${userId}`);
 			if (baselineRes.ok) {
 				const baseline = await baselineRes.json();
 				baselineScore = baseline.planning_score || 0;
-
-				// Map baseline score to difficulty
 				if (baselineScore >= 90) difficulty = 9;
 				else if (baselineScore >= 80) difficulty = 8;
 				else if (baselineScore >= 70) difficulty = 7;
@@ -148,24 +138,24 @@
 				else if (baselineScore >= 20) difficulty = 2;
 				else difficulty = 1;
 			}
-
 			const response = await fetch('/api/tasks/tol/generate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ difficulty })
 			});
-
 			if (response.ok) {
 				sessionData = await response.json();
 				recordedSessionData = cloneData(sessionData);
 				recordedDifficulty = sessionData.difficulty || difficulty;
-				console.log('Session loaded:', sessionData);
 			}
-		} catch (error) {
-			console.error('Error loading session:', error);
+		} catch (_) {
+			// session load failure handled by loading state
+		} finally {
+			loading = false;
 		}
 	}
 
+	/** @param {string} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -176,29 +166,18 @@
 		userSolutions = [];
 		results = null;
 		earnedBadges = [];
-		gamePhase = 'planning';
 		loadProblem(0);
 	}
 
 	function loadProblem(index) {
 		currentProblemIndex = index;
 		currentProblem = sessionData.problems[index];
-		
-		// Deep copy states
 		currentState = currentProblem.start_state.map(peg => [...peg]);
 		goalState = currentProblem.goal_state.map(peg => [...peg]);
-		
-		// Calculate actual minimum moves using BFS
+
 		const solution = findOptimalSolution(currentState, goalState);
 		actualMinMoves = solution.minMoves;
 		solutionPath = solution.path;
-
-		console.log('🎯 Tower of London - Problem', index + 1);
-		console.log('Backend minimum_moves:', currentProblem.minimum_moves);
-		console.log('Actual minimum_moves (BFS):', actualMinMoves);
-		console.log('Solution path:', solutionPath);
-
-		// Override the backend's incorrect minimum_moves
 		currentProblem.minimum_moves = actualMinMoves;
 
 		selectedDisk = null;
@@ -206,8 +185,8 @@
 		totalMoves = 0;
 		showingGoal = true;
 		showSolution = false;
+		pegFullWarning = -1;
 
-		// Start planning phase
 		gamePhase = 'planning';
 		planningTimeRemaining = sessionData.config.planning_time_seconds;
 		startPlanningTimer();
@@ -215,7 +194,6 @@
 
 	function startPlanningTimer() {
 		if (planningTimer) clearInterval(planningTimer);
-		
 		planningTimer = setInterval(() => {
 			planningTimeRemaining--;
 			if (planningTimeRemaining <= 0) {
@@ -234,67 +212,43 @@
 
 	function selectDisk(pegIndex, diskIndex) {
 		if (gamePhase !== 'solving') return;
-		
+		pegFullWarning = -1;
 		const peg = currentState[pegIndex];
-		
-		// Can only select top disk
 		if (diskIndex !== peg.length - 1) return;
-		
 		if (selectedDisk) {
-			// If same disk clicked, deselect
 			if (selectedDisk.pegIndex === pegIndex && selectedDisk.diskIndex === diskIndex) {
 				selectedDisk = null;
 			}
 		} else {
-			// Select this disk
-			const color = peg[diskIndex];
-			selectedDisk = { pegIndex, diskIndex, color };
+			selectedDisk = { pegIndex, diskIndex, color: peg[diskIndex] };
 		}
 	}
 
 	function moveToPeg(targetPegIndex) {
 		if (gamePhase !== 'solving' || !selectedDisk) return;
-		
 		const sourcePeg = currentState[selectedDisk.pegIndex];
 		const targetPeg = currentState[targetPegIndex];
-		
-		// Can't move to same peg
 		if (selectedDisk.pegIndex === targetPegIndex) {
 			selectedDisk = null;
 			return;
 		}
-		
-		// Check capacity
 		if (targetPeg.length >= PEG_CAPACITIES[targetPegIndex]) {
-			alert(`Peg ${targetPegIndex + 1} is full!`);
+			pegFullWarning = targetPegIndex;
 			selectedDisk = null;
+			setTimeout(() => { pegFullWarning = -1; }, 1800);
 			return;
 		}
-		
-		// Move the disk
+		pegFullWarning = -1;
 		const disk = sourcePeg.pop();
 		targetPeg.push(disk);
-		
 		totalMoves++;
-		moveHistory.push({
-			from: selectedDisk.pegIndex,
-			to: targetPegIndex,
-			disk: disk
-		});
-		
+		moveHistory.push({ from: selectedDisk.pegIndex, to: targetPegIndex, disk });
 		selectedDisk = null;
-		
-		// Check if solved
-		if (checkSolved()) {
-			completeProblem();
-		}
-		
-		// Force reactivity
+		if (checkSolved()) completeProblem();
 		currentState = currentState;
 	}
 
 	function checkSolved() {
-		// Compare current state to goal state
 		for (let i = 0; i < 3; i++) {
 			if (currentState[i].length !== goalState[i].length) return false;
 			for (let j = 0; j < currentState[i].length; j++) {
@@ -306,7 +260,6 @@
 
 	function completeProblem() {
 		const timeElapsed = (Date.now() - problemStartTime) / 1000;
-		
 		userSolutions.push({
 			problem_number: currentProblem.problem_number,
 			solved: true,
@@ -314,7 +267,6 @@
 			time_seconds: timeElapsed,
 			move_history: moveHistory
 		});
-		
 		if (currentProblemIndex < sessionData.problems.length - 1) {
 			gamePhase = 'problem_complete';
 		} else {
@@ -339,27 +291,19 @@
 			await loadSession();
 			return;
 		}
-
 		try {
-			const response = await fetch('/api/tasks/tol/score', {
+			const scoreResponse = await fetch('/api/tasks/tol/score', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					session_data: sessionData,
-					user_solutions: userSolutions
-				})
+				body: JSON.stringify({ session_data: sessionData, user_solutions: userSolutions })
 			});
-
-			if (response.ok) {
-				results = await response.json();
-				
-				// Save to database
+			if (scoreResponse.ok) {
+				results = await scoreResponse.json();
 				await saveResults();
-				
 				gamePhase = 'results';
 			}
-		} catch (error) {
-			console.error('Error scoring session:', error);
+		} catch (_) {
+			// silent
 		}
 	}
 
@@ -370,334 +314,399 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					session_data: {
-						difficulty: difficulty,
-						problems: sessionData?.problems || []
-					},
+					session_data: { difficulty, problems: sessionData?.problems || [] },
 					user_solutions: userSolutions,
 					task_id: taskId
 				})
 			});
-
-			if (!response.ok) throw new Error('Failed to save results');
-			
+			if (!response.ok) throw new Error('Failed to save');
 			const data = await response.json();
-			
 			if (data.newly_earned_badges && data.newly_earned_badges.length > 0) {
 				earnedBadges = data.newly_earned_badges;
 			}
-		} catch (error) {
-			console.error('Error saving results:', error);
+		} catch (_) {
+			// silent
 		}
 	}
 
 	function toggleGoalView() {
 		showingGoal = !showingGoal;
 	}
-
-	function getDifficultyInfo() {
-		if (!sessionData) return '';
-		const config = sessionData.config;
-		const problems = sessionData.problems;
-		const minMoves = Math.min(...problems.map(p => p.minimum_moves));
-		const maxMoves = Math.max(...problems.map(p => p.minimum_moves));
-		
-		let desc = '';
-		if (maxMoves <= 2) desc = 'Simple 2-move problems';
-		else if (maxMoves <= 3) desc = '3-move planning challenges';
-		else if (maxMoves <= 4) desc = '4-move complex planning';
-		else if (maxMoves <= 5) desc = '5-move advanced problems';
-		else desc = '6+ move expert challenges';
-		
-		return `${desc}, ${config.planning_time_seconds}s planning time`;
-	}
 </script>
 
-<div style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem;">
-	<div style="max-width: 1000px; margin: 0 auto;">
-		
+<div class="tol-page" data-localize-skip>
+	<div class="tol-wrapper">
+
 		{#if gamePhase === 'intro'}
-			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-				<div style="text-align: center; margin-bottom: 2rem;">
-					<div style="display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
-						<h1 style="font-size: 2.5rem; color: #667eea; margin: 0; font-weight: 700;">
-							🎯 Tower of London
-						</h1>
-						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Executive Planning" />
+
+			<!-- Header Card -->
+			<div class="header-card">
+				<div class="header-content">
+					<div class="header-text">
+						<h1 class="task-title">{lt('Tower of London', 'টাওয়ার অব লন্ডন')}</h1>
+						<p class="task-domain">{lt('Planning / Executive Function', 'পরিকল্পনা / নির্বাহী কার্যকারিতা')}</p>
 					</div>
-					<p style="font-size: 1.1rem; color: #64748b;">
-						Executive Planning & Problem Solving
+					<DifficultyBadge difficulty={sessionData?.difficulty || difficulty} domain="Executive Planning" />
+				</div>
+			</div>
+
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
+
+			{#if loading}
+				<LoadingSkeleton />
+			{:else}
+
+				<!-- Task Concept -->
+				<div class="card task-concept">
+					<div class="concept-badge">
+						<span class="badge-icon">TOL</span>
+						<span>{lt('Executive Planning', 'নির্বাহী পরিকল্পনা')}</span>
+					</div>
+					<p class="concept-desc">
+						{lt(
+							'The Tower of London requires advance planning, working memory, and inhibitory control to move colored disks in the minimum number of steps. It is widely used to assess prefrontal-dependent planning deficits in multiple sclerosis.',
+							'টাওয়ার অব লন্ডন সর্বনিম্ন পদক্ষেপে রঙিন ডিস্ক সরাতে অগ্রিম পরিকল্পনা, ওয়ার্কিং মেমোরি এবং বাধামূলক নিয়ন্ত্রণ প্রয়োজন। এটি মাল্টিপল স্ক্লেরোসিসে প্রিফ্রন্টাল পরিকল্পনার ঘাটতি মূল্যায়নে ব্যাপকভাবে ব্যবহৃত।'
+						)}
 					</p>
 				</div>
 
-				<div style="background: #f8fafc; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; border-left: 4px solid #667eea;">
-					<h3 style="color: #1e293b; margin-bottom: 1rem; font-size: 1.3rem;">📋 How It Works</h3>
-					<ul style="color: #475569; line-height: 1.8; margin-left: 1.5rem;">
-						<li><strong>Planning Phase:</strong> Study the start and goal configurations</li>
-						<li><strong>Mental Planning:</strong> Figure out the minimum moves needed</li>
-						<li><strong>Execution:</strong> Move colored disks to match the goal</li>
-						<li><strong>Constraints:</strong> Peg 1 holds 3 disks, Peg 2 holds 2, Peg 3 holds 1</li>
-						<li><strong>Rule:</strong> Only move the top disk from each peg</li>
-					</ul>
+				<!-- Rules Grid -->
+				<div class="card">
+					<h2 class="section-title">{lt('How to Play', 'কীভাবে খেলবেন')}</h2>
+					<div class="rules-grid">
+						<div class="rule-item">
+							<div class="rule-num">1</div>
+							<div class="rule-text">
+								<strong>{lt('Study the planning screen', 'পরিকল্পনার স্ক্রিন পর্যবেক্ষণ করুন')}</strong>
+								<span>{lt('The start and goal disk positions are shown side by side during the planning phase.', 'পরিকল্পনা পর্যায়ে শুরু এবং লক্ষ্যের অবস্থান পাশাপাশি দেখানো হয়।')}</span>
+							</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">2</div>
+							<div class="rule-text">
+								<strong>{lt('Plan before moving', 'চলার আগে পরিকল্পনা করুন')}</strong>
+								<span>{lt('Work out the minimum number of moves mentally before starting execution.', 'চালু করার আগে মানসিকভাবে সর্বনিম্ন পদক্ষেপের সংখ্যা নির্ধারণ করুন।')}</span>
+							</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">3</div>
+							<div class="rule-text">
+								<strong>{lt('Click disk then click peg', 'ডিস্ক ক্লিক করুন তারপর পেগ ক্লিক করুন')}</strong>
+								<span>{lt('Select the top disk on any peg, then click the destination peg to move it.', 'যেকোনো পেগের উপরের ডিস্ক নির্বাচন করুন, তারপর গন্তব্য পেগে ক্লিক করুন।')}</span>
+							</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">4</div>
+							<div class="rule-text">
+								<strong>{lt('Respect capacity limits', 'ধারণক্ষমতার সীমা মানুন')}</strong>
+								<span>{lt('Peg 1 holds 3 disks, Peg 2 holds 2, Peg 3 holds only 1. You cannot overfill a peg.', 'পেগ ১ — ৩টি, পেগ ২ — ২টি, পেগ ৩ — ১টি ডিস্ক ধারণ করে। পেগ অতিরিক্ত পূর্ণ করা যাবে না।')}</span>
+							</div>
+						</div>
+					</div>
 				</div>
 
-				{#if sessionData}
-					<div style="background: #eff6ff; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 2px solid #3b82f6;">
-						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-							<h3 style="color: #1e40af; margin: 0;">Current Session</h3>
-							<span style="background: #3b82f6; color: white; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 600;">
-								Level {difficulty}
-							</span>
+				<!-- Peg Capacity Visual -->
+				<div class="card">
+					<h2 class="section-title">{lt('Peg Capacities', 'পেগের ধারণক্ষমতা')}</h2>
+					<div class="peg-cap-row">
+						<div class="peg-cap-item">
+							<div class="cap-circle cap-1">3</div>
+							<div class="cap-label">{lt('Peg 1', 'পেগ ১')}</div>
+							<div class="cap-sub">{lt('3 disks max', 'সর্বোচ্চ ৩টি')}</div>
 						</div>
-						<div style="color: #1e40af; line-height: 1.8;">
-							<div><strong>Problems:</strong> {sessionData.total_problems}</div>
-							<div><strong>Difficulty:</strong> {getDifficultyInfo()}</div>
+						<div class="cap-arrow">&#8594;</div>
+						<div class="peg-cap-item">
+							<div class="cap-circle cap-2">2</div>
+							<div class="cap-label">{lt('Peg 2', 'পেগ ২')}</div>
+							<div class="cap-sub">{lt('2 disks max', 'সর্বোচ্চ ২টি')}</div>
+						</div>
+						<div class="cap-arrow">&#8594;</div>
+						<div class="peg-cap-item">
+							<div class="cap-circle cap-3">1</div>
+							<div class="cap-label">{lt('Peg 3', 'পেগ ৩')}</div>
+							<div class="cap-sub">{lt('1 disk max', 'সর্বোচ্চ ১টি')}</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Info Grid -->
+				<div class="info-grid">
+					<div class="card">
+						<h3 class="card-title">{lt('Session Details', 'সেশনের বিবরণ')}</h3>
+						<div class="details-list">
+							<div class="detail-row">
+								<span>{lt('Problems', 'সমস্যা')}</span>
+								<strong>{sessionData ? sessionData.total_problems : '—'}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Planning Time', 'পরিকল্পনার সময়')}</span>
+								<strong>{sessionData ? sessionData.config.planning_time_seconds + 's' : '—'}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Difficulty', 'কঠিনতা')}</span>
+								<strong>{lt(`Level ${difficulty} / 10`, `লেভেল ${difficulty} / ১০`)}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Problem Type', 'সমস্যার ধরন')}</span>
+								<strong>{getDifficultyInfo()}</strong>
+							</div>
 							{#if baselineScore > 0}
-								<div style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.8;">
-									Based on your planning baseline: {baselineScore}/100
+								<div class="detail-row">
+									<span>{lt('Planning Baseline', 'পরিকল্পনা বেসলাইন')}</span>
+									<strong>{baselineScore}/100</strong>
 								</div>
 							{/if}
 						</div>
 					</div>
+					<div class="card">
+						<h3 class="card-title">{lt('What It Measures', 'এটি কী পরিমাপ করে')}</h3>
+						<div class="details-list">
+							<div class="detail-row">
+								<span>{lt('Primary Metric', 'প্রাথমিক মেট্রিক')}</span>
+								<strong>{lt('Planning efficiency', 'পরিকল্পনা দক্ষতা')}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Cognitive Domain', 'জ্ঞানীয় ডোমেইন')}</span>
+								<strong>{lt('Executive function', 'নির্বাহী কার্যকারিতা')}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Scoring Basis', 'স্কোরিং ভিত্তি')}</span>
+								<strong>{lt('Moves used vs minimum', 'ব্যবহৃত বনাম সর্বনিম্ন')}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('MS Relevance', 'এমএস প্রাসঙ্গিকতা')}</span>
+								<strong>{lt('Prefrontal planning', 'প্রিফ্রন্টাল পরিকল্পনা')}</strong>
+							</div>
+						</div>
+					</div>
+				</div>
 
-					<div style="text-align: center;">
-						<TaskPracticeActions
-							locale={$locale}
-							align="center"
-							startLabel={lt('Start Planning Challenge', 'পরিকল্পনা চ্যালেঞ্জ শুরু করুন')}
-							statusMessage={practiceStatusMessage}
-							on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
-							on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
-						/>
+				<!-- Clinical Info -->
+				<div class="clinical-info">
+					<div class="clinical-header">
+						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
+						<h3>{lt('Gold Standard Planning Paradigm', 'গোল্ড স্ট্যান্ডার্ড পরিকল্পনা প্যারাডাইম')}</h3>
 					</div>
-				{:else}
-					<div style="text-align: center; padding: 2rem; color: #64748b;">
-						<div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
-						<p>Loading session...</p>
+					<p>
+						{lt(
+							'Shallice (1982) developed the Tower of London to study frontal lobe planning. Owen et al. (1990) extended it via the CANTAB battery. MS patients make significantly more excess moves, revealing prefrontal-executive deficits that correlate with daily functioning and real-world multitasking ability.',
+							'শ্যালিস (১৯৮২) ফ্রন্টাল লোব পরিকল্পনা অধ্যয়নের জন্য টাওয়ার অব লন্ডন তৈরি করেন। গবেষণায় দেখা গেছে এমএস রোগীরা উল্লেখযোগ্যভাবে বেশি অতিরিক্ত পদক্ষেপ করেন যা দৈনন্দিন কার্যকারিতার সাথে সম্পর্কিত।'
+						)}
+					</p>
+				</div>
+
+				<!-- Performance Guide -->
+				<div class="card perf-guide">
+					<h3 class="card-title">{lt('Planning Efficiency Norms', 'পরিকল্পনা দক্ষতার নির্দেশিকা')}</h3>
+					<p class="perf-subtitle">{lt('Minimum moves / moves used (higher = better)', 'সর্বনিম্ন পদক্ষেপ / ব্যবহৃত পদক্ষেপ (বেশি = ভালো)')}</p>
+					<div class="norm-bars">
+						<div class="norm-bar">
+							<div class="norm-label">{lt('Excellent', 'উৎকৃষ্ট')}</div>
+							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
+							<div class="norm-range">&gt; 80%</div>
+						</div>
+						<div class="norm-bar">
+							<div class="norm-label">{lt('Normal', 'স্বাভাবিক')}</div>
+							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
+							<div class="norm-range">60–80%</div>
+						</div>
+						<div class="norm-bar">
+							<div class="norm-label">{lt('Impaired', 'দুর্বল')}</div>
+							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
+							<div class="norm-range">&lt; 60%</div>
+						</div>
 					</div>
-				{/if}
-			</div>
+				</div>
+
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={lt('Start Planning Challenge', 'পরিকল্পনা চ্যালেঞ্জ শুরু করুন')}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+				/>
+
+			{/if}
 
 		{:else if gamePhase === 'planning'}
-			<div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+
+			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
 					<PracticeModeBanner locale={$locale} />
 				{/if}
 
-				<div style="text-align: center; margin-bottom: 2rem;">
-					<h2 style="color: #667eea; margin-bottom: 0.5rem;">
-						Problem {currentProblem.problem_number} of {sessionData.total_problems}
-					</h2>
-					<div style="font-size: 1.8rem; font-weight: 700; color: #ef4444; margin-bottom: 0.5rem;">
-						⏱️ {planningTimeRemaining}s
+				<!-- Status Bar -->
+				<div class="game-status-bar">
+					<div class="status-pills">
+						<span class="pill pill-tol">{lt(`Problem ${currentProblem.problem_number} / ${sessionData.total_problems}`, `সমস্যা ${currentProblem.problem_number} / ${sessionData.total_problems}`)}</span>
+						<span class="pill pill-phase">{lt('Planning', 'পরিকল্পনা')}</span>
 					</div>
-					<p style="color: #64748b;">Study the configurations and plan your moves</p>
+					<div class="planning-timer" class:timer-urgent={planningTimeRemaining <= 5}>
+						{planningTimeRemaining}s
+					</div>
 				</div>
 
 				{#if currentProblem.show_minimum}
-					<div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 1rem; margin-bottom: 2rem; text-align: center;">
-						<strong style="color: #92400e;">Minimum Moves Required: {currentProblem.minimum_moves}</strong>
+					<div class="min-moves-banner">
+						{lt(`Minimum moves required: ${currentProblem.minimum_moves}`, `প্রয়োজনীয় সর্বনিম্ন পদক্ষেপ: ${currentProblem.minimum_moves}`)}
 					</div>
 				{/if}
 
-				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-					<!-- Start Configuration -->
-					<div>
-						<h3 style="text-align: center; color: #1e293b; margin-bottom: 1rem;">START</h3>
-						<div style="display: flex; justify-content: center; gap: 2rem; height: 300px; align-items: flex-end;">
+				<!-- Towers side by side -->
+				<div class="towers-row">
+					<div class="tower-panel">
+						<div class="tower-label tower-label-start">{lt('START', 'শুরু')}</div>
+						<div class="pegs-row">
 							{#each currentProblem.start_state as peg, pegIndex}
-								<div style="position: relative; width: 80px;">
-									<!-- Peg base -->
-									<div style="position: absolute; bottom: 0; width: 100%; height: 10px; background: #94a3b8; border-radius: 4px;"></div>
-									<!-- Peg rod -->
-									<div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 8px; height: 250px; background: #cbd5e1;"></div>
-									<!-- Disks -->
-									{#each peg as diskColor, diskIndex}
-										<div style="position: absolute; bottom: {10 + diskIndex * 30}px; left: 50%; transform: translateX(-50%); 
-											width: {60 - diskIndex * 8}px; height: 25px; background: {DISK_COLORS[diskColor]}; 
-											border-radius: 4px; border: 2px solid rgba(0,0,0,0.2); z-index: {diskIndex + 1};"></div>
-									{/each}
-									<!-- Capacity label -->
-									<div style="position: absolute; bottom: -30px; width: 100%; text-align: center; font-size: 0.8rem; color: #64748b;">
-										Peg {pegIndex + 1} (max: {PEG_CAPACITIES[pegIndex]})
+								<div class="peg-col">
+									<div class="peg-area">
+										<div class="peg-rod-elem"></div>
+										<div class="peg-base-elem"></div>
+										{#each peg as diskColor, diskIndex}
+											<div class="disk-abs"
+												style="bottom: {12 + diskIndex * 32}px; width: {72 - diskIndex * 10}px; background: {DISK_COLORS[diskColor]};">
+											</div>
+										{/each}
 									</div>
+									<div class="peg-cap-count">{PEG_CAPACITIES[pegIndex]}</div>
 								</div>
 							{/each}
 						</div>
 					</div>
 
-					<!-- Goal Configuration -->
-					<div>
-						<h3 style="text-align: center; color: #1e293b; margin-bottom: 1rem;">GOAL</h3>
-						<div style="display: flex; justify-content: center; gap: 2rem; height: 300px; align-items: flex-end;">
+					<div class="towers-divider">&#8594;</div>
+
+					<div class="tower-panel">
+						<div class="tower-label tower-label-goal">{lt('GOAL', 'লক্ষ্য')}</div>
+						<div class="pegs-row">
 							{#each currentProblem.goal_state as peg, pegIndex}
-								<div style="position: relative; width: 80px;">
-									<!-- Peg base -->
-									<div style="position: absolute; bottom: 0; width: 100%; height: 10px; background: #94a3b8; border-radius: 4px;"></div>
-									<!-- Peg rod -->
-									<div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 8px; height: 250px; background: #cbd5e1;"></div>
-									<!-- Disks -->
-									{#each peg as diskColor, diskIndex}
-										<div style="position: absolute; bottom: {10 + diskIndex * 30}px; left: 50%; transform: translateX(-50%); 
-											width: {60 - diskIndex * 8}px; height: 25px; background: {DISK_COLORS[diskColor]}; 
-											border-radius: 4px; border: 2px solid rgba(0,0,0,0.2); z-index: {diskIndex + 1};"></div>
-									{/each}
-									<!-- Capacity label -->
-									<div style="position: absolute; bottom: -30px; width: 100%; text-align: center; font-size: 0.8rem; color: #64748b;">
-										Peg {pegIndex + 1} (max: {PEG_CAPACITIES[pegIndex]})
+								<div class="peg-col">
+									<div class="peg-area peg-area-goal">
+										<div class="peg-rod-elem peg-rod-goal"></div>
+										<div class="peg-base-elem peg-base-goal"></div>
+										{#each peg as diskColor, diskIndex}
+											<div class="disk-abs disk-abs-goal"
+												style="bottom: {12 + diskIndex * 32}px; width: {72 - diskIndex * 10}px; background: {DISK_COLORS[diskColor]};">
+											</div>
+										{/each}
 									</div>
+									<div class="peg-cap-count peg-cap-faded">{PEG_CAPACITIES[pegIndex]}</div>
 								</div>
 							{/each}
 						</div>
 					</div>
 				</div>
 
-				<div style="text-align: center;">
-					<button on:click={startSolving}
-						style="background: #22c55e; color: white; border: none; padding: 1rem 2rem; 
-						font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-						I'm Ready - Start Solving
+				<div class="planning-footer">
+					<p class="planning-hint">
+						{lt('Study both configurations and plan your move sequence before the timer runs out.', 'টাইমার শেষ হওয়ার আগে উভয় কনফিগারেশন পর্যবেক্ষণ করুন এবং আপনার পদক্ষেপের ক্রম পরিকল্পনা করুন।')}
+					</p>
+					<button class="ready-btn" on:click={startSolving}>
+						{lt('Ready — Start Solving', 'প্রস্তুত — সমাধান শুরু করুন')}
 					</button>
 				</div>
 			</div>
 
 		{:else if gamePhase === 'solving'}
-			<div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+
+			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
 					<PracticeModeBanner locale={$locale} />
 				{/if}
 
-				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-					<h2 style="color: #667eea; margin: 0;">
-						Problem {currentProblem.problem_number} of {sessionData.total_problems}
-					</h2>
-					<div style="display: flex; gap: 1rem; align-items: center;">
-						<span style="background: #e0e7ff; color: #4338ca; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600;">
-							Moves: {totalMoves}
-						</span>
+				<!-- Solving Status Bar -->
+				<div class="game-status-bar">
+					<div class="status-pills">
+						<span class="pill pill-tol">{lt(`Problem ${currentProblem.problem_number} / ${sessionData.total_problems}`, `সমস্যা ${currentProblem.problem_number} / ${sessionData.total_problems}`)}</span>
+						<span class="pill pill-moves">{lt(`Moves: ${totalMoves}`, `পদক্ষেপ: ${totalMoves}`)}</span>
 						{#if currentProblem.show_minimum}
-							<span style="background: #fef3c7; color: #92400e; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600;">
-								Target: {currentProblem.minimum_moves}
-							</span>
+							<span class="pill pill-target">{lt(`Min: ${currentProblem.minimum_moves}`, `সর্বনিম্ন: ${currentProblem.minimum_moves}`)}</span>
 						{/if}
-						<button on:click={toggleGoalView}
-							style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; 
-							border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;"
-							on:mouseenter={(e) => e.currentTarget.style.background = '#2563eb'}
-							on:mouseleave={(e) => e.currentTarget.style.background = '#3b82f6'}>
-							{showingGoal ? 'Hide' : 'Show'} Goal
-						</button>
 					</div>
+					<button class="toggle-goal-btn" on:click={toggleGoalView}>
+						{showingGoal ? lt('Hide Goal', 'লক্ষ্য লুকান') : lt('Show Goal', 'লক্ষ্য দেখান')}
+					</button>
 				</div>
 
+				<!-- Selected disk indicator -->
 				{#if selectedDisk !== null}
-					<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 1.2rem; text-align: center; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);">
-						<div style="display: flex; align-items: center; justify-content: center; gap: 0.8rem;">
-							<div style="width: 50px; height: 25px; background: {DISK_COLORS[selectedDisk.color]}; border-radius: 4px; border: 3px solid #92400e; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"></div>
-							<strong style="color: #92400e; font-size: 1.1rem;">Click a peg below to move this disk</strong>
-						</div>
+					<div class="selected-indicator">
+						<div class="selected-swatch" style="background: {DISK_COLORS[selectedDisk.color]};"></div>
+						<span>{lt('Disk selected — click any peg to move it', 'ডিস্ক নির্বাচিত — এটি সরাতে যেকোনো পেগে ক্লিক করুন')}</span>
 					</div>
 				{/if}
 
-				<div style="display: grid; grid-template-columns: {showingGoal ? '1fr 1fr' : '1fr'}; gap: 2rem; margin-bottom: 2rem;">
-					<!-- Current State (Interactive) -->
-					<div>
-						<h3 style="text-align: center; color: #1e293b; margin-bottom: 1.5rem; font-weight: 600;">CURRENT POSITION</h3>
-						<div style="display: flex; justify-content: center; gap: 3rem; height: 320px; align-items: flex-end; padding: 0 1rem;">
+				<!-- Peg full warning -->
+				{#if pegFullWarning >= 0}
+					<div class="peg-full-warning">
+						{lt(`Peg ${pegFullWarning + 1} is full (max ${PEG_CAPACITIES[pegFullWarning]} disks)`, `পেগ ${pegFullWarning + 1} পূর্ণ (সর্বোচ্চ ${PEG_CAPACITIES[pegFullWarning]} ডিস্ক)`)}
+					</div>
+				{/if}
+
+				<!-- Solving Layout -->
+				<div class="solving-row" class:solving-single={!showingGoal}>
+
+					<!-- Interactive current state -->
+					<div class="tower-panel">
+						<div class="tower-label tower-label-current">{lt('CURRENT POSITION', 'বর্তমান অবস্থান')}</div>
+						<div class="pegs-row pegs-interactive">
 							{#each currentState as peg, pegIndex}
-								<div style="position: relative; width: 100px;">
-									<!-- Clickable peg area with hover effect -->
-									<button on:click={() => moveToPeg(pegIndex)}
+								{@const isFull = peg.length >= PEG_CAPACITIES[pegIndex]}
+								<div class="peg-col">
+									<!-- Clickable drop zone -->
+									<div class="peg-area peg-drop"
+										class:drop-active={selectedDisk && selectedDisk.pegIndex !== pegIndex && !isFull}
+										class:drop-full={selectedDisk && selectedDisk.pegIndex !== pegIndex && isFull}
+										class:drop-warn={pegFullWarning === pegIndex}
+										role="button"
+										tabindex="0"
 										aria-label="Move disk to peg {pegIndex + 1}"
-										on:mouseenter={(e) => {
-											if (selectedDisk && selectedDisk.pegIndex !== pegIndex) {
-												e.currentTarget.style.background = peg.length >= PEG_CAPACITIES[pegIndex] ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.15)';
-											}
-										}}
-										on:mouseleave={(e) => e.currentTarget.style.background = 'transparent'}
-										style="position: absolute; top: 0; left: 0; width: 100%; height: 280px; 
-										background: transparent; 
-										border: 3px dashed {selectedDisk && selectedDisk.pegIndex !== pegIndex ? (peg.length >= PEG_CAPACITIES[pegIndex] ? '#ef4444' : '#3b82f6') : 'transparent'}; 
-										border-radius: 12px; cursor: {selectedDisk ? 'pointer' : 'default'}; z-index: 0;
-										transition: all 0.3s ease;">
-									</button>
-									
-									<!-- Peg base with gradient -->
-									<div style="position: absolute; bottom: 0; width: 100%; height: 12px; background: linear-gradient(to bottom, #94a3b8, #64748b); border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
-									
-									<!-- Peg rod with 3D effect -->
-									<div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 10px; height: 250px; background: linear-gradient(to right, #cbd5e1, #94a3b8, #cbd5e1); border-radius: 5px; box-shadow: inset -2px 0 4px rgba(0,0,0,0.1);"></div>
-									
-									<!-- Disks with improved styling -->
-									{#each peg as diskColor, diskIndex}
-										{@const isTopDisk = diskIndex === peg.length - 1}
-										{@const isSelected = selectedDisk && selectedDisk.pegIndex === pegIndex && selectedDisk.diskIndex === diskIndex}
-										{@const colorNames = ['red', 'blue', 'green']}
-										<button on:click={() => selectDisk(pegIndex, diskIndex)}
-											aria-label="{isTopDisk ? 'Select' : 'Cannot select'} {colorNames[diskColor]} disk on peg {pegIndex + 1}"
-											on:mouseenter={(e) => {
-												if (isTopDisk && !isSelected) {
-													e.currentTarget.style.transform = 'translateX(-50%) translateY(-3px)';
-													e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
-												}
-											}}
-											on:mouseleave={(e) => {
-												if (isTopDisk && !isSelected) {
-													e.currentTarget.style.transform = 'translateX(-50%)';
-													e.currentTarget.style.boxShadow = isSelected ? '0 0 0 5px rgba(251, 191, 36, 0.4), 0 8px 20px rgba(251, 191, 36, 0.3)' : '0 4px 8px rgba(0,0,0,0.2)';
-												}
-											}}
-											disabled={!isTopDisk}
-											style="position: absolute; bottom: {12 + diskIndex * 32}px; left: 50%; transform: translateX(-50%) {isSelected ? 'translateY(-8px)' : ''}; 
-											width: {70 - diskIndex * 10}px; height: 28px; 
-											background: {isSelected ? DISK_COLORS[diskColor] : `linear-gradient(to bottom, ${DISK_COLORS[diskColor]}, ${DISK_COLORS[diskColor]}ee)`}; 
-											border-radius: 6px; 
-											border: {isSelected ? '4px solid #fbbf24' : '3px solid rgba(0,0,0,0.25)'}; 
-											z-index: {diskIndex + 1}; 
-											cursor: {isTopDisk ? 'pointer' : 'not-allowed'}; 
-											opacity: {isTopDisk ? '1' : '0.7'};
-											box-shadow: {isSelected ? '0 0 0 5px rgba(251, 191, 36, 0.4), 0 8px 20px rgba(251, 191, 36, 0.3)' : '0 4px 8px rgba(0,0,0,0.2)'};
-											transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-											filter: {isSelected ? 'brightness(1.1)' : 'none'};">
-										</button>
-									{/each}
-									
-									<!-- Capacity indicator with dynamic color -->
-									<div style="position: absolute; bottom: -35px; width: 100%; text-align: center;">
-										<div style="display: inline-block; background: {peg.length >= PEG_CAPACITIES[pegIndex] ? '#fee2e2' : '#e0e7ff'}; 
-											color: {peg.length >= PEG_CAPACITIES[pegIndex] ? '#991b1b' : '#3730a3'}; 
-											padding: 0.3rem 0.8rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
-											border: 2px solid {peg.length >= PEG_CAPACITIES[pegIndex] ? '#ef4444' : '#6366f1'};">
-											{peg.length}/{PEG_CAPACITIES[pegIndex]}
-											{#if peg.length >= PEG_CAPACITIES[pegIndex]}
-												<span style="margin-left: 0.3rem;">🔒</span>
-											{/if}
-										</div>
+										on:click={() => moveToPeg(pegIndex)}
+										on:keydown={(e) => e.key === 'Enter' && moveToPeg(pegIndex)}>
+										<div class="peg-rod-elem"></div>
+										<div class="peg-base-elem"></div>
+										{#each peg as diskColor, diskIndex}
+											{@const isTopDisk = diskIndex === peg.length - 1}
+											{@const isSelected = selectedDisk && selectedDisk.pegIndex === pegIndex && selectedDisk.diskIndex === diskIndex}
+											<button
+												on:click|stopPropagation={() => selectDisk(pegIndex, diskIndex)}
+												disabled={!isTopDisk}
+												class="disk-btn"
+												class:disk-selected={isSelected}
+												class:disk-top={isTopDisk && !isSelected}
+												class:disk-locked={!isTopDisk}
+												aria-label="{isTopDisk ? 'Select' : 'Cannot select'} disk on peg {pegIndex + 1}"
+												style="bottom: {12 + diskIndex * 32}px; width: {72 - diskIndex * 10}px; background: {DISK_COLORS[diskColor]}; {isSelected ? 'transform: translateX(-50%) translateY(-8px);' : 'transform: translateX(-50%);'}">
+											</button>
+										{/each}
+									</div>
+									<div class="peg-count-badge" class:count-full={isFull}>
+										{peg.length}/{PEG_CAPACITIES[pegIndex]}
 									</div>
 								</div>
 							{/each}
 						</div>
 					</div>
 
-					<!-- Goal State (Reference) -->
+					<!-- Goal reference -->
 					{#if showingGoal}
-						<div>
-							<h3 style="text-align: center; color: #1e293b; margin-bottom: 1.5rem; font-weight: 600;">TARGET POSITION</h3>
-							<div style="display: flex; justify-content: center; gap: 3rem; height: 320px; align-items: flex-end; padding: 0 1rem; opacity: 0.85;">
+						<div class="tower-panel tower-panel-dim">
+							<div class="tower-label tower-label-goal">{lt('TARGET', 'লক্ষ্য')}</div>
+							<div class="pegs-row">
 								{#each goalState as peg, pegIndex}
-									<div style="position: relative; width: 100px;">
-										<div style="position: absolute; bottom: 0; width: 100%; height: 12px; background: linear-gradient(to bottom, #cbd5e1, #94a3b8); border-radius: 6px; opacity: 0.6;"></div>
-										<div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 10px; height: 250px; background: linear-gradient(to right, #e2e8f0, #cbd5e1, #e2e8f0); border-radius: 5px; opacity: 0.5;"></div>
-										{#each peg as diskColor, diskIndex}
-											<div style="position: absolute; bottom: {12 + diskIndex * 32}px; left: 50%; transform: translateX(-50%); 
-												width: {70 - diskIndex * 10}px; height: 28px; 
-												background: linear-gradient(to bottom, {DISK_COLORS[diskColor]}cc, {DISK_COLORS[diskColor]}99); 
-												border-radius: 6px; border: 3px solid rgba(0,0,0,0.15); z-index: {diskIndex + 1}; 
-												opacity: 0.65; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
-										{/each}
-										<div style="position: absolute; bottom: -35px; width: 100%; text-align: center; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">
-											Peg {pegIndex + 1}
+									<div class="peg-col">
+										<div class="peg-area peg-area-goal">
+											<div class="peg-rod-elem peg-rod-goal"></div>
+											<div class="peg-base-elem peg-base-goal"></div>
+											{#each peg as diskColor, diskIndex}
+												<div class="disk-abs disk-abs-goal"
+													style="bottom: {12 + diskIndex * 32}px; width: {72 - diskIndex * 10}px; background: {DISK_COLORS[diskColor]};">
+												</div>
+											{/each}
 										</div>
+										<div class="peg-cap-count peg-cap-faded">{PEG_CAPACITIES[pegIndex]}</div>
 									</div>
 								{/each}
 							</div>
@@ -707,63 +716,61 @@
 			</div>
 
 		{:else if gamePhase === 'problem_complete'}
-			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;">
+
+			<div class="completion-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
 					<PracticeModeBanner locale={$locale} />
 				{/if}
 
-				<div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
-				<h2 style="color: #22c55e; margin-bottom: 1rem;">Problem Solved!</h2>
-				
-				<div style="background: #f0fdf4; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-					<div style="color: #166534; font-size: 1.1rem; line-height: 1.8;">
-						<div><strong>Moves Used:</strong> {userSolutions[userSolutions.length - 1].moves_used}</div>
-						{#if currentProblem.show_minimum}
-							<div><strong>Minimum Required:</strong> {actualMinMoves}</div>
-							{#if userSolutions[userSolutions.length - 1].moves_used === actualMinMoves}
-								<div style="color: #15803d; font-weight: 700; margin-top: 0.5rem;">🎯 Perfect solution!</div>
-							{:else}
-								<div style="color: #92400e; margin-top: 0.5rem;">
-									Extra moves: {userSolutions[userSolutions.length - 1].moves_used - actualMinMoves}
-								</div>
-							{/if}
-						{/if}
+				<div class="completion-badge">{lt('Problem Solved', 'সমস্যা সমাধান হয়েছে')}</div>
+				<h2 class="completion-title">{lt('Well done!', 'চমৎকার!')}</h2>
+
+				<div class="completion-stats">
+					<div class="cstat">
+						<div class="cstat-val">{userSolutions[userSolutions.length - 1].moves_used}</div>
+						<div class="cstat-lbl">{lt('Moves used', 'ব্যবহৃত পদক্ষেপ')}</div>
 					</div>
+					{#if currentProblem.show_minimum}
+						<div class="cstat">
+							<div class="cstat-val">{actualMinMoves}</div>
+							<div class="cstat-lbl">{lt('Minimum', 'সর্বনিম্ন')}</div>
+						</div>
+						<div class="cstat">
+							<div class="cstat-val" class:cstat-perfect={userSolutions[userSolutions.length - 1].moves_used === actualMinMoves} class:cstat-extra={userSolutions[userSolutions.length - 1].moves_used !== actualMinMoves}>
+								{userSolutions[userSolutions.length - 1].moves_used === actualMinMoves
+									? lt('Perfect', 'নিখুঁত')
+									: '+' + (userSolutions[userSolutions.length - 1].moves_used - actualMinMoves)}
+							</div>
+							<div class="cstat-lbl">{lt('Extra moves', 'অতিরিক্ত পদক্ষেপ')}</div>
+						</div>
+					{/if}
 				</div>
 
-				{#if !showSolution}
-					<button on:click={() => showSolution = true}
-						style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;
-						padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 1rem;">
-						💡 Show Optimal Solution
+				<div class="completion-actions">
+					{#if !showSolution}
+						<button class="btn-secondary" on:click={() => showSolution = true}>
+							{lt('Show Optimal Solution', 'সর্বোত্তম সমাধান দেখুন')}
+						</button>
+					{/if}
+					<button class="start-button" on:click={nextProblem}>
+						{lt('Next Problem', 'পরবর্তী সমস্যা')} &#8594;
 					</button>
-				{/if}
-
-				<button on:click={nextProblem}
-					style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; 
-					padding: 1rem 2rem; font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-					Next Problem →
-				</button>
+				</div>
 
 				{#if showSolution && solutionPath.length > 0}
-					<div style="background: #fffbeb; border-radius: 12px; padding: 2rem; margin-top: 2rem; border: 2px solid #fbbf24;">
-						<h3 style="color: #92400e; margin-bottom: 1.5rem;">📋 Optimal Solution ({actualMinMoves} moves)</h3>
-
-						<div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+					<div class="solution-panel">
+						<h3 class="solution-title">
+							{lt(`Optimal Solution (${actualMinMoves} moves)`, `সর্বোত্তম সমাধান (${actualMinMoves} পদক্ষেপ)`)}
+						</h3>
+						<div class="solution-steps">
 							{#each solutionPath as move, index}
-								<div style="background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-									<div style="display: flex; align-items: center; justify-content: space-between;">
-										<span style="font-weight: 700; color: #667eea; font-size: 1.1rem;">Step {index + 1}:</span>
-										<div style="display: flex; align-items: center; gap: 0.75rem;">
-											<span style="background: {DISK_COLORS[move.disk]}; color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem;">
-												{move.disk === 0 ? 'Red' : move.disk === 1 ? 'Blue' : 'Green'} disk
-											</span>
-											<span style="font-size: 1.5rem;">→</span>
-											<span style="color: #1e293b; font-weight: 600;">
-												Peg {move.from + 1} to Peg {move.to + 1}
-											</span>
-										</div>
-									</div>
+								<div class="solution-step">
+									<span class="step-num">{index + 1}</span>
+									<div class="step-disk" style="background: {DISK_COLORS[move.disk]};"></div>
+									<span class="step-desc">
+										{move.disk === 0 ? lt('Red', 'লাল') : move.disk === 1 ? lt('Blue', 'নীল') : lt('Green', 'সবুজ')}
+										{lt(`disk: Peg ${move.from + 1} → Peg ${move.to + 1}`, `ডিস্ক: পেগ ${move.from + 1} → পেগ ${move.to + 1}`)}
+									</span>
 								</div>
 							{/each}
 						</div>
@@ -772,65 +779,949 @@
 			</div>
 
 		{:else if gamePhase === 'results'}
-			<div style="background: white; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-				<div style="text-align: center; margin-bottom: 2rem;">
-					<h1 style="font-size: 2.5rem; color: #667eea; margin-bottom: 0.5rem;">Session Complete!</h1>
-					<div style="font-size: 3rem; font-weight: 700; color: #667eea; margin: 1rem 0;">
-						Score: {results.score}/100
-					</div>
+
+			<!-- Results Header -->
+			<div class="results-header">
+				<div class="score-pill">
+					<span class="score-label">{lt('Score', 'স্কোর')}</span>
+					<span class="score-value">{results.score}</span>
+					<span class="score-max">/100</span>
 				</div>
+				<p class="results-subtitle">{lt('Planning Challenge Complete', 'পরিকল্পনা চ্যালেঞ্জ সম্পন্ন')}</p>
+			</div>
 
-				<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-					<div style="background: #f0f9ff; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #3b82f6;">
-						<div style="font-size: 2rem; font-weight: 700; color: #1e40af;">
-							{results.problems_solved}/{results.total_problems}
-						</div>
-						<div style="color: #64748b; margin-top: 0.5rem;">Problems Solved</div>
-					</div>
-
-					<div style="background: #f0fdf4; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #22c55e;">
-						<div style="font-size: 2rem; font-weight: 700; color: #15803d;">
-							{results.perfect_solutions}
-						</div>
-						<div style="color: #64748b; margin-top: 0.5rem;">Perfect Solutions</div>
-					</div>
-
-					<div style="background: #fef3c7; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #f59e0b;">
-						<div style="font-size: 2rem; font-weight: 700; color: #92400e;">
-							{Math.round(results.planning_efficiency * 100)}%
-						</div>
-						<div style="color: #64748b; margin-top: 0.5rem;">Planning Efficiency</div>
-					</div>
+			<!-- Key Metrics -->
+			<div class="metrics-grid">
+				<div class="metric-card metric-blue">
+					<div class="metric-value">{results.problems_solved}/{results.total_problems}</div>
+					<div class="metric-label">{lt('Problems Solved', 'সমস্যা সমাধান')}</div>
 				</div>
-
-				<div style="background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-					<h3 style="color: #1e293b; margin-bottom: 1rem;">Problem Breakdown</h3>
-					<div style="display: grid; gap: 0.5rem;">
-						{#each results.problems as problem}
-							<div style="display: flex; justify-content: space-between; padding: 0.75rem; background: white; border-radius: 8px; border-left: 4px solid {problem.perfect ? '#22c55e' : problem.solved ? '#3b82f6' : '#ef4444'};">
-								<span style="color: #1e293b; font-weight: 600;">Problem {problem.problem_number}</span>
-								<span style="color: #64748b;">
-									{problem.moves_used} moves (min: {problem.minimum_moves})
-									{#if problem.perfect}🎯{/if}
-								</span>
-							</div>
-						{/each}
-					</div>
+				<div class="metric-card metric-green">
+					<div class="metric-value">{results.perfect_solutions}</div>
+					<div class="metric-label">{lt('Perfect Solutions', 'নিখুঁত সমাধান')}</div>
 				</div>
-
-				<div style="text-align: center;">
-					<button on:click={() => goto('/dashboard')}
-						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; 
-						padding: 1rem 2rem; font-size: 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
-						Return to Dashboard
-					</button>
+				<div class="metric-card metric-tol">
+					<div class="metric-value">{Math.round(results.planning_efficiency * 100)}%</div>
+					<div class="metric-label">{lt('Planning Efficiency', 'পরিকল্পনা দক্ষতা')}</div>
 				</div>
 			</div>
+
+			<!-- Problem Breakdown -->
+			<div class="card">
+				<h3 class="card-title">{lt('Problem Breakdown', 'সমস্যার বিবরণ')}</h3>
+				<div class="problem-list">
+					{#each results.problems as problem}
+						<div class="problem-row"
+							class:row-perfect={problem.perfect}
+							class:row-solved={!problem.perfect && problem.solved}
+							class:row-failed={!problem.solved}>
+							<span class="problem-num">{lt(`Problem ${problem.problem_number}`, `সমস্যা ${problem.problem_number}`)}</span>
+							<div class="problem-detail">
+								<span>{problem.moves_used} {lt('moves', 'পদক্ষেপ')}</span>
+								<span class="min-label">(min: {problem.minimum_moves})</span>
+								{#if problem.perfect}
+									<span class="tag tag-perfect">{lt('Perfect', 'নিখুঁত')}</span>
+								{:else if problem.solved}
+									<span class="tag tag-solved">+{problem.moves_used - problem.minimum_moves}</span>
+								{:else}
+									<span class="tag tag-failed">{lt('Incomplete', 'অসম্পূর্ণ')}</span>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Action Buttons -->
+			<div class="action-buttons">
+				<button class="start-button" on:click={() => goto('/dashboard')}>
+					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরুন')}
+				</button>
+				<button class="btn-secondary" on:click={() => goto('/training')}>
+					{lt('Next Task', 'পরবর্তী টাস্ক')}
+				</button>
+			</div>
+
 		{/if}
 
+		{#if gamePhase === 'intro' && !loading}
+			<button class="help-fab" on:click={() => {}}>?</button>
+		{/if}
 	</div>
 </div>
 
 {#if earnedBadges.length > 0}
 	<BadgeNotification badges={earnedBadges} />
 {/if}
+
+<style>
+	/* ── Page Layout ─────────────────────────────────── */
+	.tol-page {
+		min-height: 100vh;
+		background: #C8DEFA;
+		padding: 1.5rem;
+	}
+
+	.tol-wrapper {
+		max-width: 1000px;
+		margin: 0 auto;
+	}
+
+	/* ── Shared Card ──────────────────────────────────── */
+	.card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
+	}
+
+	/* ── Header Card ─────────────────────────────────── */
+	.header-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
+	}
+
+	.header-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.task-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: #1a1a2e;
+		margin: 0 0 0.25rem 0;
+	}
+
+	.task-domain {
+		font-size: 0.875rem;
+		color: #c2410c;
+		font-weight: 500;
+		margin: 0;
+	}
+
+	/* ── Task Concept ─────────────────────────────────── */
+	.task-concept { margin-bottom: 1rem; }
+
+	.concept-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		padding: 0.4rem 0.9rem;
+		border-radius: 2rem;
+		font-size: 0.813rem;
+		font-weight: 600;
+		margin-bottom: 1rem;
+	}
+
+	.badge-icon {
+		font-size: 0.813rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+	}
+
+	.concept-desc {
+		color: #4b5563;
+		font-size: 0.938rem;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	/* ── Section Title ────────────────────────────────── */
+	.section-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1a1a2e;
+		margin: 0 0 1.25rem 0;
+	}
+
+	/* ── Rules Grid ───────────────────────────────────── */
+	.rules-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.rule-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.875rem;
+		background: #f9fafb;
+		border-radius: 12px;
+		padding: 1rem;
+	}
+
+	.rule-num {
+		min-width: 2rem;
+		height: 2rem;
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.875rem;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	.rule-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.rule-text strong { font-size: 0.875rem; color: #1a1a2e; }
+	.rule-text span   { font-size: 0.8rem; color: #6b7280; line-height: 1.4; }
+
+	/* ── Peg Capacity Row ─────────────────────────────── */
+	.peg-cap-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1.5rem;
+	}
+
+	.peg-cap-item { text-align: center; }
+
+	.cap-circle {
+		width: 3.5rem;
+		height: 3.5rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: white;
+		margin: 0 auto 0.5rem;
+	}
+
+	.cap-1 { background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%); }
+	.cap-2 { background: linear-gradient(135deg, #b45309 0%, #d97706 100%); }
+	.cap-3 { background: linear-gradient(135deg, #78350f 0%, #92400e 100%); }
+
+	.cap-label { font-size: 0.875rem; font-weight: 600; color: #374151; }
+	.cap-sub   { font-size: 0.75rem; color: #9ca3af; }
+
+	.cap-arrow {
+		font-size: 1.5rem;
+		color: #d1d5db;
+		font-weight: 700;
+	}
+
+	/* ── Info Grid ────────────────────────────────────── */
+	.info-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.card-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #1a1a2e;
+		margin: 0 0 1rem 0;
+	}
+
+	.details-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+	.detail-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.875rem;
+		padding-bottom: 0.625rem;
+		border-bottom: 1px solid #f3f4f6;
+	}
+
+	.detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+	.detail-row span    { color: #6b7280; }
+	.detail-row strong  { color: #1a1a2e; text-align: right; max-width: 60%; }
+
+	/* ── Clinical Info ────────────────────────────────── */
+	.clinical-info {
+		background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+		border: 1px solid #bbf7d0;
+		border-radius: 16px;
+		padding: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.clinical-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.clinical-badge {
+		background: #16a34a;
+		color: white;
+		padding: 0.2rem 0.7rem;
+		border-radius: 1rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.clinical-header h3 { font-size: 1rem; font-weight: 600; color: #14532d; margin: 0; }
+	.clinical-info p    { font-size: 0.875rem; color: #166534; line-height: 1.6; margin: 0; }
+
+	/* ── Performance Guide ────────────────────────────── */
+	.perf-subtitle { font-size: 0.813rem; color: #6b7280; margin: -0.5rem 0 1rem 0; }
+
+	.norm-bars { display: flex; flex-direction: column; gap: 0.75rem; }
+
+	.norm-bar {
+		display: grid;
+		grid-template-columns: 6rem 1fr 5rem;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.norm-label { font-size: 0.875rem; font-weight: 500; color: #374151; }
+	.norm-track { height: 0.5rem; background: #f3f4f6; border-radius: 0.25rem; overflow: hidden; }
+	.norm-fill  { height: 100%; border-radius: 0.25rem; }
+	.norm-excellent { width: 85%; background: #16a34a; }
+	.norm-normal    { width: 70%; background: #f59e0b; }
+	.norm-impaired  { width: 45%; background: #dc2626; }
+	.norm-range { font-size: 0.75rem; color: #6b7280; text-align: right; }
+
+	/* ── Game Card ────────────────────────────────────── */
+	.game-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+	}
+
+	/* ── Game Status Bar ──────────────────────────────── */
+	.game-status-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 1.25rem;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.status-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+	.pill {
+		padding: 0.3rem 0.75rem;
+		border-radius: 2rem;
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	.pill-tol    { background: #ffedd5; color: #9a3412; }
+	.pill-phase  { background: #f3f4f6; color: #374151; }
+	.pill-moves  { background: #dbeafe; color: #1e40af; }
+	.pill-target { background: #fef3c7; color: #92400e; }
+
+	/* ── Planning Timer ───────────────────────────────── */
+	.planning-timer {
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		padding: 0.4rem 1.25rem;
+		border-radius: 2rem;
+		font-size: 1.125rem;
+		font-weight: 700;
+		min-width: 4rem;
+		text-align: center;
+		transition: background 0.3s;
+	}
+
+	.timer-urgent {
+		background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+		animation: timer-pulse 0.5s ease-in-out infinite;
+	}
+
+	/* ── Min Moves Banner ─────────────────────────────── */
+	.min-moves-banner {
+		background: #fff7ed;
+		border: 2px solid #fed7aa;
+		border-radius: 10px;
+		padding: 0.75rem 1rem;
+		text-align: center;
+		color: #9a3412;
+		font-size: 0.938rem;
+		font-weight: 600;
+		margin-bottom: 1.25rem;
+	}
+
+	/* ── Towers Layout ────────────────────────────────── */
+	.towers-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+		justify-content: center;
+	}
+
+	.solving-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+		justify-content: center;
+	}
+
+	.solving-single { justify-content: center; }
+	.solving-single .tower-panel { width: 100%; max-width: 380px; }
+
+	.towers-divider {
+		display: flex;
+		align-items: center;
+		padding-top: 3rem;
+		font-size: 1.5rem;
+		color: #c2410c;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	.tower-panel {
+		flex: 1;
+		min-width: 0;
+		max-width: 380px;
+	}
+
+	.tower-panel-dim { opacity: 0.8; }
+
+	.tower-label {
+		text-align: center;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		margin-bottom: 1rem;
+		padding: 0.3rem 1rem;
+		border-radius: 2rem;
+		display: inline-block;
+		margin-left: 50%;
+		transform: translateX(-50%);
+	}
+
+	.tower-label-start   { background: #ffedd5; color: #c2410c; }
+	.tower-label-goal    { background: #dbeafe; color: #1e40af; }
+	.tower-label-current { background: #ffedd5; color: #c2410c; }
+
+	/* ── Pegs Row ─────────────────────────────────────── */
+	.pegs-row {
+		display: flex;
+		justify-content: center;
+		gap: 1.5rem;
+	}
+
+	.peg-col {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* ── Peg Area (absolute-positioned disks inside) ──── */
+	.peg-area {
+		position: relative;
+		width: 88px;
+		height: 280px;
+	}
+
+	.peg-area-goal { opacity: 0.7; }
+
+	.peg-rod-elem {
+		position: absolute;
+		bottom: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 10px;
+		height: 240px;
+		background: linear-gradient(to right, #cbd5e1, #94a3b8, #cbd5e1);
+		border-radius: 5px;
+	}
+
+	.peg-rod-goal {
+		background: linear-gradient(to right, #e2e8f0, #cbd5e1, #e2e8f0);
+	}
+
+	.peg-base-elem {
+		position: absolute;
+		bottom: 0;
+		width: 100%;
+		height: 12px;
+		background: linear-gradient(to bottom, #94a3b8, #64748b);
+		border-radius: 6px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.peg-base-goal {
+		background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+		opacity: 0.6;
+	}
+
+	/* ── Static disk (planning / goal view) ──────────── */
+	.disk-abs {
+		position: absolute;
+		left: 50%;
+		transform: translateX(-50%);
+		height: 26px;
+		border-radius: 5px;
+		border: 2px solid rgba(0, 0, 0, 0.2);
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+	}
+
+	.disk-abs-goal {
+		opacity: 0.7;
+		border: 2px solid rgba(0, 0, 0, 0.1);
+	}
+
+	/* ── Interactive disk button ──────────────────────── */
+	.disk-btn {
+		position: absolute;
+		left: 50%;
+		height: 26px;
+		border-radius: 5px;
+		border: 3px solid rgba(0, 0, 0, 0.2);
+		box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+		cursor: default;
+		padding: 0;
+		transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+	}
+
+	.disk-top {
+		cursor: pointer;
+	}
+
+	.disk-top:hover {
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+		border-color: rgba(255, 255, 255, 0.6);
+	}
+
+	.disk-selected {
+		border: 4px solid #fbbf24 !important;
+		box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.35), 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+		cursor: pointer;
+	}
+
+	.disk-locked {
+		opacity: 0.75;
+		cursor: not-allowed;
+	}
+
+	/* ── Drop Zone (peg-area when a disk is selected) ─── */
+	.peg-drop { cursor: default; }
+
+	.drop-active {
+		cursor: pointer;
+		border: 3px dashed #3b82f6 !important;
+		border-radius: 12px;
+		background: rgba(59, 130, 246, 0.05);
+	}
+
+	.drop-full {
+		cursor: not-allowed;
+		border: 3px dashed #ef4444 !important;
+		background: rgba(239, 68, 68, 0.05);
+	}
+
+	.drop-warn {
+		border: 3px solid #ef4444 !important;
+		background: rgba(239, 68, 68, 0.08);
+		animation: shake 0.3s ease-in-out;
+	}
+
+	/* ── Peg count badge ──────────────────────────────── */
+	.peg-count-badge {
+		background: #e0e7ff;
+		color: #3730a3;
+		padding: 0.2rem 0.6rem;
+		border-radius: 1rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		border: 2px solid #6366f1;
+	}
+
+	.count-full {
+		background: #fee2e2;
+		color: #991b1b;
+		border-color: #ef4444;
+	}
+
+	.peg-cap-count {
+		font-size: 0.75rem;
+		color: #6b7280;
+		font-weight: 600;
+		text-align: center;
+	}
+
+	.peg-cap-faded { opacity: 0.5; }
+
+	/* ── Selected indicator ───────────────────────────── */
+	.selected-indicator {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: #fef3c7;
+		border: 2px solid #fbbf24;
+		border-radius: 10px;
+		padding: 0.75rem 1rem;
+		margin-bottom: 1rem;
+		color: #92400e;
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	.selected-swatch {
+		width: 48px;
+		height: 24px;
+		border-radius: 4px;
+		border: 3px solid #92400e;
+		flex-shrink: 0;
+	}
+
+	/* ── Peg full warning ─────────────────────────────── */
+	.peg-full-warning {
+		background: #fee2e2;
+		border: 2px solid #fca5a5;
+		border-radius: 10px;
+		padding: 0.625rem 1rem;
+		text-align: center;
+		color: #991b1b;
+		font-size: 0.875rem;
+		font-weight: 500;
+		margin-bottom: 1rem;
+		animation: fadeIn 0.2s ease;
+	}
+
+	/* ── Toggle goal button ───────────────────────────── */
+	.toggle-goal-btn {
+		background: #dbeafe;
+		color: #1e40af;
+		border: 2px solid #93c5fd;
+		border-radius: 8px;
+		padding: 0.375rem 0.875rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.toggle-goal-btn:hover { background: #bfdbfe; }
+
+	/* ── Planning Footer ──────────────────────────────── */
+	.planning-footer {
+		text-align: center;
+		margin-top: 1.5rem;
+	}
+
+	.planning-hint {
+		font-size: 0.875rem;
+		color: #6b7280;
+		margin-bottom: 1rem;
+	}
+
+	.ready-btn {
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 12px;
+		padding: 0.875rem 2.5rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		transition: transform 0.15s;
+	}
+
+	.ready-btn:hover { transform: translateY(-2px); }
+
+	/* ── Completion Card ──────────────────────────────── */
+	.completion-card {
+		background: white;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		text-align: center;
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	.completion-badge {
+		display: inline-block;
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		padding: 0.4rem 1.25rem;
+		border-radius: 2rem;
+		font-size: 0.875rem;
+		font-weight: 700;
+		margin-bottom: 1rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.completion-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1a1a2e;
+		margin: 0 0 1.5rem 0;
+	}
+
+	.completion-stats {
+		display: flex;
+		justify-content: center;
+		gap: 2rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.cstat { text-align: center; }
+
+	.cstat-val {
+		font-size: 2rem;
+		font-weight: 700;
+		color: #1a1a2e;
+	}
+
+	.cstat-perfect { color: #16a34a !important; }
+	.cstat-extra   { color: #c2410c !important; }
+
+	.cstat-lbl {
+		font-size: 0.75rem;
+		color: #9ca3af;
+		margin-top: 0.25rem;
+	}
+
+	.completion-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		margin-bottom: 1.5rem;
+	}
+
+	/* ── Solution Panel ───────────────────────────────── */
+	.solution-panel {
+		background: #fff7ed;
+		border: 2px solid #fed7aa;
+		border-radius: 12px;
+		padding: 1.25rem;
+		text-align: left;
+		margin-top: 1rem;
+	}
+
+	.solution-title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #9a3412;
+		margin: 0 0 1rem 0;
+	}
+
+	.solution-steps { display: flex; flex-direction: column; gap: 0.5rem; }
+
+	.solution-step {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		background: white;
+		border-radius: 8px;
+		padding: 0.625rem 0.875rem;
+	}
+
+	.step-num {
+		min-width: 1.75rem;
+		height: 1.75rem;
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.75rem;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	.step-disk {
+		width: 2.5rem;
+		height: 1.25rem;
+		border-radius: 3px;
+		border: 2px solid rgba(0, 0, 0, 0.15);
+		flex-shrink: 0;
+	}
+
+	.step-desc { font-size: 0.875rem; color: #374151; font-weight: 500; }
+
+	/* ── Results ──────────────────────────────────────── */
+	.results-header {
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		border-radius: 16px;
+		padding: 1.75rem;
+		text-align: center;
+		margin-bottom: 1rem;
+		box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35);
+	}
+
+	.score-pill {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.score-label { color: rgba(255, 255, 255, 0.85); font-size: 1rem; font-weight: 500; }
+	.score-value { color: white; font-size: 3rem; font-weight: 700; }
+	.score-max   { color: rgba(255, 255, 255, 0.7); font-size: 1.5rem; font-weight: 500; }
+
+	.results-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 0.938rem; margin: 0; }
+
+	.metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.metric-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.25rem;
+		text-align: center;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+	}
+
+	.metric-blue  { border-top: 4px solid #3b82f6; }
+	.metric-green { border-top: 4px solid #16a34a; }
+	.metric-tol   { border-top: 4px solid #c2410c; }
+
+	.metric-value { font-size: 1.75rem; font-weight: 700; color: #1a1a2e; }
+	.metric-label { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; }
+
+	/* ── Problem List ─────────────────────────────────── */
+	.problem-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+	.problem-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 1rem;
+		border-radius: 10px;
+		border-left: 4px solid #d1d5db;
+		background: #f9fafb;
+		font-size: 0.875rem;
+	}
+
+	.row-perfect { border-left-color: #16a34a; }
+	.row-solved  { border-left-color: #3b82f6; }
+	.row-failed  { border-left-color: #ef4444; }
+
+	.problem-num  { font-weight: 600; color: #1a1a2e; }
+	.problem-detail { display: flex; align-items: center; gap: 0.5rem; color: #6b7280; }
+	.min-label { color: #9ca3af; }
+
+	.tag {
+		padding: 0.15rem 0.5rem;
+		border-radius: 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.tag-perfect { background: #dcfce7; color: #166534; }
+	.tag-solved  { background: #dbeafe; color: #1e40af; }
+	.tag-failed  { background: #fee2e2; color: #991b1b; }
+
+	/* ── Action Buttons ───────────────────────────────── */
+	.action-buttons {
+		display: flex;
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+
+	.start-button {
+		flex: 1;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		transition: transform 0.15s;
+	}
+
+	.start-button:hover { transform: translateY(-2px); }
+
+	.btn-secondary {
+		flex: 1;
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: transform 0.15s, background 0.15s;
+	}
+
+	.btn-secondary:hover { background: #f5f3ff; transform: translateY(-2px); }
+
+	/* ── Help FAB ─────────────────────────────────────── */
+	.help-fab {
+		position: fixed;
+		bottom: 2rem;
+		right: 2rem;
+		width: 3rem;
+		height: 3rem;
+		background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+		color: white;
+		border: none;
+		border-radius: 50%;
+		font-size: 1.25rem;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(194, 65, 12, 0.4);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* ── Animations ───────────────────────────────────── */
+	@keyframes timer-pulse {
+		0%, 100% { transform: scale(1); }
+		50%       { transform: scale(1.05); }
+	}
+
+	@keyframes shake {
+		0%, 100% { transform: translateX(0); }
+		25%       { transform: translateX(-4px); }
+		75%       { transform: translateX(4px); }
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(-4px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	/* ── Responsive ───────────────────────────────────── */
+	@media (max-width: 640px) {
+		.rules-grid     { grid-template-columns: 1fr; }
+		.info-grid      { grid-template-columns: 1fr; }
+		.metrics-grid   { grid-template-columns: 1fr; }
+		.towers-row     { flex-direction: column; align-items: center; }
+		.solving-row    { flex-direction: column; align-items: center; }
+		.towers-divider { transform: rotate(90deg); padding: 0; }
+		.action-buttons { flex-direction: column; }
+		.completion-actions { flex-direction: column; }
+		.peg-cap-row    { flex-wrap: wrap; justify-content: center; }
+	}
+</style>
