@@ -387,20 +387,6 @@
 					</p>
 				</div>
 
-				<!-- Clinical Info -->
-				<div class="clinical-info">
-					<div class="clinical-header">
-						<div class="clinical-badge">{t('Clinical Basis', taskLocale())}</div>
-						<h3>{t('Validated MS Executive Function Assessment', taskLocale())}</h3>
-					</div>
-					<p>
-						{t(
-							'The Controlled Oral Word Association Test (Benton & Hamsher, 1989) is included in the MACFIMS and BICAMS batteries for MS. Verbal fluency deficits affect up to 40% of MS patients and reflect impaired initiation, strategy, and prefrontal executive control. Phonemic fluency (letter-based) taxes executive function more than semantic fluency.',
-							$locale
-						)}
-					</p>
-				</div>
-
 				<!-- Rules Card -->
 				<div class="card">
 					<h2 class="section-title">{t('Rules', taskLocale())}</h2>
@@ -458,6 +444,20 @@
 							</div>
 						</div>
 					</div>
+				</div>
+
+				<!-- Clinical Info -->
+				<div class="clinical-info">
+					<div class="clinical-header">
+						<div class="clinical-badge">{t('Clinical Basis', taskLocale())}</div>
+						<h3>{t('Validated MS Executive Function Assessment', taskLocale())}</h3>
+					</div>
+					<p>
+						{t(
+							'The Controlled Oral Word Association Test (Benton & Hamsher, 1989) is included in the MACFIMS and BICAMS batteries for MS. Verbal fluency deficits affect up to 40% of MS patients and reflect impaired initiation, strategy, and prefrontal executive control. Phonemic fluency (letter-based) taxes executive function more than semantic fluency.',
+							$locale
+						)}
+					</p>
 				</div>
 
 				<!-- Performance Guide -->
