@@ -1,4 +1,11 @@
-<script>
+"""Trail Making Test – Part B  LNS-style redesign (purple theme: #9333ea)"""
+import pathlib
+
+TARGET = pathlib.Path(
+    r"d:\NeuroBloom\frontend-svelte\src\routes\training\trail-making-b\+page.svelte"
+)
+
+CONTENT = r'''<script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -1640,3 +1647,8 @@
 		.metrics-grid { grid-template-columns: 1fr; }
 	}
 </style>
+'''
+
+TARGET.write_text(CONTENT, encoding='utf-8')
+lines = len(CONTENT.splitlines())
+print(f"Done. Lines: {lines}")
