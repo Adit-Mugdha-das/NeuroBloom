@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import { API_BASE_URL } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { locale, localeText } from '$lib/i18n';
@@ -10,7 +12,8 @@
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 
-	let gamePhase = 'loading'; // loading, intro, playing, results
+	// ── State ─────────────────────────────────────────
+	let gamePhase = 'loading'; // loading | intro | playing | results
 	let trialData = null;
 	let difficulty = 5;
 	let searchType = 'feature';
@@ -21,26 +24,26 @@
 	let timeRemaining = 0;
 	let startTime = null;
 	let timerInterval = null;
-	let taskId = null; // Track which specific task in session this is
-	
-	let userAnswer = null; // true = target present, false = target absent
+	let taskId = null;
+
+	let userAnswer = null; // true = present, false = absent
 	let results = null;
 	let earnedBadges = [];
-	let showInstructions = true;
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrialData = null;
 	let recordedDifficulty = 5;
 
+	let loadError = false;
+	let saveError = false;
+
+	// ── Helpers ───────────────────────────────────────
 	function lt(en, bn) {
 		return localeText({ en, bn }, $locale);
 	}
 
 	function cloneData(value) {
-		if (typeof structuredClone === 'function') {
-			return structuredClone(value);
-		}
-
+		if (typeof structuredClone === 'function') return structuredClone(value);
 		return JSON.parse(JSON.stringify(value));
 	}
 
@@ -54,49 +57,92 @@
 		timeRemaining = timeLimit;
 	}
 
-	// Load trial on mount
+	function getColorValue(colorName) {
+		const map = {
+			red:    '#DC2626',
+			blue:   '#2563EB',
+			green:  '#16A34A',
+			yellow: '#EAB308',
+			purple: '#9333EA',
+			orange: '#EA580C'
+		};
+		return map[colorName] || '#6B7280';
+	}
+
+	function getShapePath(shape) {
+		const paths = {
+			circle:   'M 50 50 m -25 0 a 25 25 0 1 0 50 0 a 25 25 0 1 0 -50 0',
+			square:   'M 25 25 L 75 25 L 75 75 L 25 75 Z',
+			triangle: 'M 50 25 L 75 75 L 25 75 Z',
+			diamond:  'M 50 25 L 75 50 L 50 75 L 25 50 Z'
+		};
+		return paths[shape] || paths.circle;
+	}
+
+	function getShapeDisplay(shape) {
+		const names = { circle: 'Circle', square: 'Square', triangle: 'Triangle', diamond: 'Diamond' };
+		return names[shape] || shape;
+	}
+
+	function getColorDisplay(color) {
+		return color.charAt(0).toUpperCase() + color.slice(1);
+	}
+
+	function performanceLabel(p) {
+		const map = {
+			excellent:        lt('Excellent', 'অসাধারণ'),
+			good:             lt('Good', 'ভালো'),
+			average:          lt('Average', 'মোটামুটি'),
+			needs_improvement: lt('Needs Improvement', 'উন্নতি দরকার')
+		};
+		return map[p] || (p || '').replace('_', ' ');
+	}
+
+	function responseTypeLabel(rt) {
+		const map = {
+			hit:          lt('Hit', 'হিট'),
+			miss:         lt('Miss', 'মিস'),
+			false_alarm:  lt('False Alarm', 'মিথ্যা সংকেত'),
+			correct_rejection: lt('Correct Rejection', 'সঠিক প্রত্যাখ্যান')
+		};
+		return map[rt] || (rt || '').replace('_', ' ');
+	}
+
+	function timerClass() {
+		if (timeRemaining < 5)  return 'timer-critical';
+		if (timeRemaining < 10) return 'timer-warning';
+		return '';
+	}
+
+	// ── Lifecycle ──────────────────────────────────────
 	onMount(async () => {
-		if (!$user) {
-			goto('/login');
-			return;
-		}
-		
-		// Get taskId from URL params
+		if (!$user) { goto('/login'); return; }
 		taskId = $page.url.searchParams.get('taskId');
-		
 		await loadTrial();
 	});
 
-	// Cleanup on destroy
 	onDestroy(() => {
-		if (timerInterval) {
-			clearInterval(timerInterval);
-		}
+		if (timerInterval) clearInterval(timerInterval);
 	});
 
+	// ── Game Logic ─────────────────────────────────────
 	async function loadTrial() {
 		try {
+			loadError = false;
 			const response = await fetch(
 				`${API_BASE_URL}/api/training/tasks/visual-search/generate/${$user.id}`,
-				{
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include'
-				}
+				{ method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
 			);
-
 			if (!response.ok) throw new Error('Failed to load trial');
-
 			const data = await response.json();
 			recordedTrialData = cloneData(data.trial_data);
 			recordedDifficulty = data.difficulty;
 			difficulty = recordedDifficulty;
 			applyTrialView(cloneData(recordedTrialData));
-			
 			gamePhase = 'intro';
-		} catch (error) {
-			console.error('Error loading trial:', error);
-			alert('Failed to load task. Please try again.');
+		} catch (_) {
+			loadError = true;
+			gamePhase = 'intro';
 		}
 	}
 
@@ -109,33 +155,20 @@
 		} else if (recordedTrialData) {
 			applyTrialView(cloneData(recordedTrialData));
 		}
-
 		startTime = Date.now();
-		gamePhase = 'playing';
 		userAnswer = null;
-
-		// Start timer
+		gamePhase = 'playing';
 		timerInterval = setInterval(() => {
 			const elapsed = (Date.now() - startTime) / 1000;
 			timeRemaining = Math.max(0, timeLimit - elapsed);
-
-			if (timeRemaining === 0) {
-				// Time's up - auto-submit as "not found"
-				handleResponse(false);
-			}
+			if (timeRemaining === 0) handleResponse(false);
 		}, 100);
 	}
 
 	function handleResponse(answer) {
-		if (userAnswer !== null) return; // Already answered
-		
+		if (userAnswer !== null) return;
 		userAnswer = answer;
-		
-		if (timerInterval) {
-			clearInterval(timerInterval);
-			timerInterval = null;
-		}
-		
+		if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 		submitResults();
 	}
 
@@ -149,9 +182,8 @@
 			await loadTrial();
 			return;
 		}
-
+		saveError = false;
 		const reactionTime = (Date.now() - startTime) / 1000;
-
 		try {
 			const response = await fetch(
 				`${API_BASE_URL}/api/training/tasks/visual-search/submit/${$user.id}`,
@@ -161,62 +193,20 @@
 					credentials: 'include',
 					body: JSON.stringify({
 						trial_data: trialData,
-						user_response: {
-							target_found: userAnswer,
-							reaction_time: reactionTime
-						},
-						task_id: taskId  // Include task_id to track which specific task in session
+						user_response: { target_found: userAnswer, reaction_time: reactionTime },
+						task_id: taskId
 					})
 				}
 			);
-
 			if (!response.ok) throw new Error('Failed to submit results');
-
 			const data = await response.json();
 			results = data;
 			earnedBadges = data.new_badges || [];
 			gamePhase = 'results';
-		} catch (error) {
-			console.error('Error submitting results:', error);
-			alert('Failed to submit results. Please try again.');
+		} catch (_) {
+			saveError = true;
+			gamePhase = 'results';
 		}
-	}
-
-	function getColorValue(colorName) {
-		const colorMap = {
-			red: '#DC2626',
-			blue: '#2563EB',
-			green: '#16A34A',
-			yellow: '#EAB308',
-			purple: '#9333EA',
-			orange: '#EA580C'
-		};
-		return colorMap[colorName] || '#6B7280';
-	}
-
-	function getShapePath(shape) {
-		// SVG paths for different shapes (centered at 50,50 in 100x100 viewBox, standardized size)
-		const shapes = {
-			circle: 'M 50 50 m -25 0 a 25 25 0 1 0 50 0 a 25 25 0 1 0 -50 0',
-			square: 'M 25 25 L 75 25 L 75 75 L 25 75 Z',
-			triangle: 'M 50 25 L 75 75 L 25 75 Z',
-			diamond: 'M 50 25 L 75 50 L 50 75 L 25 50 Z'
-		};
-		return shapes[shape] || shapes.circle;
-	}
-
-	function getShapeDisplay(shape) {
-		const shapeNames = {
-			circle: 'Circle',
-			square: 'Square',
-			triangle: 'Triangle',
-			diamond: 'Diamond'
-		};
-		return shapeNames[shape] || shape;
-	}
-
-	function getColorDisplay(color) {
-		return color.charAt(0).toUpperCase() + color.slice(1);
 	}
 
 	function retryTask() {
@@ -226,161 +216,68 @@
 		userAnswer = null;
 		loadTrial();
 	}
-
-	function goToDashboard() {
-		goto('/training');
-	}
 </script>
 
-<div class="container">
-	<div class="header">
-		<div class="task-badge">
-			<span class="domain-label">Visual Scanning</span>
-			<span class="difficulty-badge">Level {difficulty}</span>
-		</div>
-		<h1>Visual Search Task</h1>
-		<p class="subtitle">
-			{#if searchType === 'feature'}
-				<span class="search-type feature">Feature Search</span> — Target differs by one attribute
-			{:else}
-				<span class="search-type conjunction">Conjunction Search</span> — Target requires multiple attributes
-			{/if}
-		</p>
-	</div>
+<div class="vs-page" data-localize-skip>
+	<div class="vs-wrapper">
 
-	{#if gamePhase === 'loading'}
-		<div class="loading">
-			<p>Loading task...</p>
-		</div>
-	{/if}
+		{#if gamePhase === 'loading'}
+			<LoadingSkeleton />
 
-	{#if gamePhase === 'intro'}
-		<div class="intro">
-			<div class="info-card">
-				<div class="intro-header">
-					<h2>Task Instructions</h2>
-					<div class="clinical-note">
-						<span class="icon">🔬</span>
-						<span>Based on Treisman & Gelade (1980)</span>
+		{:else if gamePhase === 'intro'}
+
+			<!-- Header Card -->
+			<div class="header-card">
+				<div class="header-content">
+					<div class="header-text">
+						<h1 class="task-title">{lt('Visual Search', 'ভিজ্যুয়াল সার্চ')}</h1>
+						<p class="task-domain">{lt('Visual Scanning · Selective Attention', 'ভিজ্যুয়াল স্ক্যানিং · নির্বাচনী মনোযোগ')}</p>
 					</div>
+					<DifficultyBadge difficulty={difficulty || 1} domain="Visual Scanning" />
 				</div>
-				
-				<div class="target-section">
-					<h3>Your Target:</h3>
-					<div class="target-display">
-						<svg width="100" height="100" viewBox="0 0 100 100" class="target-svg">
-							<path
-								d={getShapePath(targetItem.shape)}
-								fill={getColorValue(targetItem.color)}
-								stroke="#1F2937"
-								stroke-width="3"
-							/>
-						</svg>
-						<div class="target-info">
-							<p class="target-name">{getColorDisplay(targetItem.color)} {getShapeDisplay(targetItem.shape)}</p>
-							<p class="target-hint">Find this exact item on the screen</p>
-						</div>
-					</div>
-				</div>
-
-				<div class="instructions-section">
-					<h3>How to Complete:</h3>
-					<ol class="instruction-steps">
-						<li>
-							<span class="step-number">1</span>
-							<div class="step-content">
-								<strong>Search for the target</strong>
-								<p>Look through all items displayed on screen</p>
-							</div>
-						</li>
-						<li>
-							<span class="step-number">2</span>
-							<div class="step-content">
-								<strong>Respond quickly and accurately</strong>
-								<p>Click "Target Present" if you see it, or "Target Absent" if you don't</p>
-							</div>
-						</li>
-						<li>
-							<span class="step-number">3</span>
-							<div class="step-content">
-								<strong>Work against the clock</strong>
-								<p>Complete within {timeLimit} seconds for best results</p>
-							</div>
-						</li>
-					</ol>
-				</div>
-
-				<div class="task-details">
-					<div class="detail-item">
-						<span class="detail-label">Search Type</span>
-						<span class="detail-value">{searchType === 'feature' ? 'Feature' : 'Conjunction'}</span>
-					</div>
-					<div class="detail-item">
-						<span class="detail-label">Items</span>
-						<span class="detail-value">{setSize}</span>
-					</div>
-					<div class="detail-item">
-						<span class="detail-label">Time Limit</span>
-						<span class="detail-value">{timeLimit}s</span>
-					</div>
-					<div class="detail-item">
-						<span class="detail-label">Difficulty</span>
-						<span class="detail-value">{difficulty}/10</span>
-					</div>
-				</div>
-
-				{#if searchType === 'feature'}
-					<div class="clinical-hint feature">
-						<div class="hint-icon">💡</div>
-						<div class="hint-content">
-							<strong>Feature Search:</strong>
-							<p>The target differs by a single attribute (color OR shape). It should "pop out" from the background using parallel visual processing.</p>
-						</div>
-					</div>
-				{:else}
-					<div class="clinical-hint conjunction">
-						<div class="hint-icon">🎯</div>
-						<div class="hint-content">
-							<strong>Conjunction Search:</strong>
-							<p>The target requires BOTH color AND shape to match. This demands serial visual search and sustained attention.</p>
-						</div>
-					</div>
-				{/if}
-
-				<TaskPracticeActions
-					locale={$locale}
-					align="center"
-					startLabel={lt('Begin Task', 'কাজ শুরু করুন')}
-					statusMessage={practiceStatusMessage}
-					on:start={() => startGame(TASK_PLAY_MODE.RECORDED)}
-					on:practice={() => startGame(TASK_PLAY_MODE.PRACTICE)}
-				/>
 			</div>
-		</div>
-	{/if}
 
-	{#if gamePhase === 'playing'}
-		<div class="playing">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
 				<PracticeModeBanner locale={$locale} />
 			{/if}
 
-			<div class="game-controls">
-				<div class="control-panel">
-					<div class="timer-display">
-						<div class="timer-icon">⏱️</div>
-						<div class="timer-content">
-							<span class="timer-label">Time Remaining</span>
-							<span class="timer-value" class:warning={timeRemaining < 10} class:critical={timeRemaining < 5}>
-								{Math.ceil(timeRemaining)}s
-							</span>
-						</div>
-					</div>
+			{#if loadError}
+				<div class="error-card">
+					<p>{lt('Failed to load task. Please try again.', 'টাস্ক লোড করতে ব্যর্থ। আবার চেষ্টা করুন।')}</p>
+					<button class="start-button" on:click={loadTrial}>{lt('Retry', 'আবার চেষ্টা করুন')}</button>
+				</div>
+			{:else if targetItem}
 
-					<div class="target-reference">
-						<span class="reference-label">Looking for:</span>
-						<div class="reference-item">
-							<svg width="45" height="45" viewBox="0 0 100 100">
+				<!-- Task Concept -->
+				<div class="card task-concept">
+					<div class="concept-badge">
+						<span class="badge-label">{lt('Visual Search', 'ভিজ্যুয়াল সার্চ')}</span>
+						<span>{lt('Treisman & Gelade, 1980', 'Treisman & Gelade, 1980')}</span>
+					</div>
+					{#if searchType === 'feature'}
+						<p class="concept-desc">
+							{lt(
+								'Feature Search: the target differs from distractors by a single attribute — color or shape. This triggers parallel visual processing, so the target "pops out" regardless of how many items are displayed.',
+								'ফিচার সার্চ: লক্ষ্যটি একটি মাত্র বৈশিষ্ট্যে (রঙ বা আকার) আলাদা। এটি সমান্তরাল ভিজ্যুয়াল প্রক্রিয়াকরণ চালু করে, তাই লক্ষ্যটি আইটেমের সংখ্যা নির্বিশেষে "পপ আউট" করে।'
+							)}
+						</p>
+					{:else}
+						<p class="concept-desc">
+							{lt(
+								'Conjunction Search: the target requires matching BOTH color and shape simultaneously. This demands serial visual attention — you must examine each item individually, making it sensitive to MS-related attention deficits.',
+								'কনজাংশন সার্চ: লক্ষ্যটি রঙ এবং আকার উভয়ই মেলাতে হবে। এটি সিরিয়াল ভিজ্যুয়াল মনোযোগ দাবি করে — MS-সংক্রান্ত মনোযোগের ঘাটতিতে সংবেদনশীল।'
+							)}
+						</p>
+					{/if}
+				</div>
+
+				<!-- Target Display -->
+				<div class="card">
+					<h2 class="section-title">{lt('Your Target', 'আপনার লক্ষ্য')}</h2>
+					<p class="target-subtext">{lt('Find and confirm the presence or absence of this exact item:', 'এই নির্দিষ্ট আইটেমটি আছে কি নেই নিশ্চিত করুন:')}</p>
+					<div class="target-showcase">
+						<div class="target-svg-wrap">
+							<svg width="100" height="100" viewBox="0 0 100 100">
 								<path
 									d={getShapePath(targetItem.shape)}
 									fill={getColorValue(targetItem.color)}
@@ -388,15 +285,148 @@
 									stroke-width="3"
 								/>
 							</svg>
-							<span class="reference-name">{getColorDisplay(targetItem.color)} {getShapeDisplay(targetItem.shape)}</span>
+						</div>
+						<div class="target-label-group">
+							<div class="target-name">{getColorDisplay(targetItem.color)} {getShapeDisplay(targetItem.shape)}</div>
+							<div class="target-attrs">
+								<span class="attr-chip color-chip" style="background: {getColorValue(targetItem.color)}20; border-color: {getColorValue(targetItem.color)};">
+									{getColorDisplay(targetItem.color)}
+								</span>
+								<span class="attr-chip shape-chip">
+									{getShapeDisplay(targetItem.shape)}
+								</span>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
 
-			<div class="search-arena">
-				<div class="search-display">
-					{#each items as item, i}
+				<!-- Rules Card -->
+				<div class="card">
+					<h2 class="section-title">{lt('Rules', 'নিয়মাবলী')}</h2>
+					<div class="rules-list">
+						<div class="rule-item">
+							<div class="rule-num">1</div>
+							<div class="rule-text">{lt('Study the target shape above carefully before starting', 'শুরু করার আগে উপরের লক্ষ্যটি মনোযোগ দিয়ে দেখুন')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">2</div>
+							<div class="rule-text">{lt('Search the display and decide if the target is present or absent', 'ডিসপ্লে স্ক্যান করুন এবং সিদ্ধান্ত নিন লক্ষ্যটি আছে কি নেই')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">3</div>
+							<div class="rule-text">{lt('Respond as quickly and accurately as possible — both speed and accuracy count', 'যত দ্রুত ও নির্ভুলভাবে সম্ভব উত্তর দিন — গতি এবং নির্ভুলতা উভয়ই গুরুত্বপূর্ণ')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">4</div>
+							<div class="rule-text">{lt(`You have ${timeLimit} seconds — if time runs out, it counts as absent`, `আপনার ${timeLimit} সেকেন্ড আছে — সময় শেষ হলে অনুপস্থিত হিসেবে গণনা হবে`)}</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Info Grid -->
+				<div class="info-grid">
+					<!-- Task Details -->
+					<div class="card">
+						<h3 class="card-title">{lt('Task Details', 'টাস্কের বিবরণ')}</h3>
+						<div class="details-list">
+							<div class="detail-row">
+								<span>{lt('Search Type', 'সার্চের ধরন')}</span>
+								<strong class="{searchType === 'feature' ? 'type-feature' : 'type-conjunction'}">{searchType === 'feature' ? lt('Feature', 'ফিচার') : lt('Conjunction', 'কনজাংশন')}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Display Items', 'প্রদর্শিত আইটেম')}</span>
+								<strong>{setSize}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Time Limit', 'সময়সীমা')}</span>
+								<strong>{timeLimit}s</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Difficulty', 'কঠিনতা')}</span>
+								<strong>{lt(`Level ${difficulty} / 10`, `স্তর ${difficulty} / ১০`)}</strong>
+							</div>
+						</div>
+					</div>
+					<!-- Strategy Hint -->
+					<div class="card">
+						<h3 class="card-title">{lt('Search Strategy', 'সার্চ কৌশল')}</h3>
+						{#if searchType === 'feature'}
+							<div class="strategy-box strategy-feature">
+								<div class="strategy-label">{lt('Feature Search', 'ফিচার সার্চ')}</div>
+								<p class="strategy-text">{lt('Target differs by ONE attribute. It should "pop out" immediately — no need to scan item by item.', 'লক্ষ্য একটি বৈশিষ্ট্যে আলাদা। এটি অবিলম্বে "পপ আউট" করবে।')}</p>
+								<div class="strategy-benchmark">{lt('Benchmark: < 10 ms per item (parallel)', 'বেঞ্চমার্ক: আইটেম প্রতি < ১০ ms')}</div>
+							</div>
+						{:else}
+							<div class="strategy-box strategy-conjunction">
+								<div class="strategy-label">{lt('Conjunction Search', 'কনজাংশন সার্চ')}</div>
+								<p class="strategy-text">{lt('Target matches on BOTH attributes. Requires serial inspection — scan carefully, row by row.', 'লক্ষ্য উভয় বৈশিষ্ট্য মেলায়। সারি সারি যত্নসহকারে স্ক্যান করুন।')}</p>
+								<div class="strategy-benchmark">{lt('Benchmark: < 30 ms per item (serial)', 'বেঞ্চমার্ক: আইটেম প্রতি < ৩০ ms')}</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Clinical Basis -->
+				<div class="clinical-info">
+					<div class="clinical-header">
+						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
+						<h3>{lt('Validated MS Visual Attention Assessment', 'MS-এর জন্য যাচাইকৃত ভিজ্যুয়াল মনোযোগ মূল্যায়ন')}</h3>
+					</div>
+					<p>
+						{lt(
+							'The Visual Search paradigm (Treisman & Gelade, 1980) distinguishes automatic pre-attentive processing (feature search) from effortful serial attention (conjunction search). In MS, conjunction search is disproportionately impaired due to white matter lesion load reducing attentional capacity and slowing interhemispheric integration, making it a sensitive index of disease burden on visual cognition.',
+							'ভিজ্যুয়াল সার্চ প্যারাডাইম (Treisman & Gelade, 1980) স্বয়ংক্রিয় প্রি-অ্যাটেন্টিভ প্রক্রিয়াকরণ এবং প্রচেষ্টাপূর্ণ সিরিয়াল মনোযোগ পার্থক্য করে। MS-এ কনজাংশন সার্চ অসামঞ্জস্যভাবে ক্ষতিগ্রস্ত হয়।'
+						)}
+					</p>
+				</div>
+
+				<TaskPracticeActions
+					locale={$locale}
+					startLabel={lt('Begin Task', 'টাস্ক শুরু করুন')}
+					statusMessage={practiceStatusMessage}
+					on:start={() => startGame(TASK_PLAY_MODE.RECORDED)}
+					on:practice={() => startGame(TASK_PLAY_MODE.PRACTICE)}
+				/>
+
+			{:else}
+				<LoadingSkeleton />
+			{/if}
+
+		{:else if gamePhase === 'playing'}
+
+			<div class="game-card">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
+				<!-- Game Status Bar -->
+				<div class="game-status-bar">
+					<div class="target-reference">
+						<span class="ref-label">{lt('Looking for:', 'খুঁজছি:')}</span>
+						<div class="ref-item">
+							<svg width="40" height="40" viewBox="0 0 100 100">
+								<path
+									d={getShapePath(targetItem.shape)}
+									fill={getColorValue(targetItem.color)}
+									stroke="#1F2937"
+									stroke-width="3"
+								/>
+							</svg>
+							<span class="ref-name">{getColorDisplay(targetItem.color)} {getShapeDisplay(targetItem.shape)}</span>
+						</div>
+						<div class="search-type-tag {searchType === 'feature' ? 'tag-feature' : 'tag-conjunction'}">
+							{searchType === 'feature' ? lt('Feature', 'ফিচার') : lt('Conjunction', 'কনজাংশন')}
+						</div>
+					</div>
+					<div class="timer-block">
+						<div class="timer-value {timerClass()}">{Math.ceil(timeRemaining)}</div>
+						<div class="timer-label">{lt('seconds', 'সেকেন্ড')}</div>
+					</div>
+				</div>
+
+				<!-- Search Arena -->
+				<div class="search-arena">
+					{#each items as item}
 						<div
 							class="search-item"
 							style="left: {item.position.x * 90 + 5}%; top: {item.position.y * 90 + 5}%;"
@@ -412,905 +442,680 @@
 						</div>
 					{/each}
 				</div>
-			</div>
 
-			<div class="response-section">
-				<p class="response-prompt">Is the target present on the screen?</p>
-				<div class="response-buttons">
-					<button class="btn-response btn-present" on:click={() => handleResponse(true)}>
-						<span class="btn-icon">✓</span>
-						<span class="btn-text">Target Present</span>
-					</button>
-					<button class="btn-response btn-absent" on:click={() => handleResponse(false)}>
-						<span class="btn-icon">✗</span>
-						<span class="btn-text">Target Absent</span>
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	{#if gamePhase === 'results'}
-		<div class="results">
-			<h2>Results</h2>
-
-			<div class="result-summary">
-				<div class="result-item">
-					<span class="label">Correct:</span>
-					<span class="value" class:correct={results.correct} class:incorrect={!results.correct}>
-						{results.correct ? '✓ YES' : '✗ NO'}
-					</span>
-				</div>
-
-				<div class="result-item">
-					<span class="label">Score:</span>
-					<span class="value">{(results.score * 100).toFixed(0)}%</span>
-				</div>
-
-				<div class="result-item">
-					<span class="label">Reaction Time:</span>
-					<span class="value">{results.reaction_time.toFixed(2)}s</span>
-				</div>
-
-				<div class="result-item">
-					<span class="label">Response Type:</span>
-					<span class="value response-type">
-						{results.response_type.replace('_', ' ').toUpperCase()}
-					</span>
-				</div>
-			</div>
-
-			<div class="performance-details">
-				<h3>Performance Analysis</h3>
-				
-				<div class="detail-grid">
-					<div class="detail-card">
-						<h4>Search Efficiency</h4>
-						<p class="metric">{results.search_efficiency.toFixed(3)}s per item</p>
-						<p class="description">Time spent examining each item</p>
-					</div>
-
-					<div class="detail-card">
-						<h4>Search Slope</h4>
-						<p class="metric">{results.search_slope_ms.toFixed(1)} ms/item</p>
-						<p class="description">
-							{#if searchType === 'feature'}
-								Feature search: &lt;10 ms = excellent (parallel)
-							{:else}
-								Conjunction search: &lt;30 ms = excellent (serial)
-							{/if}
-						</p>
-					</div>
-
-					<div class="detail-card">
-						<h4>Performance Rating</h4>
-						<p class="metric performance-{results.performance}">
-							{results.performance.replace('_', ' ').toUpperCase()}
-						</p>
-						<p class="description">Overall performance classification</p>
+				<!-- Response Buttons -->
+				<div class="response-section">
+					<p class="response-prompt">{lt('Is the target present in the display?', 'ডিসপ্লেতে লক্ষ্যটি আছে কি?')}</p>
+					<div class="response-buttons">
+						<button class="resp-btn resp-present" on:click={() => handleResponse(true)}>
+							<span class="resp-icon resp-check">✓</span>
+							<span>{lt('Target Present', 'লক্ষ্য আছে')}</span>
+						</button>
+						<button class="resp-btn resp-absent" on:click={() => handleResponse(false)}>
+							<span class="resp-icon resp-cross">✕</span>
+							<span>{lt('Target Absent', 'লক্ষ্য নেই')}</span>
+						</button>
 					</div>
 				</div>
-
-				<div class="trial-info">
-					<p><strong>Search Type:</strong> {results.search_type === 'feature' ? 'Feature Search' : 'Conjunction Search'}</p>
-					<p><strong>Set Size:</strong> {results.set_size} items</p>
-					<p><strong>Target Was:</strong> {results.target_present ? 'Present' : 'Absent'}</p>
-					<p><strong>You Said:</strong> {results.user_answer ? 'Present' : 'Absent'}</p>
-				</div>
 			</div>
 
-			<div class="difficulty-feedback">
-				<p>
-					<strong>Difficulty Adjustment:</strong>
-					{#if results.new_difficulty > results.old_difficulty}
-						⬆️ Increased from {results.old_difficulty} to {results.new_difficulty}
-					{:else if results.new_difficulty < results.old_difficulty}
-						⬇️ Decreased from {results.old_difficulty} to {results.new_difficulty}
-					{:else}
-						➡️ Maintained at {results.new_difficulty}
-					{/if}
+		{:else if gamePhase === 'results'}
+
+			<!-- Results Header -->
+			<div class="results-header {results && results.correct ? 'header-correct' : 'header-incorrect'}">
+				<div class="score-pill">
+					<span class="score-label">{lt('Score', 'স্কোর')}</span>
+					<span class="score-value">{results ? (results.score * 100).toFixed(0) : '—'}</span>
+					<span class="score-max">%</span>
+				</div>
+				<p class="results-subtitle">
+					{lt('Visual Search Complete', 'ভিজ্যুয়াল সার্চ সম্পন্ন')} ·
+					{results ? (results.correct ? lt('Correct', 'সঠিক') : lt('Incorrect', 'ভুল')) : ''}
 				</p>
-				<p class="adaptation-reason">{results.adaptation_reason}</p>
 			</div>
 
-			{#if earnedBadges.length > 0}
-				<div class="badges-section">
-					<h3>🏆 New Badges Earned!</h3>
-					<BadgeNotification badges={earnedBadges} />
+			{#if saveError}
+				<div class="warn-card">
+					{lt('Error saving results. Your progress may not have been recorded.', 'ফলাফল সংরক্ষণে ত্রুটি। অগ্রগতি রেকর্ড নাও হতে পারে।')}
 				</div>
 			{/if}
 
+			{#if results}
+				<!-- Key Metrics -->
+				<div class="metrics-grid">
+					<div class="metric-card {results.correct ? 'metric-green' : 'metric-red'}">
+						<div class="metric-value">{results.correct ? lt('Yes', 'হ্যাঁ') : lt('No', 'না')}</div>
+						<div class="metric-label">{lt('Correct', 'সঠিক')}</div>
+					</div>
+					<div class="metric-card metric-blue">
+						<div class="metric-value">{(results.score * 100).toFixed(0)}%</div>
+						<div class="metric-label">{lt('Score', 'স্কোর')}</div>
+					</div>
+					<div class="metric-card metric-amber">
+						<div class="metric-value">{results.reaction_time.toFixed(2)}s</div>
+						<div class="metric-label">{lt('Reaction Time', 'প্রতিক্রিয়া সময়')}</div>
+					</div>
+					<div class="metric-card metric-slate">
+						<div class="metric-value response-type-text">{responseTypeLabel(results.response_type)}</div>
+						<div class="metric-label">{lt('Response Type', 'প্রতিক্রিয়ার ধরন')}</div>
+					</div>
+				</div>
+
+				<!-- Performance Analysis -->
+				<div class="card">
+					<h3 class="card-title">{lt('Performance Analysis', 'পারফরম্যান্স বিশ্লেষণ')}</h3>
+					<div class="analysis-grid">
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Search Efficiency', 'সার্চ দক্ষতা')}</div>
+							<div class="analysis-value">{results.search_efficiency.toFixed(3)}s/item</div>
+							<div class="analysis-desc">{lt('Time spent per display item', 'প্রতিটি আইটেমে ব্যয়িত সময়')}</div>
+						</div>
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Search Slope', 'সার্চ স্লোপ')}</div>
+							<div class="analysis-value">{results.search_slope_ms.toFixed(1)} ms/item</div>
+							<div class="analysis-desc">
+								{results.search_type === 'feature'
+									? lt('Feature target: < 10 ms = excellent (parallel)', 'ফিচার: < ১০ ms = অসাধারণ')
+									: lt('Conjunction target: < 30 ms = excellent (serial)', 'কনজাংশন: < ৩০ ms = অসাধারণ')}
+								</div>
+						</div>
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Rating', 'রেটিং')}</div>
+							<div class="analysis-value perf-{results.performance}">{performanceLabel(results.performance)}</div>
+							<div class="analysis-desc">{lt('Overall performance classification', 'সামগ্রিক পারফরম্যান্স শ্রেণীবিভাগ')}</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Trial Summary -->
+				<div class="card">
+					<h3 class="card-title">{lt('Trial Summary', 'ট্রায়াল সারাংশ')}</h3>
+					<div class="details-list">
+						<div class="detail-row">
+							<span>{lt('Search Type', 'সার্চের ধরন')}</span>
+							<strong>{results.search_type === 'feature' ? lt('Feature Search', 'ফিচার সার্চ') : lt('Conjunction Search', 'কনজাংশন সার্চ')}</strong>
+						</div>
+						<div class="detail-row">
+							<span>{lt('Set Size', 'সেট সাইজ')}</span>
+							<strong>{results.set_size} {lt('items', 'আইটেম')}</strong>
+						</div>
+						<div class="detail-row">
+							<span>{lt('Target Was', 'লক্ষ্য ছিল')}</span>
+							<strong>{results.target_present ? lt('Present', 'উপস্থিত') : lt('Absent', 'অনুপস্থিত')}</strong>
+						</div>
+						<div class="detail-row">
+							<span>{lt('Your Response', 'আপনার উত্তর')}</span>
+							<strong>{results.user_answer ? lt('Present', 'উপস্থিত') : lt('Absent', 'অনুপস্থিত')}</strong>
+						</div>
+					</div>
+				</div>
+
+				<!-- Difficulty Adjustment -->
+				<div class="adaptation-card">
+					<div class="adaptation-label">
+						{#if results.new_difficulty > results.old_difficulty}
+							{lt('Difficulty Increased', 'কঠিনতা বৃদ্ধি')} — {results.old_difficulty} → {results.new_difficulty}
+						{:else if results.new_difficulty < results.old_difficulty}
+							{lt('Difficulty Decreased', 'কঠিনতা হ্রাস')} — {results.old_difficulty} → {results.new_difficulty}
+						{:else}
+							{lt('Difficulty Maintained', 'কঠিনতা বজায়')} — {lt(`Level ${results.new_difficulty}`, `স্তর ${results.new_difficulty}`)}
+						{/if}
+					</div>
+					<p class="adaptation-text">{results.adaptation_reason}</p>
+				</div>
+			{/if}
+
+			<!-- Action Buttons -->
 			<div class="action-buttons">
-				<button class="btn-secondary" on:click={retryTask}>Try Again</button>
-				<button class="btn-primary" on:click={goToDashboard}>Back to Dashboard</button>
+				<button class="start-button" on:click={() => goto('/dashboard')}>
+					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরুন')}
+				</button>
+				<button class="btn-secondary" on:click={retryTask}>
+					{lt('Try Again', 'আবার চেষ্টা করুন')}
+				</button>
 			</div>
-		</div>
-	{/if}
+
+		{/if}
+	</div>
 </div>
 
+{#if earnedBadges.length > 0}
+	<BadgeNotification badges={earnedBadges} />
+{/if}
+
 <style>
-	* {
-		box-sizing: border-box;
-	}
-
-	.container {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem;
+	/* ── Page Layout ─────────────────────────────────── */
+	.vs-page {
 		min-height: 100vh;
-		background: linear-gradient(135deg, #f5f7fa 0%, #e3e9f0 100%);
+		background: #C8DEFA;
+		padding: 1.5rem;
 	}
 
-	/* Header Styles */
-	.header {
-		text-align: center;
-		margin-bottom: 3rem;
+	.vs-wrapper {
+		max-width: 1100px;
+		margin: 0 auto;
 	}
 
-	.task-badge {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 1rem;
+	/* ── Shared Card ──────────────────────────────────── */
+	.card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 		margin-bottom: 1rem;
 	}
 
-	.domain-label {
-		background: #3B82F6;
-		color: white;
-		padding: 0.4rem 1rem;
-		border-radius: 20px;
-		font-size: 0.85rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.difficulty-badge {
-		background: #10B981;
-		color: white;
-		padding: 0.4rem 1rem;
-		border-radius: 20px;
-		font-size: 0.85rem;
-		font-weight: 600;
-	}
-
-	.header h1 {
-		font-size: 2.75rem;
-		color: #1F2937;
-		margin-bottom: 0.75rem;
-		font-weight: 700;
-		letter-spacing: -0.5px;
-	}
-
-	.subtitle {
-		color: #6B7280;
-		font-size: 1.15rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-	}
-
-	.search-type {
-		font-weight: 600;
-		padding: 0.25rem 0.75rem;
-		border-radius: 6px;
-	}
-
-	.search-type.feature {
-		background: #DBEAFE;
-		color: #1E40AF;
-	}
-
-	.search-type.conjunction {
-		background: #FEF3C7;
-		color: #92400E;
-	}
-
-	.loading {
-		text-align: center;
-		padding: 4rem;
-		font-size: 1.2rem;
-		color: #6B7280;
+	/* ── Header Card ─────────────────────────────────── */
+	.header-card {
 		background: white;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-	}
-
-	/* Intro Phase */
-	.intro {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		min-height: 60vh;
-	}
-
-	.info-card {
-		background: white;
-		padding: 3rem;
 		border-radius: 16px;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-		max-width: 700px;
-		width: 100%;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
 	}
 
-	.intro-header {
-		text-align: center;
-		margin-bottom: 2rem;
-		border-bottom: 2px solid #E5E7EB;
-		padding-bottom: 1.5rem;
+	.header-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 1rem;
 	}
 
-	.intro-header h2 {
-		color: #1F2937;
-		font-size: 2rem;
-		margin-bottom: 0.75rem;
+	.task-title {
+		font-size: 1.75rem;
 		font-weight: 700;
+		color: #1a1a2e;
+		margin: 0 0 0.25rem 0;
 	}
 
-	.clinical-note {
+	.task-domain {
+		font-size: 0.875rem;
+		color: #1e40af;
+		font-weight: 500;
+		margin: 0;
+	}
+
+	/* ── Error / Warn ─────────────────────────────────── */
+	.error-card {
+		background: #fee2e2;
+		border: 2px solid #fca5a5;
+		border-radius: 16px;
+		padding: 2rem;
+		text-align: center;
+		color: #991b1b;
+		margin-bottom: 1rem;
+	}
+
+	.warn-card {
+		background: #fff7ed;
+		border: 2px solid #fed7aa;
+		border-radius: 12px;
+		padding: 1rem 1.25rem;
+		color: #92400e;
+		font-size: 0.875rem;
+		margin-bottom: 1rem;
+	}
+
+	/* ── Task Concept ─────────────────────────────────── */
+	.task-concept { margin-bottom: 1rem; }
+
+	.concept-badge {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		background: #F3F4F6;
-		padding: 0.5rem 1rem;
-		border-radius: 20px;
-		font-size: 0.85rem;
-		color: #4B5563;
-	}
-
-	.clinical-note .icon {
-		font-size: 1rem;
-	}
-
-	.target-section {
-		margin: 2rem 0;
-	}
-
-	.target-section h3 {
-		color: #374151;
-		font-size: 1.1rem;
-		margin-bottom: 1rem;
-		text-align: center;
+		background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+		color: white;
+		padding: 0.4rem 0.9rem;
+		border-radius: 2rem;
+		font-size: 0.813rem;
 		font-weight: 600;
+		margin-bottom: 1rem;
 	}
 
-	.target-display {
-		background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-		padding: 2rem;
-		border-radius: 12px;
-		border: 2px solid #E5E7EB;
+	.badge-label { font-weight: 700; letter-spacing: 0.04em; }
+	.concept-desc { color: #4b5563; font-size: 0.938rem; line-height: 1.6; margin: 0; }
+
+	/* ── Section Title ────────────────────────────────── */
+	.section-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1a1a2e;
+		margin: 0 0 0.625rem 0;
+	}
+
+	.target-subtext { color: #6b7280; font-size: 0.875rem; margin: 0 0 1rem 0; }
+
+	/* ── Target Showcase ──────────────────────────────── */
+	.target-showcase {
 		display: flex;
-		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
+		gap: 1.5rem;
+		background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+		border: 2px solid #bfdbfe;
+		border-radius: 12px;
+		padding: 1.5rem;
 	}
 
-	.target-svg {
-		filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-	}
-
-	.target-info {
-		text-align: center;
+	.target-svg-wrap {
+		filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+		flex-shrink: 0;
 	}
 
 	.target-name {
 		font-size: 1.4rem;
 		font-weight: 700;
-		color: #1F2937;
-		margin: 0;
+		color: #1e3a8a;
+		margin-bottom: 0.625rem;
 	}
 
-	.target-hint {
-		font-size: 0.95rem;
-		color: #6B7280;
-		margin: 0.25rem 0 0 0;
-	}
+	.target-attrs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-	.instructions-section {
-		margin: 2rem 0;
-		text-align: left;
-	}
-
-	.instructions-section h3 {
-		color: #374151;
-		font-size: 1.1rem;
-		margin-bottom: 1rem;
+	.attr-chip {
+		padding: 0.25rem 0.75rem;
+		border-radius: 1rem;
+		font-size: 0.813rem;
 		font-weight: 600;
+		border: 2px solid transparent;
 	}
 
-	.instruction-steps {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
+	.shape-chip { background: #f0f9ff; border-color: #7dd3fc; color: #0c4a6e; }
 
-	.instruction-steps li {
+	/* ── Rules List ───────────────────────────────────── */
+	.rules-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+	.rule-item {
 		display: flex;
-		gap: 1rem;
-		margin-bottom: 1.25rem;
 		align-items: flex-start;
+		gap: 0.875rem;
+		background: #eff6ff;
+		border-radius: 10px;
+		padding: 0.875rem 1rem;
 	}
 
-	.step-number {
-		background: #3B82F6;
+	.rule-num {
+		min-width: 2rem;
+		height: 2rem;
+		background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
 		color: white;
-		width: 32px;
-		height: 32px;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		font-size: 0.875rem;
 		font-weight: 700;
 		flex-shrink: 0;
 	}
 
-	.step-content {
-		flex: 1;
-	}
+	.rule-text { font-size: 0.9rem; color: #374151; line-height: 1.5; }
 
-	.step-content strong {
-		color: #1F2937;
-		display: block;
-		margin-bottom: 0.25rem;
-		font-size: 1.05rem;
-	}
-
-	.step-content p {
-		color: #6B7280;
-		margin: 0;
-		font-size: 0.95rem;
-		line-height: 1.5;
-	}
-
-	.task-details {
+	/* ── Info Grid ────────────────────────────────────── */
+	.info-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
-		margin: 2rem 0;
-		padding: 1.5rem;
-		background: #F9FAFB;
-		border-radius: 12px;
-		border: 1px solid #E5E7EB;
+		margin-bottom: 1rem;
 	}
 
-	.detail-item {
-		text-align: center;
-	}
+	.card-title { font-size: 1rem; font-weight: 600; color: #1a1a2e; margin: 0 0 1rem 0; }
 
-	.detail-label {
-		display: block;
-		font-size: 0.8rem;
-		color: #6B7280;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
-	}
+	/* ── Details List ─────────────────────────────────── */
+	.details-list { display: flex; flex-direction: column; gap: 0.625rem; }
 
-	.detail-value {
-		display: block;
-		font-size: 1.3rem;
-		color: #1F2937;
-		font-weight: 700;
-	}
-
-	.clinical-hint {
-		background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
-		border-left: 4px solid #3B82F6;
-		padding: 1.25rem;
-		border-radius: 8px;
-		margin: 1.5rem 0;
-		display: flex;
-		gap: 1rem;
-		align-items: flex-start;
-	}
-
-	.clinical-hint.conjunction {
-		background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-		border-left-color: #F59E0B;
-	}
-
-	.hint-icon {
-		font-size: 1.5rem;
-		flex-shrink: 0;
-	}
-
-	.hint-content {
-		flex: 1;
-	}
-
-	.hint-content strong {
-		display: block;
-		color: #1F2937;
-		margin-bottom: 0.5rem;
-		font-size: 1.05rem;
-	}
-
-	.hint-content p {
-		color: #374151;
-		margin: 0;
-		line-height: 1.6;
-		font-size: 0.95rem;
-	}
-
-	.btn-start {
-		width: 100%;
-		padding: 1.25rem 2rem;
-		font-size: 1.2rem;
-		font-weight: 700;
-		background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-		color: white;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.75rem;
-		margin-top: 2rem;
-	}
-
-	.btn-start:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-	}
-
-	.btn-icon {
-		font-size: 1.2rem;
-	}
-
-	/* Playing Phase */
-	.playing {
-		max-width: 1200px;
-		margin: 0 auto;
-	}
-
-	.game-controls {
-		margin-bottom: 2rem;
-	}
-
-	.control-panel {
-		background: white;
-		padding: 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	.detail-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		flex-wrap: wrap;
-		gap: 1.5rem;
+		font-size: 0.875rem;
+		padding-bottom: 0.625rem;
+		border-bottom: 1px solid #f3f4f6;
 	}
 
-	.timer-display {
+	.detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+	.detail-row span   { color: #6b7280; }
+	.detail-row strong { color: #1a1a2e; text-align: right; max-width: 65%; }
+
+	.type-feature    { color: #1e40af; }
+	.type-conjunction { color: #92400e; }
+
+	/* ── Strategy Box ─────────────────────────────────── */
+	.strategy-box {
+		border-radius: 10px;
+		padding: 1rem 1.125rem;
+	}
+
+	.strategy-feature    { background: #eff6ff; border: 2px solid #bfdbfe; }
+	.strategy-conjunction { background: #fef3c7; border: 2px solid #fcd34d; }
+
+	.strategy-label {
+		font-size: 0.875rem;
+		font-weight: 700;
+		margin-bottom: 0.375rem;
+	}
+
+	.strategy-feature .strategy-label    { color: #1e40af; }
+	.strategy-conjunction .strategy-label { color: #92400e; }
+
+	.strategy-text {
+		font-size: 0.875rem;
+		line-height: 1.5;
+		margin: 0 0 0.625rem 0;
+	}
+
+	.strategy-feature .strategy-text    { color: #1e3a8a; }
+	.strategy-conjunction .strategy-text { color: #78350f; }
+
+	.strategy-benchmark {
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.25rem 0.625rem;
+		border-radius: 0.5rem;
+		display: inline-block;
+	}
+
+	.strategy-feature .strategy-benchmark    { background: #bfdbfe; color: #1e3a8a; }
+	.strategy-conjunction .strategy-benchmark { background: #fde68a; color: #78350f; }
+
+	/* ── Clinical Info ────────────────────────────────── */
+	.clinical-info {
+		background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+		border: 1px solid #bbf7d0;
+		border-radius: 16px;
+		padding: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.clinical-header {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
 	}
 
-	.timer-icon {
-		font-size: 2rem;
-	}
-
-	.timer-content {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.timer-label {
-		font-size: 0.85rem;
-		color: #6B7280;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
+	.clinical-badge {
+		background: #16a34a;
+		color: white;
+		padding: 0.2rem 0.7rem;
+		border-radius: 1rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 	}
 
-	.timer-value {
-		font-size: 2.5rem;
-		font-weight: 800;
-		color: #10B981;
-		line-height: 1;
+	.clinical-header h3 { font-size: 1rem; font-weight: 600; color: #14532d; margin: 0; }
+	.clinical-info p    { font-size: 0.875rem; color: #166534; line-height: 1.6; margin: 0; }
+
+	/* ── Game Card ────────────────────────────────────── */
+	.game-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 	}
 
-	.timer-value.warning {
-		color: #F59E0B;
-		animation: pulse 1s infinite;
-	}
-
-	.timer-value.critical {
-		color: #EF4444;
-		animation: pulse 0.5s infinite;
-	}
-
-	@keyframes pulse {
-		0%, 100% { opacity: 1; transform: scale(1); }
-		50% { opacity: 0.7; transform: scale(1.05); }
+	/* ── Game Status Bar ──────────────────────────────── */
+	.game-status-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1.25rem;
+		flex-wrap: wrap;
 	}
 
 	.target-reference {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		background: #F9FAFB;
-		padding: 1rem 1.5rem;
-		border-radius: 10px;
-		border: 2px solid #E5E7EB;
+		flex-wrap: wrap;
 	}
 
-	.reference-label {
-		font-size: 0.9rem;
-		color: #6B7280;
-		font-weight: 600;
-	}
+	.ref-label { font-size: 0.875rem; font-weight: 700; color: #1e40af; }
 
-	.reference-item {
+	.ref-item {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
+		background: #eff6ff;
+		padding: 0.375rem 0.875rem;
+		border-radius: 0.625rem;
+		border: 2px solid #bfdbfe;
 	}
 
-	.reference-name {
-		font-size: 1rem;
-		color: #1F2937;
-		font-weight: 600;
+	.ref-name { font-size: 0.938rem; font-weight: 600; color: #1e3a8a; }
+
+	.search-type-tag {
+		padding: 0.25rem 0.75rem;
+		border-radius: 1rem;
+		font-size: 0.813rem;
+		font-weight: 700;
 	}
 
+	.tag-feature    { background: #dbeafe; color: #1e40af; }
+	.tag-conjunction { background: #fef3c7; color: #92400e; }
+
+	/* ── Timer ────────────────────────────────────────── */
+	.timer-block { text-align: center; }
+
+	.timer-value {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: #1e40af;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.timer-warning  { color: #d97706; animation: timer-pulse 1s ease-in-out infinite; }
+	.timer-critical { color: #dc2626; animation: timer-pulse 0.5s ease-in-out infinite; }
+	.timer-label    { font-size: 0.75rem; color: #6b7280; margin-top: 0.125rem; }
+
+	/* ── Search Arena ─────────────────────────────────── */
 	.search-arena {
-		margin-bottom: 2rem;
-	}
-
-	.search-display {
 		position: relative;
 		width: 100%;
-		height: 650px;
+		height: 65vh;
+		min-height: 480px;
 		background: white;
-		border: 3px solid #E5E7EB;
+		border: 3px solid #e2e8f0;
 		border-radius: 16px;
-		box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
 		overflow: hidden;
+		margin-bottom: 1.5rem;
+		box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
 	}
 
 	.search-item {
 		position: absolute;
 		transform: translate(-50%, -50%);
-		cursor: pointer;
-		transition: transform 0.15s ease;
 	}
 
-	.search-item:hover svg {
-		filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-	}
-
-	.response-section {
-		text-align: center;
-	}
+	/* ── Response Section ─────────────────────────────── */
+	.response-section { text-align: center; }
 
 	.response-prompt {
-		font-size: 1.3rem;
-		color: #1F2937;
-		margin-bottom: 1.5rem;
+		font-size: 1.125rem;
 		font-weight: 600;
+		color: #1a1a2e;
+		margin: 0 0 1.25rem 0;
 	}
 
 	.response-buttons {
 		display: flex;
 		justify-content: center;
-		gap: 2rem;
+		gap: 1.5rem;
 		flex-wrap: wrap;
 	}
 
-	.btn-response {
-		padding: 1.5rem 3rem;
-		font-size: 1.2rem;
-		font-weight: 700;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	.resp-btn {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		min-width: 220px;
 		justify-content: center;
-	}
-
-	.btn-present {
-		background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-		color: white;
-	}
-
-	.btn-present:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-	}
-
-	.btn-absent {
-		background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-		color: white;
-	}
-
-	.btn-absent:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-	}
-
-	.btn-response .btn-icon {
-		font-size: 1.5rem;
-	}
-
-	/* Results Phase */
-	.results {
-		background: white;
-		padding: 3rem;
-		border-radius: 16px;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-		max-width: 1000px;
-		margin: 0 auto;
-	}
-
-	.results h2 {
-		text-align: center;
-		color: #1F2937;
-		font-size: 2.25rem;
-		margin-bottom: 2.5rem;
-		font-weight: 700;
-	}
-
-	.result-summary {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 1.5rem;
-		margin-bottom: 3rem;
-	}
-
-	.result-item {
-		background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-		padding: 1.75rem;
-		border-radius: 12px;
-		text-align: center;
-		border: 2px solid #E5E7EB;
-		transition: transform 0.3s;
-	}
-
-	.result-item:hover {
-		transform: translateY(-4px);
-	}
-
-	.result-item .label {
-		display: block;
-		font-size: 0.85rem;
-		color: #6B7280;
-		margin-bottom: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		font-weight: 600;
-	}
-
-	.result-item .value {
-		display: block;
-		font-size: 1.75rem;
-		font-weight: 800;
-		color: #1F2937;
-	}
-
-	.value.correct {
-		color: #10B981;
-	}
-
-	.value.incorrect {
-		color: #EF4444;
-	}
-
-	.response-type {
-		font-size: 1.2rem !important;
-		text-transform: capitalize;
-	}
-
-	.performance-details {
-		margin: 3rem 0;
-	}
-
-	.performance-details h3 {
-		color: #1F2937;
-		margin-bottom: 2rem;
-		text-align: center;
-		font-size: 1.75rem;
-		font-weight: 700;
-	}
-
-	.detail-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.detail-card {
-		background: #F9FAFB;
-		padding: 2rem;
-		border-radius: 12px;
-		text-align: center;
-		border: 2px solid #E5E7EB;
-		transition: all 0.3s;
-	}
-
-	.detail-card:hover {
-		border-color: #3B82F6;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-	}
-
-	.detail-card h4 {
-		color: #6B7280;
-		margin-bottom: 1rem;
-		font-size: 0.95rem;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		font-weight: 600;
-	}
-
-	.detail-card .metric {
-		font-size: 2.25rem;
-		font-weight: 800;
-		color: #1F2937;
-		margin: 0.75rem 0;
-	}
-
-	.metric.performance-excellent {
-		color: #10B981;
-	}
-
-	.metric.performance-good {
-		color: #3B82F6;
-	}
-
-	.metric.performance-average {
-		color: #F59E0B;
-	}
-
-	.metric.performance-needs_improvement {
-		color: #EF4444;
-	}
-
-	.detail-card .description {
-		font-size: 0.9rem;
-		color: #6B7280;
-		margin-top: 0.75rem;
-		line-height: 1.5;
-	}
-
-	.trial-info {
-		background: #F3F4F6;
-		padding: 1.75rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-		border: 2px solid #E5E7EB;
-	}
-
-	.trial-info p {
-		margin: 0.75rem 0;
-		color: #374151;
-		font-size: 1rem;
-	}
-
-	.difficulty-feedback {
-		background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-		border-left: 4px solid #10B981;
-		padding: 1.75rem;
-		border-radius: 12px;
-		margin: 2rem 0;
-	}
-
-	.difficulty-feedback p {
-		margin: 0.5rem 0;
-		color: #1F2937;
-		font-size: 1rem;
-	}
-
-	.adaptation-reason {
-		color: #6B7280;
-		font-style: italic;
-	}
-
-	.badges-section {
-		margin: 2.5rem 0;
-		text-align: center;
-	}
-
-	.badges-section h3 {
-		color: #F59E0B;
-		margin-bottom: 1.5rem;
-		font-size: 1.5rem;
-		font-weight: 700;
-	}
-
-	.action-buttons {
-		display: flex;
-		justify-content: center;
-		gap: 1.5rem;
-		margin-top: 2.5rem;
-		flex-wrap: wrap;
-	}
-
-	.btn-primary,
-	.btn-secondary {
+		gap: 0.625rem;
 		padding: 1.25rem 3rem;
-		font-size: 1.1rem;
+		font-size: 1.125rem;
 		font-weight: 700;
 		border: none;
-		border-radius: 12px;
+		border-radius: 14px;
 		cursor: pointer;
-		transition: all 0.3s;
-		min-width: 200px;
+		min-width: 210px;
+		transition: transform 0.15s, box-shadow 0.15s;
 	}
 
-	.btn-primary {
-		background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+	.resp-btn:hover { transform: translateY(-3px); }
+
+	.resp-present {
+		background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
 		color: white;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+		box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
 	}
 
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+	.resp-present:hover { box-shadow: 0 8px 20px rgba(22, 163, 74, 0.45); }
+
+	.resp-absent {
+		background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+		color: white;
+		box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
 	}
+
+	.resp-absent:hover { box-shadow: 0 8px 20px rgba(220, 38, 38, 0.45); }
+
+	.resp-icon { font-size: 1.375rem; font-weight: 700; }
+	.resp-check { color: #bbf7d0; }
+	.resp-cross { color: #fecaca; }
+
+	/* ── Results Header ───────────────────────────────── */
+	.results-header {
+		border-radius: 16px;
+		padding: 1.75rem;
+		text-align: center;
+		margin-bottom: 1rem;
+	}
+
+	.header-correct   { background: linear-gradient(135deg, #15803d 0%, #16a34a 100%); box-shadow: 0 4px 12px rgba(21, 128, 61, 0.35); }
+	.header-incorrect { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); box-shadow: 0 4px 12px rgba(30, 58, 138, 0.35); }
+
+	.score-pill {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.375rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.score-label { color: rgba(255, 255, 255, 0.85); font-size: 1rem; font-weight: 500; }
+	.score-value { color: white; font-size: 3rem; font-weight: 700; }
+	.score-max   { color: rgba(255, 255, 255, 0.7); font-size: 1.5rem; font-weight: 500; }
+	.results-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 0.938rem; margin: 0; }
+
+	/* ── Metrics Grid ─────────────────────────────────── */
+	.metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.875rem;
+		margin-bottom: 1rem;
+	}
+
+	.metric-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.25rem;
+		text-align: center;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		border-top: 4px solid #e5e7eb;
+	}
+
+	.metric-green { border-top-color: #16a34a; }
+	.metric-red   { border-top-color: #dc2626; }
+	.metric-blue  { border-top-color: #1e40af; }
+	.metric-amber { border-top-color: #d97706; }
+	.metric-slate { border-top-color: #64748b; }
+
+	.metric-value { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; line-height: 1; }
+	.metric-label { font-size: 0.75rem; color: #6b7280; margin-top: 0.375rem; }
+	.response-type-text { font-size: 1.1rem; }
+
+	/* ── Performance Analysis Grid ────────────────────── */
+	.analysis-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+	}
+
+	.analysis-cell {
+		background: #f8fafc;
+		border-radius: 10px;
+		padding: 1rem;
+		text-align: center;
+	}
+
+	.analysis-label { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
+	.analysis-value { font-size: 1.375rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+	.analysis-desc  { font-size: 0.75rem; color: #9ca3af; line-height: 1.4; }
+
+	.perf-excellent { color: #16a34a; }
+	.perf-good      { color: #1e40af; }
+	.perf-average   { color: #d97706; }
+	.perf-needs_improvement { color: #dc2626; }
+
+	/* ── Adaptation Card ──────────────────────────────── */
+	.adaptation-card {
+		background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+		border: 1px solid #bfdbfe;
+		border-radius: 16px;
+		padding: 1.25rem 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.adaptation-label { font-size: 0.875rem; font-weight: 700; color: #1e3a8a; margin-bottom: 0.375rem; }
+	.adaptation-text  { font-size: 0.875rem; color: #1e40af; margin: 0; line-height: 1.5; }
+
+	/* ── Action Buttons ───────────────────────────────── */
+	.action-buttons { display: flex; gap: 1rem; margin-top: 1rem; }
+
+	.start-button {
+		flex: 1;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		color: white;
+		border: none;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		transition: transform 0.15s;
+	}
+
+	.start-button:hover { transform: translateY(-2px); }
 
 	.btn-secondary {
-		background: #F3F4F6;
-		color: #374151;
-		border: 2px solid #E5E7EB;
+		background: white;
+		color: #667eea;
+		border: 2px solid #667eea;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: transform 0.15s, background 0.15s;
 	}
 
-	.btn-secondary:hover {
-		background: #E5E7EB;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	.action-buttons .btn-secondary { flex: 1; }
+	.btn-secondary:hover { background: #eff6ff; transform: translateY(-2px); }
+
+	/* ── Animations ───────────────────────────────────── */
+	@keyframes timer-pulse {
+		0%, 100% { transform: scale(1); opacity: 1; }
+		50%       { transform: scale(1.06); opacity: 0.8; }
 	}
 
+	/* ── Responsive ───────────────────────────────────── */
 	@media (max-width: 768px) {
-		.container {
-			padding: 1rem;
-		}
-
-		.header h1 {
-			font-size: 2rem;
-		}
-
-		.task-details {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.control-panel {
-			flex-direction: column;
-		}
-
-		.search-display {
-			height: 450px;
-		}
-
-		.response-buttons {
-			flex-direction: column;
-			gap: 1rem;
-		}
-
-		.btn-response {
-			width: 100%;
-		}
-
-		.detail-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.action-buttons {
-			flex-direction: column;
-		}
-
-		.btn-primary,
-		.btn-secondary {
-			width: 100%;
-		}
+		.info-grid       { grid-template-columns: 1fr; }
+		.metrics-grid    { grid-template-columns: 1fr 1fr; }
+		.analysis-grid   { grid-template-columns: 1fr; }
+		.response-buttons { flex-direction: column; align-items: center; }
+		.resp-btn        { width: 100%; max-width: 360px; }
+		.action-buttons  { flex-direction: column; }
+		.game-status-bar { flex-direction: column; align-items: flex-start; }
+		.search-arena    { height: 50vh; min-height: 320px; }
 	}
 </style>
