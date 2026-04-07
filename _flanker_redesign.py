@@ -1,4 +1,9 @@
-<script>
+"""Flanker Task – LNS-style redesign (sky/cyan theme: #0ea5e9)"""
+import pathlib
+
+TARGET = pathlib.Path(r"d:\NeuroBloom\frontend-svelte\src\routes\training\flanker\+page.svelte")
+
+CONTENT = r'''<script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -1736,3 +1741,8 @@
 		.metrics-grid { grid-template-columns: 1fr; }
 	}
 </style>
+'''
+
+TARGET.write_text(CONTENT, encoding='utf-8')
+lines = len(CONTENT.splitlines())
+print(f"Done. Lines: {lines}")
