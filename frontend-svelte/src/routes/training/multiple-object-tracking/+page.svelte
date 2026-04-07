@@ -4,6 +4,7 @@
 	import { generateMOTTrial, submitMOTResponse } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
+	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { locale, localeText } from '$lib/i18n';
@@ -11,18 +12,19 @@
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
 
+	// ── Auth ──────────────────────────────────────────
 	let currentUser = null;
-	let taskId = null;
-	user.subscribe((value) => {
-		currentUser = value;
-	});
+	user.subscribe((value) => { currentUser = value; });
 
-	// Game phases
-	let phase = 'intro'; // intro, highlighting, tracking, selection, results
+	// ── Phase ─────────────────────────────────────────
+	let phase = 'loading'; // loading | intro | highlighting | tracking | selection | results
+
+	// ── Trial Data ────────────────────────────────────
 	let trialData = null;
 	let difficulty = 5;
+	let taskId = null;
 
-	// Object tracking
+	// ── Objects ───────────────────────────────────────
 	let objects = [];
 	let selectedObjects = new Set();
 	let animationId = null;
@@ -30,26 +32,43 @@
 	let timeRemaining = 0;
 	let timerInterval = null;
 
-	// Selection timing
+	// ── Selection Timing ──────────────────────────────
 	let selectionStartTime = null;
 	let selectionElapsed = 0;
 	let selectionTimerInterval = null;
 
-	// Results
+	// ── Results ───────────────────────────────────────
 	let results = null;
 	let earnedBadges = [];
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 
-	// Phase timing
-	const HIGHLIGHT_DURATION = 2000; // 2 seconds to show targets
-	const PAUSE_BEFORE_TRACKING = 1000; // 1 second pause
+	// ── Errors ────────────────────────────────────────
+	let loadError = false;
+	let saveError = false;
 
+	// ── Constants ─────────────────────────────────────
+	const HIGHLIGHT_DURATION = 2000;
+	const PAUSE_BEFORE_TRACKING = 1000;
+
+	// ── Helpers ───────────────────────────────────────
+	function lt(en, bn) { return localeText({ en, bn }, $locale); }
+
+	function performanceLabel(p) {
+		const map = {
+			perfect:          lt('Perfect', 'নিখুঁত'),
+			excellent:        lt('Excellent', 'অসাধারণ'),
+			good:             lt('Good', 'ভালো'),
+			average:          lt('Average', 'মোটামুটি'),
+			needs_improvement: lt('Needs Improvement', 'উন্নতি দরকার')
+		};
+		return map[p] || (p || '').replace('_', ' ');
+	}
+
+	// ── Lifecycle ──────────────────────────────────────
 	onMount(() => {
-		if (!currentUser) {
-			goto('/login');
-			return;
-		}
+		if (!currentUser) { goto('/login'); return; }
+		taskId = $page.url.searchParams.get('taskId');
 		loadTrial();
 	});
 
@@ -59,13 +78,14 @@
 		if (selectionTimerInterval) clearInterval(selectionTimerInterval);
 	});
 
+	// ── Game Logic ─────────────────────────────────────
 	async function loadTrial() {
 		try {
+			loadError = false;
+			phase = 'loading';
 			const response = await generateMOTTrial(currentUser.id);
 			trialData = response.trial_data;
 			difficulty = response.difficulty;
-			
-			// Initialize objects from trial data
 			objects = trialData.objects.map(obj => ({
 				...obj,
 				x: obj.x,
@@ -76,11 +96,10 @@
 				show_highlight: false,
 				radius: 20
 			}));
-
 			phase = 'intro';
-		} catch (error) {
-			console.error('Error loading trial:', error);
-			alert('Error loading task. Please try again.');
+		} catch (_) {
+			loadError = true;
+			phase = 'intro';
 		}
 	}
 
@@ -93,25 +112,16 @@
 		selectionStartTime = null;
 		selectionElapsed = 0;
 		phase = 'highlighting';
-		
+
 		// Show targets highlighted
 		objects = objects.map(obj => ({
 			...obj,
 			show_highlight: obj.is_target
 		}));
 
-		// After highlight duration, start tracking
 		setTimeout(() => {
-			// Hide highlights
-			objects = objects.map(obj => ({
-				...obj,
-				show_highlight: false
-			}));
-
-			// Pause before tracking
-			setTimeout(() => {
-				startTracking();
-			}, PAUSE_BEFORE_TRACKING);
+			objects = objects.map(obj => ({ ...obj, show_highlight: false }));
+			setTimeout(() => { startTracking(); }, PAUSE_BEFORE_TRACKING);
 		}, HIGHLIGHT_DURATION);
 	}
 
@@ -119,23 +129,17 @@
 		phase = 'tracking';
 		startTime = Date.now();
 		timeRemaining = trialData.tracking_duration;
-		
-		// Start timer countdown
+
 		timerInterval = setInterval(() => {
 			const elapsed = (Date.now() - startTime) / 1000;
 			timeRemaining = Math.max(0, trialData.tracking_duration - elapsed);
-			
-			if (timeRemaining <= 0) {
-				stopTracking();
-			}
+			if (timeRemaining <= 0) { stopTracking(); }
 		}, 100);
 
-		// Start animation
 		animationId = requestAnimationFrame(updateObjects);
 	}
 
 	function updateObjects() {
-		const deltaTime = 1 / 60; // Assume 60 FPS
 		const arenaSize = trialData.arena_size;
 		const radius = 20;
 
@@ -145,30 +149,12 @@
 			let newVx = obj.vx;
 			let newVy = obj.vy;
 
-			// Bounce off walls
-			if (newX - radius < 0) {
-				newX = radius;
-				newVx = Math.abs(newVx);
-			} else if (newX + radius > arenaSize) {
-				newX = arenaSize - radius;
-				newVx = -Math.abs(newVx);
-			}
+			if (newX - radius < 0)          { newX = radius;            newVx =  Math.abs(newVx); }
+			else if (newX + radius > arenaSize) { newX = arenaSize - radius; newVx = -Math.abs(newVx); }
+			if (newY - radius < 0)          { newY = radius;            newVy =  Math.abs(newVy); }
+			else if (newY + radius > arenaSize) { newY = arenaSize - radius; newVy = -Math.abs(newVy); }
 
-			if (newY - radius < 0) {
-				newY = radius;
-				newVy = Math.abs(newVy);
-			} else if (newY + radius > arenaSize) {
-				newY = arenaSize - radius;
-				newVy = -Math.abs(newVy);
-			}
-
-			return {
-				...obj,
-				x: newX,
-				y: newY,
-				vx: newVx,
-				vy: newVy
-			};
+			return { ...obj, x: newX, y: newY, vx: newVx, vy: newVy };
 		});
 
 		animationId = requestAnimationFrame(updateObjects);
@@ -176,28 +162,17 @@
 
 	function stopTracking() {
 		stopAnimation();
-		if (timerInterval) {
-			clearInterval(timerInterval);
-			timerInterval = null;
-		}
-
-		// Start selection timing - this is the actual response time
+		if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 		selectionStartTime = Date.now();
 		selectionElapsed = 0;
-
-		// Start selection elapsed time counter
 		selectionTimerInterval = setInterval(() => {
 			selectionElapsed = (Date.now() - selectionStartTime) / 1000;
 		}, 100);
-
 		phase = 'selection';
 	}
 
 	function stopAnimation() {
-		if (animationId) {
-			cancelAnimationFrame(animationId);
-			animationId = null;
-		}
+		if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
 	}
 
 	function toggleObjectSelection(objectId) {
@@ -206,38 +181,28 @@
 		} else {
 			selectedObjects.add(objectId);
 		}
-		selectedObjects = selectedObjects; // Trigger reactivity
+		selectedObjects = selectedObjects; // trigger reactivity
 	}
 
 	async function submitSelection() {
-		// Stop selection timer
-		if (selectionTimerInterval) {
-			clearInterval(selectionTimerInterval);
-			selectionTimerInterval = null;
-		}
-
-		// Calculate actual selection response time (from when objects stopped moving)
+		if (selectionTimerInterval) { clearInterval(selectionTimerInterval); selectionTimerInterval = null; }
 		const responseTime = (Date.now() - selectionStartTime) / 1000;
-		taskId = $page.url.searchParams.get('taskId');
-		
-		const userResponse = {
-			selected_objects: Array.from(selectedObjects),
-			response_time: responseTime
-		};
-
+		saveError = false;
 		try {
 			const response = await submitMOTResponse(currentUser.id, {
 				trial_data: trialData,
-				user_response: userResponse,
+				user_response: {
+					selected_objects: Array.from(selectedObjects),
+					response_time: responseTime
+				},
 				task_id: taskId
 			});
-
 			results = response;
 			earnedBadges = response.new_badges || [];
 			phase = 'results';
-		} catch (error) {
-			console.error('Error submitting response:', error);
-			alert('Error submitting response. Please try again.');
+		} catch (_) {
+			saveError = true;
+			phase = 'results';
 		}
 	}
 
@@ -253,948 +218,861 @@
 			phase = 'intro';
 			return;
 		}
-
 		selectedObjects = new Set();
 		results = null;
 		earnedBadges = [];
 		selectionStartTime = null;
 		selectionElapsed = 0;
-		if (selectionTimerInterval) {
-			clearInterval(selectionTimerInterval);
-			selectionTimerInterval = null;
-		}
+		if (selectionTimerInterval) { clearInterval(selectionTimerInterval); selectionTimerInterval = null; }
 		loadTrial();
-	}
-
-	function exitTask() {
-		goto('/training');
-	}
-
-	// Helper to get domain badge color
-	function getDomainColor(domain) {
-		const colors = {
-			visual_scanning: 'from-purple-500 to-pink-500'
-		};
-		return colors[domain] || 'from-blue-500 to-purple-500';
 	}
 </script>
 
-<div class="mot-container">
-	<BadgeNotification badges={earnedBadges} />
+<div class="mot-page">
+	<div class="mot-wrapper">
 
-	<!-- Header -->
-	<div class="task-header">
-		<div class="header-content">
-			<div class="task-badges">
-				<span class="domain-badge bg-gradient-to-r {getDomainColor('visual_scanning')}">
-					👁️ Visual Scanning
-				</span>
-				<span class="difficulty-badge">Level {difficulty}</span>
+		{#if phase === 'loading'}
+			<LoadingSkeleton />
+
+		{:else if phase === 'intro'}
+
+			<!-- Header Card -->
+			<div class="header-card">
+				<div class="header-content">
+					<div class="header-text">
+						<h1 class="task-title">{lt('Multiple Object Tracking', 'মাল্টিপল অবজেক্ট ট্র্যাকিং')}</h1>
+						<p class="task-domain">{lt('Dynamic Visual Attention · Visual Scanning', 'ডায়নামিক ভিজ্যুয়াল মনোযোগ · ভিজ্যুয়াল স্ক্যানিং')}</p>
+					</div>
+					<DifficultyBadge difficulty={difficulty || 1} domain="Visual Scanning" />
+				</div>
 			</div>
-			<h1 class="task-title">Multiple Object Tracking</h1>
-			<p class="task-subtitle">Dynamic Visual Attention • Pylyshyn & Storm (2006)</p>
-		</div>
-	</div>
 
-	<!-- Intro Phase -->
-	{#if phase === 'intro'}
-		<div class="phase-container intro-phase">
-			<div class="intro-card">
-				<div class="clinical-note">
-					<span class="clinical-icon">🔬</span>
-					<div>
-						<div class="clinical-label">Clinical Validation</div>
-						<div class="clinical-text">
-							Measures sustained visual attention and dynamic tracking ability, 
-							relevant for driving safety and real-world multitasking in MS patients.
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} />
+			{/if}
+
+			{#if loadError}
+				<div class="error-card">
+					<p>{lt('Failed to load task. Please try again.', 'টাস্ক লোড করতে ব্যর্থ। আবার চেষ্টা করুন।')}</p>
+					<button class="start-button" on:click={loadTrial}>{lt('Retry', 'আবার চেষ্টা করুন')}</button>
+				</div>
+			{:else if trialData}
+
+				<!-- Concept Card -->
+				<div class="card task-concept">
+					<div class="concept-badge">
+						<span class="badge-label">{lt('Multiple Object Tracking', 'MOT')}</span>
+						<span>{lt('Pylyshyn & Storm, 1988', 'Pylyshyn & Storm, 1988')}</span>
+					</div>
+					<p class="concept-desc">
+						{lt(
+							'In MOT, the visual system must simultaneously assign attentional "FINST" (fingers of instantiation) tokens to multiple moving targets. Unlike static search, this demands sustained distributed attention over time — a capacity strongly diminished by MS white-matter pathology, making it clinically relevant for driving and real-world multitasking safety.',
+							'MOT-এ ভিজ্যুয়াল সিস্টেমকে একাধিক চলমান লক্ষ্যে মনোযোগ টোকেন বরাদ্দ করতে হয়। MS শ্বেত পদার্থ ক্ষতির কারণে এই ক্ষমতা উল্লেখযোগ্যভাবে কমে যায়।'
+						)}
+					</p>
+				</div>
+
+				<!-- Rules -->
+				<div class="card">
+					<h2 class="section-title">{lt('How It Works', 'কীভাবে কাজ করে')}</h2>
+					<div class="rules-list">
+						<div class="rule-item">
+							<div class="rule-num">1</div>
+							<div class="rule-text">{lt('Several circles will flash — these are your targets to remember', 'কিছু বৃত্ত জ্বলতে থাকবে — এগুলো আপনার মনে রাখার লক্ষ্য')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">2</div>
+							<div class="rule-text">{lt('All circles begin moving randomly — keep your eyes on the targets as they mix with distractors', 'সব বৃত্ত এলোমেলোভাবে চলতে শুরু করবে — লক্ষ্যগুলো চোখে রাখুন')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">3</div>
+							<div class="rule-text">{lt('When movement stops, click all circles you were tracking', 'চলাচল থামলে আপনি যে বৃত্তগুলো ট্র্যাক করছিলেন সেগুলোতে ক্লিক করুন')}</div>
+						</div>
+						<div class="rule-item">
+							<div class="rule-num">4</div>
+							<div class="rule-text">{lt('Accuracy matters more than speed — take your time during selection', 'গতির চেয়ে নির্ভুলতা বেশি গুরুত্বপূর্ণ — নির্বাচনের সময় সতর্কভাবে দেখুন')}</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="instructions-section">
-					<h2 class="section-title">How This Task Works</h2>
-					
-					<div class="instruction-steps">
-						<div class="step-item">
-							<div class="step-number">1</div>
-							<div class="step-content">
-								<div class="step-title">Watch the Targets</div>
-								<div class="step-desc">
-									Several circles will flash yellow — these are your targets to track
-								</div>
+				<!-- Info Grid -->
+				<div class="info-grid">
+					<div class="card">
+						<h3 class="card-title">{lt('Task Parameters', 'টাস্কের প্যারামিটার')}</h3>
+						<div class="details-list">
+							<div class="detail-row">
+								<span>{lt('Total Objects', 'মোট বস্তু')}</span>
+								<strong>{trialData.total_objects}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Targets to Track', 'ট্র্যাক করার লক্ষ্য')}</span>
+								<strong class="highlight-val">{trialData.num_targets}</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Tracking Duration', 'ট্র্যাকিং সময়কাল')}</span>
+								<strong>{trialData.tracking_duration}s</strong>
+							</div>
+							<div class="detail-row">
+								<span>{lt('Speed', 'গতি')}</span>
+								<strong>{trialData.speed_multiplier?.toFixed(1) || 1}×</strong>
 							</div>
 						</div>
-
-						<div class="step-item">
-							<div class="step-number">2</div>
-							<div class="step-content">
-								<div class="step-title">Track as They Move</div>
-								<div class="step-desc">
-									All circles will move randomly. Keep your eyes on the targets!
-								</div>
+					</div>
+					<div class="card">
+						<h3 class="card-title">{lt('What to Expect', 'কী আশা করবেন')}</h3>
+						<div class="expect-steps">
+							<div class="expect-item">
+								<div class="expect-dot dot-yellow"></div>
+								<span>{lt('Yellow flash = your targets (2 seconds)', 'হলুদ ঝলক = আপনার লক্ষ্য (২ সেকেন্ড)')}</span>
 							</div>
-						</div>
-
-						<div class="step-item">
-							<div class="step-number">3</div>
-							<div class="step-content">
-								<div class="step-title">Select the Targets</div>
-								<div class="step-desc">
-									When movement stops, click all the circles you were tracking
-								</div>
+							<div class="expect-item">
+								<div class="expect-dot dot-blue"></div>
+								<span>{lt('All circles identical while moving', 'চলার সময় সব বৃত্ত একই রকম')}</span>
+							</div>
+							<div class="expect-item">
+								<div class="expect-dot dot-green"></div>
+								<span>{lt('Green highlight = selected (click again to deselect)', 'সবুজ = নির্বাচিত (আবার ক্লিক করুন বাতিল করতে)')}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="task-details-grid">
-					<div class="detail-card">
-						<div class="detail-label">Objects</div>
-						<div class="detail-value">{trialData?.total_objects || 0}</div>
+				<!-- Clinical Basis -->
+				<div class="clinical-info">
+					<div class="clinical-header">
+						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
+						<h3>{lt('MS Driving Safety & Dynamic Attention', 'MS ড্রাইভিং নিরাপত্তা ও ডায়নামিক মনোযোগ')}</h3>
 					</div>
-					<div class="detail-card">
-						<div class="detail-label">Targets to Track</div>
-						<div class="detail-value">{trialData?.num_targets || 0}</div>
-					</div>
-					<div class="detail-card">
-						<div class="detail-label">Tracking Time</div>
-						<div class="detail-value">{trialData?.tracking_duration || 0}s</div>
-					</div>
-					<div class="detail-card">
-						<div class="detail-label">Speed</div>
-						<div class="detail-value">{trialData?.speed_multiplier?.toFixed(1) || 1}×</div>
-					</div>
+					<p>
+						{lt(
+							'Multiple Object Tracking (Pylyshyn & Storm, 1988) directly predicts real-world divided attention performance including driving safety. MS-related deficits in sustained and divided visual attention significantly impair MOT capacity, particularly when tracking 3+ objects, making this paradigm a sensitive ecologically-valid measure of functional visual attention in everyday tasks.',
+							'মাল্টিপল অবজেক্ট ট্র্যাকিং (Pylyshyn & Storm, 1988) সরাসরি ড্রাইভিং নিরাপত্তাসহ বাস্তব জীবনের বিভক্ত মনোযোগের পূর্বাভাস দেয়। MS-সংক্রান্ত ভিজ্যুয়াল মনোযোগের ঘাটতি MOT ক্ষমতাকে উল্লেখযোগ্যভাবে ক্ষতিগ্রস্ত করে।'
+						)}
+					</p>
 				</div>
 
 				<TaskPracticeActions
 					locale={$locale}
-					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+					startLabel={lt('Begin Tracking Task', 'ট্র্যাকিং টাস্ক শুরু করুন')}
 					statusMessage={practiceStatusMessage}
-					align="center"
 					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
 					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
 				/>
-				<button class="start-button" on:click={startTask} hidden>
-					<span class="button-icon">▶</span>
-					Begin Tracking
-				</button>
-			</div>
-		</div>
-	{/if}
 
-	<!-- Highlighting Phase -->
-	{#if phase === 'highlighting'}
-		<div class="phase-container tracking-phase">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+			{:else}
+				<LoadingSkeleton />
 			{/if}
-			<div class="phase-instruction">
-				<h2 class="phase-title">👀 Remember These Targets</h2>
-				<p class="phase-subtitle">The yellow circles are your targets to track</p>
+
+		{:else if phase === 'highlighting' || phase === 'tracking' || phase === 'selection'}
+
+			<!-- Arena Header -->
+			<div class="arena-header-card">
+				{#if playMode === TASK_PLAY_MODE.PRACTICE}
+					<PracticeModeBanner locale={$locale} />
+				{/if}
+
+				{#if phase === 'highlighting'}
+					<div class="phase-status phase-highlight">
+						<div class="phase-icon-block dot-yellow-lg"></div>
+						<div>
+							<div class="phase-label">{lt('Phase 1 — Memorise Targets', 'ধাপ ১ — লক্ষ্য মনে রাখুন')}</div>
+							<div class="phase-desc">{lt('The highlighted circles are your targets — remember them', 'হাইলাইট করা বৃত্তগুলো আপনার লক্ষ্য — এগুলো মনে রাখুন')}</div>
+						</div>
+					</div>
+
+				{:else if phase === 'tracking'}
+					<div class="phase-status phase-tracking">
+						<div class="timer-block">
+							<div class="timer-value {timeRemaining < 3 ? 'timer-critical' : ''}">{timeRemaining.toFixed(1)}</div>
+							<div class="timer-label">{lt('seconds left', 'সেকেন্ড বাকি')}</div>
+						</div>
+						<div>
+							<div class="phase-label">{lt('Phase 2 — Track the Targets', 'ধাপ ২ — লক্ষ্য ট্র্যাক করুন')}</div>
+							<div class="phase-desc">{lt('Keep your eyes on the targets — do not look away!', 'লক্ষ্যের উপর চোখ রাখুন — দূরে তাকাবেন না!')}</div>
+						</div>
+					</div>
+
+				{:else}
+					<div class="phase-status phase-selection">
+						<div class="selection-count-block">
+							<span class="sel-count {selectedObjects.size === trialData.num_targets ? 'sel-complete' : ''}">{selectedObjects.size}</span>
+							<span class="sel-sep">/</span>
+							<span class="sel-total">{trialData.num_targets}</span>
+						</div>
+						<div>
+							<div class="phase-label">{lt('Phase 3 — Select Targets', 'ধাপ ৩ — লক্ষ্য নির্বাচন করুন')}</div>
+							<div class="phase-desc">{lt('Click all circles you were tracking · Time elapsed:', 'আপনি যে বৃত্তগুলো ট্র্যাক করছিলেন সেগুলো ক্লিক করুন · সময়:')} {selectionElapsed.toFixed(1)}s</div>
+						</div>
+					</div>
+				{/if}
 			</div>
 
-			<div class="tracking-arena" style="width: {trialData.arena_size}px; height: {trialData.arena_size}px;">
-				<svg width={trialData.arena_size} height={trialData.arena_size}>
-					{#each objects as obj (obj.id)}
-						<circle
-							cx={obj.x}
-							cy={obj.y}
-							r={obj.radius}
-							class="tracking-object"
-							class:highlighted={obj.show_highlight}
-						/>
-					{/each}
-				</svg>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Tracking Phase -->
-	{#if phase === 'tracking'}
-		<div class="phase-container tracking-phase">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
-			{/if}
-			<div class="tracking-controls">
-				<div class="timer-display" class:critical={timeRemaining < 3}>
-					<span class="timer-icon">⏱️</span>
-					<span class="timer-value">{timeRemaining.toFixed(1)}s</span>
+			<!-- Tracking Arena -->
+			<div class="arena-wrapper">
+				<div class="arena-box" style="width: {trialData.arena_size}px; height: {trialData.arena_size}px; max-width: 100%;">
+					<svg width={trialData.arena_size} height={trialData.arena_size} style="display:block; max-width:100%;">
+						{#each objects as obj (obj.id)}
+							{#if phase === 'selection'}
+								<circle
+									cx={obj.x}
+									cy={obj.y}
+									r={obj.radius}
+									class="tracking-object selectable"
+									class:selected={selectedObjects.has(obj.id)}
+									role="button"
+									tabindex="0"
+									on:click={() => toggleObjectSelection(obj.id)}
+									on:keydown={(e) => e.key === 'Enter' && toggleObjectSelection(obj.id)}
+								/>
+							{:else}
+								<circle
+									cx={obj.x}
+									cy={obj.y}
+									r={obj.radius}
+									class="tracking-object"
+									class:highlighted={obj.show_highlight}
+								/>
+							{/if}
+						{/each}
+					</svg>
 				</div>
-				<div class="tracking-hint">
-					Keep your eyes on the targets as they move!
+			</div>
+
+			<!-- Submit Button (selection phase only) -->
+			{#if phase === 'selection'}
+				<div class="submit-row">
+					<button
+						class="submit-btn"
+						on:click={submitSelection}
+						disabled={selectedObjects.size === 0}
+					>
+						{lt(`Confirm ${selectedObjects.size} Selection${selectedObjects.size !== 1 ? 's' : ''}`, `${selectedObjects.size}টি নির্বাচন নিশ্চিত করুন`)}
+					</button>
 				</div>
-			</div>
-
-			<div class="tracking-arena" style="width: {trialData.arena_size}px; height: {trialData.arena_size}px;">
-				<svg width={trialData.arena_size} height={trialData.arena_size}>
-					{#each objects as obj (obj.id)}
-						<circle
-							cx={obj.x}
-							cy={obj.y}
-							r={obj.radius}
-							class="tracking-object moving"
-						/>
-					{/each}
-				</svg>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Selection Phase -->
-	{#if phase === 'selection'}
-		<div class="phase-container selection-phase">
-			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
 			{/if}
-			<div class="phase-instruction">
-				<h2 class="phase-title">🎯 Select the Targets</h2>
-				<p class="phase-subtitle">
-					Click on the {trialData.num_targets} circles you were tracking
-					<span class="selection-count">({selectedObjects.size}/{trialData.num_targets} selected)</span>
+
+		{:else if phase === 'results'}
+
+			<!-- Results Header -->
+			<div class="results-header perf-{results?.performance || 'default'}">
+				<div class="score-pill">
+					<span class="score-label">{lt('Score', 'স্কোর')}</span>
+					<span class="score-value">{results ? (results.score * 100).toFixed(0) : '—'}</span>
+					<span class="score-max">%</span>
+				</div>
+				<p class="results-subtitle">
+					{lt('MOT Complete', 'MOT সম্পন্ন')} ·
+					{results ? performanceLabel(results.performance) : ''}
 				</p>
-				<div class="selection-timer">
-					<span class="timer-icon">⏱️</span>
-					<span class="timer-value">{selectionElapsed.toFixed(1)}s</span>
-				</div>
 			</div>
 
-			<div class="tracking-arena" style="width: {trialData.arena_size}px; height: {trialData.arena_size}px;">
-				<svg width={trialData.arena_size} height={trialData.arena_size}>
-					{#each objects as obj (obj.id)}
-						<circle
-							cx={obj.x}
-							cy={obj.y}
-							r={obj.radius}
-							class="tracking-object selectable"
-							class:selected={selectedObjects.has(obj.id)}
-							role="button"
-							tabindex="0"
-							on:click={() => toggleObjectSelection(obj.id)}
-							on:keydown={(e) => e.key === 'Enter' && toggleObjectSelection(obj.id)}
-						/>
-					{/each}
-				</svg>
-			</div>
-
-			<div class="selection-actions">
-				<button class="submit-button" on:click={submitSelection} disabled={selectedObjects.size === 0}>
-					Submit Selection
-				</button>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Results Phase -->
-	{#if phase === 'results' && results}
-		<div class="phase-container results-phase">
-			<div class="results-header">
-				<h2 class="results-title">📊 Tracking Results</h2>
-				<div class="performance-badge performance-{results.performance}">
-					{results.performance === 'perfect' ? '🏆 Perfect!' :
-					 results.performance === 'excellent' ? '⭐ Excellent' :
-					 results.performance === 'good' ? '👍 Good' :
-					 results.performance === 'average' ? '📈 Average' :
-					 '💪 Keep Practicing'}
+			{#if saveError}
+				<div class="warn-card">
+					{lt('Error saving results. Your progress may not have been recorded.', 'ফলাফল সংরক্ষণে ত্রুটি। অগ্রগতি রেকর্ড নাও হতে পারে।')}
 				</div>
-			</div>
+			{/if}
 
-			<div class="results-grid">
-				<div class="result-card primary">
-					<div class="result-label">Overall Score</div>
-					<div class="result-value">{(results.score * 100).toFixed(0)}%</div>
-				</div>
-
-				<div class="result-card">
-					<div class="result-label">Accuracy (Recall)</div>
-					<div class="result-value">{(results.accuracy * 100).toFixed(0)}%</div>
-					<div class="result-detail">{results.targets_found}/{results.total_targets} targets found</div>
-				</div>
-
-				<div class="result-card">
-					<div class="result-label">Precision</div>
-					<div class="result-value">{(results.precision * 100).toFixed(0)}%</div>
-					<div class="result-detail">{results.false_positives} false alarm{results.false_positives !== 1 ? 's' : ''}</div>
-				</div>
-
-				<div class="result-card">
-					<div class="result-label">F1 Score</div>
-					<div class="result-value">{(results.f1_score * 100).toFixed(0)}%</div>
-					<div class="result-detail">Balanced metric</div>
-				</div>
-
-				<div class="result-card">
-					<div class="result-label">Tracking Efficiency</div>
-					<div class="result-value">{(results.tracking_efficiency * 100).toFixed(0)}%</div>
-					<div class="result-detail">
-						{results.targets_missed} missed, {results.false_positives} extra
+			{#if results}
+				<!-- Key Metrics -->
+				<div class="metrics-grid">
+					<div class="metric-card metric-violet">
+						<div class="metric-value">{(results.score * 100).toFixed(0)}%</div>
+						<div class="metric-label">{lt('Overall Score', 'সামগ্রিক স্কোর')}</div>
+					</div>
+					<div class="metric-card metric-green">
+						<div class="metric-value">{results.targets_found}/{results.total_targets}</div>
+						<div class="metric-label">{lt('Targets Found', 'লক্ষ্য খুঁজে পাওয়া')}</div>
+					</div>
+					<div class="metric-card metric-blue">
+						<div class="metric-value">{(results.accuracy * 100).toFixed(0)}%</div>
+						<div class="metric-label">{lt('Recall Accuracy', 'রিকল নির্ভুলতা')}</div>
+					</div>
+					<div class="metric-card metric-amber">
+						<div class="metric-value">{results.false_positives}</div>
+						<div class="metric-label">{lt('False Alarms', 'মিথ্যা সংকেত')}</div>
 					</div>
 				</div>
 
-				<div class="result-card">
-					<div class="result-label">Response Time</div>
-					<div class="result-value">{results.response_time.toFixed(1)}s</div>
-					<div class="result-detail">Selection time</div>
+				<!-- Secondary Metrics -->
+				<div class="card">
+					<h3 class="card-title">{lt('Detailed Analysis', 'বিস্তারিত বিশ্লেষণ')}</h3>
+					<div class="analysis-grid">
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Precision', 'নির্ভুলতা')}</div>
+							<div class="analysis-value">{(results.precision * 100).toFixed(0)}%</div>
+							<div class="analysis-desc">{lt('Correct out of all selected', 'নির্বাচিতের মধ্যে সঠিক')}</div>
+						</div>
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('F1 Score', 'F1 স্কোর')}</div>
+							<div class="analysis-value">{(results.f1_score * 100).toFixed(0)}%</div>
+							<div class="analysis-desc">{lt('Balanced precision–recall metric', 'সুষম নির্ভুলতা–স্মরণ মেট্রিক')}</div>
+						</div>
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Tracking Efficiency', 'ট্র্যাকিং দক্ষতা')}</div>
+							<div class="analysis-value">{(results.tracking_efficiency * 100).toFixed(0)}%</div>
+							<div class="analysis-desc">{results.targets_missed} {lt('missed', 'মিস')} · {results.false_positives} {lt('extra', 'অতিরিক্ত')}</div>
+						</div>
+						<div class="analysis-cell">
+							<div class="analysis-label">{lt('Selection Time', 'নির্বাচন সময়')}</div>
+							<div class="analysis-value">{results.response_time.toFixed(1)}s</div>
+							<div class="analysis-desc">{lt('Time taken to identify targets', 'লক্ষ্য চিহ্নিত করতে নেওয়া সময়')}</div>
+						</div>
+					</div>
 				</div>
-			</div>
 
-			{#if results.feedback_message}
-				<div class="feedback-card">
-					<div class="feedback-icon">💡</div>
-					<div class="feedback-text">{results.feedback_message}</div>
-				</div>
+				{#if results.feedback_message}
+					<div class="feedback-card">
+						<div class="feedback-dot"></div>
+						<p class="feedback-text">{results.feedback_message}</p>
+					</div>
+				{/if}
+
+				<!-- Difficulty Adaptation -->
+				{#if results.new_difficulty !== results.old_difficulty || results.adaptation_reason}
+					<div class="adaptation-card">
+						<div class="adaptation-label">
+							{#if results.new_difficulty > results.old_difficulty}
+								{lt('Difficulty Increased', 'কঠিনতা বৃদ্ধি')} — {results.old_difficulty} → {results.new_difficulty}
+							{:else if results.new_difficulty < results.old_difficulty}
+								{lt('Difficulty Decreased', 'কঠিনতা হ্রাস')} — {results.old_difficulty} → {results.new_difficulty}
+							{:else}
+								{lt('Difficulty Maintained', 'কঠিনতা বজায়')} — {lt(`Level ${results.new_difficulty}`, `স্তর ${results.new_difficulty}`)}
+							{/if}
+						</div>
+						{#if results.adaptation_reason}
+							<p class="adaptation-text">{results.adaptation_reason}</p>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 
-			{#if results.new_difficulty !== results.old_difficulty}
-				<div class="adaptation-notice">
-					<span class="adaptation-icon">
-						{results.new_difficulty > results.old_difficulty ? '⬆️' : '⬇️'}
-					</span>
-					<span class="adaptation-text">{results.adaptation_reason}</span>
-				</div>
-			{/if}
-
-			<div class="results-actions">
-				<button class="next-button" on:click={nextTrial}>
-					{playMode === TASK_PLAY_MODE.PRACTICE ? 'Finish Practice' : 'Next Trial'}
+			<!-- Action Buttons -->
+			<div class="action-buttons">
+				<button class="start-button" on:click={nextTrial}>
+					{playMode === TASK_PLAY_MODE.PRACTICE ? lt('Finish Practice', 'অনুশীলন শেষ করুন') : lt('Next Trial', 'পরবর্তী ট্রায়াল')}
 				</button>
-				<button class="exit-button" on:click={exitTask}>
-					Exit Task
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
+					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরুন')}
 				</button>
 			</div>
-		</div>
-	{/if}
+
+		{/if}
+	</div>
 </div>
 
+{#if earnedBadges.length > 0}
+	<BadgeNotification badges={earnedBadges} />
+{/if}
+
 <style>
-	.mot-container {
+	/* ── Page Layout ─────────────────────────────────── */
+	.mot-page {
 		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		padding: 2rem;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+		background: #C8DEFA;
+		padding: 1.5rem;
 	}
 
-	/* Header Styles */
-	.task-header {
+	.mot-wrapper {
+		max-width: 1100px;
+		margin: 0 auto;
+	}
+
+	/* ── Shared Card ──────────────────────────────────── */
+	.card {
 		background: white;
 		border-radius: 16px;
-		padding: 2rem;
-		margin-bottom: 2rem;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
+	}
+
+	/* ── Header Card ─────────────────────────────────── */
+	.header-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
 	}
 
 	.header-content {
-		text-align: center;
-	}
-
-	.task-badges {
 		display: flex;
-		gap: 0.75rem;
-		justify-content: center;
-		margin-bottom: 1rem;
+		align-items: center;
+		justify-content: space-between;
 		flex-wrap: wrap;
-	}
-
-	.domain-badge {
-		padding: 0.5rem 1.25rem;
-		border-radius: 50px;
-		color: white;
-		font-weight: 600;
-		font-size: 0.9rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	}
-
-	.difficulty-badge {
-		padding: 0.5rem 1.25rem;
-		border-radius: 50px;
-		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-		color: white;
-		font-weight: 600;
-		font-size: 0.9rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		gap: 1rem;
 	}
 
 	.task-title {
-		font-size: 2.5rem;
+		font-size: 1.75rem;
 		font-weight: 700;
-		color: #1a202c;
-		margin: 0 0 0.5rem 0;
+		color: #1a1a2e;
+		margin: 0 0 0.25rem 0;
 	}
 
-	.task-subtitle {
-		font-size: 1.1rem;
-		color: #718096;
+	.task-domain {
+		font-size: 0.875rem;
+		color: #7c3aed;
+		font-weight: 500;
 		margin: 0;
 	}
 
-	/* Phase Container */
-	.phase-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 2rem;
-	}
-
-	/* Intro Phase */
-	.intro-card {
-		background: white;
+	/* ── Error / Warn ─────────────────────────────────── */
+	.error-card {
+		background: #fee2e2;
+		border: 2px solid #fca5a5;
 		border-radius: 16px;
-		padding: 2.5rem;
-		max-width: 700px;
-		width: 100%;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-	}
-
-	.clinical-note {
-		display: flex;
-		gap: 1rem;
-		background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
-		padding: 1.25rem;
-		border-radius: 12px;
-		margin-bottom: 2rem;
-		border-left: 4px solid #667eea;
-	}
-
-	.clinical-icon {
-		font-size: 1.5rem;
-		flex-shrink: 0;
-	}
-
-	.clinical-label {
-		font-weight: 700;
-		color: #5a67d8;
-		font-size: 0.85rem;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		margin-bottom: 0.25rem;
-	}
-
-	.clinical-text {
-		color: #4a5568;
-		line-height: 1.6;
-		font-size: 0.95rem;
-	}
-
-	.instructions-section {
-		margin-bottom: 2rem;
-	}
-
-	.section-title {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #2d3748;
-		margin-bottom: 1.5rem;
+		padding: 2rem;
 		text-align: center;
+		color: #991b1b;
+		margin-bottom: 1rem;
 	}
 
-	.instruction-steps {
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
+	.warn-card {
+		background: #fff7ed;
+		border: 2px solid #fed7aa;
+		border-radius: 12px;
+		padding: 1rem 1.25rem;
+		color: #92400e;
+		font-size: 0.875rem;
+		margin-bottom: 1rem;
 	}
 
-	.step-item {
+	/* ── Task Concept ─────────────────────────────────── */
+	.task-concept { margin-bottom: 1rem; }
+
+	.concept-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+		color: white;
+		padding: 0.4rem 0.9rem;
+		border-radius: 2rem;
+		font-size: 0.813rem;
+		font-weight: 600;
+		margin-bottom: 1rem;
+	}
+
+	.badge-label { font-weight: 700; letter-spacing: 0.04em; }
+	.concept-desc { color: #4b5563; font-size: 0.938rem; line-height: 1.6; margin: 0; }
+
+	/* ── Section Title ────────────────────────────────── */
+	.section-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1a1a2e;
+		margin: 0 0 1rem 0;
+	}
+
+	/* ── Rules List ───────────────────────────────────── */
+	.rules-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+	.rule-item {
 		display: flex;
-		gap: 1rem;
 		align-items: flex-start;
+		gap: 0.875rem;
+		background: #f5f3ff;
+		border-radius: 10px;
+		padding: 0.875rem 1rem;
 	}
 
-	.step-number {
-		width: 36px;
-		height: 36px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	.rule-num {
+		min-width: 2rem;
+		height: 2rem;
+		background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
 		color: white;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		font-size: 0.875rem;
 		font-weight: 700;
 		flex-shrink: 0;
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	}
 
-	.step-content {
-		flex: 1;
-	}
+	.rule-text { font-size: 0.9rem; color: #374151; line-height: 1.5; }
 
-	.step-title {
-		font-weight: 600;
-		color: #2d3748;
-		margin-bottom: 0.25rem;
-		font-size: 1.05rem;
-	}
-
-	.step-desc {
-		color: #718096;
-		line-height: 1.5;
-		font-size: 0.95rem;
-	}
-
-	.task-details-grid {
+	/* ── Info Grid ────────────────────────────────────── */
+	.info-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 	}
 
-	.detail-card {
-		background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-		padding: 1rem;
-		border-radius: 12px;
-		text-align: center;
-		border: 2px solid #e2e8f0;
+	.card-title { font-size: 1rem; font-weight: 600; color: #1a1a2e; margin: 0 0 1rem 0; }
+
+	/* ── Details List ─────────────────────────────────── */
+	.details-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+	.detail-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.875rem;
+		padding-bottom: 0.625rem;
+		border-bottom: 1px solid #f3f4f6;
 	}
 
-	.detail-label {
-		font-size: 0.85rem;
-		color: #718096;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
-	}
+	.detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+	.detail-row span   { color: #6b7280; }
+	.detail-row strong { color: #1a1a2e; }
+	.highlight-val     { color: #7c3aed; font-size: 1.125rem; }
 
-	.detail-value {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #2d3748;
-	}
+	/* ── Expect Steps ─────────────────────────────────── */
+	.expect-steps { display: flex; flex-direction: column; gap: 0.75rem; }
 
-	.start-button {
-		width: 100%;
-		padding: 1.25rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		border-radius: 12px;
-		font-size: 1.25rem;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+	.expect-item {
 		display: flex;
 		align-items: center;
-		justify-content: center;
 		gap: 0.75rem;
+		font-size: 0.875rem;
+		color: #374151;
 	}
 
-	.start-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+	.expect-dot {
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 50%;
+		flex-shrink: 0;
 	}
 
-	.button-icon {
-		font-size: 1.5rem;
+	.dot-yellow { background: #fbbf24; border: 3px solid #f59e0b; }
+	.dot-blue   { background: #60a5fa; border: 3px solid #3b82f6; }
+	.dot-green  { background: #4ade80; border: 3px solid #22c55e; }
+
+	/* ── Clinical Info ────────────────────────────────── */
+	.clinical-info {
+		background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+		border: 1px solid #bbf7d0;
+		border-radius: 16px;
+		padding: 1.5rem;
+		margin-bottom: 1rem;
 	}
 
-	/* Tracking Arena */
-	.tracking-arena {
+	.clinical-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.clinical-badge {
+		background: #16a34a;
+		color: white;
+		padding: 0.2rem 0.7rem;
+		border-radius: 1rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.clinical-header h3 { font-size: 1rem; font-weight: 600; color: #14532d; margin: 0; }
+	.clinical-info p    { font-size: 0.875rem; color: #166534; line-height: 1.6; margin: 0; }
+
+	/* ── Arena Header Card ────────────────────────────── */
+	.arena-header-card {
 		background: white;
 		border-radius: 16px;
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-		padding: 1rem;
-		margin: 0 auto;
+		padding: 1.25rem 1.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		margin-bottom: 1rem;
 	}
 
-	.tracking-arena svg {
-		display: block;
-		border: 3px solid #e2e8f0;
+	.phase-status {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.phase-label { font-size: 0.938rem; font-weight: 700; color: #1a1a2e; }
+	.phase-desc  { font-size: 0.813rem; color: #6b7280; margin-top: 0.125rem; }
+
+	/* Phase highlight icon */
+	.dot-yellow-lg {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 50%;
+		background: #fbbf24;
+		border: 3px solid #f59e0b;
+		box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+		animation: highlight-pulse 1s ease-in-out infinite;
+		flex-shrink: 0;
+	}
+
+	/* Timer Block */
+	.timer-block { text-align: center; }
+
+	.timer-value {
+		font-size: 2rem;
+		font-weight: 800;
+		color: #7c3aed;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.timer-critical { color: #dc2626; animation: timer-pulse 0.5s ease-in-out infinite; }
+	.timer-label    { font-size: 0.6875rem; color: #6b7280; }
+
+	/* Selection Count Block */
+	.selection-count-block {
+		display: flex;
+		align-items: baseline;
+		gap: 0.125rem;
+	}
+
+	.sel-count {
+		font-size: 1.75rem;
+		font-weight: 800;
+		color: #7c3aed;
+		line-height: 1;
+	}
+
+	.sel-count.sel-complete { color: #16a34a; }
+	.sel-sep   { font-size: 1rem; color: #9ca3af; margin: 0 0.1rem; }
+	.sel-total { font-size: 1.25rem; font-weight: 700; color: #6b7280; }
+
+	/* ── Arena ────────────────────────────────────────── */
+	.arena-wrapper {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 1rem;
+	}
+
+	.arena-box {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		padding: 4px;
+		overflow: hidden;
+	}
+
+	.arena-box svg {
+		background: #f8f7ff;
 		border-radius: 12px;
-		background: #f7fafc;
+		border: 2px solid #ede9fe;
 	}
 
-	.tracking-object {
-		fill: #4299e1;
-		stroke: #2b6cb0;
+	/* ── SVG Objects ─────────────────────────────────── */
+	:global(.tracking-object) {
+		fill: #818cf8;
+		stroke: #4f46e5;
 		stroke-width: 2;
-		transition: all 0.2s ease;
 	}
 
-	.tracking-object.highlighted {
+	:global(.tracking-object.highlighted) {
 		fill: #fbbf24;
-		stroke: #f59e0b;
-		stroke-width: 4;
-		filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
-		animation: pulse 0.8s ease-in-out infinite;
+		stroke: #d97706;
+		stroke-width: 3;
+		filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.7));
+		animation: highlight-pulse 0.8s ease-in-out infinite;
 	}
 
-	@keyframes pulse {
-		0%, 100% { transform: scale(1); }
-		50% { transform: scale(1.1); }
-	}
-
-	.tracking-object.selectable {
+	:global(.tracking-object.selectable) {
 		cursor: pointer;
+		fill: #a5b4fc;
+		stroke: #6366f1;
+		stroke-width: 2;
+		transition: fill 0.15s, stroke 0.15s;
 	}
 
-	.tracking-object.selectable:hover {
-		fill: #63b3ed;
+	:global(.tracking-object.selectable:hover) {
+		fill: #c4b5fd;
+		stroke: #7c3aed;
 		stroke-width: 3;
 	}
 
-	.tracking-object.selected {
-		fill: #48bb78;
-		stroke: #2f855a;
-		stroke-width: 4;
-		filter: drop-shadow(0 0 6px rgba(72, 187, 120, 0.5));
+	:global(.tracking-object.selected) {
+		fill: #4ade80;
+		stroke: #16a34a;
+		stroke-width: 3;
+		filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.6));
 	}
 
-	/* Phase Instructions */
-	.phase-instruction {
-		background: white;
-		border-radius: 16px;
-		padding: 1.5rem 2rem;
-		text-align: center;
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-		max-width: 600px;
-		width: 100%;
+	/* ── Submit Row ───────────────────────────────────── */
+	.submit-row {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 1rem;
 	}
 
-	.phase-title {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #2d3748;
-		margin: 0 0 0.5rem 0;
-	}
-
-	.phase-subtitle {
-		font-size: 1.1rem;
-		color: #718096;
-		margin: 0;
-	}
-
-	.selection-count {
-		color: #667eea;
-		font-weight: 600;
-	}
-
-	.selection-timer {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-		padding: 0.5rem 1.5rem;
-		border-radius: 50px;
-		margin-top: 0.75rem;
-		border: 2px solid #a5b4fc;
-	}
-
-	.selection-timer .timer-icon {
-		font-size: 1.25rem;
-	}
-
-	.selection-timer .timer-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: #4338ca;
-		min-width: 50px;
-	}
-
-	/* Tracking Controls */
-	.tracking-controls {
-		background: white;
-		border-radius: 16px;
-		padding: 1.5rem 2rem;
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-		max-width: 600px;
-		width: 100%;
-		text-align: center;
-	}
-
-	.timer-display {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.75rem;
-		background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
-		padding: 0.75rem 2rem;
-		border-radius: 50px;
-		margin-bottom: 0.75rem;
-		border: 2px solid #81e6d9;
-	}
-
-	.timer-display.critical {
-		background: linear-gradient(135deg, #fed7d7 0%, #fc8181 100%);
-		border-color: #fc8181;
-		animation: blink 0.5s ease-in-out infinite;
-	}
-
-	@keyframes blink {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.7; }
-	}
-
-	.timer-icon {
-		font-size: 1.5rem;
-	}
-
-	.timer-value {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #2d3748;
-		min-width: 60px;
-	}
-
-	.tracking-hint {
-		color: #718096;
-		font-size: 1.05rem;
-	}
-
-	/* Selection Actions */
-	.selection-actions {
-		width: 100%;
-		max-width: 400px;
-	}
-
-	.submit-button {
-		width: 100%;
-		padding: 1rem 2rem;
-		background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+	.submit-btn {
+		padding: 1rem 3rem;
+		background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
 		color: white;
 		border: none;
-		border-radius: 12px;
-		font-size: 1.25rem;
+		border-radius: 14px;
+		font-size: 1.063rem;
 		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.3s ease;
-		box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+		box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
+		transition: transform 0.15s, box-shadow 0.15s;
 	}
 
-	.submit-button:hover:not(:disabled) {
+	.submit-btn:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(72, 187, 120, 0.5);
+		box-shadow: 0 8px 20px rgba(124, 58, 237, 0.5);
 	}
 
-	.submit-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
+	.submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-	/* Results Phase */
+	/* ── Results Header ───────────────────────────────── */
 	.results-header {
+		border-radius: 16px;
+		padding: 1.75rem;
+		text-align: center;
+		margin-bottom: 1rem;
+		background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
+		box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+	}
+
+	.perf-perfect    { background: linear-gradient(135deg, #92400e 0%, #d97706 100%); box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4); }
+	.perf-excellent  { background: linear-gradient(135deg, #14532d 0%, #16a34a 100%); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); }
+	.perf-good       { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); box-shadow: 0 4px 12px rgba(30, 58, 138, 0.35); }
+
+	.score-pill {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.375rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.score-label { color: rgba(255, 255, 255, 0.85); font-size: 1rem; font-weight: 500; }
+	.score-value { color: white; font-size: 3rem; font-weight: 700; }
+	.score-max   { color: rgba(255, 255, 255, 0.7); font-size: 1.5rem; font-weight: 500; }
+	.results-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 0.938rem; margin: 0; }
+
+	/* ── Metrics Grid ─────────────────────────────────── */
+	.metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.875rem;
+		margin-bottom: 1rem;
+	}
+
+	.metric-card {
 		background: white;
 		border-radius: 16px;
-		padding: 2rem;
+		padding: 1.25rem;
 		text-align: center;
-		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-		max-width: 600px;
-		width: 100%;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+		border-top: 4px solid #e5e7eb;
 	}
 
-	.results-title {
-		font-size: 2rem;
-		font-weight: 700;
-		color: #2d3748;
-		margin: 0 0 1rem 0;
-	}
+	.metric-violet { border-top-color: #7c3aed; }
+	.metric-green  { border-top-color: #16a34a; }
+	.metric-blue   { border-top-color: #1e40af; }
+	.metric-amber  { border-top-color: #d97706; }
 
-	.performance-badge {
-		display: inline-block;
-		padding: 0.75rem 1.5rem;
-		border-radius: 50px;
-		font-weight: 700;
-		font-size: 1.1rem;
-	}
+	.metric-value { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; line-height: 1; }
+	.metric-label { font-size: 0.75rem; color: #6b7280; margin-top: 0.375rem; }
 
-	.performance-perfect {
-		background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
-	}
-
-	.performance-excellent {
-		background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
-	}
-
-	.performance-good {
-		background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
-	}
-
-	.performance-average {
-		background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(237, 137, 54, 0.4);
-	}
-
-	.performance-needs_improvement {
-		background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-		color: white;
-		box-shadow: 0 4px 12px rgba(160, 174, 192, 0.4);
-	}
-
-	.results-grid {
+	/* ── Analysis Grid ────────────────────────────────── */
+	.analysis-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1.5rem;
-		max-width: 900px;
-		width: 100%;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 1rem;
 	}
 
-	.result-card {
-		background: white;
-		border-radius: 12px;
-		padding: 1.5rem;
+	.analysis-cell {
+		background: #f8fafc;
+		border-radius: 10px;
+		padding: 1rem;
 		text-align: center;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		border: 2px solid #e2e8f0;
 	}
 
-	.result-card.primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		grid-column: 1 / -1;
-	}
+	.analysis-label { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.375rem; }
+	.analysis-value { font-size: 1.375rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+	.analysis-desc  { font-size: 0.75rem; color: #9ca3af; line-height: 1.4; }
 
-	.result-label {
-		font-size: 0.9rem;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
-		opacity: 0.9;
-	}
-
-	.result-card.primary .result-label {
-		color: white;
-	}
-
-	.result-card:not(.primary) .result-label {
-		color: #718096;
-	}
-
-	.result-value {
-		font-size: 2.25rem;
-		font-weight: 700;
-		margin-bottom: 0.25rem;
-	}
-
-	.result-card.primary .result-value {
-		color: white;
-	}
-
-	.result-card:not(.primary) .result-value {
-		color: #2d3748;
-	}
-
-	.result-detail {
-		font-size: 0.85rem;
-		opacity: 0.8;
-		color: #a0aec0;
-	}
-
+	/* ── Feedback Card ────────────────────────────────── */
 	.feedback-card {
-		background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
-		border: 2px solid #81e6d9;
-		border-radius: 12px;
-		padding: 1.5rem;
 		display: flex;
-		gap: 1rem;
 		align-items: flex-start;
-		max-width: 700px;
-		width: 100%;
-	}
-
-	.feedback-icon {
-		font-size: 1.75rem;
-		flex-shrink: 0;
-	}
-
-	.feedback-text {
-		color: #234e52;
-		line-height: 1.6;
-		font-size: 1.05rem;
-		font-weight: 500;
-	}
-
-	.adaptation-notice {
-		background: white;
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		max-width: 600px;
-		width: 100%;
-		border-left: 4px solid #667eea;
-	}
-
-	.adaptation-icon {
-		font-size: 1.5rem;
-	}
-
-	.adaptation-text {
-		color: #4a5568;
-		font-weight: 500;
-	}
-
-	.results-actions {
-		display: flex;
 		gap: 1rem;
-		max-width: 500px;
-		width: 100%;
-	}
-
-	.next-button,
-	.exit-button {
-		flex: 1;
-		padding: 1rem 2rem;
-		border: none;
+		background: #f0fdf4;
+		border: 1px solid #bbf7d0;
 		border-radius: 12px;
-		font-size: 1.1rem;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.3s ease;
+		padding: 1.25rem;
+		margin-bottom: 1rem;
 	}
 
-	.next-button {
+	.feedback-dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 50%;
+		background: #16a34a;
+		flex-shrink: 0;
+		margin-top: 0.375rem;
+	}
+
+	.feedback-text { font-size: 0.938rem; color: #166534; line-height: 1.6; margin: 0; }
+
+	/* ── Adaptation Card ──────────────────────────────── */
+	.adaptation-card {
+		background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+		border: 1px solid #ddd6fe;
+		border-radius: 16px;
+		padding: 1.25rem 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.adaptation-label { font-size: 0.875rem; font-weight: 700; color: #4c1d95; margin-bottom: 0.375rem; }
+	.adaptation-text  { font-size: 0.875rem; color: #7c3aed; margin: 0; line-height: 1.5; }
+
+	/* ── Action Buttons ───────────────────────────────── */
+	.action-buttons { display: flex; gap: 1rem; margin-top: 1rem; }
+
+	.start-button {
+		flex: 1;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+		border: none;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		transition: transform 0.15s;
 	}
 
-	.next-button:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
-	}
+	.start-button:hover { transform: translateY(-2px); }
 
-	.exit-button {
+	.btn-secondary {
 		background: white;
-		color: #4a5568;
-		border: 2px solid #e2e8f0;
+		color: #667eea;
+		border: 2px solid #667eea;
+		border-radius: 12px;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: transform 0.15s, background 0.15s;
 	}
 
-	.exit-button:hover {
-		background: #f7fafc;
-		border-color: #cbd5e0;
+	.action-buttons .btn-secondary { flex: 1; }
+	.btn-secondary:hover { background: #f5f3ff; transform: translateY(-2px); }
+
+	/* ── Animations ───────────────────────────────────── */
+	@keyframes highlight-pulse {
+		0%, 100% { transform: scale(1); opacity: 1; }
+		50%       { transform: scale(1.15); opacity: 0.85; }
 	}
 
+	@keyframes timer-pulse {
+		0%, 100% { transform: scale(1); opacity: 1; }
+		50%       { transform: scale(1.08); opacity: 0.8; }
+	}
+
+	/* ── Responsive ───────────────────────────────────── */
 	@media (max-width: 768px) {
-		.mot-container {
-			padding: 1rem;
-		}
-
-		.task-title {
-			font-size: 2rem;
-		}
-
-		.task-subtitle {
-			font-size: 1rem;
-		}
-
-		.intro-card {
-			padding: 1.5rem;
-		}
-
-		.task-details-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.results-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.results-actions {
-			flex-direction: column;
-		}
+		.info-grid      { grid-template-columns: 1fr; }
+		.metrics-grid   { grid-template-columns: 1fr 1fr; }
+		.analysis-grid  { grid-template-columns: 1fr 1fr; }
+		.action-buttons { flex-direction: column; }
+		.phase-status   { gap: 0.75rem; }
 	}
 </style>
