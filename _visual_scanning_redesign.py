@@ -1,4 +1,8 @@
-<script>
+import os
+
+path = r"d:\NeuroBloom\frontend-svelte\src\routes\baseline\tasks\visual-scanning\+page.svelte"
+
+content = r"""<script>
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
@@ -216,7 +220,7 @@
             <div class="rules-card">
                 <h3>How It Works</h3>
                 <ul class="rules-list">
-                    <li>A <strong>{gridSize * gridSize}</strong> grid of letters will appear — all distractors except <strong>{totalTargets} hidden targets</strong></li>
+                    <li>A <strong>{gridSize × gridSize}</strong> grid of letters will appear — all distractors except <strong>{totalTargets} hidden targets</strong></li>
                     <li>Your job: find and click every target letter as fast as possible</li>
                     <li>The timer starts the moment the grid appears</li>
                     <li>The task ends automatically when all targets are found</li>
@@ -678,3 +682,10 @@
         .preview-box    { padding: 0.9rem 1.25rem; }
     }
 </style>
+"""
+
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print(f"Done. Lines: {len(content.splitlines())}")
