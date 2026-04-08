@@ -45,6 +45,7 @@
 	
 	// Help modal
 	let showHelp = false;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 
@@ -89,7 +90,9 @@
 	}
 
 	function startPractice() {
-		playMode = TASK_PLAY_MODE.PRACTICE;
+		/** @type {"practice" | "recorded"} */
+		const practiceMode = TASK_PLAY_MODE.PRACTICE;
+		playMode = practiceMode;
 		practiceStatusMessage = '';
 		showInstructions = false;
 		showPractice = true;
@@ -268,7 +271,7 @@
 
 		{:else if error}
 			<div class="screen-card error-screen">
-				<h2>⚠️ Error</h2>
+				<h2>Error</h2>
 				<p>{error}</p>
 				<button class="start-button" on:click={returnToDashboard}>Return to Dashboard</button>
 			</div>
@@ -277,7 +280,7 @@
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>⚡ Inspection Time</h1>
+						<h1>Inspection Time</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
 					</div>
 					<p class="subtitle">How fast can your brain perceive a brief visual flash?</p>
@@ -289,7 +292,7 @@
 				{/if}
 
 				<div class="task-concept">
-					<h3>⚡ The Challenge</h3>
+					<h3>The Challenge</h3>
 					<p>Two vertical lines flash on screen for a <strong>fraction of a second</strong> — then a mask covers them. Your job: say which line was <strong>longer</strong> (left or right). No motor tricks — pure perception.</p>
 					<div class="demo-lines">
 						<div class="demo-line-col">
@@ -309,28 +312,28 @@
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">👁️</span>
+						<span class="rule-icon">Look</span>
 						<div class="rule-text">
 							<strong>Step 1: Watch</strong>
 							<span>Two lines flash very briefly — as short as 50ms</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">🎭</span>
+						<span class="rule-icon">▣</span>
 						<div class="rule-text">
 							<strong>Step 2: Mask</strong>
 							<span>A pattern mask immediately covers the lines</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">↔️</span>
+						<span class="rule-icon">↔</span>
 						<div class="rule-text">
 							<strong>Step 3: Decide</strong>
 							<span>Which line was longer — LEFT or RIGHT?</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">🔄</span>
+						<span class="rule-icon">↺</span>
 						<div class="rule-text">
 							<strong>Step 4: Repeat</strong>
 							<span>Keep going for all {sessionData?.total_trials || 20} trials</span>
@@ -340,7 +343,7 @@
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>💡 Perception Tips</h4>
+						<h4>Perception Tips</h4>
 						<ul class="tips-list">
 							<li><strong>Stay relaxed:</strong> Tension reduces perceptual sensitivity</li>
 							<li><strong>Central focus:</strong> Keep eyes on the screen centre before each trial</li>
@@ -349,7 +352,7 @@
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>📋 Test Format</h4>
+						<h4>Test Format</h4>
 						<ul class="structure-list">
 							<li><span class="struct-key">Trials</span><span class="struct-val">{sessionData?.total_trials || 20}</span></li>
 							<li><span class="struct-key">Flash duration</span><span class="struct-val">{sessionData?.config?.presentation_time_ms || 100}ms</span></li>
@@ -360,7 +363,7 @@
 				</div>
 
 				<div class="clinical-info">
-					<h4>🏥 Clinical Significance</h4>
+					<h4>Clinical Significance</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
 							<strong>Pure Perception</strong>
@@ -382,7 +385,7 @@
 				</div>
 
 				<div class="perf-guide">
-					<h4>📊 Performance Targets</h4>
+					<h4>Performance Targets</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
 							<span class="norm-label">Excellent</span>
@@ -409,7 +412,7 @@
 				</div>
 
 				<div class="button-group">
-					<button class="btn-secondary" on:click={startPractice}>✏️ Try Practice First</button>
+					<button class="btn-secondary" on:click={startPractice}>Try Practice First</button>
 					<TaskPracticeActions
 						locale={$locale}
 						startLabel="Start Actual Task"
@@ -424,7 +427,7 @@
 		{:else if showPractice}
 			<div class="screen-card practice-screen">
 				<PracticeModeBanner locale={$locale} />
-				<h2>✏️ Practice Mode</h2>
+				<h2>Practice Mode</h2>
 				<p class="practice-intro">Practice with a slower flash to get familiar with the task.</p>
 
 				<div class="practice-info-row">
@@ -466,12 +469,12 @@
 						<p class="response-prompt">Which line was longer?</p>
 						<div class="response-buttons">
 							<button class="response-btn left-btn" on:click={() => handlePracticeResponse('left')}>
-								<span class="resp-icon">⬅️</span>
+								<span class="resp-icon">←</span>
 								<span class="resp-text">LEFT</span>
 							</button>
 							<button class="response-btn right-btn" on:click={() => handlePracticeResponse('right')}>
 								<span class="resp-text">RIGHT</span>
-								<span class="resp-icon">➡️</span>
+								<span class="resp-icon">→</span>
 							</button>
 						</div>
 					</div>
@@ -483,7 +486,7 @@
 				<div class="test-header">
 					<div class="test-badges">
 						<span class="count-badge">Trial {currentTrialIndex + 1} / {sessionData.total_trials}</span>
-						<span class="speed-badge">⚡ {sessionData.config.presentation_time_ms}ms flash</span>
+						<span class="speed-badge">{sessionData.config.presentation_time_ms}ms flash</span>
 					</div>
 					<div class="progress-track">
 						<div class="progress-fill" style="width: {progressPercent}%"></div>
@@ -511,12 +514,12 @@
 							<p class="response-prompt">Which line was longer?</p>
 							<div class="response-buttons">
 								<button class="response-btn left-btn" on:click={() => handleResponse('left')}>
-									<span class="resp-icon">⬅️</span>
+									<span class="resp-icon">←</span>
 									<span class="resp-text">LEFT</span>
 								</button>
 								<button class="response-btn right-btn" on:click={() => handleResponse('right')}>
 									<span class="resp-text">RIGHT</span>
-									<span class="resp-icon">➡️</span>
+									<span class="resp-icon">→</span>
 								</button>
 							</div>
 						</div>
@@ -533,32 +536,31 @@
 			<div class="screen-card complete-screen">
 				{#if results}
 					<div class="perf-banner">
-						<div class="perf-emoji">🎉</div>
-						<div class="perf-level">{results.metrics.performance_level}</div>
+												<div class="perf-level">{results.metrics.performance_level}</div>
 						<div class="perf-subtitle">Perceptual Speed Index: {results.metrics.perceptual_speed_index} · Inspection Time Complete!</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
-							<div class="metric-icon">🎯</div>
+							<div class="metric-icon">◎</div>
 							<div class="metric-value">{results.metrics.accuracy}%</div>
 							<div class="metric-label">Accuracy</div>
 							<div class="metric-sub">{results.metrics.correct_count}/{results.metrics.total_trials} correct</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">⚡</div>
+							<div class="metric-icon">→</div>
 							<div class="metric-value">{results.metrics.perceptual_speed_index}</div>
 							<div class="metric-label">Perceptual Speed Index</div>
 							<div class="metric-sub">at {results.metrics.presentation_time_ms}ms flash</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">⏱️</div>
+							<div class="metric-icon">⏱</div>
 							<div class="metric-value">{results.metrics.average_reaction_time}ms</div>
 							<div class="metric-label">Avg Decision Time</div>
 							<div class="metric-sub">after mask appears</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">📈</div>
+							<div class="metric-icon">↑</div>
 							<div class="metric-value">{results.metrics.consistency}%</div>
 							<div class="metric-label">Consistency</div>
 							<div class="metric-sub">response variability</div>
@@ -594,7 +596,7 @@
 					</div>
 
 					<div class="clinical-note">
-						<h4>🧠 Clinical Context</h4>
+						<h4>Clinical Context</h4>
 						<p>
 							{#if results.metrics.accuracy >= 90}
 								Excellent perceptual speed! You're accurately processing visual information at <strong>{results.metrics.presentation_time_ms}ms</strong> — significantly below the average conscious perception threshold.
@@ -617,9 +619,7 @@
 					{/if}
 
 					{#if results.new_badges && results.new_badges.length > 0}
-						{#each results.new_badges as badge}
-							<BadgeNotification {badge} />
-						{/each}
+						<BadgeNotification badges={results.new_badges} />
 					{/if}
 
 					<div class="button-group">
@@ -639,27 +639,27 @@
 			<button class="close-btn" on:click={() => showHelp = false}>×</button>
 			<h2>Inspection Time — Strategies</h2>
 			<div class="strategy">
-				<h3>😌 Stay Relaxed</h3>
+				<h3>Stay Relaxed</h3>
 				<p>Tension and anxiety physically reduce perceptual sensitivity. Take a breath before each trial and stay calm — your perception improves when you're relaxed.</p>
 			</div>
 			<div class="strategy">
-				<h3>👁️ Central Focus</h3>
+				<h3>Central Focus</h3>
 				<p>Keep your gaze fixed on the centre of the screen between trials. The lines appear left and right — central focus lets peripheral vision catch both at once.</p>
 			</div>
 			<div class="strategy">
-				<h3>⚡ Trust Your First Impression</h3>
+				<h3>Trust Your First Impression</h3>
 				<p>The flash is too brief for conscious analysis. Your first instinct is your perceptual system's best output — trust it rather than deliberating.</p>
 			</div>
 			<div class="strategy">
-				<h3>🎯 Why the Mask?</h3>
+				<h3>Why the Mask?</h3>
 				<p>The pattern mask immediately after the flash prevents "afterimage" processing. This ensures we're measuring true real-time perception, not memory of the image.</p>
 			</div>
 			<div class="strategy">
-				<h3>📈 Adaptive Difficulty</h3>
+				<h3>Adaptive Difficulty</h3>
 				<p>The task adjusts flash duration to find your perceptual threshold. Getting some wrong is expected and scientifically meaningful — not a failure.</p>
 			</div>
 			<div class="strategy">
-				<h3>💪 Why This Matters</h3>
+				<h3>Why This Matters</h3>
 				<p>Inspection Time requires no complex motor responses — just a simple left/right click. This makes it an exceptionally clean measure of pure cognitive processing speed for MS research.</p>
 			</div>
 		</div>
@@ -885,11 +885,11 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white; border: none; border-radius: 10px;
 		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
 		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
 	}
 	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
 
@@ -1047,7 +1047,6 @@
 		background: linear-gradient(135deg, #faf5ff, #ede9fe);
 		border: 2px solid #c4b5fd; border-radius: 14px;
 	}
-	.perf-emoji    { font-size: 2.5rem; margin-bottom: 0.25rem; }
 	.perf-level    { font-size: 1.8rem; font-weight: 800; color: #6d28d9; }
 	.perf-subtitle { font-size: 0.95rem; color: #64748b; margin-top: 0.3rem; }
 
@@ -1078,7 +1077,6 @@
 	.breakdown-row:last-child { border-bottom: none; }
 	.bd-label { color: #64748b; }
 	.bd-val   { font-weight: 700; color: #667eea; }
-	.bd-error   { color: #dc2626; }
 	.bd-success { color: #16a34a; }
 
 	/* ── Clinical note ─────────────────────────────────────── */

@@ -32,6 +32,7 @@
 	let taskId = null;
 	
 	let showHelp = false;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
@@ -103,6 +104,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} nextMode */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -219,7 +221,7 @@
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>🔍 Pattern Comparison</h1>
+						<h1>Pattern Comparison</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || difficulty} domain="Processing Speed" />
 					</div>
 					<p class="subtitle">Same or different? Decide as fast as you can</p>
@@ -231,7 +233,7 @@
 				{/if}
 
 				<div class="task-concept">
-					<h3>🎯 The Challenge</h3>
+					<h3>The Challenge</h3>
 					<p>Two patterns appear side by side. Your job: decide if they are <strong>identical</strong> or <strong>different</strong> — as quickly and accurately as possible.</p>
 					<div class="demo-patterns">
 						<div class="demo-pattern-box">
@@ -260,28 +262,28 @@
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">👁️</span>
+						<span class="rule-icon">Look</span>
 						<div class="rule-text">
 							<strong>Step 1: Look</strong>
 							<span>Two patterns appear — scan both quickly</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">🔍</span>
+						<span class="rule-icon">⊕</span>
 						<div class="rule-text">
 							<strong>Step 2: Compare</strong>
 							<span>Are they identical or different?</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">⚡</span>
+						<span class="rule-icon">▷</span>
 						<div class="rule-text">
 							<strong>Step 3: Decide</strong>
 							<span>Click SAME or DIFFERENT fast</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">🔄</span>
+						<span class="rule-icon">×n</span>
 						<div class="rule-text">
 							<strong>Step 4: Repeat</strong>
 							<span>Keep going for all {sessionData?.total_trials || 25} trials</span>
@@ -291,7 +293,7 @@
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>💡 Speed Tips</h4>
+						<h4>Speed Tips</h4>
 						<ul class="tips-list">
 							<li><strong>First glance:</strong> Trust your initial impression — it's usually right</li>
 							<li><strong>Scan systematically:</strong> Row by row if unsure</li>
@@ -300,7 +302,7 @@
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>📋 Test Format</h4>
+						<h4>Test Format</h4>
 						<ul class="structure-list">
 							<li><span class="struct-key">Trials</span><span class="struct-val">{sessionData?.total_trials || 25}</span></li>
 							<li><span class="struct-key">Time per trial</span><span class="struct-val">{sessionData?.config?.time_per_trial || 2}s</span></li>
@@ -311,7 +313,7 @@
 				</div>
 
 				<div class="clinical-info">
-					<h4>🏥 Clinical Significance</h4>
+					<h4>Clinical Significance</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
 							<strong>Pure Speed</strong>
@@ -333,7 +335,7 @@
 				</div>
 
 				<div class="perf-guide">
-					<h4>📊 Performance Targets</h4>
+					<h4>Performance Targets</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
 							<span class="norm-label">Excellent</span>
@@ -400,9 +402,9 @@
 						<span class="count-badge">Trial {currentTrialIndex + 1} / {sessionData.total_trials}</span>
 						{#if currentTrial}
 							<span class="type-badge">
-								{#if currentTrial.pattern_type === 'simple_geometric'}📐 Simple
-								{:else if currentTrial.pattern_type === 'complex'}🔷 Complex
-								{:else}✨ Abstract{/if}
+								{#if currentTrial.pattern_type === 'simple_geometric'}Simple
+								{:else if currentTrial.pattern_type === 'complex'}Complex
+								{:else}Abstract{/if}
 							</span>
 							<span class="grid-badge">{currentTrial.pattern_size}×{currentTrial.pattern_size}</span>
 						{/if}
@@ -466,20 +468,19 @@
 				{#if sessionResults}
 					{@const perfColor = getPerformanceColor(sessionResults.metrics.performance_level)}
 					<div class="perf-banner" style="--perf-color: {perfColor}">
-						<div class="perf-emoji">🎉</div>
 						<div class="perf-level">{sessionResults.metrics.performance_level}</div>
 						<div class="perf-subtitle">{sessionResults.metrics.processing_speed} correct/min · Pattern Comparison Complete!</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
-							<div class="metric-icon">⚡</div>
+							<div class="metric-icon">→</div>
 							<div class="metric-value">{sessionResults.metrics.processing_speed}</div>
 							<div class="metric-label">Processing Speed</div>
 							<div class="metric-sub">correct responses/min</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">🎯</div>
+							<div class="metric-icon">◎</div>
 							<div class="metric-value">{sessionResults.metrics.score}</div>
 							<div class="metric-label">Score</div>
 							<div class="metric-sub">out of 100</div>
@@ -529,7 +530,7 @@
 					</div>
 
 					<div class="clinical-note">
-						<h4>🧠 Clinical Context</h4>
+						<h4>Clinical Context</h4>
 						<p>
 							{#if sessionResults.metrics.performance_level === 'Excellent'}
 								Outstanding processing speed! Your performance of <strong>{sessionResults.metrics.processing_speed} correct/min</strong> is well above average, indicating excellent cognitive efficiency and visual processing.
@@ -550,9 +551,7 @@
 					</div>
 
 					{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
-						{#each sessionResults.new_badges as badge}
-							<BadgeNotification {badge} />
-						{/each}
+						<BadgeNotification badges={sessionResults.new_badges} />
 					{/if}
 
 					<div class="button-group">
@@ -572,27 +571,27 @@
 			<button class="close-btn" on:click={toggleHelp}>×</button>
 			<h2>Pattern Comparison Strategies</h2>
 			<div class="strategy">
-				<h3>👁️ Quick Visual Scan</h3>
+				<h3>Quick Visual Scan</h3>
 				<p>Your first impression is often correct. Scan both patterns simultaneously rather than examining each in detail.</p>
 			</div>
 			<div class="strategy">
-				<h3>🔄 Systematic Approach</h3>
+				<h3>Systematic Approach</h3>
 				<p>If unsure, scan row by row (top to bottom) or column by column. This ensures you don't miss differences.</p>
 			</div>
 			<div class="strategy">
-				<h3>⚡ Speed vs Accuracy</h3>
+				<h3>Speed vs Accuracy</h3>
 				<p>The "correct/min" metric rewards both speed and accuracy. Fast but wrong is worse than slightly slow but accurate.</p>
 			</div>
 			<div class="strategy">
-				<h3>🎯 Peripheral Vision</h3>
+				<h3>Peripheral Vision</h3>
 				<p>With practice, look at the centre and let peripheral vision catch differences automatically.</p>
 			</div>
 			<div class="strategy">
-				<h3>🧠 Pattern Recognition</h3>
+				<h3>Pattern Recognition</h3>
 				<p>Your brain improves at this with repetition. Trust your pattern recognition — don't overthink it.</p>
 			</div>
 			<div class="strategy">
-				<h3>💪 Why This Matters</h3>
+				<h3>Why This Matters</h3>
 				<p>This test measures pure cognitive processing speed without complex motor demands — ideal for assessing MS-related cognitive changes.</p>
 			</div>
 		</div>
@@ -856,11 +855,11 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white; border: none; border-radius: 10px;
 		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
 		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
 	}
 
 	.start-button:hover {
