@@ -1,3 +1,8 @@
+import os
+
+path = r"d:\NeuroBloom\frontend-svelte\src\routes\training\useful-field-of-view\+page.svelte"
+
+content = """\
 <script>
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
@@ -1380,3 +1385,11 @@
         .page-content { gap: 1rem; }
     }
 </style>
+"""
+
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+
+lines = len(content.splitlines())
+print(f"Done. Lines: {lines}")
