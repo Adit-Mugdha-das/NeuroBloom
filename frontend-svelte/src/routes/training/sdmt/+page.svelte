@@ -36,6 +36,7 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrial = null;
@@ -133,6 +134,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} [nextMode] */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';

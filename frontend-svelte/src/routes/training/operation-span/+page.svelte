@@ -53,6 +53,7 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrials = [];
@@ -163,6 +164,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} [nextMode] */
 	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -650,7 +652,8 @@
 
 {#if showHelp}
 	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
-		<div class="help-content" on:click|stopPropagation role="document" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+		<div class="help-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()} aria-modal="true" aria-label="Help">
 			<button class="close-button" on:click={toggleHelp}>×</button>
 			<h2>{t('Success Strategies')}</h2>
 			

@@ -54,6 +54,7 @@
 	
 	// Help modal
 	let showHelp = false;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	
