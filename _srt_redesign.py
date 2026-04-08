@@ -1,10 +1,15 @@
+import os
+
+path = r"d:\NeuroBloom\frontend-svelte\src\routes\baseline\tasks\processing-speed\+page.svelte"
+
+content = """\
 <script>
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
     import { tasks, training } from '$lib/api';
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
-    import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
     import { onMount } from 'svelte';
@@ -325,8 +330,7 @@
 
     <!-- SIMPLE REACTION TIME -->
     {:else if stage === 'simple'}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div class="arena-wrap" class:arena-green={simpleReady} on:click={handleSimpleClick} role="button" tabindex="0" on:keydown={(e) => (e.key === ' ' || e.key === 'Enter') && handleSimpleClick()}>
+        <div class="arena-wrap" class:arena-green={simpleReady} on:click={handleSimpleClick}>
             {#if isPracticeMode}
                 <div class="practice-wrap"><PracticeModeBanner locale={$locale} /></div>
             {/if}
@@ -969,3 +973,11 @@
         .start-button { width: calc(100% - 2.5rem); margin: 0 1.25rem 1.25rem; }
     }
 </style>
+"""
+
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+
+lines = len(content.splitlines())
+print(f"Done. Lines: {lines}")

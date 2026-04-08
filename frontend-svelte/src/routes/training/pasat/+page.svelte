@@ -1,19 +1,19 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import {
-		formatNumber,
-		formatPercent,
-		localizeDigitInput,
-		locale,
-		localeText,
-		normalizeLocalizedDigits,
-		translateText
+	  formatNumber,
+	  formatPercent,
+	  locale,
+	  localeText,
+	  localizeDigitInput,
+	  normalizeLocalizedDigits,
+	  translateText
 	} from '$lib/i18n';
 	import { getTaskDifficultyDescription } from '$lib/i18n/task-ui.js';
 	import { user } from '$lib/stores.js';
