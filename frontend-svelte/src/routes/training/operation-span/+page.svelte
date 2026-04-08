@@ -357,7 +357,7 @@
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
-					<h1>🧮 {t('Operation Span (OSPAN)')}</h1>
+					<h1>{t('Operation Span (OSPAN)')}</h1>
 					<p class="subtitle">{t('Dual-Task Executive Working Memory Training')}</p>
 					<div class="classic-badge">{t('OSPAN · Turner & Engle (1989) · MACFIMS Battery')}</div>
 				</div>
@@ -368,31 +368,31 @@
 			</div>
 
 			<div class="task-concept">
-				<h2>{t('💡 Your Task: Juggle Math and Memory')}</h2>
+				<h2>{t('Your Task: Juggle Math and Memory')}</h2>
 				<p>{$locale === 'bn' ? 'এই টাস্কে আপনাকে একই সঙ্গে গণিত যাচাই করতে হবে এবং অক্ষর মনে রাখতে হবে।' : 'Verify math equations AND memorize letters shown after each one. At the end of each set, recall all letters in order.'}</p>
 			</div>
 
 			<div class="rules-grid">
 				<div class="rule-card">
-					<div class="rule-icon">🧮</div>
+					<div class="rule-icon">=?</div>
 					<h3>{t('Step 1 — Verify Equation')}</h3>
 					<p>{t('Is each equation correct or incorrect?')}</p>
 					<div class="rule-example">{t('2 + 3 = 5')} ✓ &nbsp; {t('4 + 2 = 7')} ✗</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">🔤</div>
+					<div class="rule-icon">A</div>
 					<h3>{t('Step 2 — Remember Letter')}</h3>
 					<p>{t('A letter appears after each equation — memorize it')}</p>
 					<div class="rule-example">{symbol('F')} → {symbol('K')} → {symbol('M')}...</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">🔁</div>
+					<div class="rule-icon">×n</div>
 					<h3>{t('Step 3 — Repeat')}</h3>
 					<p>{t('2–8 math-letter pairs per set, depending on difficulty')}</p>
 					<div class="rule-example">{t('Pairs adapt to your level')}</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">📋</div>
+					<div class="rule-icon">[…]</div>
 					<h3>{t('Step 4 — Recall Letters')}</h3>
 					<p>{t('Recall all letters in order at the end of the set')}</p>
 					<div class="rule-example">{letterSequence(['F', 'K', 'M'])}</div>
@@ -401,7 +401,7 @@
 
 			<div class="info-grid">
 				<div class="info-section">
-					<h3>{t('💪 Memory Strategies')}</h3>
+					<h3>{t('Memory Strategies')}</h3>
 					<div class="tips-list">
 						<div class="tip-item">✓ <strong>{t('Balance both tasks:')}</strong> {$locale === 'bn' ? 'দুটি কাজের মধ্যে ভারসাম্য রাখুন।' : "Don't sacrifice math for letters or vice versa"}</div>
 						<div class="tip-item">✓ <strong>{t('Active rehearsal:')}</strong> {$locale === 'bn' ? 'প্রতিটি অক্ষর দেখার পর পুরো ধারাটি মনে মনে বলুন।' : 'Silently repeat all letters so far after each one'}</div>
@@ -410,7 +410,7 @@
 					</div>
 				</div>
 				<div class="info-section">
-					<h3>{t('📋 Session Info')}</h3>
+					<h3>{t('Session Info')}</h3>
 					<div class="structure-list">
 						<div class="structure-item">
 							<div class="structure-num">{n(difficulty)}</div>
@@ -431,19 +431,19 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('📚 Clinical Significance')}</h3>
+				<h3>{t('Clinical Significance')}</h3>
 				<div class="clinical-grid">
 					<div class="clinical-item">
-						<strong>{t('📜 Standard:')}</strong> {t('OSPAN — Turner & Engle (1989); the most cited complex span task')}
+						<strong>{t('Standard:')}</strong> {t('OSPAN — Turner & Engle (1989); the most cited complex span task')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🎯 Measures:')}</strong> {t('Executive working memory — simultaneous storage and processing')}
+						<strong>{t('Measures:')}</strong> {t('Executive working memory — simultaneous storage and processing')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🏥 MS Relevance:')}</strong> {t('Highly sensitive to MS cognitive impairment (Rao et al., 1991); included in MACFIMS')}
+						<strong>{t('MS Relevance:')}</strong> {t('Highly sensitive to MS cognitive impairment (Rao et al., 1991); included in MACFIMS')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🌍 Clinical Use:')}</strong> {t('Gold standard for assessing executive working memory in neuropsychology')}
+						<strong>{t('Clinical Use:')}</strong> {t('Gold standard for assessing executive working memory in neuropsychology')}
 					</div>
 				</div>
 			</div>
@@ -591,7 +591,7 @@
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>{t('Session Complete!')} 🎉</h1>
+			<h1>{t('Session Complete!')}</h1>
 			
 			<div class="results-grid">
 				<div class="result-card">

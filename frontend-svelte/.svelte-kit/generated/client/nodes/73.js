@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/training/useful-field-of-view/+page.svelte";

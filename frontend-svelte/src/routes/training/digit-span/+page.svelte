@@ -66,7 +66,7 @@
 	}
 
 	function getSpanInputInstruction(spanType) {
-		return spanType === 'forward' ? `➡️ ${t('Type in same order')}` : `↩️ ${t('Type in reverse order')}`;
+		return spanType === 'forward' ? t('Type in same order') : t('Type in reverse order');
 	}
 
 	function displayDigit(value) {
@@ -331,7 +331,7 @@
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
-					<h1>🧠 {t('Digit Span Test')}</h1>
+					<h1>{t('Digit Span Test')}</h1>
 					<p class="subtitle">{t('Working Memory Training')}</p>
 					<div class="classic-badge">{t('WAIS-IV Standard · MACFIMS Battery')}</div>
 				</div>
@@ -342,13 +342,13 @@
 			</div>
 
 			<div class="task-concept">
-				<h2>{t('💡 Your Task: Remember & Reproduce Digit Sequences')}</h2>
+				<h2>{t('Your Task: Remember & Reproduce Digit Sequences')}</h2>
 				<p>{t("You'll see digits appear on screen one at a time. Remember the sequence, then type it back — either in the same order or reversed. The sequence length adapts to your performance.")}</p>
 			</div>
 
 			<div class="instructions-grid">
 				<div class="instruction-item">
-					<div class="icon">➡️</div>
+					<div class="icon">→</div>
 					<h3>{t('Forward Span')}</h3>
 					<p>{t('Type the digits in the same order you saw them')}</p>
 					<div class="example">
@@ -360,7 +360,7 @@
 				</div>
 
 				<div class="instruction-item">
-					<div class="icon">↩️</div>
+					<div class="icon">←</div>
 					<h3>{t('Backward Span')}</h3>
 					<p>{t('Type the digits in reverse order')}</p>
 					<div class="example">
@@ -374,7 +374,7 @@
 
 			<div class="info-grid">
 				<div class="info-section">
-					<h3>{t('💪 Tips for Success')}</h3>
+					<h3>{t('Tips for Success')}</h3>
 					<div class="tips-list">
 						<div class="tip-item">✓ <strong>{t('Chunking:')}</strong> {t('Group digits into pairs (3-7, 2-8)')}</div>
 						<div class="tip-item">✓ <strong>{t('Rehearsal:')}</strong> {t('Repeat them quietly to yourself')}</div>
@@ -383,7 +383,7 @@
 					</div>
 				</div>
 				<div class="info-section">
-					<h3>{t('📋 Session Info')}</h3>
+					<h3>{t('Session Info')}</h3>
 					<div class="structure-list">
 						<div class="structure-item">
 							<div class="structure-num">{n(sessionData.difficulty)}</div>
@@ -404,19 +404,19 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('📚 Clinical Significance')}</h3>
+				<h3>{t('Clinical Significance')}</h3>
 				<div class="clinical-grid">
 					<div class="clinical-item">
-						<strong>{t('📜 Standard:')}</strong> {t('WAIS-IV subtest, gold standard in neuropsychology')}
+						<strong>{t('Standard:')}</strong> {t('WAIS-IV subtest, gold standard in neuropsychology')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🎯 Measures:')}</strong> {t('Verbal working memory capacity & manipulation')}
+						<strong>{t('Measures:')}</strong> {t('Verbal working memory capacity & manipulation')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🏥 MS Relevance:')}</strong> {t('Included in MACFIMS — sensitive to MS-related deficits (Benedict et al., 2006)')}
+						<strong>{t('MS Relevance:')}</strong> {t('Included in MACFIMS — sensitive to MS-related deficits (Benedict et al., 2006)')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard across neuropsychological assessments worldwide')}
+						<strong>{t('Clinical Use:')}</strong> {t('Standard across neuropsychological assessments worldwide')}
 					</div>
 				</div>
 			</div>
@@ -435,8 +435,8 @@
 			{#if currentTrial}
 				<div class="span-type-indicator {currentTrial.span_type}">
 					{currentTrial.span_type === 'forward'
-						? `➡️ ${t('Forward Span')}`
-						: `↩️ ${t('Backward Span')}`}
+						? t('Forward Span')
+						: t('Backward Span')}
 				</div>
 			{/if}
 		</div>
@@ -498,7 +498,7 @@
 		</div>
 	{:else if currentState === STATE_FEEDBACK}
 		<div class="feedback-screen {isCorrect ? 'correct' : 'incorrect'}">
-			<div class="feedback-icon">{isCorrect ? '✅' : '❌'}</div>
+			<div class="feedback-icon">{isCorrect ? '✓' : '✗'}</div>
 			<div class="feedback-text">{isCorrect ? t('Correct!') : t('Incorrect')}</div>
 
 			{#if !isCorrect}
@@ -515,7 +515,7 @@
 	{:else if currentState === STATE_COMPLETE}
 		<div class="complete-screen">
 			<div class="header">
-				<h1>🎉 {t('Session Complete!')}</h1>
+				<h1>{t('Session Complete!')}</h1>
 				<p class="subtitle">{t('Great work on completing your Digit Span training')}</p>
 			</div>
 
@@ -593,19 +593,19 @@
 			<h2>{t('Memory Strategies')}</h2>
 
 			<div class="strategy">
-				<h3>🔢 {t('Chunking')}</h3>
+				<h3>{t('Chunking')}</h3>
 				<p>{t('Group digits into pairs or triplets (e.g., 3-7-2 becomes "37" and "2"). This reduces the number of items you need to hold in memory.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🔁 {t('Verbal Rehearsal')}</h3>
+				<h3>{t('Verbal Rehearsal')}</h3>
 				<p>{t('Repeat the sequence quietly to yourself as each digit appears. Subvocalization strengthens the memory trace.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🖼️ {t('Visualization')}</h3>
+				<h3>{t('Visualization')}</h3>
 				<p>{t('Picture the digits written on a whiteboard or chalkboard in your mind. Spatial encoding adds a second memory cue.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>😌 {t('Relaxation')}</h3>
+				<h3>{t('Relaxation')}</h3>
 				<p>{t("Anxiety narrows working memory capacity. Take a slow breath between trials \u2014 you'll remember more.")}</p>
 			</div>
 			<p class="help-note">{t("This test adapts automatically to your level \u2014 don't worry about mistakes!")}</p>
@@ -816,7 +816,7 @@
 	.structure-num {
 		width: 44px;
 		height: 44px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white;
 		border-radius: 50%;
 		display: flex;
@@ -888,7 +888,7 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white;
 		border: none;
 		padding: 1.25rem 3rem;
@@ -897,12 +897,12 @@
 		border-radius: 12px;
 		cursor: pointer;
 		transition: all 0.3s;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 15px rgba(67, 56, 202, 0.35);
 	}
 
 	.start-button:hover {
 		transform: translateY(-3px);
-		box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+		box-shadow: 0 6px 25px rgba(67, 56, 202, 0.5);
 	}
 
 	.btn-secondary {
@@ -1126,6 +1126,14 @@
 		font-size: 5rem;
 		margin-bottom: 1rem;
 		animation: scaleIn 0.3s ease-out;
+	}
+
+	.feedback-screen.correct .feedback-icon {
+		color: #059669;
+	}
+
+	.feedback-screen.incorrect .feedback-icon {
+		color: #dc2626;
 	}
 
 	.feedback-text {

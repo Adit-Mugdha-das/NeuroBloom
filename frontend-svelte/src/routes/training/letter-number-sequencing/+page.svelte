@@ -88,14 +88,14 @@
 
 	function speedTrendLabel(trend) {
 		if (trend === 'improving') {
-			return $locale === 'bn' ? '📈 উন্নত হচ্ছে' : '📈 Improving';
+			return $locale === 'bn' ? 'উন্নত হচ্ছে' : 'Improving';
 		}
 
 		if (trend === 'slowing') {
-			return $locale === 'bn' ? '📉 ধীর হচ্ছে' : '📉 Slowing';
+			return $locale === 'bn' ? 'ধীর হচ্ছে' : 'Slowing';
 		}
 
-		return $locale === 'bn' ? '➡️ স্থিতিশীল' : '➡️ Stable';
+		return $locale === 'bn' ? 'স্থিতিশীল' : 'Stable';
 	}
 
 	function pointsLabel(value) {
@@ -296,7 +296,7 @@
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
-					<h1>🔢🔤 {t('Letter-Number Sequencing')}</h1>
+					<h1>{t('Letter-Number Sequencing')}</h1>
 					<p class="subtitle">{t('Complex Working Memory Training')}</p>
 					<div class="classic-badge">{t('WAIS-IV Subtest · MACFIMS Battery')}</div>
 				</div>
@@ -307,19 +307,19 @@
 			</div>
 
 			<div class="task-concept">
-				<h2>{t('💡 Your Task: Sort Mixed Sequences')}</h2>
+				<h2>{t('Your Task: Sort Mixed Sequences')}</h2>
 				<p>{t("You'll see a mixed sequence of numbers and letters appear one at a time. Memorize them, then reorder — all numbers ascending first, then all letters alphabetically.")}</p>
 			</div>
 
 			<div class="rules-grid">
 				<div class="rule-card">
-					<div class="rule-icon">🔢</div>
+					<div class="rule-icon">1,2</div>
 					<h3>{t('Step 1 — Numbers First')}</h3>
 					<p>{t('Recall all numbers in ascending order')}</p>
 					<div class="rule-example">{symbol('1')}, {symbol('2')}, {symbol('3')}...</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">🔤</div>
+					<div class="rule-icon">A,B</div>
 					<h3>{t('Step 2 — Then Letters')}</h3>
 					<p>{t('Recall all letters in alphabetical order')}</p>
 					<div class="rule-example">{symbol('A')}, {symbol('B')}, {symbol('C')}...</div>
@@ -327,7 +327,7 @@
 			</div>
 
 			<div class="example-panel">
-				<h3>📝 {t('Example')}</h3>
+				<h3>{t('Example')}</h3>
 				<div class="example-flow">
 					<div class="example-box">
 						<div class="example-label">{t('You See:')}</div>
@@ -347,7 +347,7 @@
 
 			<div class="info-grid">
 				<div class="info-section">
-					<h3>{t('💪 Memory Strategies')}</h3>
+					<h3>{t('Memory Strategies')}</h3>
 					<div class="tips-list">
 						<div class="tip-item">✓ <strong>{t('Categorize first:')}</strong> {t('Mentally separate numbers from letters as they appear')}</div>
 						<div class="tip-item">✓ <strong>{t('Sort mentally:')}</strong> {t('Order each group in your mind before clicking')}</div>
@@ -356,7 +356,7 @@
 					</div>
 				</div>
 				<div class="info-section">
-					<h3>{t('📋 Session Info')}</h3>
+					<h3>{t('Session Info')}</h3>
 					<div class="structure-list">
 						<div class="structure-item">
 							<div class="structure-num">{n(difficulty)}</div>
@@ -377,19 +377,19 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('📚 Clinical Significance')}</h3>
+				<h3>{t('Clinical Significance')}</h3>
 				<div class="clinical-grid">
 					<div class="clinical-item">
-						<strong>{t('📜 Standard:')}</strong> {t('WAIS-IV subtest — executive working memory component')}
+						<strong>{t('Standard:')}</strong> {t('WAIS-IV subtest — executive working memory component')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🎯 Measures:')}</strong> {t('Complex manipulation of verbal working memory contents')}
+						<strong>{t('Measures:')}</strong> {t('Complex manipulation of verbal working memory contents')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🏥 MS Relevance:')}</strong> {t('Sensitive to MS cognitive dysfunction (Parmenter et al., 2007)')}
+						<strong>{t('MS Relevance:')}</strong> {t('Sensitive to MS cognitive dysfunction (Parmenter et al., 2007)')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🌍 Clinical Use:')}</strong> {t('Included in MS neuropsychological assessment batteries (MACFIMS)')}
+						<strong>{t('Clinical Use:')}</strong> {t('Included in MS neuropsychological assessment batteries (MACFIMS)')}
 					</div>
 				</div>
 			</div>
@@ -523,7 +523,7 @@
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
 			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
-				{checkCorrect() ? '✅' : '❌'}
+				{checkCorrect() ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
 				{checkCorrect() ? t('Correct!') : t('Incorrect')}
@@ -541,7 +541,7 @@
 		</div>
 	{:else if state === STATE.COMPLETE}
 		<div class="complete-screen">
-			<h1>{t('Session Complete!')} 🎉</h1>
+			<h1>{t('Session Complete!')}</h1>
 
 			{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
 				<BadgeNotification badges={sessionResults.new_badges} />
@@ -569,19 +569,19 @@
 			<div class="breakdown">
 				<h3>{t('Score Breakdown')}</h3>
 				<div class="breakdown-row">
-					<span>🧠 {t('Item Recall (what you remembered)')}</span>
+					<span>{t('Item Recall (what you remembered)')}</span>
 					<span>{pct(sessionResults.metrics.avg_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔢 {t('Ordering (correct sequence)')}</span>
+					<span>{t('Ordering (correct sequence)')}</span>
 					<span>{pct(sessionResults.metrics.avg_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⚡ {t('Speed Bonus (avg)')}</span>
+					<span>{t('Speed Bonus (avg)')}</span>
 					<span>{pointsLabel(sessionResults.metrics.avg_speed_bonus)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⚠️ {t('Wrong Selections (penalty)')}</span>
+					<span>{t('Wrong Selections (penalty)')}</span>
 					<span>{pointsLabel(-sessionResults.metrics.avg_penalty)}</span>
 				</div>
 			</div>
@@ -589,23 +589,23 @@
 			<div class="breakdown">
 				<h3>{t('Numbers vs Letters')}</h3>
 				<div class="breakdown-row">
-					<span>🔢 {t('Numbers — recalled')}</span>
+					<span>{t('Numbers — recalled')}</span>
 					<span>{pct(sessionResults.metrics.numbers_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔢 {t('Numbers — ordered correctly')}</span>
+					<span>{t('Numbers — ordered correctly')}</span>
 					<span>{pct(sessionResults.metrics.numbers_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔤 {t('Letters — recalled')}</span>
+					<span>{t('Letters — recalled')}</span>
 					<span>{pct(sessionResults.metrics.letters_set_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>🔤 {t('Letters — ordered correctly')}</span>
+					<span>{t('Letters — ordered correctly')}</span>
 					<span>{pct(sessionResults.metrics.letters_order_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>⏱️ {t('Response speed trend')}</span>
+					<span>{t('Response speed trend')}</span>
 					<span class="trend-{sessionResults.metrics.speed_trend}">
 						{speedTrendLabel(sessionResults.metrics.speed_trend)}
 					</span>
@@ -634,27 +634,27 @@
 			<h2>{t('Memory Strategies')}</h2>
 			
 			<div class="strategy">
-				<h3>📊 {t('Categorize First')}</h3>
+				<h3>{t('Categorize First')}</h3>
 				<p>{t('Quickly identify which items are numbers and which are letters. Group them mentally before ordering.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔢 {t('Sort Numbers')}</h3>
+				<h3>{t('Sort Numbers')}</h3>
 				<p>{t('Arrange numbers from smallest to largest (1, 2, 3, 4...). This is your first group.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔤 {t('Sort Letters')}</h3>
+				<h3>{t('Sort Letters')}</h3>
 				<p>{t('Arrange letters alphabetically (A, B, C, D...). This is your second group.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>🔄 {t('Mental Rehearsal')}</h3>
+				<h3>{t('Mental Rehearsal')}</h3>
 				<p>{t('Silently repeat the correct order 2-3 times before clicking to strengthen memory.')}</p>
 			</div>
 			
 			<div class="strategy">
-				<h3>✨ {t('Chunking')}</h3>
+				<h3>{t('Chunking')}</h3>
 				<p>{t('For longer sequences, break them into smaller chunks (e.g., "1-3" and "A-B-D").')}</p>
 			</div>
 		</div>

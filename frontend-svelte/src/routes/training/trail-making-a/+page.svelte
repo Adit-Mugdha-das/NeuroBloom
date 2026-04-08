@@ -42,6 +42,7 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let countdown = 3;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrial = null;
@@ -155,6 +156,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} nextMode */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -434,7 +436,7 @@
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>🔢 Trail Making Test — Part A</h1>
+						<h1>Trail Making Test — Part A</h1>
 						<DifficultyBadge difficulty={difficulty} domain="Processing Speed" />
 					</div>
 					<p class="subtitle">Connect numbered circles in order — as fast as you can</p>
@@ -446,7 +448,7 @@
 				{/if}
 
 				<div class="task-concept">
-					<h3>🎯 The Challenge</h3>
+					<h3>The Challenge</h3>
 					<p>
 						{$locale === 'bn'
 							? `${n(trial.circles.length)}টি সংখ্যাযুক্ত বৃত্ত এলোমেলোভাবে ছড়িয়ে আছে। যত দ্রুত সম্ভব ১→২→৩→...→${n(trial.circles.length)} ক্রমে ক্লিক করুন।`
@@ -465,28 +467,28 @@
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">🔍</span>
+						<span class="rule-icon">⊕</span>
 						<div class="rule-text">
 							<strong>{$locale === 'bn' ? 'স্ক্যান করুন' : 'Step 1: Scan'}</strong>
 							<span>{$locale === 'bn' ? 'বোর্ডে ১ নম্বর বৃত্তটি খুঁজুন' : 'Find circle number 1 on the board'}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">👆</span>
+						<span class="rule-icon">↑</span>
 						<div class="rule-text">
 							<strong>{$locale === 'bn' ? 'ক্লিক করুন' : 'Step 2: Click'}</strong>
 							<span>{$locale === 'bn' ? 'সঠিক বৃত্তে ক্লিক বা ট্যাপ করুন' : 'Click or tap the correct circle'}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">➡️</span>
+						<span class="rule-icon">→</span>
 						<div class="rule-text">
 							<strong>{$locale === 'bn' ? 'এগিয়ে যান' : 'Step 3: Continue'}</strong>
 							<span>{$locale === 'bn' ? 'পরবর্তী সংখ্যায় যান' : 'Move to the next number in sequence'}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">⏱️</span>
+						<span class="rule-icon">▷</span>
 						<div class="rule-text">
 							<strong>{$locale === 'bn' ? 'গতি বাড়ান' : 'Step 4: Speed'}</strong>
 							<span>{$locale === 'bn' ? 'যত দ্রুত সম্ভব সব বৃত্ত শেষ করুন' : 'Complete all circles as fast as you can'}</span>
@@ -496,7 +498,7 @@
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>💡 {t('Speed Tips')}</h4>
+						<h4>{t('Speed Tips')}</h4>
 						<ul class="tips-list">
 							<li><strong>{t('Scan ahead:')}</strong> {$locale === 'bn' ? 'বর্তমান বৃত্তে ক্লিক করতে করতে পরের সংখ্যাটি খুঁজুন' : 'Find the next number while clicking the current one'}</li>
 							<li><strong>{t('Click center:')}</strong> {$locale === 'bn' ? 'প্রতিটি বৃত্তের মাঝখানে চাপুন' : 'Aim for the center of each circle'}</li>
@@ -505,7 +507,7 @@
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>📋 {t('Test Format')}</h4>
+						<h4>{t('Test Format')}</h4>
 						<ul class="structure-list">
 							<li><span class="struct-key">{t('Circles')}</span><span class="struct-val">{n(trial.circles.length)} {t('numbered')}</span></li>
 							<li><span class="struct-key">{t('No time limit')}</span><span class="struct-val">{t('finish all circles')}</span></li>
@@ -516,7 +518,7 @@
 				</div>
 
 				<div class="clinical-info">
-					<h4>🏥 {t('Clinical Significance')}</h4>
+					<h4>{t('Clinical Significance')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
 							<strong>{t('Gold Standard')}</strong>
@@ -538,7 +540,7 @@
 				</div>
 
 				<div class="perf-guide">
-					<h4>📊 {t('Performance Norms (MS Patients)')}</h4>
+					<h4>{t('Performance Norms (MS Patients)')}</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
 							<span class="norm-label">{t('Excellent')}</span>
@@ -637,20 +639,19 @@
 				{#if sessionResults}
 					{@const perfColor = getPerformanceColor(sessionResults.metrics.performance_level)}
 					<div class="perf-banner" style="--perf-color: {perfColor}">
-						<div class="perf-emoji">🎉</div>
 						<div class="perf-level">{t(sessionResults.metrics.performance_level)}</div>
 						<div class="perf-subtitle">{secondsLabel(sessionResults.metrics.completion_time)} · {t('Trail Making Test Complete!')}</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
-							<div class="metric-icon">⏱️</div>
+							<div class="metric-icon">▷</div>
 							<div class="metric-value">{secondsLabel(sessionResults.metrics.completion_time)}</div>
 							<div class="metric-label">{t('Completion Time')}</div>
 							<div class="metric-sub">{t('Normalized:')} {secondsLabel(sessionResults.metrics.normalized_time)}</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">🎯</div>
+							<div class="metric-icon">◎</div>
 							<div class="metric-value">{n(sessionResults.metrics.score)}</div>
 							<div class="metric-label">{t('Score')}</div>
 							<div class="metric-sub">{t('Out of 100')}</div>
@@ -662,7 +663,7 @@
 							<div class="metric-sub">{n(sessionResults.metrics.errors)} {t('errors')}</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">⚡</div>
+							<div class="metric-icon">→</div>
 							<div class="metric-value">{n(sessionResults.metrics.processing_speed)}</div>
 							<div class="metric-label">{t('Processing Speed')}</div>
 							<div class="metric-sub">{t('Circles/second')}</div>
@@ -692,7 +693,7 @@
 					</div>
 
 					<div class="clinical-note">
-						<h4>🧠 {t('Clinical Context')}</h4>
+						<h4>{t('Clinical Context')}</h4>
 						<p>
 							{#if sessionResults.metrics.performance_level === 'Excellent'}
 								{$locale === 'bn'
@@ -720,9 +721,7 @@
 					</div>
 
 					{#if sessionResults.new_badges && sessionResults.new_badges.length > 0}
-						{#each sessionResults.new_badges as badge}
-							<BadgeNotification {badge} />
-						{/each}
+						<BadgeNotification badges={sessionResults.new_badges} />
 					{/if}
 
 					<div class="button-group">
@@ -1101,7 +1100,7 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white;
 		border: none;
 		border-radius: 10px;
@@ -1110,7 +1109,7 @@
 		font-weight: 700;
 		cursor: pointer;
 		transition: transform 0.15s, box-shadow 0.15s;
-		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
 	}
 
 	.start-button:hover {
@@ -1360,8 +1359,6 @@
 		border-radius: 14px;
 	}
 
-	.perf-emoji { font-size: 2.5rem; margin-bottom: 0.25rem; }
-
 	.perf-level {
 		font-size: 1.8rem;
 		font-weight: 800;
@@ -1389,7 +1386,7 @@
 	}
 
 	.metric-card.highlight {
-		background: linear-gradient(135deg, #667eea, #764ba2);
+		background: #4338ca;
 		color: white;
 		border-color: transparent;
 	}

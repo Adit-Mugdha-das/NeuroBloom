@@ -284,7 +284,7 @@
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
-					<h1>⚡ {t('Symbol Digit Modalities Test')}</h1>
+					<h1>{t('Symbol Digit Modalities Test')}</h1>
 					<p class="subtitle">{t('Processing Speed — Gold Standard for MS Assessment')}</p>
 					<div class="classic-badge">{t('SDMT · Smith (1973) · MACFIMS Battery')}</div>
 				</div>
@@ -295,12 +295,12 @@
 			</div>
 
 			<div class="task-concept">
-				<h2>{t('💡 Your Task: Match Symbols to Numbers')}</h2>
+				<h2>{t('Your Task: Match Symbols to Numbers')}</h2>
 				<p>{$locale === 'bn' ? 'একটি রেফারেন্স কী দেওয়া থাকবে যেখানে প্রতিটি প্রতীকের সাথে একটি সংখ্যা মেলানো আছে। যত দ্রুত সম্ভব সঠিক সংখ্যাটি টাইপ করুন।' : 'A reference key shows which digit matches each symbol. See a symbol, type its matching digit as fast as you can — repeat for 90 seconds.'}</p>
 			</div>
 
 			<div class="key-preview-section">
-				<h3>{t('🔑 Example Symbol–Digit Key')}</h3>
+				<h3>{t('Example Symbol–Digit Key')}</h3>
 				<div class="key-preview-grid">
 					<div class="kp-pair"><span class="kp-sym">★</span><span class="kp-arrow">→</span><span class="kp-num">1</span></div>
 					<div class="kp-pair"><span class="kp-sym">●</span><span class="kp-arrow">→</span><span class="kp-num">2</span></div>
@@ -314,25 +314,25 @@
 
 			<div class="rules-grid">
 				<div class="rule-card">
-					<div class="rule-icon">🔑</div>
+					<div class="rule-icon">Key</div>
 					<h3>{t('Step 1 — Study the Key')}</h3>
 					<p>{t('Review the symbol–digit pairs shown at the top of the screen')}</p>
 					<div class="rule-example">{t('Key stays visible the whole time')}</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">👁️</div>
+					<div class="rule-icon">Look</div>
 					<h3>{t('Step 2 — See a Symbol')}</h3>
 					<p>{t('A large symbol appears in the centre of the screen')}</p>
 					<div class="rule-example">{t('e.g.  ■  appears')}</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">⌨️</div>
+					<div class="rule-icon">Type</div>
 					<h3>{t('Step 3 — Type the Digit')}</h3>
 					<p>{t('Press the matching number key or tap the on-screen button')}</p>
 					<div class="rule-example">{t('Keyboard is fastest!')}</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">🔄</div>
+					<div class="rule-icon">×n</div>
 					<h3>{t('Step 4 — Repeat')}</h3>
 					<p>{t('Answer as many symbols as you can within 90 seconds')}</p>
 					<div class="rule-example">{lt(`Target: ${trial?.target_responses ?? 55}+ correct`, `লক্ষ্য: ${n(trial?.target_responses ?? 55)}+`)}</div>
@@ -341,7 +341,7 @@
 
 			<div class="info-grid">
 				<div class="info-section">
-					<h3>{t('💡 Speed Tips')}</h3>
+					<h3>{t('Speed Tips')}</h3>
 					<div class="tips-list">
 						<div class="tip-item">✓ <strong>{t('Keyboard numbers:')}</strong> {t('Much faster than tapping buttons')}</div>
 						<div class="tip-item">✓ <strong>{t('Glance, type, next:')}</strong> {t('Find a steady rhythm — look, press, move on')}</div>
@@ -350,7 +350,7 @@
 					</div>
 				</div>
 				<div class="info-section">
-					<h3>{t('📋 Test Format')}</h3>
+					<h3>{t('Test Format')}</h3>
 					<div class="structure-list">
 						<div class="structure-item">
 							<div class="structure-num">90</div>
@@ -378,25 +378,25 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('📚 Clinical Significance')}</h3>
+				<h3>{t('Clinical Significance')}</h3>
 				<div class="clinical-grid">
 					<div class="clinical-item">
-						<strong>{t('⭐ Gold Standard:')}</strong> {t('Most widely used test in MS clinical trials globally')}
+						<strong>{t('Gold Standard:')}</strong> {t('Most widely used test in MS clinical trials globally')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🎯 Measures:')}</strong> {t('Processing speed — how fast your brain retrieves and applies information')}
+						<strong>{t('Measures:')}</strong> {t('Processing speed — how fast your brain retrieves and applies information')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🏥 MS Relevance:')}</strong> {t('Detects cognitive changes earlier than any other single test; correlates with brain health')}
+						<strong>{t('MS Relevance:')}</strong> {t('Detects cognitive changes earlier than any other single test; correlates with brain health')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🌍 Real-World Impact:')}</strong> {t('Predicts employment success, driving safety, and daily functioning for MS patients')}
+						<strong>{t('Real-World Impact:')}</strong> {t('Predicts employment success, driving safety, and daily functioning for MS patients')}
 					</div>
 				</div>
 			</div>
 
 			<div class="perf-guide">
-				<h3>{t('📈 Performance Guide (MS Norms)')}</h3>
+				<h3>{t('Performance Guide (MS Norms)')}</h3>
 				<div class="norm-bars">
 					<div class="norm-bar norm-excellent"><span class="norm-label">{lt('60+ Correct', `${n(60)}+ ${t('Correct')}`)}</span><span class="norm-tag">{t('Excellent')}</span></div>
 					<div class="norm-bar norm-good"><span class="norm-label">{lt('50–60', `${n(50)}–${n(60)}`)}</span><span class="norm-tag">{t('Good')}</span></div>
@@ -423,7 +423,7 @@
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
 				<PracticeModeBanner locale={$locale} />
 			{/if}
-			<h2>🔑 {t('Study the Reference Key')}</h2>
+			<h2>{t('Study the Reference Key')}</h2>
 			<p class="ready-sub">{t('Memorise these symbol–digit pairs before the test begins')}</p>
 			<div class="key-display">
 				{#each Object.entries(symbolDigitMapping) as [symbol, digit]}
@@ -434,7 +434,7 @@
 					</div>
 				{/each}
 			</div>
-			<p class="ready-countdown">⏳ {t('Starting in 2 seconds...')}</p>
+			<p class="ready-countdown">{t('Starting in 2 seconds...')}</p>
 		</div>
 
 	{:else if state === STATE.TESTING}
@@ -445,7 +445,7 @@
 			<div class="test-header">
 				<div class="progress-info">
 					<span class="count-badge">✓ {lt(`${currentIndex}`, `${n(currentIndex)}`)} {t('done')}</span>
-					<span class="target-badge">🎯 {lt(`${trial.target_responses}`, `${n(trial.target_responses)}`)} {t('target')}</span>
+					<span class="target-badge">{lt(`${trial.target_responses}`, `${n(trial.target_responses)}`)} {t('target')}</span>
 				</div>
 				<div class="timer-display" class:urgent={timeRemaining < 10}>
 					<span class="timer-icon">⏱</span>
@@ -486,7 +486,7 @@
 
 	{:else if state === STATE.COMPLETE}
 		<div class="screen-card complete-screen">
-			<h1>⚡ {t('SDMT Complete!')} 🎉</h1>
+			<h1>{t('SDMT Complete!')}</h1>
 
 			{#if sessionResults}
 				{@const perfLevel = getPerformanceLevel(sessionResults.metrics.score)}
@@ -502,13 +502,13 @@
 
 				<div class="metrics-grid">
 					<div class="metric-card highlight">
-						<div class="metric-icon">🎯</div>
+						<div class="metric-icon">◎</div>
 						<div class="metric-value">{n(sessionResults.metrics.score)}</div>
 						<div class="metric-label">{t('Correct Responses')}</div>
 						<div class="metric-sub">{lt(`Target: ${trial.target_responses}`, `লক্ষ্য: ${n(trial.target_responses)}`)}</div>
 					</div>
 					<div class="metric-card">
-						<div class="metric-icon">⚡</div>
+						<div class="metric-icon">→</div>
 						<div class="metric-value">{n(sessionResults.metrics.processing_speed)}</div>
 						<div class="metric-label">{t('Processing Speed')}</div>
 						<div class="metric-sub">{t('Responses / min')}</div>
@@ -528,7 +528,7 @@
 				</div>
 
 				<div class="breakdown">
-					<h3>{t('📊 Detailed Breakdown')}</h3>
+					<h3>{t('Detailed Breakdown')}</h3>
 					<div class="breakdown-row">
 						<span>{t('Total Attempted')}</span>
 						<strong>{n(sessionResults.metrics.total_attempted)}</strong>
@@ -548,7 +548,7 @@
 				</div>
 
 				<div class="clinical-note">
-					<h3>🏥 {t('Clinical Context')}</h3>
+					<h3>{t('Clinical Context')}</h3>
 					<p>
 						{#if sessionResults.metrics.score >= 60}
 							{t('Excellent performance! Your processing speed is above average for MS patients, suggesting good cognitive efficiency.')}
@@ -586,23 +586,23 @@
 			<button class="close-btn" on:click={toggleHelp}>&times;</button>
 			<h2>{t('SDMT Success Strategies')}</h2>
 			<div class="strategy">
-				<h3>👀 {t('Visual Scanning')}</h3>
+				<h3>{t('Visual Scanning')}</h3>
 				<p>{lt("Train your eyes to quickly dart between the symbol, the key, and back. With practice, you'll memorise most pairs.", 'চোখকে এমনভাবে অনুশীলন করুন যেন প্রতীক, কী, এবং আবার প্রতীকের দিকে দ্রুত যেতে পারে।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🧠 {t('Chunking Memory')}</h3>
+				<h3>{t('Chunking Memory')}</h3>
 				<p>{lt('Group symbols by shape or type. This creates mental "buckets" that make recall faster.', 'মনে মনে প্রতীকগুলোকে আকার বা ধরন অনুযায়ী ভাগ করুন।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>⌨️ {t('Keyboard Mastery')}</h3>
+				<h3>{t('Keyboard Mastery')}</h3>
 				<p>{lt('Use the number row on your keyboard. Position fingers over commonly used digits. Much faster than clicking!', 'কীবোর্ডের সংখ্যার সারি ব্যবহার করুন।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🎯 {t('Rhythm Over Perfection')}</h3>
+				<h3>{t('Rhythm Over Perfection')}</h3>
 				<p>{lt("Find a steady rhythm: glance → type → next. Don't stop to verify each answer.", 'একটি স্থির ছন্দ তৈরি করুন: দেখুন → টাইপ করুন → এগোন।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>💪 {t('Why This Matters')}</h3>
+				<h3>{t('Why This Matters')}</h3>
 				<p>{lt('SDMT measures neural processing efficiency. Regular practice strengthens these neural pathways!', 'SDMT মাপে মস্তিষ্ক কত দ্রুত তথ্য প্রয়োগ করতে পারে।')}</p>
 			</div>
 		</div>
@@ -1174,7 +1174,7 @@
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #667eea, #764ba2);
+		background: #4338ca;
 		transition: width 0.3s ease;
 		border-radius: 10px;
 	}

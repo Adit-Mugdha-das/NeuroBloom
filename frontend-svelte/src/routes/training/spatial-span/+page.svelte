@@ -53,10 +53,10 @@
 
 	function spanModeLabel(mode) {
 		if (mode === 'backward') {
-			return $locale === 'bn' ? '⬅️ উল্টো ক্রম' : '⬅️ Backward';
+			return $locale === 'bn' ? 'উল্টো ক্রম' : 'Backward';
 		}
 
-		return $locale === 'bn' ? '➡️ সামনের ক্রম' : '➡️ Forward';
+		return $locale === 'bn' ? 'সামনের ক্রম' : 'Forward';
 	}
 
 	function difficultyChangeLabel(before, after) {
@@ -273,7 +273,7 @@
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
-					<h1>🧠 {t('Spatial Span Test')}</h1>
+					<h1>{t('Spatial Span Test')}</h1>
 					<p class="subtitle">{t('Visuospatial Working Memory Training')}</p>
 					<div class="classic-badge">{t('Corsi Block Test · WMS-IV Component')}</div>
 				</div>
@@ -284,19 +284,19 @@
 			</div>
 
 			<div class="task-concept">
-				<h2>{t('💡 Your Task: Remember the Block Sequence')}</h2>
+				<h2>{t('Your Task: Remember the Block Sequence')}</h2>
 				<p>{t('Blocks on the grid will light up one at a time in a specific order. Watch carefully, then recreate the sequence by clicking the blocks — either in the same order or in reverse.')}</p>
 			</div>
 
 			<div class="rules-grid">
 				<div class="rule-card">
-					<div class="rule-icon">➡️</div>
+					<div class="rule-icon">→</div>
 					<h3>{t('Forward Span')}</h3>
 					<p>{t('Click blocks in the same order they lit up')}</p>
 					<div class="rule-example">{t('Sequence: 1→2→3 → You click: 1→2→3')}</div>
 				</div>
 				<div class="rule-card">
-					<div class="rule-icon">⬅️</div>
+					<div class="rule-icon">←</div>
 					<h3>{t('Backward Span')}</h3>
 					<p>{t('Click blocks in the reverse order they lit up')}</p>
 					<div class="rule-example">{t('Sequence: 1→2→3 → You click: 3→2→1')}</div>
@@ -305,7 +305,7 @@
 
 			<div class="info-grid">
 				<div class="info-section">
-					<h3>{t('💪 Tips for Success')}</h3>
+					<h3>{t('Tips for Success')}</h3>
 					<div class="tips-list">
 						<div class="tip-item">✓ <strong>{t('Visualize the path:')}</strong> {t('Imagine drawing a line connecting the blocks')}</div>
 						<div class="tip-item">✓ <strong>{t('Spatial chunking:')}</strong> {t('Group blocks into L-shapes, diagonals, etc.')}</div>
@@ -314,7 +314,7 @@
 					</div>
 				</div>
 				<div class="info-section">
-					<h3>{t('📋 Session Info')}</h3>
+					<h3>{t('Session Info')}</h3>
 					<div class="structure-list">
 						<div class="structure-item">
 							<div class="structure-num">{n(difficulty)}</div>
@@ -335,19 +335,19 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('📚 Clinical Significance')}</h3>
+				<h3>{t('Clinical Significance')}</h3>
 				<div class="clinical-grid">
 					<div class="clinical-item">
-						<strong>{t('📜 Standard:')}</strong> {t('Corsi Block Test — neuropsychological gold standard since 1972')}
+						<strong>{t('Standard:')}</strong> {t('Corsi Block Test — neuropsychological gold standard since 1972')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🎯 Measures:')}</strong> {t('Visuospatial working memory — distinct from verbal memory')}
+						<strong>{t('Measures:')}</strong> {t('Visuospatial working memory — distinct from verbal memory')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🏥 MS Relevance:')}</strong> {t('Correlated with MS lesion load (Rao et al., 1991); WMS-IV component')}
+						<strong>{t('MS Relevance:')}</strong> {t('Correlated with MS lesion load (Rao et al., 1991); WMS-IV component')}
 					</div>
 					<div class="clinical-item">
-						<strong>{t('🌍 Clinical Use:')}</strong> {t('Standard in neuropsychological and rehabilitation assessments')}
+						<strong>{t('Clinical Use:')}</strong> {t('Standard in neuropsychological and rehabilitation assessments')}
 					</div>
 				</div>
 			</div>
@@ -428,7 +428,7 @@
 		</div>
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen {checkCorrect() ? 'correct' : 'incorrect'}">
-			<div class="feedback-icon">{checkCorrect() ? '✅' : '❌'}</div>
+			<div class="feedback-icon">{checkCorrect() ? '✓' : '✗'}</div>
 			<p class="feedback-text">{checkCorrect() ? t('Correct!') : t('Incorrect')}</p>
 		</div>
 	{:else if state === STATE.COMPLETE}
@@ -467,11 +467,11 @@
 			<div class="breakdown-section">
 				<h3>{t('Performance Breakdown')}</h3>
 				<div class="breakdown-row">
-					<span>{t('➡️ Forward Span:')}</span>
+					<span>{t('Forward Span:')}</span>
 					<span class="breakdown-value">{pct(sessionResults.metrics.forward_accuracy)}</span>
 				</div>
 				<div class="breakdown-row">
-					<span>{t('⬅️ Backward Span:')}</span>
+					<span>{t('Backward Span:')}</span>
 					<span class="breakdown-value">{pct(sessionResults.metrics.backward_accuracy)}</span>
 				</div>
 			</div>
@@ -516,19 +516,19 @@
 			<button class="close-btn" on:click={toggleHelp}>&times;</button>
 			<h2>{t('Memory Strategies')}</h2>
 			<div class="strategy">
-				<h3>🎨 {t('Visual Imagery')}</h3>
+				<h3>{t('Visual Imagery')}</h3>
 				<p>{t('Imagine drawing a line connecting the blocks as they light up. Visualize the shape or pattern created by the sequence.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🧩 {t('Spatial Chunking')}</h3>
+				<h3>{t('Spatial Chunking')}</h3>
 				<p>{t('Group blocks into meaningful patterns: L-shapes, diagonals, squares, or other geometric forms you recognize.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🔄 {t('Mental Rehearsal')}</h3>
+				<h3>{t('Mental Rehearsal')}</h3>
 				<p>{t('After the sequence finishes, mentally replay it 1-2 times before clicking. This strengthens the memory trace.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>📍 {t('Landmark Method')}</h3>
+				<h3>{t('Landmark Method')}</h3>
 				<p>{t('Use corner blocks or central blocks as anchors. Remember other positions relative to these landmarks.')}</p>
 			</div>
 		</div>
@@ -714,7 +714,7 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #667eea, #764ba2);
+		background: #4338ca;
 		color: white;
 		font-weight: 700;
 		font-size: 0.9rem;
@@ -781,7 +781,7 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white;
 		border: none;
 		padding: 0.9rem 2.5rem;
@@ -789,13 +789,13 @@
 		font-weight: 600;
 		border-radius: 10px;
 		cursor: pointer;
-		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.3);
 		transition: all 0.2s;
 	}
 
 	.start-button:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
+		box-shadow: 0 6px 20px rgba(67, 56, 202, 0.4);
 	}
 
 	.start-button:disabled {
@@ -983,19 +983,19 @@
 	.submit-btn {
 		padding: 0.5rem 1.4rem;
 		border: none;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white;
 		border-radius: 8px;
 		font-size: 0.9rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
-		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+		box-shadow: 0 2px 8px rgba(67, 56, 202, 0.3);
 	}
 
 	.submit-btn:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+		box-shadow: 0 4px 12px rgba(67, 56, 202, 0.45);
 	}
 
 	.submit-btn:disabled {
@@ -1031,9 +1031,9 @@
 	}
 
 	.block.highlighted {
-		background: linear-gradient(145deg, #667eea, #764ba2);
-		border-color: #4f46e5;
-		box-shadow: 0 0 28px rgba(102, 126, 234, 0.75), 0 4px 8px rgba(0, 0, 0, 0.15);
+		background: linear-gradient(145deg, #4338ca, #3730a3);
+		border-color: #4338ca;
+		box-shadow: 0 0 28px rgba(67, 56, 202, 0.65), 0 4px 8px rgba(0, 0, 0, 0.15);
 		transform: scale(1.15);
 	}
 
@@ -1049,9 +1049,9 @@
 	}
 
 	.block.clicked {
-		background: linear-gradient(145deg, #667eea, #4f46e5);
+		background: linear-gradient(145deg, #4338ca, #4f46e5);
 		border-color: #4338ca;
-		box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.15);
+		box-shadow: 0 4px 10px rgba(67, 56, 202, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.15);
 		transform: scale(0.95);
 	}
 
@@ -1114,6 +1114,14 @@
 		animation: scaleIn 0.3s ease-out;
 	}
 
+	.feedback-screen.correct .feedback-icon {
+		color: #059669;
+	}
+
+	.feedback-screen.incorrect .feedback-icon {
+		color: #dc2626;
+	}
+
 	.feedback-text {
 		font-size: 2rem;
 		font-weight: 700;
@@ -1165,7 +1173,7 @@
 	}
 
 	.metric-card.primary-card {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		border: none;
 		color: white;
 	}
