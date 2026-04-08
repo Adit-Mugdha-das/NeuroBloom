@@ -1,504 +1,763 @@
 <script>
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
-	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
-	import { locale, localeText } from '$lib/i18n';
-	import { tasks, training } from '$lib/api';
-	import { user } from '$lib/stores';
-	import { getPracticeCopy } from '$lib/task-practice';
-	import { onMount } from 'svelte';
-	
-	let currentUser = null;
-	let stage = 'intro'; // intro, test, results
-	let currentTrial = 0;
-	let totalTrials = 40;
-	
-	// Training mode variables
-	let isTrainingMode = false;
-	let trainingPlanId = null;
-	let trainingDifficulty = 1;
-	let taskId = null;
-	let sessionComplete = false;
-	let completedTasksCount = 0;
-	let totalTasksCount = 4;
-	
-	// Test data
-	let trials = [];
-	let currentNumber = 0;
-	let currentColor = '';
-	let currentRule = ''; // 'parity' or 'magnitude'
-	let responses = [];
-	let reactionTimes = [];
-	
-	// Results
-	let switchTrials = 0;
-	let switchErrors = 0;
-	let noSwitchErrors = 0;
-	let totalErrors = 0;
-	let switchCostRT = 0;
-	let perseverationErrors = 0;
-	let accuracy = 0;
-	let meanRT = 0;
-	let isPracticeMode = false;
-	let practiceStatusMessage = '';
-	let recordedTotalTrials = 40;
-	
-	user.subscribe(value => {
-		currentUser = value;
-		if (!value) {
-			goto('/login');
-		}
-	});
-	
-	onMount(() => {
-		const urlParams = new URLSearchParams(window.location.search);
-		isTrainingMode = urlParams.get('training') === 'true';
-		trainingPlanId = parseInt(urlParams.get('planId')) || null;
-		trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
-		taskId = $page.url.searchParams.get('taskId');
-		
-		// Adjust difficulty: more trials for higher difficulty
-		if (isTrainingMode && trainingDifficulty > 4) {
-			totalTrials = 40 + (trainingDifficulty - 4) * 10; // 40-100 trials
-		}
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+    import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+    import { locale, localeText } from '$lib/i18n';
+    import { tasks, training } from '$lib/api';
+    import { user } from '$lib/stores';
+    import { getPracticeCopy } from '$lib/task-practice';
+    import { onMount } from 'svelte';
 
-		recordedTotalTrials = totalTrials;
-	});
-	
-	function backToDashboard() {
-		if (isTrainingMode) {
-			goto('/training');
-		} else {
-			goto('/dashboard');
-		}
-	}
-	
-	function startTest(practice = false) {
-		isPracticeMode = practice;
-		practiceStatusMessage = '';
-		totalTrials = practice ? 12 : recordedTotalTrials;
-		currentTrial = 0;
-		trials = [];
-		responses = [];
-		reactionTimes = [];
-		switchTrials = 0;
-		switchErrors = 0;
-		noSwitchErrors = 0;
-		totalErrors = 0;
-		switchCostRT = 0;
-		perseverationErrors = 0;
-		accuracy = 0;
-		meanRT = 0;
-		stage = 'test';
-		generateTrials();
-		showNextTrial();
-	}
-	
-	function generateTrials() {
-		const numbers = [1, 2, 3, 4, 6, 7, 8, 9];
-		const colors = ['blue', 'red'];
-		const rules = ['parity', 'magnitude'];
-		
-		trials = [];
-		let lastRule = '';
-		
-		for (let i = 0; i < totalTrials; i++) {
-			const number = numbers[Math.floor(Math.random() * numbers.length)];
-			const color = colors[Math.floor(Math.random() * colors.length)];
-			const rule = color === 'blue' ? 'parity' : 'magnitude';
-			const isSwitch = i > 0 && rule !== lastRule;
-			
-			trials.push({
-				number,
-				color,
-				rule,
-				isSwitch
-			});
-			
-			if (isSwitch) switchTrials++;
-			lastRule = rule;
-		}
-	}
-	
-	let trialStartTime = 0;
-	
-	function showNextTrial() {
-		if (currentTrial >= totalTrials) {
-			calculateResults();
-			return;
-		}
-		
-		const trial = trials[currentTrial];
-		currentNumber = trial.number;
-		currentColor = trial.color;
-		currentRule = trial.rule;
-		trialStartTime = Date.now();
-	}
-	
-	function handleResponse(answer) {
-		const rt = Date.now() - trialStartTime;
-		const trial = trials[currentTrial];
-		
-		let correctAnswer;
-		if (trial.rule === 'parity') {
-			correctAnswer = trial.number % 2 === 0 ? 'even' : 'odd';
-		} else {
-			correctAnswer = trial.number > 5 ? 'high' : 'low';
-		}
-		
-		const isCorrect = answer === correctAnswer;
-		
-		responses.push({
-			trial: currentTrial,
-			answer,
-			correctAnswer,
-			isCorrect,
-			rt,
-			isSwitch: trial.isSwitch
-		});
-		
-		reactionTimes.push(rt);
-		
-		currentTrial++;
-		showNextTrial();
-	}
-	
-	function calculateResults() {
-		switchErrors = 0;
-		noSwitchErrors = 0;
-		perseverationErrors = 0;
-		
-		let switchRTs = [];
-		let noSwitchRTs = [];
-		
-		for (let i = 0; i < responses.length; i++) {
-			const response = responses[i];
-			
-			if (!response.isCorrect) {
-				totalErrors++;
-				
-				if (response.isSwitch) {
-					switchErrors++;
-					
-					// Check for perseveration (used old rule)
-					if (i > 0) {
-						const prevTrial = trials[i - 1];
-						const currentTrial = trials[i];
-						
-						// If they responded as if using the previous rule
-						let prevRuleAnswer;
-						if (prevTrial.rule === 'parity') {
-							prevRuleAnswer = currentTrial.number % 2 === 0 ? 'even' : 'odd';
-						} else {
-							prevRuleAnswer = currentTrial.number > 5 ? 'high' : 'low';
-						}
-						
-						if (response.answer === prevRuleAnswer) {
-							perseverationErrors++;
-						}
-					}
-				} else {
-					noSwitchErrors++;
-				}
-			}
-			
-			if (response.isSwitch) {
-				switchRTs.push(response.rt);
-			} else if (i > 0) {
-				noSwitchRTs.push(response.rt);
-			}
-		}
-		
-		accuracy = ((responses.length - totalErrors) / responses.length) * 100;
-		
-		const avgSwitchRT = switchRTs.length > 0 ? switchRTs.reduce((a, b) => a + b, 0) / switchRTs.length : 0;
-		const avgNoSwitchRT = noSwitchRTs.length > 0 ? noSwitchRTs.reduce((a, b) => a + b, 0) / noSwitchRTs.length : 0;
-		switchCostRT = avgSwitchRT - avgNoSwitchRT;
-		
-		meanRT = reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length;
+    let stage = 'intro'; // intro | test | results
+    let currentTrial = 0;
+    let totalTrials = 40;
 
-		if (isPracticeMode) {
-			isPracticeMode = false;
-			totalTrials = recordedTotalTrials;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			stage = 'intro';
-			return;
-		}
-		
-		stage = 'results';
-		saveResults();
-	}
-	
-	async function saveResults() {
-		try {
-			const rtStd = calculateStd(reactionTimes);
-			
-			console.log('[Flexibility] Saving results:', {
-				isTrainingMode,
-				trainingPlanId,
-				userId: currentUser?.id,
-				accuracy
-			});
-			
-			if (isTrainingMode && trainingPlanId) {
-				// Submit to training session API
-				console.log('[Flexibility] Submitting to training API');
-				
-				const result = await training.submitSession({
-					user_id: currentUser.id,
-					training_plan_id: trainingPlanId,
-					domain: 'flexibility',
-					task_type: 'task_switching',
-					score: accuracy,
-					accuracy: accuracy,
-					average_reaction_time: meanRT,
-					consistency: rtStd > 0 ? Math.max(0, 100 - rtStd / 2) : 100,
-					errors: totalErrors,
-					session_duration: totalTrials / 10, // approximate minutes
-					task_id: taskId
-				});
-				
-				sessionComplete = result.session_complete;
-				completedTasksCount = result.completed_tasks;
-				totalTasksCount = result.total_tasks;
-				
-				console.log('[Flexibility] Training session saved:', result);
-			} else {
-				// Submit to regular task result API (baseline mode)
-				await tasks.submitResult(
-					currentUser.id,
-					'flexibility',
-					accuracy,
-					JSON.stringify({
-						total_trials: totalTrials,
-						total_switches: switchTrials,
-						switch_errors: switchErrors,
-						no_switch_errors: noSwitchErrors,
-						perseveration_errors: perseverationErrors,
-						switch_cost_rt: switchCostRT,
-						mean_rt: meanRT,
-						rt_std: rtStd
-					})
-				);
-			}
-		} catch (error) {
-			console.error('Error saving results:', error);
-		}
-	}
-	
-	function calculateStd(arr) {
-		if (arr.length === 0) return 0;
-		const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
-		const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
-		return Math.sqrt(variance);
-	}
+    let isTrainingMode = false;
+    let trainingPlanId = null;
+    let trainingDifficulty = 1;
+    let taskId = null;
+    let sessionComplete = false;
+    let completedTasksCount = 0;
+    let totalTasksCount = 4;
+
+    let trials = [];
+    let currentNumber = 0;
+    let currentColor = '';
+    let currentRule = '';
+    let responses = [];
+    let reactionTimes = [];
+
+    let switchTrials = 0;
+    let switchErrors = 0;
+    let noSwitchErrors = 0;
+    let totalErrors = 0;
+    let switchCostRT = 0;
+    let perseverationErrors = 0;
+    let accuracy = 0;
+    let meanRT = 0;
+    let isPracticeMode = false;
+    let practiceStatusMessage = '';
+    let recordedTotalTrials = 40;
+
+    // Feedback flash
+    let lastFeedback = ''; // 'correct' | 'wrong' | ''
+    let feedbackTimer = null;
+
+    onMount(() => {
+        if (!$user) return goto('/login');
+        const urlParams = new URLSearchParams(window.location.search);
+        isTrainingMode     = urlParams.get('training') === 'true';
+        trainingPlanId     = parseInt(urlParams.get('planId')) || null;
+        trainingDifficulty = parseInt(urlParams.get('difficulty')) || 1;
+        taskId             = $page.url.searchParams.get('taskId');
+        if (isTrainingMode && trainingDifficulty > 4) {
+            totalTrials = 40 + (trainingDifficulty - 4) * 10;
+        }
+        recordedTotalTrials = totalTrials;
+    });
+
+    function backToDashboard() {
+        goto(isTrainingMode ? '/training' : '/dashboard');
+    }
+
+    function startTest(practice = false) {
+        isPracticeMode = practice;
+        practiceStatusMessage = '';
+        totalTrials = practice ? 12 : recordedTotalTrials;
+        currentTrial = 0;
+        trials = []; responses = []; reactionTimes = [];
+        switchTrials = switchErrors = noSwitchErrors = totalErrors = 0;
+        switchCostRT = perseverationErrors = accuracy = meanRT = 0;
+        lastFeedback = '';
+        stage = 'test';
+        generateTrials();
+        showNextTrial();
+    }
+
+    function generateTrials() {
+        const numbers = [1, 2, 3, 4, 6, 7, 8, 9];
+        const colors = ['blue', 'red'];
+        trials = [];
+        let lastRule = '';
+        for (let i = 0; i < totalTrials; i++) {
+            const number = numbers[Math.floor(Math.random() * numbers.length)];
+            const color  = colors[Math.floor(Math.random() * colors.length)];
+            const rule   = color === 'blue' ? 'parity' : 'magnitude';
+            const isSwitch = i > 0 && rule !== lastRule;
+            trials.push({ number, color, rule, isSwitch });
+            if (isSwitch) switchTrials++;
+            lastRule = rule;
+        }
+    }
+
+    let trialStartTime = 0;
+
+    function showNextTrial() {
+        if (currentTrial >= totalTrials) { calculateResults(); return; }
+        const trial = trials[currentTrial];
+        currentNumber = trial.number;
+        currentColor  = trial.color;
+        currentRule   = trial.rule;
+        trialStartTime = Date.now();
+    }
+
+    function handleResponse(answer) {
+        const rt = Date.now() - trialStartTime;
+        const trial = trials[currentTrial];
+        let correctAnswer;
+        if (trial.rule === 'parity') {
+            correctAnswer = trial.number % 2 === 0 ? 'even' : 'odd';
+        } else {
+            correctAnswer = trial.number > 5 ? 'high' : 'low';
+        }
+        const isCorrect = answer === correctAnswer;
+        responses.push({ trial: currentTrial, answer, correctAnswer, isCorrect, rt, isSwitch: trial.isSwitch });
+        reactionTimes.push(rt);
+
+        lastFeedback = isCorrect ? 'correct' : 'wrong';
+        if (feedbackTimer) clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => {
+            lastFeedback = '';
+            currentTrial++;
+            showNextTrial();
+        }, 300);
+    }
+
+    function calculateResults() {
+        switchErrors = noSwitchErrors = perseverationErrors = 0;
+        let switchRTs = [], noSwitchRTs = [];
+        for (let i = 0; i < responses.length; i++) {
+            const r = responses[i];
+            if (!r.isCorrect) {
+                totalErrors++;
+                if (r.isSwitch) {
+                    switchErrors++;
+                    if (i > 0) {
+                        const prev = trials[i - 1];
+                        const cur  = trials[i];
+                        const prevRuleAns = prev.rule === 'parity'
+                            ? (cur.number % 2 === 0 ? 'even' : 'odd')
+                            : (cur.number > 5 ? 'high' : 'low');
+                        if (r.answer === prevRuleAns) perseverationErrors++;
+                    }
+                } else { noSwitchErrors++; }
+            }
+            if (r.isSwitch) switchRTs.push(r.rt);
+            else if (i > 0) noSwitchRTs.push(r.rt);
+        }
+        accuracy = ((responses.length - totalErrors) / responses.length) * 100;
+        const avgSwitch   = switchRTs.length   ? switchRTs.reduce((a,b)=>a+b,0)/switchRTs.length     : 0;
+        const avgNoSwitch = noSwitchRTs.length ? noSwitchRTs.reduce((a,b)=>a+b,0)/noSwitchRTs.length : 0;
+        switchCostRT = avgSwitch - avgNoSwitch;
+        meanRT = reactionTimes.reduce((a,b)=>a+b,0) / reactionTimes.length;
+
+        if (isPracticeMode) {
+            isPracticeMode = false;
+            totalTrials = recordedTotalTrials;
+            practiceStatusMessage = getPracticeCopy($locale).complete;
+            stage = 'intro';
+            return;
+        }
+        stage = 'results';
+        saveResults();
+    }
+
+    async function saveResults() {
+        try {
+            const rtStd = calculateStd(reactionTimes);
+            if (isTrainingMode && trainingPlanId) {
+                const result = await training.submitSession({
+                    user_id: $user.id,
+                    training_plan_id: trainingPlanId,
+                    domain: 'flexibility',
+                    task_type: 'task_switching',
+                    score: accuracy, accuracy,
+                    average_reaction_time: meanRT,
+                    consistency: rtStd > 0 ? Math.max(0, 100 - rtStd / 2) : 100,
+                    errors: totalErrors,
+                    session_duration: totalTrials / 10,
+                    task_id: taskId
+                });
+                sessionComplete     = result.session_complete;
+                completedTasksCount = result.completed_tasks;
+                totalTasksCount     = result.total_tasks;
+            } else {
+                await tasks.submitResult(
+                    $user.id, 'flexibility', accuracy,
+                    JSON.stringify({
+                        total_trials: totalTrials, total_switches: switchTrials,
+                        switch_errors: switchErrors, no_switch_errors: noSwitchErrors,
+                        perseveration_errors: perseverationErrors,
+                        switch_cost_rt: switchCostRT, mean_rt: meanRT, rt_std: rtStd
+                    })
+                );
+            }
+        } catch (err) { console.error('Error saving results:', err); }
+    }
+
+    function calculateStd(arr) {
+        if (arr.length === 0) return 0;
+        const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+        return Math.sqrt(arr.reduce((s,v)=>s+Math.pow(v-mean,2),0) / arr.length);
+    }
+
+    function flexibilityLabel() {
+        if (switchCostRT < 150) return 'Excellent flexibility — you adapt quickly to changing rules.';
+        if (switchCostRT < 300) return 'Good flexibility. With practice, you can reduce your switch cost further.';
+        return 'Keep practicing. Task switching improves significantly with regular training.';
+    }
 </script>
 
-<div class="test-container">
-	{#if stage === 'intro'}
-		<div class="test-card">
-			<h1>Cognitive Flexibility Test</h1>
-			<h2 style="color: #666; font-size: 20px; margin-bottom: 30px;">Task Switching</h2>
-			
-			<div style="text-align: left; max-width: 600px; margin: 0 auto;">
-				<h3 style="color: #667eea; margin-bottom: 15px;">Instructions:</h3>
-				<ul style="line-height: 1.8; color: #666;">
-					<li>You will see numbers with colored backgrounds</li>
-					<li><strong style="color: #2196f3;">BLUE background:</strong> Judge if the number is odd or even</li>
-					<li><strong style="color: #f44336;">RED background:</strong> Judge if the number is &gt;5 or &lt;5</li>
-					<li>The background color changes randomly - stay flexible!</li>
-					<li>Total trials: {totalTrials}</li>
-				</ul>
-				
-				<div style="background: #f0f7ff; padding: 20px; border-radius: 8px; margin-top: 30px;">
-					<h4 style="color: #667eea; margin-bottom: 10px;">Examples:</h4>
-					<div style="background: #2196f3; color: white; padding: 15px; border-radius: 6px; margin: 10px 0;">
-						<strong>7</strong> on BLUE → "Odd" (because 7 is odd)
-					</div>
-					<div style="background: #f44336; color: white; padding: 15px; border-radius: 6px; margin: 10px 0;">
-						<strong>7</strong> on RED → "High" (because 7 &gt; 5)
-					</div>
-					<div style="background: #2196f3; color: white; padding: 15px; border-radius: 6px; margin: 10px 0;">
-						<strong>2</strong> on BLUE → "Even" (because 2 is even)
-					</div>
-				</div>
-			</div>
-			
-			<TaskPracticeActions
-				locale={$locale}
-				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
-				statusMessage={practiceStatusMessage}
-				align="center"
-				on:start={() => startTest(false)}
-				on:practice={() => startTest(true)}
-			/>
-			<button class="btn-secondary" on:click={backToDashboard}>
-				Back to Dashboard
-			</button>
-		</div>
-	
-	{:else if stage === 'test'}
-		<div class="test-card">
-			{#if isPracticeMode}
-				<PracticeModeBanner locale={$locale} />
-			{/if}
-			<div class="timer">
-				Trial {currentTrial + 1} / {totalTrials}
-			</div>
-			
-			<div 
-				class="word-display" 
-				style="background: {currentColor}; color: white; border-radius: 20px; padding: 40px; margin: 40px auto; max-width: 200px;"
-			>
-				{currentNumber}
-			</div>
-			
-			<p style="margin-bottom: 30px; font-size: 18px; color: #666;">
-				{#if currentColor === 'blue'}
-					Is it <strong>odd</strong> or <strong>even</strong>?
-				{:else}
-					Is it <strong>&gt;5</strong> or <strong>&lt;5</strong>?
-				{/if}
-			</p>
-			
-			<div>
-				{#if currentRule === 'parity'}
-					<button 
-						class="btn-primary" 
-						on:click={() => handleResponse('odd')}
-						style="font-size: 18px; padding: 16px 50px;"
-					>
-						Odd
-					</button>
-					<button 
-						class="btn-primary" 
-						on:click={() => handleResponse('even')}
-						style="font-size: 18px; padding: 16px 50px;"
-					>
-						Even
-					</button>
-				{:else}
-					<button 
-						class="btn-primary" 
-						on:click={() => handleResponse('low')}
-						style="font-size: 18px; padding: 16px 50px;"
-					>
-						&lt; 5 (Low)
-					</button>
-					<button 
-						class="btn-primary" 
-						on:click={() => handleResponse('high')}
-						style="font-size: 18px; padding: 16px 50px;"
-					>
-						&gt; 5 (High)
-					</button>
-				{/if}
-			</div>
-		</div>
-	
-	{:else if stage === 'results'}
-		<div class="test-card">
-			<h1>Test Complete!</h1>
-			
-			{#if isTrainingMode}
-				<div class="training-progress-banner">
-					{#if sessionComplete}
-						<div class="session-complete-msg">
-							🎉 Session Complete! You've finished all 4 tasks for this session.
-						</div>
-					{:else}
-						<div style="margin-bottom: 10px; color: #667eea; font-weight: 600;">
-							Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed
-						</div>
-						<div style="font-size: 14px; color: #666;">
-							Continue with the remaining tasks to complete this session
-						</div>
-					{/if}
-				</div>
-			{/if}
-			
-			<div class="score-display">
-				{accuracy.toFixed(1)}%
-			</div>
-			
-			<div class="result-details">
-				<p>
-					<span>Total Errors:</span>
-					<strong>{totalErrors}</strong>
-				</p>
-				<p>
-					<span>Switch Errors:</span>
-					<strong>{switchErrors}</strong>
-				</p>
-				<p>
-					<span>No-Switch Errors:</span>
-					<strong>{noSwitchErrors}</strong>
-				</p>
-				<p>
-					<span>Perseveration Errors:</span>
-					<strong>{perseverationErrors}</strong>
-				</p>
-				<p>
-					<span>Switch Cost (RT increase):</span>
-					<strong>{switchCostRT.toFixed(0)}ms</strong>
-				</p>
-				<p>
-					<span>Average RT:</span>
-					<strong>{meanRT.toFixed(0)}ms</strong>
-				</p>
-			</div>
-			
-			<div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px;">
-				<h4 style="color: #667eea; margin-bottom: 10px;">Cognitive Flexibility Insights:</h4>
-				<p style="color: #666; line-height: 1.6;">
-					{#if switchCostRT < 150}
-						Excellent flexibility! You adapt quickly to changing rules.
-					{:else if switchCostRT < 300}
-						Good flexibility. With practice, you can reduce your switch cost further.
-					{:else}
-						Keep practicing. Task switching improves with regular training.
-					{/if}
-				</p>
-				{#if perseverationErrors > 3}
-					<p style="color: #ff9800; margin-top: 10px;">
-						💡 Tip: You had {perseverationErrors} perseveration errors (using old rule). Try to focus on the current color cue.
-					</p>
-				{/if}
-			</div>
-			
-			<div style="margin-top: 40px;">
-				<button class="btn-primary" on:click={backToDashboard}>
-					Back to Dashboard
-				</button>
-			</div>
-		</div>
-	{/if}
+<svelte:head>
+    <title>Cognitive Flexibility Test - NeuroBloom</title>
+</svelte:head>
+
+<div class="flex-container" data-localize-skip>
+
+    <!-- INTRO -->
+    {#if stage === 'intro'}
+        <div class="page-content">
+
+            <div class="task-header">
+                <button class="back-btn" on:click={backToDashboard}>
+                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
+                </button>
+                <h1 class="task-title">Task Switching</h1>
+            </div>
+
+            <div class="concept-card">
+                <div class="concept-badge">Cognitive Flexibility · Baseline Assessment</div>
+                <h2>What This Test Measures</h2>
+                <p>This test measures <strong>cognitive flexibility</strong> — your ability to shift between mental rules rapidly and without errors. You will judge numbers using two different rules, with the active rule determined by the background colour. The key metric is <em>switch cost</em>: how much slower and less accurate you are on rule-switch trials compared to rule-repeat trials.</p>
+            </div>
+
+            <div class="rules-card">
+                <h3>The Two Rules</h3>
+                <div class="rule-pair">
+                    <div class="rule-block rule-blue">
+                        <div class="rule-color-tag">Blue background</div>
+                        <div class="rule-title">Parity Rule</div>
+                        <div class="rule-desc">Is the number <strong>Odd</strong> or <strong>Even</strong>?</div>
+                        <div class="rule-example">
+                            <span class="num-badge">7</span> → Odd &nbsp;·&nbsp;
+                            <span class="num-badge">4</span> → Even
+                        </div>
+                    </div>
+                    <div class="rule-block rule-red">
+                        <div class="rule-color-tag">Red background</div>
+                        <div class="rule-title">Magnitude Rule</div>
+                        <div class="rule-desc">Is the number <strong>Low (&lt;5)</strong> or <strong>High (&gt;5)</strong>?</div>
+                        <div class="rule-example">
+                            <span class="num-badge">3</span> → Low &nbsp;·&nbsp;
+                            <span class="num-badge">8</span> → High
+                        </div>
+                    </div>
+                </div>
+                <div class="rules-note">Note: the number 5 does not appear. Numbers used: 1 2 3 4 6 7 8 9</div>
+            </div>
+
+            <div class="switch-example">
+                <div class="se-title">Switch Example</div>
+                <div class="se-sequence">
+                    <div class="se-card se-blue"><span class="se-num">7</span><span class="se-ans">Odd</span></div>
+                    <div class="se-arrow">→</div>
+                    <div class="se-card se-blue"><span class="se-num">2</span><span class="se-ans">Even</span></div>
+                    <div class="se-arrow se-switch-arrow">→ SWITCH</div>
+                    <div class="se-card se-red"><span class="se-num">7</span><span class="se-ans">High</span></div>
+                    <div class="se-arrow">→</div>
+                    <div class="se-card se-red"><span class="se-num">3</span><span class="se-ans">Low</span></div>
+                </div>
+            </div>
+
+            <div class="tip-card">
+                <div class="tip-title">Strategy</div>
+                <p>Look at the background color first — that tells you which rule to apply. The most common error is "perseveration": accidentally using the previous rule after a switch. When the color changes, pause for a half-second to consciously register the new rule before responding.</p>
+            </div>
+
+            <div class="clinical-card">
+                <h3>Clinical Basis</h3>
+                <p>Cognitive flexibility is among the most commonly impaired executive functions in MS, reflecting damage to prefrontal-basal ganglia circuits involved in rule representation and task-set reconfiguration. Switch cost — the slowdown on rule-change trials — is a particularly sensitive marker: it scales with white matter lesion burden and is predictive of vocational and instrumental daily living difficulties. Perseveration errors (applying the last rule instead of the new one) indicate failed inhibition of dominant response sets, a signature of frontal lobe pathology.</p>
+            </div>
+
+            <TaskPracticeActions
+                locale={$locale}
+                startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+                statusMessage={practiceStatusMessage}
+                align="center"
+                on:start={() => startTest(false)}
+                on:practice={() => startTest(true)}
+            />
+        </div>
+
+    <!-- TEST -->
+    {:else if stage === 'test'}
+        <div class="test-arena" class:arena-blue={currentColor === 'blue'} class:arena-red={currentColor === 'red'}>
+            {#if isPracticeMode}
+                <div class="practice-wrap"><PracticeModeBanner locale={$locale} /></div>
+            {/if}
+
+            <div class="arena-top">
+                <div class="trial-pill">{currentTrial + 1} / {totalTrials}</div>
+                {#if trials[currentTrial]?.isSwitch}
+                    <div class="switch-pill">Rule switch</div>
+                {/if}
+            </div>
+
+            <div class="number-display" class:feedback-correct={lastFeedback === 'correct'} class:feedback-wrong={lastFeedback === 'wrong'}>
+                {currentNumber}
+            </div>
+
+            <div class="rule-hint">
+                {#if currentColor === 'blue'}
+                    <span class="hint-label blue-hint">Parity</span> — Odd or Even?
+                {:else}
+                    <span class="hint-label red-hint">Magnitude</span> — Low (&lt;5) or High (&gt;5)?
+                {/if}
+            </div>
+
+            <div class="response-buttons">
+                {#if currentRule === 'parity'}
+                    <button class="resp-btn resp-left" on:click={() => handleResponse('odd')}>Odd</button>
+                    <button class="resp-btn resp-right" on:click={() => handleResponse('even')}>Even</button>
+                {:else}
+                    <button class="resp-btn resp-left" on:click={() => handleResponse('low')}>&lt; 5&ensp;Low</button>
+                    <button class="resp-btn resp-right" on:click={() => handleResponse('high')}>&gt; 5&ensp;High</button>
+                {/if}
+            </div>
+        </div>
+
+    <!-- RESULTS -->
+    {:else if stage === 'results'}
+        <div class="page-content">
+
+            <div class="task-header">
+                <button class="back-btn" on:click={backToDashboard}>
+                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
+                </button>
+                <h1 class="task-title">Results</h1>
+            </div>
+
+            {#if isTrainingMode}
+                <div class="training-banner {sessionComplete ? 'banner-complete' : ''}">
+                    {#if sessionComplete}
+                        <strong>Session Complete — all {totalTasksCount} tasks finished.</strong>
+                    {:else}
+                        <strong>Training Progress: {completedTasksCount} / {totalTasksCount} tasks completed</strong>
+                        <span>Continue with remaining tasks to complete this session.</span>
+                    {/if}
+                </div>
+            {/if}
+
+            <div class="results-card">
+                <div class="score-header">
+                    <div class="score-big">{accuracy.toFixed(1)}%</div>
+                    <div class="score-label">Overall Accuracy</div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-cell">
+                        <div class="metric-value">{meanRT.toFixed(0)}ms</div>
+                        <div class="metric-label">Avg Response Time</div>
+                    </div>
+                    <div class="metric-cell {switchCostRT < 150 ? 'metric-good' : switchCostRT < 300 ? '' : 'metric-warn'}">
+                        <div class="metric-value">{switchCostRT > 0 ? '+' : ''}{switchCostRT.toFixed(0)}ms</div>
+                        <div class="metric-label">Switch Cost (RT)</div>
+                    </div>
+                    <div class="metric-cell {totalErrors === 0 ? 'metric-good' : 'metric-warn'}">
+                        <div class="metric-value">{totalErrors}</div>
+                        <div class="metric-label">Total Errors</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-value">{switchErrors}</div>
+                        <div class="metric-label">Switch Errors</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-value">{noSwitchErrors}</div>
+                        <div class="metric-label">Repeat Errors</div>
+                    </div>
+                    <div class="metric-cell {perseverationErrors > 3 ? 'metric-warn' : ''}">
+                        <div class="metric-value">{perseverationErrors}</div>
+                        <div class="metric-label">Perseveration Errors</div>
+                    </div>
+                </div>
+
+                <div class="interp-card">
+                    <div class="interp-title">Interpretation</div>
+                    <p>{flexibilityLabel()}</p>
+                    {#if perseverationErrors > 3}
+                        <p class="persev-note">You had {perseverationErrors} perseveration errors — applying the old rule after a switch. Focus on the background color change as your cue to reset.</p>
+                    {/if}
+                </div>
+
+                <button class="start-button" on:click={backToDashboard}>
+                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
+                </button>
+            </div>
+        </div>
+    {/if}
 </div>
 
-<svelte:head>
-	<title>Cognitive Flexibility Test - NeuroBloom</title>
-</svelte:head>
 <style>
-	.training-progress-banner {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 20px;
-		border-radius: 12px;
-		margin-bottom: 25px;
-		text-align: center;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-	}
-	
-	.session-complete-msg {
-		font-size: 18px;
-		font-weight: 600;
-		animation: celebration 0.5s ease-out;
-	}
-	
-	@keyframes celebration {
-		0% { transform: scale(0.9); opacity: 0; }
-		50% { transform: scale(1.05); }
-		100% { transform: scale(1); opacity: 1; }
-	}
+    /* Container */
+    .flex-container {
+        min-height: 100vh;
+        background: #C8DEFA;
+        padding: 2rem;
+        font-family: inherit;
+    }
+
+    /* Page content */
+    .page-content {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    /* Task header */
+    .task-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .back-btn {
+        background: white;
+        color: #a21caf;
+        border: 2px solid #a21caf;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: background 0.2s, color 0.2s;
+    }
+    .back-btn:hover { background: #a21caf; color: white; }
+
+    .task-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #701a75;
+        margin: 0;
+    }
+
+    /* Concept card */
+    .concept-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    .concept-badge {
+        display: inline-block;
+        background: #fae8ff;
+        color: #a21caf;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 0.3rem 0.9rem;
+        border-radius: 20px;
+        margin-bottom: 0.75rem;
+    }
+    .concept-card h2 { font-size: 1.4rem; font-weight: 700; color: #701a75; margin: 0 0 0.75rem; }
+    .concept-card p  { color: #374151; line-height: 1.65; margin: 0; }
+
+    /* Rules card */
+    .rules-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    .rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #701a75; margin: 0 0 1.25rem; }
+
+    .rule-pair {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .rule-block {
+        border-radius: 12px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .rule-blue { background: #eff6ff; border: 2px solid #93c5fd; }
+    .rule-red  { background: #fff1f2; border: 2px solid #fca5a5; }
+
+    .rule-color-tag {
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .rule-blue .rule-color-tag { color: #1d4ed8; }
+    .rule-red  .rule-color-tag { color: #b91c1c; }
+
+    .rule-title { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
+    .rule-desc  { color: #374151; font-size: 0.9rem; }
+    .rule-example {
+        font-size: 0.85rem; color: #374151; margin-top: 0.25rem;
+        display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+    }
+    .num-badge {
+        background: rgba(0,0,0,0.12);
+        font-weight: 800;
+        padding: 0.1rem 0.5rem;
+        border-radius: 4px;
+    }
+    .rules-note { font-size: 0.82rem; color: #6b7280; }
+
+    /* Switch Example */
+    .switch-example {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+    .se-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 1rem; }
+
+    .se-sequence {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .se-card {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        min-width: 60px;
+    }
+    .se-blue { background: #2563eb; color: white; }
+    .se-red  { background: #dc2626; color: white; }
+    .se-num  { font-size: 1.75rem; font-weight: 900; font-family: monospace; line-height: 1; }
+    .se-ans  { font-size: 0.75rem; font-weight: 700; opacity: 0.9; }
+
+    .se-arrow { color: #9ca3af; font-size: 1rem; font-weight: 300; white-space: nowrap; }
+    .se-switch-arrow { color: #a21caf; font-weight: 700; font-size: 0.85rem; }
+
+    /* Tip card */
+    .tip-card {
+        background: #fdf4ff;
+        border: 1px solid #e9d5ff;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+    }
+    .tip-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 0.5rem; }
+    .tip-card p { color: #374151; line-height: 1.6; margin: 0; }
+
+    /* Clinical card */
+    .clinical-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0;
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+    }
+    .clinical-card h3 { font-size: 1rem; font-weight: 700; color: #14532d; margin: 0 0 0.75rem; }
+    .clinical-card p  { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
+
+    /* ============================================================
+       TEST ARENA
+    ============================================================ */
+    .test-arena {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        transition: background 0.15s ease;
+        position: relative;
+    }
+    .arena-blue { background: #1d4ed8; }
+    .arena-red  { background: #b91c1c; }
+
+    .practice-wrap {
+        position: absolute;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 600px;
+        padding: 0 1rem;
+    }
+
+    .arena-top {
+        position: absolute;
+        top: 1.5rem;
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .trial-pill {
+        background: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.8);
+        font-size: 0.85rem; font-weight: 600;
+        padding: 0.35rem 1rem;
+        border-radius: 20px;
+    }
+    .switch-pill {
+        background: rgba(255,255,255,0.25);
+        color: white;
+        font-size: 0.8rem; font-weight: 700;
+        padding: 0.35rem 0.9rem;
+        border-radius: 20px;
+        animation: pop-in 0.15s ease-out;
+    }
+    @keyframes pop-in {
+        from { transform: scale(0.85); opacity: 0; }
+        to   { transform: scale(1);    opacity: 1; }
+    }
+
+    /* The big number */
+    .number-display {
+        font-size: 11rem;
+        font-weight: 900;
+        font-family: 'Courier New', monospace;
+        color: white;
+        line-height: 1;
+        text-shadow: 0 4px 24px rgba(0,0,0,0.2);
+        transition: color 0.1s, text-shadow 0.1s;
+        margin-bottom: 1rem;
+    }
+    .feedback-correct { color: #bbf7d0; text-shadow: 0 0 40px rgba(187,247,208,0.5); }
+    .feedback-wrong   { color: #fecaca; text-shadow: 0 0 40px rgba(254,202,202,0.5); }
+
+    .rule-hint {
+        font-size: 1.1rem;
+        color: rgba(255,255,255,0.75);
+        margin-bottom: 3rem;
+        font-weight: 500;
+    }
+    .hint-label {
+        display: inline-block;
+        font-weight: 800;
+        padding: 0.1rem 0.6rem;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    .blue-hint { background: rgba(255,255,255,0.2); color: white; }
+    .red-hint  { background: rgba(255,255,255,0.2); color: white; }
+
+    /* Response buttons */
+    .response-buttons {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .resp-btn {
+        padding: 1.25rem 3rem;
+        border: 3px solid rgba(255,255,255,0.5);
+        border-radius: 14px;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        font-size: 1.25rem;
+        font-weight: 800;
+        cursor: pointer;
+        min-width: 160px;
+        transition: background 0.15s, transform 0.1s, border-color 0.15s;
+    }
+    .resp-btn:hover {
+        background: rgba(255,255,255,0.3);
+        border-color: white;
+        transform: translateY(-3px);
+    }
+    .resp-btn:active { transform: translateY(0); background: rgba(255,255,255,0.4); }
+
+    /* ============================================================
+       RESULTS
+    ============================================================ */
+    .training-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.25rem 1.75rem;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+    .training-banner strong { font-size: 1rem; font-weight: 700; }
+    .training-banner span   { font-size: 0.875rem; opacity: 0.85; }
+    .banner-complete        { background: linear-gradient(135deg, #16a34a, #0f766e); }
+
+    .results-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    }
+
+    .score-header {
+        background: linear-gradient(135deg, #a21caf 0%, #701a75 100%);
+        padding: 2rem;
+        text-align: center;
+        color: white;
+    }
+    .score-big   { font-size: 4rem; font-weight: 900; line-height: 1; margin-bottom: 0.35rem; }
+    .score-label { font-size: 0.9rem; opacity: 0.85; font-weight: 500; }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .metric-cell {
+        padding: 1.25rem; text-align: center;
+        border-right: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .metric-cell:nth-child(3n) { border-right: none; }
+
+    .metric-value { font-size: 1.6rem; font-weight: 800; color: #1e293b; }
+    .metric-label { font-size: 0.78rem; color: #6b7280; font-weight: 500; margin-top: 0.25rem; }
+    .metric-good .metric-value { color: #16a34a; }
+    .metric-warn .metric-value { color: #d97706; }
+
+    .interp-card {
+        padding: 1.5rem 1.75rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .interp-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 0.5rem; }
+    .interp-card p { color: #374151; line-height: 1.6; margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .persev-note { color: #b45309; font-size: 0.9rem; }
+
+    .start-button {
+        display: block;
+        width: calc(100% - 3.5rem);
+        margin: 1.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 12px;
+        font-size: 1rem; font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .start-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .flex-container { padding: 1rem; }
+        .task-title     { font-size: 1.4rem; }
+        .number-display { font-size: 7rem; }
+        .resp-btn       { padding: 1rem 2rem; min-width: 130px; font-size: 1.1rem; }
+        .score-big      { font-size: 3rem; }
+        .metrics-grid   { grid-template-columns: repeat(2, 1fr); }
+        .metrics-grid .metric-cell:nth-child(3n)  { border-right: 1px solid #f1f5f9; }
+        .metrics-grid .metric-cell:nth-child(2n)  { border-right: none; }
+        .start-button   { width: calc(100% - 2.5rem); margin: 1.25rem; }
+    }
 </style>
