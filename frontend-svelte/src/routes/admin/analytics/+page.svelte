@@ -441,46 +441,86 @@
 <div class="admin-layout">
 	<aside class="sidebar">
 		<div class="sidebar-brand">
-			<span class="brand-icon">🏥</span>
+			<div class="brand-mark">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 5v14M5 12h14"/>
+				</svg>
+			</div>
 			<span class="brand-name">NeuroBloom Admin</span>
 		</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">
-				<span class="nav-icon">📊</span> Dashboard
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+			</svg>
+			Dashboard
 			</a>
 			<a href="/admin/analytics" class="nav-item active">
-				<span class="nav-icon">📈</span> System Analytics
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+			</svg>
+			System Analytics
 			</a>
 			<a href="/admin/doctors" class="nav-item">
-				<span class="nav-icon">👨‍⚕️</span> Doctor Management
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+			</svg>
+			Doctor Management
 			</a>
 			<a href="/admin/patients" class="nav-item">
-				<span class="nav-icon">👤</span> Patient Management
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+			</svg>
+			Patient Management
 			</a>
 			<a href="/admin/departments" class="nav-item">
-				<span class="nav-icon">🏢</span> Departments
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+			</svg>
+			Departments
 			</a>
 			<a href="/admin/interventions" class="nav-item">
-				<span class="nav-icon">🩺</span> Interventions
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+			</svg>
+			Interventions
 			</a>
 			<a href="/admin/messages" class="nav-item">
-				<span class="nav-icon">💬</span> Message Audit
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+			</svg>
+			Message Audit
 			</a>
 			<a href="/admin/audit-logs" class="nav-item">
-				<span class="nav-icon">📋</span> Audit Logs
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+			</svg>
+			Audit Logs
 			</a>
 			<a href="/admin/system-health" class="nav-item">
-				<span class="nav-icon">🖥️</span> System Health
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+			</svg>
+			System Health
 			</a>
 			<a href="/admin/notifications" class="nav-item">
-				<span class="nav-icon">🔔</span> Notification Center
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+			</svg>
+			Notification Center
 			</a>
 			<a href="/admin/research-data" class="nav-item">
-				<span class="nav-icon">🧪</span> Research Data
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+			</svg>
+			Research Data
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
-			<span>🚪</span> Logout
+			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+			</svg>
+			Sign Out
 		</button>
 	</aside>
 
@@ -491,8 +531,15 @@
 				<p class="page-subtitle">Focused system-wide analytics page with only the core operational and clinical trends.</p>
 			</div>
 			<div class="admin-info">
-				<span class="admin-avatar">🏥</span>
-				<span>{admin?.full_name || admin?.email}</span>
+				<div class="admin-avatar">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+					</svg>
+				</div>
+				<div class="admin-details">
+					<span class="admin-name">{admin?.full_name || admin?.email}</span>
+					<span class="admin-role">Administrator</span>
+				</div>
 			</div>
 		</header>
 
@@ -511,28 +558,52 @@
 			</div>
 		{:else}
 			<div class="stats-grid">
-				<div class="stat-card blue">
-					<div class="stat-icon">👥</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap blue">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">Total Patients</p><p class="stat-value">{stats.total_patients}</p></div>
 				</div>
-				<div class="stat-card purple">
-					<div class="stat-icon">👨‍⚕️</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap purple">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">Total Doctors</p><p class="stat-value">{stats.total_doctors}</p></div>
 				</div>
-				<div class="stat-card emerald">
-					<div class="stat-icon">📍</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap emerald">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">Active Patients Today</p><p class="stat-value">{stats.active_patients_today}</p></div>
 				</div>
-				<div class="stat-card slate">
-					<div class="stat-icon">🧠</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap slate">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">Sessions Completed</p><p class="stat-value">{stats.completed_sessions}</p></div>
 				</div>
-				<div class="stat-card teal">
-					<div class="stat-icon">📈</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap teal">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">Average Improvement</p><p class="stat-value small">{stats.average_improvement_score >= 0 ? '+' : ''}{stats.average_improvement_score}</p></div>
 				</div>
-				<div class="stat-card red">
-					<div class="stat-icon">⚠️</div>
+				<div class="stat-card">
+				<div class="stat-icon-wrap red">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+					</svg>
+				</div>
 					<div class="stat-body"><p class="stat-label">High-Risk Patients</p><p class="stat-value">{stats.high_risk_patients}</p></div>
 				</div>
 			</div>
@@ -738,7 +809,18 @@
 		letter-spacing: 0.02em;
 	}
 
-	.brand-icon { font-size: 1.4rem; }
+	.brand-mark {
+		width: 28px;
+		height: 28px;
+		background: #1d4ed8;
+		border-radius: 7px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.brand-mark svg { width: 14px; height: 14px; }
 
 	.sidebar-nav {
 		flex: 1;
@@ -767,7 +849,7 @@
 		color: #f1f5f9;
 	}
 
-	.nav-icon { font-size: 1.1rem; }
+	.nav-icon { width: 17px; height: 17px; flex-shrink: 0; }
 
 	.logout-btn {
 		margin: 0.75rem;
@@ -820,12 +902,28 @@
 	.admin-info {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
 		font-size: 0.9rem;
 		color: #475569;
 	}
 
-	.admin-avatar { font-size: 1.3rem; }
+	.admin-avatar {
+		width: 36px;
+		height: 36px;
+		background: #eff6ff;
+		border: 1px solid #bfdbfe;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.admin-avatar svg { width: 17px; height: 17px; stroke: #1d4ed8; }
+
+	.admin-details { display: flex; flex-direction: column; gap: 0.1rem; }
+	.admin-name { font-size: 0.875rem; font-weight: 600; color: #1e293b; }
+	.admin-role { font-size: 0.7rem; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
 
 	.alert.error {
 		margin: 1.5rem 2rem 0;
@@ -855,24 +953,38 @@
 
 	.stat-card {
 		background: white;
-		border-radius: 12px;
-		padding: 1.4rem 1.2rem;
+		border-radius: 10px;
+		padding: 1.25rem;
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
-		border-top: 3px solid transparent;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+		border: 1px solid #e2e8f0;
+		transition: box-shadow 0.15s;
 	}
 
-	.stat-card.blue { border-top-color: #3b82f6; }
-	.stat-card.purple { border-top-color: #a855f7; }
-	.stat-card.emerald { border-top-color: #059669; }
-	.stat-card.slate { border-top-color: #475569; }
-	.stat-card.teal { border-top-color: #14b8a6; }
-	.stat-card.red { border-top-color: #dc2626; }
-	.stat-card.skeleton { height: 96px; background: #f1f5f9; animation: pulse 1.4s infinite; }
+	.stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+	.stat-card.skeleton { height: 90px; background: #f1f5f9; border-color: transparent; animation: pulse 1.4s infinite; }
 
-	.stat-icon { font-size: 2rem; }
+	.stat-icon-wrap {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.stat-icon-wrap svg { width: 22px; height: 22px; }
+
+	.stat-icon-wrap.blue    { background: #eff6ff; color: #1d4ed8; }
+	.stat-icon-wrap.purple  { background: #faf5ff; color: #7c3aed; }
+	.stat-icon-wrap.emerald { background: #ecfdf5; color: #059669; }
+	.stat-icon-wrap.slate   { background: #f8fafc; color: #475569; }
+	.stat-icon-wrap.teal    { background: #f0fdfa; color: #0f766e; }
+	.stat-icon-wrap.red     { background: #fef2f2; color: #dc2626; }
+
 	.stat-label { font-size: 0.78rem; color: #64748b; margin: 0 0 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
 	.stat-value { font-size: 2rem; font-weight: 700; color: #1e293b; margin: 0; }
 	.stat-value.small { font-size: 1.65rem; }

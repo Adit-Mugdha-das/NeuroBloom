@@ -449,7 +449,7 @@
 
 		{:else if error}
 			<div class="screen-card error-screen">
-				<h2>⚠️ {t('Error')}</h2>
+				<h2>{t('Error')}</h2>
 				<p>{t(error)}</p>
 				<button class="start-button" on:click={returnToDashboard}>{t('Return to Dashboard')}</button>
 			</div>
@@ -458,7 +458,7 @@
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>🎯 {t('PASAT')}</h1>
+						<h1>{t('PASAT')}</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Attention" />
 					</div>
 					<p class="subtitle">{t('Paced Auditory Serial Addition Test · MS Gold Standard')}</p>
@@ -470,7 +470,7 @@
 				{/if}
 
 				<div class="task-concept">
-					<h3>🔢 {t('The Golden Rule')}</h3>
+					<h3>{t('The Golden Rule')}</h3>
 					<p>{t('Add each NEW digit to the PREVIOUS digit — not to your running total. This is the key rule!')}</p>
 					<div class="pasat-example">
 						<div class="ex-step ex-first">
@@ -497,34 +497,34 @@
 						</div>
 					</div>
 					<div class="key-rule-box">
-						<strong>⚠️ {t('KEY RULE:')}</strong> {t('Always add to the PREVIOUS digit you saw — not your last answer!')}
+						<strong>{t('KEY RULE:')}</strong> {t('Always add to the PREVIOUS digit you saw — not your last answer!')}
 					</div>
 				</div>
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">👁️</span>
+						<span class="rule-icon">Look</span>
 						<div class="rule-text">
 							<strong>{t('Step 1: See the Digit')}</strong>
 							<span>{t('A digit (1–9) appears on screen')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">➕</span>
+						<span class="rule-icon">+</span>
 						<div class="rule-text">
 							<strong>{t('Step 2: Add to Previous')}</strong>
 							<span>{t('Add it to the digit you just saw (not your last answer!)')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">⌨️</span>
+						<span class="rule-icon">Type</span>
 						<div class="rule-text">
 							<strong>{t('Step 3: Type Your Sum')}</strong>
 							<span>{t('Enter the answer and press Enter quickly')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-icon">⏱️</span>
+						<span class="rule-icon">Pace</span>
 						<div class="rule-text">
 							<strong>{t('Step 4: Keep Pace')}</strong>
 							<span>
@@ -538,7 +538,7 @@
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>💡 {t('Tips for Success')}</h4>
+						<h4>{t('Tips for Success')}</h4>
 						<ul class="tips-list">
 							<li><strong>{t('Forget your answer:')}</strong> {t('only remember the digit you just saw')}</li>
 							<li><strong>{t("Don't keep a total:")}</strong> {t("that's not the task!")}</li>
@@ -547,7 +547,7 @@
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>📋 {t('Test Format')}</h4>
+						<h4>{t('Test Format')}</h4>
 						<ul class="structure-list">
 							<li>
 								<span class="struct-key">{t('Digits')}</span>
@@ -570,7 +570,7 @@
 				</div>
 
 				<div class="clinical-info">
-					<h4>🏥 {t('Clinical Significance')}</h4>
+					<h4>{t('Clinical Significance')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
 							<strong>{t('MS Gold Standard')}</strong>
@@ -592,7 +592,7 @@
 				</div>
 
 				<div class="perf-guide">
-					<h4>📊 {t('Performance Reference')}</h4>
+					<h4>{t('Performance Reference')}</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
 							<span class="norm-label">{t('Excellent')}</span>
@@ -619,7 +619,7 @@
 				</div>
 
 				<div class="button-group">
-					<button class="btn-secondary" on:click={startPractice}>✏️ {t('Try Practice (4 digits)')}</button>
+					<button class="btn-secondary" on:click={startPractice}>{t('Try Practice (4 digits)')}</button>
 					<TaskPracticeActions
 						locale={$locale}
 						startLabel={actualTestButtonLabel(sessionData?.total_trials)}
@@ -628,14 +628,14 @@
 						align="center"
 						on:start={startTest}
 					/>
-					<button class="help-link" on:click={() => showHelp = true}>📖 {t('More Information')}</button>
+					<button class="help-link" on:click={() => showHelp = true}>{t('More Information')}</button>
 				</div>
 			</div>
 
 		{:else if showPractice}
 			<div class="screen-card practice-screen">
 				<PracticeModeBanner locale={$locale} />
-				<h2>✏️ {t('Practice Mode')}</h2>
+				<h2>{t('Practice Mode')}</h2>
 				<p class="practice-intro">{t("Let's practice with 4 digits. Take your time to understand the pattern.")}</p>
 
 				{#if !practiceComplete}
@@ -645,7 +645,7 @@
 						</div>
 						<div class="digit-hint">
 							{#if practiceIndex === 0}
-								<span class="hint-chip hint-first">💡 {t('First digit — just remember it!')}</span>
+								<span class="hint-chip hint-first">{t('First digit — just remember it!')}</span>
 							{:else if practiceIndex === 1}
 								<span class="hint-chip">
 									{$locale === 'bn'
@@ -700,7 +700,7 @@
 								? `${n(trialsRemaining)} অঙ্ক বাকি`
 								: `${trialsRemaining} digits left`}
 						</span>
-						<span class="pace-badge">⏱️ {intervalLabel(sessionData.interval_seconds)}</span>
+						<span class="pace-badge">{intervalLabel(sessionData.interval_seconds)}</span>
 					</div>
 					<div class="progress-track">
 						<div class="progress-fill" style="width: {progressPercent}%"></div>
@@ -741,14 +741,14 @@
 			<div class="screen-card complete-screen">
 				{#if results}
 					<div class="perf-banner">
-						<div class="perf-emoji">🎉</div>
+
 						<div class="perf-level">{t(results.metrics.performance_level)}</div>
 						<div class="perf-subtitle">{pct(results.metrics.accuracy, { maximumFractionDigits: 0 })} {t('accuracy')} · PASAT {t('Complete')}!</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
-							<div class="metric-icon">🎯</div>
+							<div class="metric-icon">◎</div>
 							<div class="metric-value">{pct(results.metrics.accuracy, { maximumFractionDigits: 0 })}</div>
 							<div class="metric-label">{t('Accuracy')}</div>
 							<div class="metric-sub">
@@ -758,19 +758,19 @@
 							</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">⚡</div>
+							<div class="metric-icon">→</div>
 							<div class="metric-value">{pct(results.metrics.sustained_attention, { maximumFractionDigits: 0 })}</div>
 							<div class="metric-label">{t('Sustained Attention')}</div>
 							<div class="metric-sub">{t('Performance in final third')}</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">⏱️</div>
+							<div class="metric-icon">⏱</div>
 							<div class="metric-value">{millisecondsLabel(results.metrics.average_reaction_time)}</div>
 							<div class="metric-label">{t('Avg Response Time')}</div>
 							<div class="metric-sub">{t('per digit')}</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">📈</div>
+							<div class="metric-icon">↑</div>
 							<div class="metric-value">{pct(results.metrics.consistency, { maximumFractionDigits: 0 })}</div>
 							<div class="metric-label">{t('Consistency')}</div>
 							<div class="metric-sub">{t('Response stability')}</div>
@@ -811,7 +811,7 @@
 
 					{#if results.metrics.fatigue_effect > 15}
 						<div class="fatigue-notice">
-							<h4>⚠️ {t('Cognitive Fatigue Detected')}</h4>
+							<h4>{t('Cognitive Fatigue Detected')}</h4>
 							<p>
 								{$locale === 'bn'
 									? `শুরু থেকে শেষ পর্যন্ত পারফরম্যান্স ${pct(results.metrics.fatigue_effect)} কমেছে। এটি PASAT-এ স্বাভাবিক।`
@@ -821,7 +821,7 @@
 					{/if}
 
 					<div class="clinical-note">
-						<h4>🧠 {t('Clinical Context')}</h4>
+						<h4>{t('Clinical Context')}</h4>
 						<p>{interpretationText()}</p>
 						<p class="why-matters"><strong>{t('Why this matters for MS:')}</strong> {t('PASAT scores correlate with brain lesion burden and predict real-world cognitive functioning. It is included in MACFIMS and BRB-N — the two main MS cognitive batteries.')}</p>
 					</div>
@@ -854,23 +854,23 @@
 			<button class="close-btn" on:click={() => showHelp = false}>×</button>
 			<h2>{t('PASAT — Strategies & Information')}</h2>
 			<div class="strategy">
-				<h3>🔑 {t('Forget Your Answer')}</h3>
+				<h3>{t('Forget Your Answer')}</h3>
 				<p>{t('After you submit, immediately forget your answer. The only thing that matters is the digit you currently see — it becomes the new "previous" for the next addition.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>🚫 {t("Don't Keep a Running Total")}</h3>
+				<h3>{t("Don't Keep a Running Total")}</h3>
 				<p>{t('It\'s tempting to track a cumulative sum but that\'s NOT the task. Each answer is only the sum of the last two digits shown.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>😌 {t('Reset After Errors')}</h3>
+				<h3>{t('Reset After Errors')}</h3>
 				<p>{t('If you lose track, skip one answer and restart with the next digit. Missing a few is better than losing track completely.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>👁️ {t('Visualize Two Numbers')}</h3>
+				<h3>{t('Visualize Two Numbers')}</h3>
 				<p>{t('Picture the two digits floating side by side. Some people find it helps to hold the previous digit mentally as an image, not a word.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>📚 {t('PASAT Variants')}</h3>
+				<h3>{t('PASAT Variants')}</h3>
 				<p>
 					<strong>PASAT-4:</strong> {t('4-second intervals (easier)')} ·
 					<strong>PASAT-3:</strong> {t('3-second intervals (standard)')} ·
@@ -878,7 +878,7 @@
 				</p>
 			</div>
 			<div class="strategy">
-				<h3>💪 {t('Why This Matters')}</h3>
+				<h3>{t('Why This Matters')}</h3>
 				<p>{t('PASAT is included in every major MS cognitive battery (MACFIMS, BRB-N). Improving on it demonstrates real gains in sustained attention — one of the most affected domains in MS.')}</p>
 			</div>
 		</div>
@@ -1048,13 +1048,13 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white; border: none; border-radius: 10px;
 		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
 		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-		box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
 	}
-	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
+	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 56, 202, 0.45); }
 
 	.btn-secondary {
 		background: white; color: #667eea;
@@ -1171,7 +1171,6 @@
 		background: linear-gradient(135deg, #fff7ed, #ffedd5);
 		border: 2px solid #fed7aa; border-radius: 14px;
 	}
-	.perf-emoji    { font-size: 2.5rem; margin-bottom: 0.25rem; }
 	.perf-level    { font-size: 1.8rem; font-weight: 800; color: #ea580c; }
 	.perf-subtitle { font-size: 0.95rem; color: #64748b; margin-top: 0.3rem; }
 

@@ -24,6 +24,7 @@
 	let metrics = null;
 	let newBadges = [];
 	let taskId = null;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 
@@ -957,13 +958,13 @@
 	}
 
 	.start-button {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: #4338ca;
 		color: white; border: none; border-radius: 10px;
 		padding: 0.85rem 2.5rem; font-size: 1rem; font-weight: 700;
 		cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-		box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+		box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
 	}
-	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.5); }
+	.start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 56, 202, 0.45); }
 
 	.btn-secondary {
 		background: white; color: #667eea;
