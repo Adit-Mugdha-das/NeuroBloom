@@ -37,14 +37,15 @@
 	let newBadges = [];
 	let countdown = 3;
 	let showHelp = false;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
 
-	onMount(async () => {
+	onMount(() => {
 		taskId = $page.url.searchParams.get('taskId');
 		window.addEventListener('keydown', handleKeyDown);
-		await loadSession();
+		loadSession();
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
@@ -95,6 +96,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -213,58 +215,87 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
-		<section class="panel hero">
-			<div class="header">
-				<div>
-					<p class="eyebrow">Attention Training</p>
-					<h1>Sustained Attention To Response Task</h1>
-					<p class="subtitle">
-						Press <strong>SPACE</strong> for every digit except the rare target digit. This captures vigilance,
-						fatigue-sensitive lapses, and inhibitory control under repetitive pressure.
-					</p>
+		<div class="page-content">
+
+			<!-- Header -->
+			<div class="task-header">
+				<button class="back-btn" on:click={() => goto('/training')}>Back to Training</button>
+				<div class="header-center">
+					<h1 class="task-title">SART</h1>
+					<DifficultyBadge {difficulty} domain="Attention" />
 				</div>
-				<DifficultyBadge {difficulty} domain="Attention" />
 			</div>
 
-			<div class="cards">
-				<div class="card target">
-					<h2>Target Rule</h2>
-					<p>Press for every number <strong>except {sessionData.target_digit}</strong>.</p>
-					<div class="target-digit">{sessionData.target_digit}</div>
-					<p class="helper">When this target appears, keep your hands still.</p>
-				</div>
+			<div class="concept-card">
+				<div class="concept-badge">Attention · Vigilance Training</div>
+				<h2>What Is SART?</h2>
+				<p>Press <strong>SPACE</strong> for every digit except the rare target digit. This captures vigilance, fatigue-sensitive lapses, and inhibitory control under repetitive pressure.</p>
+			</div>
 
-				<div class="card">
-					<h2>Why this matters</h2>
+			<div class="rules-card">
+				<h3>How to Respond</h3>
+				<ol class="rules-list">
+					<li>A stream of digits appears rapidly, one at a time.</li>
+					<li>Press <strong>SPACE</strong> (or the on-screen button) for every digit you see.</li>
+					<li>When you see the target digit <strong>{sessionData.target_digit}</strong>, do <strong>NOT</strong> press — keep your hands still.</li>
+					<li>Try to maintain a steady rhythm — speed and accuracy both matter.</li>
+				</ol>
+				<p class="rules-note">The target digit <strong>{sessionData.target_digit}</strong> appears rarely (~12–16% of trials). Stay alert throughout.</p>
+			</div>
+
+			<div class="info-grid">
+				<div class="info-card">
+					<div class="info-label">Trials</div>
+					<div class="info-val">{sessionData.total_trials}</div>
+					<p>Total digit stimuli presented in this session.</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">Target Digit</div>
+					<div class="info-val">{sessionData.target_digit}</div>
+					<p>The only digit you must withhold your response to.</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">Scoring</div>
+					<div class="info-val">Dual</div>
+					<p>Commission errors (pressing on target) and omission errors (missing non-targets) both reduce your score.</p>
+				</div>
+			</div>
+
+			{#if showHelp}
+				<div class="tip-card">
+					<div class="tip-title">Advanced Tips</div>
 					<ul>
-						<li>Frequent responding builds a habit that makes lapses measurable.</li>
-						<li>Rare no-go targets expose vigilance drift and impulsive responses.</li>
-						<li>Fast repetitive pacing makes it sensitive to fatigue-related breakdowns.</li>
+						<li><strong>Steady rhythm:</strong> respond to each digit at the same pace instead of reacting emotionally.</li>
+						<li><strong>Reset after targets:</strong> after correctly withholding, fully re-engage for the next digit so you don't miss an immediate non-target.</li>
+						<li><strong>Don't rush:</strong> if you start pressing impulsively, slow your internal pace rather than trying to go faster.</li>
+						<li><strong>Both errors count:</strong> pressing on the target and missing a non-target both lower your vigilance score equally.</li>
 					</ul>
-					<button class="ghost" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Hide tips' : 'Show tips'}
-					</button>
-					{#if showHelp}
-						<div class="help">
-							<p>Keep a steady rhythm instead of reacting emotionally to each digit.</p>
-							<p>Reset attention after every target so your next response does not get delayed.</p>
-							<p>If you start making impulsive presses, slow your internal pace rather than rushing.</p>
-						</div>
-					{/if}
 				</div>
+			{:else}
+				<div class="tip-card minimal">
+					<div class="tip-row">
+						<div>
+							<div class="tip-title">Strategy</div>
+							<p>Keep a steady mental rhythm rather than reacting to each digit. Only withhold when you see {sessionData.target_digit} — stay consistent throughout.</p>
+						</div>
+						<button class="show-more-btn" on:click={() => (showHelp = true)}>More tips</button>
+					</div>
+				</div>
+			{/if}
+
+			<div class="clinical-card">
+				<h3>Clinical Basis</h3>
+				<p>SART is a widely used sustained-attention paradigm that captures vigilance decrements characteristic of MS-related fatigue. Unlike typical Go/No-Go tasks, SART builds a strong prepotent response habit through high-frequency Go trials, making inhibitory failures under fatigue directly measurable. In multiple sclerosis, attention lapses and inhibitory control deficits affect approximately 50–60% of patients and are strongly correlated with lesion load in frontal white-matter tracts. SART scores distinguish commission errors (inhibitory failure) from omission errors (sustained-attention lapse), providing two clinically meaningful markers within a single brief test.</p>
 			</div>
 
-			<div class="actions">
-				<TaskPracticeActions
-					locale={$locale}
-					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
-					statusMessage={practiceStatusMessage}
-					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
-					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
-				/>
-				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
-			</div>
-		</section>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+			/>
+		</div>
 	{:else if state === STATE.READY}
 		<section class="panel ready">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
@@ -371,17 +402,188 @@
 </div>
 
 <style>
-	:global(body) {
-		background:
-			radial-gradient(circle at top, rgba(190, 110, 27, 0.12), transparent 32%),
-			linear-gradient(180deg, #fbfaf7 0%, #f2f0ea 100%);
-	}
-
 	.sart-page {
 		min-height: 100vh;
+		background: #C8DEFA;
 		padding: 2rem 1rem 3rem;
 		color: #2e312f;
 	}
+
+	/* Page content wrapper */
+	.page-content {
+		max-width: 1100px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	/* Task header */
+	.task-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.back-btn {
+		background: white;
+		color: #4338ca;
+		border: 2px solid #4338ca;
+		padding: 0.6rem 1.25rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: background 0.2s, color 0.2s;
+	}
+	.back-btn:hover { background: #4338ca; color: white; }
+	.header-center {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+	.task-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: #1e1b4b;
+		margin: 0;
+	}
+
+	/* Concept card */
+	.concept-card {
+		background: white;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+	.concept-badge {
+		display: inline-block;
+		background: #ede9fe;
+		color: #4338ca;
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.5px;
+		text-transform: uppercase;
+		padding: 0.3rem 0.9rem;
+		border-radius: 20px;
+		margin-bottom: 0.75rem;
+	}
+	.concept-card h2 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #1e1b4b;
+		margin: 0 0 0.75rem;
+	}
+	.concept-card p { color: #374151; line-height: 1.65; margin: 0; }
+
+	/* Rules card */
+	.rules-card {
+		background: white;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+	.rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #1e1b4b; margin: 0 0 1rem; }
+	.rules-list {
+		margin: 0 0 1rem;
+		padding-left: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	.rules-list li { color: #374151; line-height: 1.55; }
+	.rules-list li strong { color: #4338ca; }
+	.rules-note {
+		margin: 0;
+		background: #ede9fe;
+		color: #4338ca;
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+
+	/* Info grid */
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+	.info-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+	.info-label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #4338ca;
+		margin-bottom: 0.25rem;
+	}
+	.info-val {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: #1e1b4b;
+		margin-bottom: 0.5rem;
+	}
+	.info-card p { font-size: 0.875rem; color: #6b7280; line-height: 1.5; margin: 0; }
+
+	/* Tip card */
+	.tip-card {
+		background: #f5f3ff;
+		border: 1px solid #ddd6fe;
+		border-radius: 16px;
+		padding: 1.5rem 2rem;
+	}
+	.tip-card ul {
+		margin: 0.75rem 0 0;
+		padding-left: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.tip-card li { color: #374151; font-size: 0.9rem; line-height: 1.55; }
+	.tip-card li strong { color: #4338ca; }
+	.tip-card.minimal p { color: #374151; line-height: 1.6; margin: 0; }
+	.tip-title {
+		font-size: 0.8rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #4338ca;
+		margin-bottom: 0.5rem;
+	}
+	.tip-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+	.show-more-btn {
+		background: white;
+		border: 1.5px solid #4338ca;
+		color: #4338ca;
+		padding: 0.5rem 1.1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 600;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: all 0.2s;
+	}
+	.show-more-btn:hover { background: #4338ca; color: white; }
+
+	/* Clinical card */
+	.clinical-card {
+		background: #f0fdf4;
+		border: 1px solid #bbf7d0;
+		border-radius: 16px;
+		padding: 1.5rem 2rem;
+	}
+	.clinical-card h3 { font-size: 1rem; font-weight: 700; color: #14532d; margin: 0 0 0.75rem; }
+	.clinical-card p { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
 
 	.panel {
 		max-width: 960px;
@@ -393,7 +595,7 @@
 		box-shadow: 0 24px 60px rgba(44, 46, 45, 0.08);
 	}
 
-	.header, .cards, .actions, .results, .play-header {
+	.header, .actions, .results, .play-header {
 		display: flex;
 		gap: 1rem;
 	}
@@ -403,7 +605,7 @@
 		align-items: flex-start;
 	}
 
-	.cards, .results, .actions {
+	.results, .actions {
 		flex-wrap: wrap;
 	}
 
@@ -413,7 +615,7 @@
 		letter-spacing: 0.16em;
 		font-size: 0.78rem;
 		font-weight: 700;
-		color: #9a5a16;
+		color: #4338ca;
 	}
 
 	h1 {
@@ -432,34 +634,12 @@
 		margin: 1rem auto 0;
 	}
 
-	.card, .metric {
+	.metric {
 		flex: 1 1 280px;
 		padding: 1.25rem;
 		border-radius: 22px;
-		background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,244,238,0.94));
-		border: 1px solid rgba(133,129,118,0.14);
-	}
-
-	.card.target {
-		background: linear-gradient(135deg, #9a5a16, #b8701f);
-		color: white;
-	}
-
-	.target-digit {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 5rem;
-		height: 5rem;
-		font-size: 2.4rem;
-		font-weight: 800;
-		border-radius: 22px;
-		background: rgba(255,255,255,0.16);
-		margin: 0.5rem 0 0.75rem;
-	}
-
-	.helper {
-		color: rgba(255,255,255,0.9);
+		background: white;
+		border: 1px solid #e5e7eb;
 	}
 
 	ul {
@@ -480,7 +660,7 @@
 	}
 
 	.primary {
-		background: linear-gradient(135deg, #9a5a16, #b8701f);
+		background: #4338ca;
 		color: white;
 	}
 
@@ -494,12 +674,7 @@
 		color: #40443f;
 	}
 
-	.help {
-		margin-top: 1rem;
-		padding: 1rem;
-		border-radius: 16px;
-		background: rgba(154,90,22,0.08);
-	}
+
 
 	.ready {
 		text-align: center;
@@ -513,9 +688,9 @@
 	.rule-chip {
 		padding: 0.65rem 0.9rem;
 		border-radius: 999px;
-		background: rgba(154,90,22,0.1);
+		background: #ede9fe;
 		font-weight: 700;
-		color: #9a5a16;
+		color: #4338ca;
 	}
 
 	.progress-track {
@@ -528,17 +703,17 @@
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #9a5a16, #d4943f);
+		background: linear-gradient(90deg, #a5b4fc 0%, #4338ca 100%);
 	}
 
 	.digit-stage {
 		min-height: 280px;
 		border-radius: 28px;
-		background: linear-gradient(180deg, #faf7f0, #efe9dc);
+		background: #f5f3ff;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid rgba(133,129,118,0.16);
+		border: 1px solid #ddd6fe;
 	}
 
 	.digit {
@@ -581,7 +756,7 @@
 	}
 
 	.metric.primary {
-		background: linear-gradient(135deg, #9a5a16, #b8701f);
+		background: #4338ca;
 		color: white;
 	}
 
@@ -614,7 +789,7 @@
 			padding: 1.25rem;
 		}
 
-		.header, .play-header, .cards {
+		.header, .play-header {
 			flex-direction: column;
 		}
 
