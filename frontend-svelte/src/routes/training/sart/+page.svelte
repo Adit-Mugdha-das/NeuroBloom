@@ -426,8 +426,8 @@
 	}
 	.back-btn {
 		background: white;
-		color: #4338ca;
-		border: 2px solid #4338ca;
+		color: #0d9488;
+		border: 2px solid #0d9488;
 		padding: 0.6rem 1.25rem;
 		border-radius: 8px;
 		cursor: pointer;
@@ -436,7 +436,7 @@
 		white-space: nowrap;
 		transition: background 0.2s, color 0.2s;
 	}
-	.back-btn:hover { background: #4338ca; color: white; }
+	.back-btn:hover { background: #0d9488; color: white; }
 	.header-center {
 		flex: 1;
 		display: flex;
@@ -448,7 +448,7 @@
 	.task-title {
 		font-size: 1.75rem;
 		font-weight: 700;
-		color: #1e1b4b;
+		color: #134e4a;
 		margin: 0;
 	}
 
@@ -461,8 +461,8 @@
 	}
 	.concept-badge {
 		display: inline-block;
-		background: #ede9fe;
-		color: #4338ca;
+		background: #f0fdfa;
+		color: #0d9488;
 		font-size: 0.8rem;
 		font-weight: 700;
 		letter-spacing: 0.5px;
@@ -474,7 +474,7 @@
 	.concept-card h2 {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: #1e1b4b;
+		color: #134e4a;
 		margin: 0 0 0.75rem;
 	}
 	.concept-card p { color: #374151; line-height: 1.65; margin: 0; }
@@ -486,7 +486,7 @@
 		padding: 2rem;
 		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
 	}
-	.rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #1e1b4b; margin: 0 0 1rem; }
+	.rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #134e4a; margin: 0 0 1rem; }
 	.rules-list {
 		margin: 0 0 1rem;
 		padding-left: 1.5rem;
@@ -495,11 +495,11 @@
 		gap: 0.6rem;
 	}
 	.rules-list li { color: #374151; line-height: 1.55; }
-	.rules-list li strong { color: #4338ca; }
+	.rules-list li strong { color: #0d9488; }
 	.rules-note {
 		margin: 0;
-		background: #ede9fe;
-		color: #4338ca;
+		background: #f0fdfa;
+		color: #0d9488;
 		border-radius: 8px;
 		padding: 0.75rem 1rem;
 		font-size: 0.9rem;
@@ -523,21 +523,21 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		color: #4338ca;
+		color: #0d9488;
 		margin-bottom: 0.25rem;
 	}
 	.info-val {
 		font-size: 1.5rem;
 		font-weight: 800;
-		color: #1e1b4b;
+		color: #134e4a;
 		margin-bottom: 0.5rem;
 	}
 	.info-card p { font-size: 0.875rem; color: #6b7280; line-height: 1.5; margin: 0; }
 
 	/* Tip card */
 	.tip-card {
-		background: #f5f3ff;
-		border: 1px solid #ddd6fe;
+		background: #f0fdfa;
+		border: 1px solid #99f6e4;
 		border-radius: 16px;
 		padding: 1.5rem 2rem;
 	}
@@ -549,21 +549,21 @@
 		gap: 0.5rem;
 	}
 	.tip-card li { color: #374151; font-size: 0.9rem; line-height: 1.55; }
-	.tip-card li strong { color: #4338ca; }
+	.tip-card li strong { color: #0d9488; }
 	.tip-card.minimal p { color: #374151; line-height: 1.6; margin: 0; }
 	.tip-title {
 		font-size: 0.8rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		color: #4338ca;
+		color: #0d9488;
 		margin-bottom: 0.5rem;
 	}
 	.tip-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
 	.show-more-btn {
 		background: white;
-		border: 1.5px solid #4338ca;
-		color: #4338ca;
+		border: 1.5px solid #0d9488;
+		color: #0d9488;
 		padding: 0.5rem 1.1rem;
 		border-radius: 8px;
 		cursor: pointer;
@@ -573,7 +573,7 @@
 		flex-shrink: 0;
 		transition: all 0.2s;
 	}
-	.show-more-btn:hover { background: #4338ca; color: white; }
+	.show-more-btn:hover { background: #0d9488; color: white; }
 
 	/* Clinical card */
 	.clinical-card {
@@ -615,7 +615,7 @@
 		letter-spacing: 0.16em;
 		font-size: 0.78rem;
 		font-weight: 700;
-		color: #4338ca;
+		color: #0d9488;
 	}
 
 	h1 {
@@ -660,7 +660,7 @@
 	}
 
 	.primary {
-		background: #4338ca;
+		background: #0d9488;
 		color: white;
 	}
 
@@ -688,9 +688,9 @@
 	.rule-chip {
 		padding: 0.65rem 0.9rem;
 		border-radius: 999px;
-		background: #ede9fe;
+		background: #f0fdfa;
 		font-weight: 700;
-		color: #4338ca;
+		color: #0d9488;
 	}
 
 	.progress-track {
@@ -703,17 +703,17 @@
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #a5b4fc 0%, #4338ca 100%);
+		background: linear-gradient(90deg, #5eead4 0%, #0d9488 100%);
 	}
 
 	.digit-stage {
 		min-height: 280px;
 		border-radius: 28px;
-		background: #f5f3ff;
+		background: #f0fdfa;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border: 1px solid #ddd6fe;
+		border: 1px solid #99f6e4;
 	}
 
 	.digit {
@@ -756,7 +756,7 @@
 	}
 
 	.metric.primary {
-		background: #4338ca;
+		background: #0d9488;
 		color: white;
 	}
 

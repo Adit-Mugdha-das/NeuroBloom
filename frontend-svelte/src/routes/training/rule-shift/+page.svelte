@@ -32,14 +32,15 @@
 	let newBadges = [];
 	let stimulusShownAt = 0;
 	let showHelp = false;
+	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
 
-	onMount(async () => {
+	onMount(() => {
 		taskId = $page.url.searchParams.get('taskId');
 		window.addEventListener('keydown', handleKeyDown);
-		await loadSession();
+		loadSession();
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
@@ -90,6 +91,7 @@
 		}
 	}
 
+	/** @param {"practice" | "recorded"} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
 		playMode = nextMode;
 		practiceStatusMessage = '';
@@ -221,57 +223,106 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
-		<section class="panel hero">
-			<div class="header">
-				<div>
-					<p class="eyebrow">Flexibility Training</p>
-					<h1>Rule Shift</h1>
-					<p class="subtitle">
-						Follow the active rule for a short run, then adapt when the rule changes. This targets
-						set-shifting, inhibition of the previous rule, and flexible executive control.
-					</p>
+		<div class="page-content">
+			<div class="task-header">
+				<button class="back-btn" on:click={() => goto('/training')}>← Back to Training</button>
+				<div class="header-center">
+					<h1 class="task-title">Rule Shift Task</h1>
+					<DifficultyBadge {difficulty} domain="Flexibility" />
 				</div>
-				<DifficultyBadge {difficulty} domain="Flexibility" />
 			</div>
 
-			<div class="cards">
-				<div class="card accent">
-					<h2>Task Structure</h2>
-					<p>Each block uses one rule only.</p>
-					<p>When the block changes, update your response mapping immediately.</p>
-					<p class="helper">The earliest trials after each switch matter most.</p>
+			{#if practiceStatusMessage}
+				<div class="practice-note">{practiceStatusMessage}</div>
+			{/if}
+
+			<div class="concept-card">
+				<span class="concept-badge">Cognitive Flexibility · Set-Shifting</span>
+				<h2>The Core Mechanism</h2>
+				<p>
+					Each block uses a single classification rule applied to geometric shapes. When the block
+					ends, the rule changes — you must drop the previous mapping and immediately apply the new
+					one. The earliest trials after each switch reveal your true set-shifting speed.
+				</p>
+			</div>
+
+			<div class="rules-card">
+				<h3>How to Respond</h3>
+				<ol class="rules-list">
+					<li>A shape (circle or triangle) appears on screen, coloured teal or orange, in a count of one or two.</li>
+					<li>Read the <strong>Active Rule</strong> displayed above the stimulus to know which attribute to classify.</li>
+					<li>Press <strong>Left</strong> for the left-side category label, <strong>Right</strong> for the right-side label.</li>
+					<li>When the block changes, update your response mapping <em>before</em> the first stimulus of the new block.</li>
+				</ol>
+				<p class="rules-note">
+					Accuracy on switch trials is the primary measure. Perseverative errors — applying the old rule after a switch — count against your flexibility index.
+				</p>
+			</div>
+
+			<div class="info-grid">
+				<div class="info-card">
+					<div class="info-label">Block Length</div>
+					<div class="info-val">4–8</div>
+					<p>Trials per rule block</p>
 				</div>
-				<div class="card">
-					<h2>Response Rules</h2>
-					<ul>
-						<li>Use the left button for the left-side category label.</li>
-						<li>Use the right button for the right-side category label.</li>
-						<li>Respond quickly, but do not carry the old rule into the new block.</li>
-					</ul>
-					<button class="ghost" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Hide tips' : 'Show tips'}
+				<div class="info-card">
+					<div class="info-label">Total Trials</div>
+					<div class="info-val">{sessionData?.total_trials ?? '—'}</div>
+					<p>Across all rule blocks</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">Rules Active</div>
+					<div class="info-val">3</div>
+					<p>Color · Shape · Count</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">Response</div>
+					<div class="info-val">L / R</div>
+					<p>Button click or arrow key</p>
+				</div>
+			</div>
+
+			<div class="tip-card">
+				<div class="tip-row">
+					<div>
+						<p class="tip-title">Performance Tips</p>
+						<ul>
+							<li><strong>Name the new rule</strong> silently before the first trial of each block.</li>
+							<li><strong>Slow down slightly</strong> on the first two trials after a switch — accuracy matters more than speed here.</li>
+							<li><strong>Do not rely on momentum</strong> — the same stimulus can require a different response next block.</li>
+						</ul>
+					</div>
+					<button class="show-more-btn" on:click={() => (showHelp = !showHelp)}>
+						{showHelp ? 'Less' : 'More tips'}
 					</button>
-					{#if showHelp}
-						<div class="help">
-							<p>Name the active rule to yourself before the block starts.</p>
-							<p>After every switch, reset your mapping before looking at the next stimulus.</p>
-							<p>If you feel the old rule pulling you, slow down slightly for the first two trials.</p>
-						</div>
-					{/if}
 				</div>
+				{#if showHelp}
+					<ul style="margin-top: 0.75rem;">
+						<li>After an error on a switch trial, pause and re-read the rule label before the next response.</li>
+						<li>The mappings change every block — commit to re-reading the block intro screen each time.</li>
+					</ul>
+				{/if}
 			</div>
 
-			<div class="actions">
-				<TaskPracticeActions
-					locale={$locale}
-					startLabel={localeText({ en: 'Start Actual Task', bn: 'আসল টাস্ক শুরু করুন' }, $locale)}
-					statusMessage={practiceStatusMessage}
-					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
-					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
-				/>
-				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
+			<div class="clinical-card">
+				<h3>Clinical Significance</h3>
+				<p>
+					Set-shifting deficits are a sensitive marker of executive dysfunction in multiple sclerosis.
+					The Rule Shift Task isolates perseverative responding — using a previously correct rule after it
+					has changed — and the switch cost (slowing on first post-switch trial). Both metrics are used
+					in cognitive rehabilitation research to track frontal lobe integrity over time
+					(Chiaravalloti &amp; DeLuca, 2008).
+				</p>
 			</div>
-		</section>
+
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={localeText({ en: 'Start Rule Shift', bn: 'নিয়ম শিফট শুরু করুন' }, $locale)}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
+				on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
+			/>
+		</div>
 	{:else if state === STATE.BLOCK_INTRO}
 		<section class="panel block-intro">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
@@ -413,29 +464,218 @@
 </div>
 
 <style>
-	:global(body) {
-		background:
-			radial-gradient(circle at top, rgba(194, 104, 45, 0.14), transparent 34%),
-			linear-gradient(180deg, #f7f3ee 0%, #efebe4 100%);
-	}
-
+	/* ── Container ─────────────────────────────────────────── */
 	.rule-shift-page {
 		min-height: 100vh;
+		background: #C8DEFA;
 		padding: 2rem 1rem 3rem;
 		color: #2e302d;
 	}
 
+	/* ── Page content (instruction view) ──────────────────── */
+	.page-content {
+		max-width: 1100px;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.task-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.back-btn {
+		background: white;
+		color: #9c5c23;
+		border: 2px solid #9c5c23;
+		padding: 0.6rem 1.25rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: background 0.2s, color 0.2s;
+	}
+	.back-btn:hover { background: #9c5c23; color: white; }
+
+	.header-center {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.task-title {
+		font-size: 1.75rem;
+		font-weight: 700;
+		color: #7c2d12;
+		margin: 0;
+	}
+
+	.practice-note {
+		background: #fef9c3;
+		border: 1px solid #fde047;
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		color: #854d0e;
+		font-size: 0.9rem;
+		text-align: center;
+	}
+
+	.concept-card {
+		background: white;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+
+	.concept-badge {
+		display: inline-block;
+		background: #fff7ed;
+		color: #9c5c23;
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.5px;
+		text-transform: uppercase;
+		padding: 0.3rem 0.9rem;
+		border-radius: 20px;
+		margin-bottom: 0.75rem;
+	}
+
+	.concept-card h2 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #7c2d12;
+		margin: 0 0 0.75rem;
+	}
+	.concept-card p { color: #374151; line-height: 1.65; margin: 0; }
+
+	.rules-card {
+		background: white;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+	.rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #7c2d12; margin: 0 0 1rem; }
+
+	.rules-list {
+		margin: 0 0 1rem;
+		padding-left: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	.rules-list li { color: #374151; line-height: 1.55; }
+	.rules-list li strong { color: #9c5c23; }
+
+	.rules-note {
+		margin: 0;
+		background: #fff7ed;
+		color: #9c5c23;
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+
+	.info-card {
+		background: white;
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+	}
+
+	.info-label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #9c5c23;
+		margin-bottom: 0.25rem;
+	}
+
+	.info-val {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: #7c2d12;
+		margin-bottom: 0.5rem;
+	}
+	.info-card p { font-size: 0.875rem; color: #6b7280; line-height: 1.5; margin: 0; }
+
+	.tip-card {
+		background: #fffbeb;
+		border: 1px solid #fde68a;
+		border-radius: 16px;
+		padding: 1.5rem 2rem;
+	}
+	.tip-card ul {
+		margin: 0.75rem 0 0;
+		padding-left: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.tip-card li { color: #374151; font-size: 0.9rem; line-height: 1.55; }
+	.tip-card li strong { color: #9c5c23; }
+
+	.tip-title {
+		font-size: 0.8rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: #9c5c23;
+		margin-bottom: 0.5rem;
+	}
+
+	.tip-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+
+	.show-more-btn {
+		background: white;
+		border: 1.5px solid #9c5c23;
+		color: #9c5c23;
+		padding: 0.5rem 1.1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 600;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: all 0.2s;
+	}
+	.show-more-btn:hover { background: #9c5c23; color: white; }
+
+	.clinical-card {
+		background: #f0fdf4;
+		border: 1px solid #bbf7d0;
+		border-radius: 16px;
+		padding: 1.5rem 2rem;
+	}
+	.clinical-card h3 { font-size: 1rem; font-weight: 700; color: #14532d; margin: 0 0 0.75rem; }
+	.clinical-card p { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
+
+	/* ── Shared panel (gameplay + results) ────────────────── */
 	.panel {
 		max-width: 980px;
 		margin: 0 auto;
-		background: rgba(255, 255, 255, 0.92);
-		border: 1px solid rgba(122, 114, 103, 0.18);
+		background: rgba(255,255,255,0.92);
+		border: 1px solid rgba(122,114,103,0.18);
 		border-radius: 28px;
 		padding: 2rem;
-		box-shadow: 0 24px 60px rgba(44, 42, 38, 0.08);
+		box-shadow: 0 24px 60px rgba(44,42,38,0.08);
 	}
 
-	.header, .cards, .actions, .results, .play-header, .mapping-board, .response-panel, .rule-grid {
+	.header, .actions, .results, .play-header, .mapping-board, .response-panel, .rule-grid {
 		display: flex;
 		gap: 1rem;
 	}
@@ -445,13 +685,11 @@
 		align-items: flex-start;
 	}
 
-	.cards, .actions, .results, .rule-grid {
+	.actions, .results, .rule-grid {
 		flex-wrap: wrap;
 	}
 
-	.actions.center {
-		justify-content: center;
-	}
+	.actions.center { justify-content: center; }
 
 	.eyebrow {
 		margin: 0 0 0.5rem;
@@ -462,82 +700,69 @@
 		color: #a05f24;
 	}
 
-	h1 {
-		margin: 0 0 0.75rem;
-		font-size: clamp(2rem, 4vw, 3.1rem);
-	}
+	h1 { margin: 0 0 0.75rem; font-size: clamp(2rem, 4vw, 3.1rem); }
+	h2 { margin: 0 0 0.75rem; font-size: clamp(1.4rem, 3vw, 2rem); }
 
-	h2 {
-		margin: 0 0 0.75rem;
-		font-size: clamp(1.4rem, 3vw, 2rem);
-	}
+	.subtitle { max-width: 52rem; line-height: 1.6; color: #656960; }
+	.subtitle.center { text-align: center; margin: 1rem auto 0; }
 
-	.subtitle {
-		max-width: 52rem;
-		line-height: 1.6;
-		color: #656960;
-	}
-
-	.subtitle.center {
-		text-align: center;
-		margin: 1rem auto 0;
-	}
-
-	.card, .metric, .rule-card, .mapping {
-		flex: 1 1 260px;
+	.metric {
+		flex: 1 1 240px;
 		padding: 1.25rem;
 		border-radius: 22px;
-		background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,242,235,0.96));
+		background: white;
 		border: 1px solid rgba(122,114,103,0.14);
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
 	}
 
-	.card.accent, .primary-metric {
-		background: linear-gradient(135deg, #9c5c23, #c67a2d);
+	.metric.primary-metric {
+		background: #9c5c23;
 		color: white;
 	}
 
-	.helper {
-		color: rgba(255,255,255,0.88);
+	.metric span {
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.75;
 	}
 
-	ul {
-		margin: 0;
-		padding-left: 1.15rem;
-		line-height: 1.75;
+	.metric strong { font-size: 1.45rem; }
+
+	.rule-card, .mapping {
+		flex: 1 1 220px;
+		padding: 1.25rem;
+		border-radius: 22px;
+		background: white;
+		border: 1px solid rgba(122,114,103,0.14);
 	}
 
-	button {
-		border: none;
-		cursor: pointer;
-		font-weight: 700;
+	.rule-card span, .mapping span {
+		display: block;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.65;
 	}
 
-	.primary, .secondary, .ghost {
+	.rule-card strong, .mapping strong { font-size: 1.45rem; }
+
+	button { border: none; cursor: pointer; font-weight: 700; }
+
+	.primary, .secondary {
 		padding: 0.95rem 1.35rem;
 		border-radius: 16px;
 	}
 
-	.primary {
-		background: linear-gradient(135deg, #9c5c23, #c67a2d);
-		color: white;
-	}
-
-	.secondary, .ghost {
-		background: rgba(84, 87, 81, 0.1);
-		color: #40433f;
-	}
-
-	.help {
-		margin-top: 1rem;
-		padding: 1rem;
-		border-radius: 16px;
-		background: rgba(156, 92, 35, 0.08);
-	}
+	.primary { background: #9c5c23; color: white; }
+	.secondary { background: rgba(84,87,81,0.1); color: #40433f; }
 
 	.rule-chip {
 		padding: 0.65rem 0.9rem;
 		border-radius: 999px;
-		background: rgba(156, 92, 35, 0.1);
+		background: #fff7ed;
 		font-weight: 700;
 		color: #9c5c23;
 	}
@@ -552,37 +777,14 @@
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #9c5c23, #d49a54);
+		background: linear-gradient(90deg, #d49a54 0%, #9c5c23 100%);
 	}
 
-	.block-intro {
-		text-align: center;
-	}
+	.block-intro { text-align: center; }
 
-	.rule-card span, .mapping span, .metric span {
-		display: block;
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: inherit;
-		opacity: 0.75;
-	}
-
-	.rule-card strong, .mapping strong, .metric strong {
-		font-size: 1.45rem;
-	}
-
-	.mapping-board {
-		margin-bottom: 1.5rem;
-	}
-
-	.mapping.left {
-		border-left: 5px solid #1d7f78;
-	}
-
-	.mapping.right {
-		border-left: 5px solid #dc7b2c;
-	}
+	.mapping-board { margin-bottom: 1.5rem; }
+	.mapping.left { border-left: 5px solid #1d7f78; }
+	.mapping.right { border-left: 5px solid #dc7b2c; }
 
 	.stimulus-stage {
 		display: flex;
@@ -594,7 +796,7 @@
 		min-width: 280px;
 		padding: 1.5rem;
 		border-radius: 28px;
-		background: linear-gradient(180deg, #faf7f2, #efe9de);
+		background: #fffbeb;
 		border: 1px solid rgba(122,114,103,0.16);
 		text-align: center;
 	}
@@ -608,10 +810,7 @@
 		font-size: 0.92rem;
 	}
 
-	.response-panel {
-		justify-content: center;
-		flex-wrap: wrap;
-	}
+	.response-panel { justify-content: center; flex-wrap: wrap; }
 
 	.response-btn {
 		min-width: 240px;
@@ -619,7 +818,7 @@
 		border-radius: 20px;
 		background: white;
 		border: 2px solid rgba(122,114,103,0.16);
-		box-shadow: 0 12px 28px rgba(44, 42, 38, 0.06);
+		box-shadow: 0 12px 28px rgba(44,42,38,0.06);
 		color: #303330;
 		font-size: 1.05rem;
 	}
@@ -631,21 +830,9 @@
 		color: #6a6e66;
 	}
 
-	.hint {
-		margin-top: 1rem;
-		text-align: center;
-		color: #6a6e66;
-	}
+	.hint { margin-top: 1rem; text-align: center; color: #6a6e66; }
 
-	.results {
-		margin-top: 1.5rem;
-	}
-
-	.metric {
-		display: flex;
-		flex-direction: column;
-		gap: 0.45rem;
-	}
+	.results { margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; }
 
 	.difficulty {
 		display: flex;
@@ -656,28 +843,12 @@
 		font-weight: 700;
 	}
 
-	.arrow {
-		font-size: 1.2rem;
-		color: #777a73;
-	}
+	.arrow { font-size: 1.2rem; color: #777a73; }
 
 	@media (max-width: 780px) {
-		.panel {
-			padding: 1.25rem;
-		}
-
-		.header, .play-header, .mapping-board, .response-panel {
-			flex-direction: column;
-		}
-
-		.stimulus-card {
-			min-width: 0;
-			width: 100%;
-		}
-
-		.response-btn {
-			min-width: 0;
-			width: 100%;
-		}
+		.panel { padding: 1.25rem; }
+		.header, .play-header, .mapping-board, .response-panel { flex-direction: column; }
+		.stimulus-card { min-width: 0; width: 100%; }
+		.response-btn { min-width: 0; width: 100%; }
 	}
 </style>
