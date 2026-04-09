@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/rule-shift/+page.svelte";
+export { default as component } from "../../../../src/routes/training/plus-minus/+page.svelte";

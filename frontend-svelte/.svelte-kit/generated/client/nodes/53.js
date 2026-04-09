@@ -1,1 +1,1 @@
-export { default as component } from "../../../../src/routes/training/flanker/+page.svelte";
+export { default as component } from "../../../../src/routes/training/feature-conjunction/+page.svelte";
