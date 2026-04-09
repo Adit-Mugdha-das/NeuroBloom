@@ -1,10 +1,10 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
-	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
+	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { locale } from '$lib/i18n';
 	import { user } from '$lib/stores.js';

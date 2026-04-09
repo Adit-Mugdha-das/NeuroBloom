@@ -4,8 +4,8 @@
 	import api from '$lib/api.js';
 	import { locale, translateText } from '$lib/i18n';
 	import { clearUser, setUser } from '$lib/stores';
-	import { get } from 'svelte/store';
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 
 	let email = '';
 	let password = '';
@@ -262,21 +262,32 @@
 </div>
 
 <style>
-	:global(body) { background: #060d1a !important; }
-
 	/* ── Shell ─────────────────────────────────────────── */
 	.login-shell {
 		display: flex;
 		min-height: 100vh;
-		background: #060d1a;
+		position: relative;
+	}
+
+	/* Keep background.png visible; add subtle overlay for readability */
+	.login-shell::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		background: rgba(6, 13, 26, 0.55);
+		pointer-events: none;
+		z-index: 0;
 	}
 
 	/* ── Brand panel ───────────────────────────────────── */
 	.brand-panel {
 		flex: 0 0 46%;
-		background: #060d1a;
-		border-right: 1px solid rgba(255,255,255,0.06);
+		background: rgba(6, 13, 26, 0.72);
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+		border-right: 1px solid rgba(255,255,255,0.08);
 		position: relative;
+		z-index: 1;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
@@ -370,7 +381,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: #ffffff;
+		background: rgba(255, 255, 255, 0.93);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		position: relative;
+		z-index: 1;
 		padding: 2.5rem 2rem;
 	}
 

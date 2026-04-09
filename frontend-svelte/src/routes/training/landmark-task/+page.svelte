@@ -205,10 +205,14 @@
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
 		<div class="page-content">
-			<div class="task-header">
-				<button class="back-btn" on:click={() => goto('/training')}>← Back to Training</button>
-				<div class="header-center">
-					<h1 class="task-title">Landmark Task</h1>
+			<div class="hero-banner">
+				<div class="hero-inner">
+					<button class="back-btn" on:click={() => goto('/training')}>← Training</button>
+					<div class="hero-text">
+						<span class="hero-badge">Visual Scanning · Spatial Attention</span>
+						<h1 class="hero-title">Landmark Task</h1>
+						<p class="hero-desc">Pure perceptual spatial judgment — no drawing required</p>
+					</div>
 					<DifficultyBadge {difficulty} domain="Visual Scanning" />
 				</div>
 			</div>
@@ -411,9 +415,22 @@
 	/* ── Container ─────────────────────────────────────────── */
 	.landmark-page {
 		min-height: 100vh;
-		background: #C8DEFA;
+		background-image: url('/background.png');
+		background-size: cover;
+		background-position: center;
+		background-attachment: fixed;
 		padding: 2rem 1rem 3rem;
 		color: #2a3130;
+		position: relative;
+	}
+
+	.landmark-page::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		background: rgba(200, 222, 250, 0.52);
+		pointer-events: none;
+		z-index: 0;
 	}
 
 	/* ── Page content (instruction view) ──────────────────── */
@@ -423,46 +440,79 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+		position: relative;
+		z-index: 1;
 	}
 
-	.task-header {
+	/* ── Hero Banner ─────────────────────────────────────────── */
+	.hero-banner {
+		background: rgba(22, 78, 85, 0.82);
+		backdrop-filter: blur(18px);
+		-webkit-backdrop-filter: blur(18px);
+		border-radius: 20px;
+		padding: 2.5rem 2rem;
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+	}
+
+	.hero-inner {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-	}
-
-	.back-btn {
-		background: white;
-		color: #1f6670;
-		border: 2px solid #1f6670;
-		padding: 0.6rem 1.25rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-size: 0.9rem;
-		font-weight: 600;
-		white-space: nowrap;
-		transition: background 0.2s, color 0.2s;
-	}
-	.back-btn:hover { background: #1f6670; color: white; }
-
-	.header-center {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
+		gap: 1.5rem;
 		flex-wrap: wrap;
 	}
 
-	.task-title {
-		font-size: 1.75rem;
+	.hero-text {
+		flex: 1;
+		text-align: center;
+	}
+
+	.hero-badge {
+		display: inline-block;
+		background: rgba(255, 255, 255, 0.15);
+		color: #a5f3fc;
+		padding: 0.3rem 1rem;
+		border-radius: 20px;
+		font-size: 0.78rem;
 		font-weight: 700;
-		color: #164e55;
+		letter-spacing: 0.5px;
+		text-transform: uppercase;
+		margin-bottom: 0.5rem;
+	}
+
+	.hero-title {
+		font-size: clamp(1.8rem, 3vw, 2.5rem);
+		font-weight: 800;
+		color: white;
+		margin: 0 0 0.4rem;
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	}
+
+	.hero-desc {
+		color: rgba(255, 255, 255, 0.75);
+		font-size: 0.95rem;
 		margin: 0;
 	}
 
+	.back-btn {
+		background: rgba(255, 255, 255, 0.15);
+		color: white;
+		border: 1.5px solid rgba(255, 255, 255, 0.35);
+		padding: 0.6rem 1.25rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.875rem;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: background 0.2s;
+		flex-shrink: 0;
+	}
+	.back-btn:hover { background: rgba(255, 255, 255, 0.28); }
+
 	.practice-note {
-		background: #fef9c3;
+		background: rgba(254, 249, 195, 0.92);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border: 1px solid #fde047;
 		border-radius: 8px;
 		padding: 0.75rem 1rem;
@@ -472,10 +522,12 @@
 	}
 
 	.concept-card {
-		background: white;
+		background: rgba(255, 255, 255, 0.93);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border-radius: 16px;
 		padding: 2rem;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 	}
 
 	.concept-badge {
@@ -500,10 +552,12 @@
 	.concept-card p { color: #374151; line-height: 1.65; margin: 0; }
 
 	.rules-card {
-		background: white;
+		background: rgba(255, 255, 255, 0.93);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border-radius: 16px;
 		padding: 2rem;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 	}
 	.rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #164e55; margin: 0 0 1rem; }
 
@@ -534,10 +588,12 @@
 	}
 
 	.info-card {
-		background: white;
+		background: rgba(255, 255, 255, 0.93);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border-radius: 16px;
 		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 	}
 
 	.info-label {
@@ -558,10 +614,13 @@
 	.info-card p { font-size: 0.875rem; color: #6b7280; line-height: 1.5; margin: 0; }
 
 	.tip-card {
-		background: #f0fdfe;
+		background: rgba(240, 253, 254, 0.92);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border: 1px solid #a5f3fc;
 		border-radius: 16px;
 		padding: 1.5rem 2rem;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
 	}
 	.tip-card ul {
 		margin: 0.75rem 0 0;
@@ -600,10 +659,13 @@
 	.show-more-btn:hover { background: #1f6670; color: white; }
 
 	.clinical-card {
-		background: #f0fdf4;
+		background: rgba(240, 253, 244, 0.92);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 		border: 1px solid #bbf7d0;
 		border-radius: 16px;
 		padding: 1.5rem 2rem;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
 	}
 	.clinical-card h3 { font-size: 1rem; font-weight: 700; color: #14532d; margin: 0 0 0.75rem; }
 	.clinical-card p { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
@@ -612,11 +674,15 @@
 	.panel {
 		max-width: 980px;
 		margin: 0 auto;
-		background: rgba(255,255,255,0.93);
-		border: 1px solid rgba(102,120,118,0.18);
+		background: rgba(255, 255, 255, 0.93);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 1px solid rgba(102, 120, 118, 0.18);
 		border-radius: 28px;
 		padding: 2rem;
-		box-shadow: 0 24px 60px rgba(41,49,48,0.08);
+		box-shadow: 0 24px 60px rgba(41, 49, 48, 0.12);
+		position: relative;
+		z-index: 1;
 	}
 
 	.header, .actions, .results, .play-header, .response-grid {
@@ -753,5 +819,8 @@
 	@media (max-width: 780px) {
 		.panel { padding: 1.25rem; }
 		.header, .play-header { flex-direction: column; }
+		.hero-inner { flex-direction: column; text-align: center; }
+		.hero-text { text-align: center; }
+		.back-btn { align-self: flex-start; }
 	}
 </style>
