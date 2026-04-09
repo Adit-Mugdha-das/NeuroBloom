@@ -43,6 +43,7 @@
     let newBadges = [];
     let feedbackSummary = null;
     let isDisposed = false;
+    /** @type {"practice" | "recorded"} */
     let playMode = TASK_PLAY_MODE.RECORDED;
     let practiceStatusMessage = '';
     let recordedTrials = [];
@@ -178,6 +179,7 @@
         }
     }
 
+    /** @param {"practice" | "recorded"} nextMode */
     async function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
         playMode = nextMode;
         practiceStatusMessage = '';
@@ -1076,7 +1078,7 @@
     }
     .start-button {
         flex: 1;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #4338ca;
         color: white;
         border: none;
         padding: 1rem 1.5rem;
@@ -1086,12 +1088,12 @@
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
     }
-    .start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+    .start-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67,56,202,0.4); }
     .btn-secondary {
         flex: 1;
         background: white;
-        color: #667eea;
-        border: 2px solid #667eea;
+        color: #4338ca;
+        border: 2px solid #4338ca;
         padding: 1rem 1.5rem;
         border-radius: 12px;
         font-size: 1rem;
@@ -1099,7 +1101,7 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    .btn-secondary:hover { background: #667eea; color: white; }
+    .btn-secondary:hover { background: #4338ca; color: white; }
 
     /* Responsive */
     @media (max-width: 768px) {

@@ -116,6 +116,35 @@ Dual-task: Math accuracy + letter recall
 
 ---
 
+#### **1.5 Dual N-Back**
+**Clinical Validation**: Gold standard for training working memory capacity
+**Description**: Simultaneously match both a visual grid position AND an auditory letter cue to the item shown N steps back — a more demanding dual-channel variant of the standard N-Back
+
+**MS Research Evidence**:
+- Dual-channel working memory load differentiates capacity limits in MS
+- Trains visuospatial and verbal working memory simultaneously
+- Reference: Jaeggi et al., 2008; Jaušovec & Jaušovec, 2012
+
+**Implementation**:
+```javascript
+Each stimulus presents:
+  - Highlighted cell in a 3×3 grid  (spatial channel)
+  - Spoken/displayed letter cue     (verbal channel)
+Respond independently:
+  - Does current position match N steps back?
+  - Does current letter match N steps back?
+
+Difficulty:
+1-3:  1-back, stream 10-12 stimuli, stimulus 1600→1450ms
+4-7:  2-back, stream 12-15 stimuli, stimulus 1400→1150ms
+8-10: 3-back, stream 15-18 stimuli, stimulus 1100→950ms
+
+Response window closes with next stimulus onset
+Scoring: Separate accuracy for visual and audio channels
+```
+
+---
+
 ## ⚡ 2. PROCESSING SPEED Domain
 
 ### Current Task
@@ -346,6 +375,35 @@ Conflict effect: Incongruent - Congruent RT
 
 ---
 
+#### **3.5 Sustained Attention to Response Task (SART)**
+**Clinical Validation**: ⭐⭐⭐⭐ Widely used sustained-attention standard
+**Description**: Respond rapidly to a continuous stream of digits and withhold response to the rare target digit — the inverse of a typical Go/No-Go, specifically tuned to detect vigilance failures
+
+**MS Research Evidence**:
+- Captures vigilance decrements characteristic of MS-related fatigue
+- Distinguishes commission errors (inhibitory failure) from omission errors (attention lapse)
+- Reference: Robertson et al., 1997; Seli et al., 2013
+
+**Implementation**:
+```javascript
+Non-target digits → Respond   (Go, ~85-88% of trials)
+Target digit      → Withhold  (No-Go, ~12-16% of trials)
+
+Levels 1-6:  target digit = 3, basic digit set 1-9
+Levels 7-10: target digit = 8, perceptual digit set (visually similar)
+
+Difficulty:
+Levels 1-6:  54-84 trials, stimulus + ISI 900→650ms
+Levels 7-10: 90-108 trials, stimulus + ISI 600→480ms
+
+Key measures:
+- Commission errors (target responded to)  — inhibitory control
+- Omission errors (non-target missed)      — sustained attention
+- Mean RT on correct non-target trials
+```
+
+---
+
 ## 🔄 4. COGNITIVE FLEXIBILITY Domain
 
 ### Current Task
@@ -463,6 +521,33 @@ Difficulty:
 1-3: Single digit numbers, clear cues
 4-6: Two digit numbers, subtle cues
 7-10: Three digits, minimal cue time
+```
+
+---
+
+#### **4.5 Rule Shift Task**
+**Clinical Validation**: ⭐⭐⭐⭐ Directed cognitive flexibility; lighter WCST alternative
+**Description**: Classify cards varying by colour, shape, and count according to the currently cued rule for a short block; when the cue changes adapt strategy immediately — explicit cuing isolates set-shifting from working memory demands
+
+**MS Research Evidence**:
+- Set-shifting with explicit cuing isolates flexibility from working memory load
+- Captures perseverative tendencies common in frontal MS involvement
+- Reference: Eling et al., 2008; Rogers & Monsell, 1995
+
+**Implementation**:
+```javascript
+Card attributes: color (teal/orange), shape (circle/triangle), count (one/two)
+Each block: sort by the cued rule for 8-12 trials, then rule changes
+
+Difficulty:
+1-2:  3 blocks (color→shape→color),       8 trials/block, switch cue 2600ms
+3-4:  4 blocks (adds count rule),          9 trials/block, switch cue 2200→2000ms
+5-6:  4 blocks (faster pace),             10 trials/block, switch cue 1800→1600ms
+7-8:  5 blocks,                           10-11 trials/block, switch cue 1400→1200ms
+9-10: 5-6 blocks,                         12 trials/block, switch cue 1000→900ms
+
+Switch trials: 2-4 unexpected mid-block switches embedded per session
+Key metrics: switch cost RT, perseverative errors, accuracy on first post-switch trial
 ```
 
 ---
@@ -728,6 +813,37 @@ Critical for driving safety assessment
 
 ---
 
+#### **6.5 Landmark Task**
+**Clinical Validation**: ⭐⭐⭐⭐ Visual-spatial attention standard; spatial bias and neglect screen
+**Description**: Judge whether a horizontally pre-bisected line is divided at the true midpoint or whether left or right segment appears longer — no manual drawing required, purely perceptual spatial judgment
+
+**MS Research Evidence**:
+- Sensitive to pseudoneglect and hemispatial attention asymmetries from MS white-matter lesions
+- Detects right-hemisphere involvement without motor confound
+- Reference: Harvey et al., 1995; Milner et al., 1992
+
+**Implementation**:
+```javascript
+Each trial: horizontal line with a tick mark at its division point
+Response: "Left longer" | "Equal" | "Right longer"
+
+Line length: 360px (level 1) → 540px (level 10)
+Offset from true centre decreases with difficulty:
+  Levels 1-2:  up to ±30px  (easily visible asymmetry)
+  Levels 4-6:  up to ±20px  (moderate difficulty)
+  Levels 8-10: up to ±10px  (subtle — near perceptual threshold)
+
+Equal/centered trials: ~18-28% per session
+Total trials: 18 (level 1) → 36 (level 10)
+
+Scoring:
+- Accuracy (% correct)
+- Lateral bias index (proportion of leftward vs rightward errors)
+- Sensitivity (d-prime to bisection offset)
+```
+
+---
+
 ## 📋 Implementation Strategy
 
 ### Task Rotation System
@@ -738,7 +854,7 @@ Critical for driving safety assessment
 // Rotation Logic
 const taskRotation = {
   working_memory: {
-    tasks: ['n_back', 'digit_span', 'spatial_span', 'letter_number', 'ospan'],
+    tasks: ['n_back', 'digit_span', 'spatial_span', 'letter_number', 'ospan', 'dual_n_back'],
     rotation: 'sequential',  // Don't repeat same task twice in row
     maxRepeats: 1  // Can't do same task 2 sessions in a row
   },
@@ -750,13 +866,13 @@ const taskRotation = {
   },
   
   attention: {
-    tasks: ['cpt', 'pasat', 'stroop', 'go_nogo', 'flanker'],
+    tasks: ['cpt', 'pasat', 'stroop', 'go_nogo', 'flanker', 'sart'],
     rotation: 'random',  // Unpredictable
     excludeLast: 2  // Last 2 tasks not repeated
   },
   
   flexibility: {
-    tasks: ['task_switching', 'trails_b', 'wcst', 'dccs', 'plus_minus'],
+    tasks: ['task_switching', 'trails_b', 'wcst', 'dccs', 'plus_minus', 'rule_shift'],
     rotation: 'adaptive',  // Based on user struggle
     prioritize: 'weakest'  // More practice on hardest tasks
   },
@@ -768,7 +884,7 @@ const taskRotation = {
   },
   
   visual_scanning: {
-    tasks: ['visual_search', 'cancellation', 'feature_conjunction', 'mot', 'ufov'],
+    tasks: ['visual_search', 'cancellation', 'feature_conjunction', 'mot', 'ufov', 'landmark'],
     rotation: 'difficulty_matched',  // Progress together
     maintainChallenge: true
   }
@@ -841,12 +957,12 @@ const taskUsage = {
   
   // Training (all tasks including baseline tasks)
   training: {
-    working_memory: ['n_back', 'digit_span', 'spatial_span', 'letter_number', 'ospan'],
+    working_memory: ['n_back', 'digit_span', 'spatial_span', 'letter_number', 'ospan', 'dual_n_back'],
     processing_speed: ['simple_reaction', 'sdmt', 'trails_a', 'pattern_comparison', 'inspection_time'],
-    attention: ['cpt', 'pasat', 'stroop', 'go_nogo', 'flanker'],
-    flexibility: ['task_switching', 'trails_b', 'wcst', 'dccs', 'plus_minus'],
+    attention: ['cpt', 'pasat', 'stroop', 'go_nogo', 'flanker', 'sart'],
+    flexibility: ['task_switching', 'trails_b', 'wcst', 'dccs', 'plus_minus', 'rule_shift'],
     planning: ['tower_of_london', 'stockings_cambridge', 'verbal_fluency', 'category_fluency', 'twenty_questions'],
-    visual_scanning: ['visual_search', 'cancellation', 'feature_conjunction', 'mot', 'ufov']
+    visual_scanning: ['visual_search', 'cancellation', 'feature_conjunction', 'mot', 'ufov', 'landmark']
   }
 };
 ```
@@ -1079,8 +1195,8 @@ progress is tracked consistently across all variations.
 - 6 tasks total (boring, practice effects, limited validity)
 
 **Recommended State**:
-- **28 total tasks** across 6 domains
-- **4-5 tasks per domain**
+- **32 total tasks** across 6 domains
+- **4-6 tasks per domain**
 - All clinically validated for MS
 - Intelligent rotation prevents repetition
 - Baseline tasks remain fixed (consistency)
