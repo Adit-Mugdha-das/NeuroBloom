@@ -91,11 +91,11 @@ Several elements of NeuroBloom build on established neuropsychological practice,
 NeuroBloom is a modular, role-based web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation support in multiple sclerosis. It integrates 34 cognitive tasks across six domains into a standardized session model and combines patient-facing task execution with contextual data capture, clinician review workflows, administrative oversight, and a dedicated analytics layer within a unified software architecture. A personalized session planning and task-rotation mechanism regulates domain emphasis, task selection, and difficulty progression from baseline scores and ongoing rehabilitation priorities. Bilingual patient-facing support in Bangla and English broadens accessibility, and the modular design remains extensible to future task modules and analytical additions without restructuring the core system.
 
 \subsection{Software architecture}
-NeuroBloom is organized around a modular, role-aware architecture that separates interface functions, application services, analytics processing, and persistent storage across three operational contexts—patient, doctor, and administrator—which share a common backend and data model while maintaining role-specific workflows.
+NeuroBloom is organized as a modular, role-aware architecture spanning three operational contexts—patient, doctor, and administrator. These contexts share a common backend and data model while preserving role-specific workflows. The system separates interface functions, core application services, analytics processing, and persistent storage, allowing different parts of the platform to evolve without disrupting the overall workflow.
 
-At implementation level, NeuroBloom combines a Svelte-based frontend, a FastAPI backend, and a persistence layer built on SQLModel and PostgreSQL. The frontend delivers role-specific interfaces for task execution, progress review, patient management, analytics, and administration. The backend handles authentication, baseline and training operations, reporting, messaging, notifications, and doctor-admin coordination. This layered organization separates interface behavior from service logic and storage responsibilities, making the system easier to manage and adapt as new task modules or platform features are introduced.
+At implementation level, NeuroBloom combines a Svelte-based frontend, a FastAPI backend, and a persistence layer built on SQLModel and PostgreSQL. The frontend provides role-specific interfaces for task execution, progress review, patient management, analytics, and administration. The backend manages authentication, baseline and training operations, session planning, reporting, messaging, notifications, and doctor--admin coordination. This layered organization separates interface behavior from service logic and storage responsibilities, making the system easier to maintain and extend as new task modules and platform features are introduced.
 
-Bilingual support for Bangla and English is implemented as a custom internationalisation layer within the frontend. Locale preference is stored in the user account record and bootstrapped from a \texttt{data-locale} HTML attribute before client-side hydration, avoiding layout shift at page load. A structured translation catalog handles interface strings through exact-match, phrase-level, and word-level substitution tiers. Numeric outputs are rendered using Unicode Bengali digits when Bangla is active, and Latin letter stimuli used in cognitive tasks are remapped to corresponding Bengali script characters to preserve script consistency without altering task structure or scoring logic. Bilingual support is scoped to the patient-facing interface; clinician and administrative views are presented in English.
+Bilingual support for Bangla and English is implemented through a custom internationalisation layer in the frontend. Locale preference is stored in the user account and initialized before client-side hydration to avoid layout shift at page load. A structured translation catalog manages interface strings, while numeric outputs are rendered using Unicode Bengali digits when Bangla is active. To preserve script consistency in patient-facing cognitive tasks, Latin letter stimuli are remapped to corresponding Bengali script characters without altering task structure or scoring logic. Bilingual support is currently limited to the patient-facing interface, whereas clinician and administrative views remain in English.
 
 \begin{figure}[!t]
 \centering
@@ -104,35 +104,54 @@ Bilingual support for Bangla and English is implemented as a custom internationa
 \label{fig:system_architecture}
 \end{figure}
 
-Data flow begins when a patient completes baseline or training activities and optionally submits contextual information such as fatigue, sleep quality, stress, or medication timing. Stored session records—including score, accuracy, response time, completion behavior, and contextual variables—are accessible to clinicians and administrators, allowing performance to be reviewed across sessions rather than as isolated results.
+Data flow begins when a patient completes baseline or training activities and optionally submits contextual information such as fatigue, sleep quality, stress, or medication timing. These records are stored together with task outputs including score, accuracy, response time, completion behavior, and associated contextual variables. The resulting session history supports repeated review by clinicians and administrators, allowing patient performance to be interpreted across sessions rather than as isolated task results.
 
-An analytics layer operates on these stored records as a monitoring pipeline, deriving variability- and fatigue-related measures, evaluating change across sessions, and returning interpretable summaries for clinician-facing review rather than acting as a standalone diagnostic engine. The processing sequence is illustrated in Fig.~\ref{fig:biomarker_pipeline}.
+A task-planning component operates within the application layer to regulate session composition and progression. Using baseline scores, recent task history, and current difficulty levels, it determines domain emphasis, rotates task selection, and updates difficulty across repeated sessions. This enables NeuroBloom to function not merely as a repository of cognitive tasks, but as an adaptive rehabilitation workflow.
 
-\begin{figure}[!t]
+
+An analytics layer operates on stored session and trial records as a monitoring pipeline. Rather than functioning as a standalone diagnostic engine, it derives interpretable variability-, fatigue-, and trend-related measures for clinician-facing review. The processing sequence linking task interaction, contextual capture, and biomarker-oriented summaries is illustrated in Fig.~\ref{fig:biomarker_pipeline}.
+.
+
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{figure3}
 \caption{Analytics pipeline linking task interaction and contextual capture to longitudinal summaries and biomarker-oriented outputs.}
 \label{fig:biomarker_pipeline}
 \end{figure}
 
-This layered separation enables controlled role-based access, supports reuse of shared data structures, and allows the platform to evolve without full system redesign, providing a practical basis for reproducible data capture and coordinated clinician-patient interaction.
+This layered separation enables controlled role-based access, supports reuse of shared data structures, and allows the platform to evolve without redesigning the full system. In this way, the architecture provides a practical basis for reproducible data capture, adaptive rehabilitation support, and coordinated clinician--patient interaction.
 
 
 \subsection{Software functionalities}
 \paragraph{Patient interaction and session execution}
-NeuroBloom provides a patient-facing workflow for repeated baseline and training activity. Patients complete structured cognitive tasks, view session progress, and optionally submit pre-session contextual information such as fatigue or sleep quality, supporting adherence-oriented use across home- or clinic-based follow-up. The interaction flow is illustrated in Fig.~\ref{fig:patient_workflow}.
+Patient interaction and session execution. NeuroBloom provides a patient-facing workflow for repeated baseline and training activity. Patients complete structured cognitive tasks, view session progress, and optionally submit pre-session contextual information such as fatigue or sleep quality, supporting adherence-oriented use across home- or clinic-based follow-up. To improve accessibility, the patient interface is available in both Bangla and English. The interaction flow is illustrated in Fig.~\ref{fig:patient_workflow}.
 
 \begin{figure}[!t]
 \centering
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\includegraphics[width=\textwidth]{fig4part1}
+\includegraphics[width=\textwidth]{fig4part1}\\[-0.2em]
+{\small (a)}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.49\textwidth}
 \centering
-\includegraphics[width=\textwidth]{fig4part2}
+\includegraphics[width=\textwidth]{fig4part2}\\[-0.2em]
+{\small (b)}
 \end{minipage}
-\caption{Patient-facing workflow, showing repeated task interaction and progress-oriented session use.}
+
+\vspace{0.8em}
+
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figure4_3}\\[-0.2em]
+{\small (c)}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{figure4_4}\\[-0.2em]
+{\small (d)}
+\end{minipage}
+\caption{Patient-facing workflow in NeuroBloom. (a)--(b) English interface showing repeated task interaction and progress-oriented session use. (c)--(d) Equivalent Bangla interface, illustrating bilingual patient-facing support.}
 \label{fig:patient_workflow}
 \end{figure}
 
@@ -173,9 +192,9 @@ The task framework includes 34 tests across six cognitive domains—working memo
 \end{center}
 
 \paragraph{Longitudinal analytics and digital biomarkers}
-Beyond raw task completion, the platform derives summary analytics from accumulated performance and contextual records, including longitudinal trend summaries, fatigue-related patterns, and response-time variability indicators. These are intended to support progression-aware monitoring and clinician interpretation of rehabilitation-relevant change rather than to provide diagnostic conclusions. The processing pipeline is illustrated in Fig.~\ref{fig:biomarker_pipeline}; an example dashboard is shown in Fig.~\ref{fig:admin_workflow}(a).
+Beyond raw task completion, the platform derives summary analytics from accumulated performance and contextual records, including longitudinal trend summaries, fatigue-related patterns, and response-time variability indicators. These outputs support progression-aware monitoring and clinician interpretation of rehabilitation-relevant change. The processing pipeline is illustrated in Fig.~\ref{fig:biomarker_pipeline}; an example dashboard is shown in Fig.~\ref{fig:admin_workflow}(a).
 
-The current analytics layer is based on deterministic statistical feature extraction rather than machine-learning prediction models. All indicators are computed directly from trial-level accuracy, reaction times, session-level scores, and contextual self-report variables. Within-session cognitive fatigue is estimated from the difference between early- and late-session performance, with
+The current analytics layer is based on deterministic statistical feature extraction. All indicators are computed directly from trial-level accuracy, reaction times, session-level scores, and contextual self-report variables. Within-session cognitive fatigue is estimated from the difference between early- and late-session performance, with
 \begin{equation}
 \Delta Acc = Acc_{Q1} - Acc_{Q4}, \qquad \Delta RT = RT_{Q4} - RT_{Q1},
 \end{equation}
@@ -185,19 +204,21 @@ F = 0.5A + 0.3R + 0.2S,
 \end{equation}
 where $A=\min(1,\max(0,\Delta Acc/30))$, $R=\min(1,\max(0,\Delta RT/200))$, and $S=\min(1,\max(0,-100\beta))$.
 
-Reaction-time variability is summarized using standard dispersion measures, with coefficient of variation computed as
+Reaction-time variability is summarized using a suite of intra-individual variability (IIV) measures. The primary measure is the coefficient of variation,
 \begin{equation}
 CV = \frac{\sigma_{RT}}{\mu_{RT}},
 \end{equation}
-where $\sigma_{RT}$ and $\mu_{RT}$ are the standard deviation and mean of valid reaction times. For longitudinal monitoring, NeuroBloom applies an exponentially weighted moving average (EWMA) to repeated performance values:
+where $\sigma_{RT}$ and $\mu_{RT}$ are the standard deviation and mean of valid reaction times. Complementary robust measures---median absolute deviation (MAD), interquartile range (IQR), and full range---are also computed to characterize distributional spread independently of outliers. Elevated IIV has been associated with white matter lesion load and functional impairment in MS, making these measures clinically relevant monitoring outputs.
+
+For longitudinal monitoring, NeuroBloom applies an exponentially weighted moving average (EWMA) to repeated performance values:
 \begin{equation}
 EWMA_t = \alpha x_t + (1-\alpha)EWMA_{t-1},
 \end{equation}
-with $\alpha=0.2$ in the current implementation. Across sessions, score change is also summarized using a reliable change index,
+with $\alpha=0.2$ in the current implementation. Trend direction (improving, stable, or declining) and trend strength are derived from the slope of the five most recent EWMA points and are surfaced in the clinician-facing review interface. Across sessions, score change is also summarized using a reliable change index,
 \begin{equation}
 RCI = \frac{X_{\mathrm{latest}} - X_{\mathrm{baseline}}}{\sqrt{2}\,\sigma_X},
 \end{equation}
-where $\sigma_X$ is the observed standard deviation of session scores for the individual. Associations between contextual variables such as fatigue level, sleep quality, and hours since medication are estimated using Pearson correlation coefficients with session score and mean reaction time. These indicators are intended as heuristic monitoring features and longitudinal summary measures, not as validated diagnostic biomarkers or predictive clinical models.
+where $\sigma_X$ is the observed standard deviation of session scores for the individual. Associations between contextual variables---including fatigue level, sleep quality, hours since medication, stress level, pain level, and readiness level---are estimated using Pearson correlation coefficients with session score and mean reaction time. These indicators are intended as heuristic monitoring features and longitudinal summary measures, not as validated diagnostic biomarkers or predictive clinical models.
 
 \paragraph{Doctor-facing clinical workflow}
 The clinician-facing functionality connects patient interaction data to supervised review and intervention. Doctors can inspect patient histories, assess adherence and recent performance, review biomarker-oriented summaries and trend information, generate or review progress reports, and modify training plans, task difficulty levels, or prescriptions in response to observed change. By linking monitoring outputs to concrete clinical actions, the software supports iterative rehabilitation management rather than passive data display alone. The doctor-facing review and intervention process is shown in Fig.~\ref{fig:doctor_workflow}.
@@ -238,16 +259,16 @@ NeuroBloom also includes administrative functionality for governed deployment an
 \section{Illustrative examples}
 To better demonstrate the major functions of the software, a supplementary video is provided showing the end-to-end operation of NeuroBloom. The video presents the principal patient, doctor, and administrative workflows and complements Figs.~\ref{fig:patient_workflow}--\ref{fig:admin_workflow} by illustrating how the main modules described in this article are used in practice.
 
+
 \section{Impact}
-NeuroBloom contributes a research-oriented software environment for longitudinal cognitive monitoring and rehabilitation-related data collection in multiple sclerosis. By combining repeated task execution, contextual self-report capture, and persistent session history within a unified platform, the system supports structured investigation of behavioral change over time rather than isolated one-time measurement. This makes the software relevant for studies examining digital behavioral indicators, repeated cognitive interaction, and the role of contextual factors such as fatigue or sleep quality in longitudinal performance analysis \cite{insel2017,coravos2019}.
+NeuroBloom contributes a research-oriented software environment for cognitive monitoring and rehabilitation-related data collection in multiple sclerosis. By combining repeated task execution, contextual self-report capture, and persistent session history within a unified platform, the system supports structured investigation of behavioral change across sessions rather than isolated one-time measurement. This makes the software relevant for studies of digital behavioral indicators, repeated cognitive interaction, and the influence of contextual factors such as fatigue or sleep quality on performance \cite{insel2017,coravos2019}.
 
-The platform also has practical value for MS-oriented follow-up between formal clinical encounters. By linking patient-side task activity with doctor-facing review tools, longitudinal summaries, and progress-oriented reporting, NeuroBloom supports repeated low-cost monitoring and clinician-guided rehabilitation workflows without positioning itself as a diagnostic substitute for established neurological assessment. In this setting, its free-of-cost software model further reduces barriers to access and use, particularly where frequent specialist review may be difficult or resource-constrained.
+The platform also has practical value for MS-oriented follow-up between formal clinical encounters. In addition to collecting patient-side task and context data, NeuroBloom closes the feedback loop between patient activity and clinician response by linking repeated task execution to doctor-facing review tools, summary analytics, progress reporting, and rehabilitation adjustment. This coordinated workflow supports low-cost, supervision-oriented follow-up while reducing barriers to access through a free-of-cost deployment model, particularly in resource-constrained settings where both specialist review and repeated access to diagnostic resources such as MRI and laboratory testing may be limited.
 
-From a software perspective, NeuroBloom provides a modular and extensible architecture that integrates cognitive task delivery, contextual data capture, analytics, and multi-role workflow management within a single system. This design supports reuse of the platform as a digital research and deployment framework, allowing additional task modules, analytics components, and reporting workflows to be incorporated without restructuring the core architecture. NeuroBloom is therefore intended not only as an MS-oriented monitoring application, but also as reusable software infrastructure for longitudinal cognitive and rehabilitation-oriented digital health research.
-Because its analytics layer is based on interpretable statistical indicators and its task-planning workflow is explicitly defined, NeuroBloom also supports transparent, reproducible, and extensible digital monitoring research.
+From a software perspective, NeuroBloom provides a modular and extensible architecture that integrates cognitive task delivery, contextual data capture, analytics, adaptive session planning, and multi-role workflow management within a single system. This design supports reuse of the platform as a research and deployment framework, allowing additional task modules, analytics components, and reporting workflows to be incorporated without restructuring the core architecture. Because its analytics layer is based on interpretable statistical indicators and its task-planning workflow is explicitly defined, NeuroBloom also supports transparent, reproducible, and extensible digital monitoring research.
 
 \section{Conclusions}
-This paper presented NeuroBloom as a web-based platform for supporting repeated cognitive follow-up and clinician-supervised rehabilitation activity in multiple sclerosis. Its main contribution lies in bringing together task-based assessment, contextual session information, analytics-driven review, and multi-role system support within a single coordinated environment. Rather than functioning as a diagnostic instrument, NeuroBloom is intended to facilitate structured monitoring, rehabilitation-oriented decision support, and the study of behavioral change across time. Future work will focus on broader deployment, expansion of task coverage, refinement of analytical measures, and further evaluation in research and supervised clinical settings.
+NeuroBloom establishes a modular, web-based framework for longitudinal cognitive monitoring and clinician-supervised rehabilitation in multiple sclerosis. By unifying task-based assessment with contextual data capture and adaptive session planning, the platform provides a structured environment for identifying behavioral trends that are often missed in traditional clinical encounters. Its decoupled architecture and bilingual support make it a practical, reproducible foundation for digital health research and clinical follow-up, particularly in resource-constrained settings. Future work will focus on large-scale deployment to evaluate longitudinal user engagement, the expansion of the task library, and the refinement of predictive analytics to further support clinician-led rehabilitation decisions.
 
 \section*{Acknowledgements}
 TODO
