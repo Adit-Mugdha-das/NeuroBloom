@@ -1,8 +1,0 @@
-
-
-export const index = 5;
-let component_cache;
-export const component = async () => component_cache ??= (await import('../entries/pages/admin/audit-logs/_page.svelte.js')).default;
-export const imports = ["_app/immutable/nodes/5.w71_splP.js"];
-export const stylesheets = [];
-export const fonts = [];
