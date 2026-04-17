@@ -292,6 +292,7 @@
 	function startTest() {
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
+		showInstructions = false;
 		showPractice = false;
 		practiceComplete = false;
 		testStarted = true;
