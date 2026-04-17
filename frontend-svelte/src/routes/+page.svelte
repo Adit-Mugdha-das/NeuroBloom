@@ -89,12 +89,10 @@
 		padding: 0;
 		min-height: 100%;
 		font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-		background: #07111f;
 	}
 
 	:global(body) {
 		overflow-x: hidden;
-		color: white;
 	}
 
 	:global(*) {
