@@ -10,6 +10,7 @@ from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
 from app.models.baseline_assessment import BaselineAssessment
 from app.models.badge import UserBadge, BadgeDefinition
+from app.models.user import User
 from app.services.badge_service import BadgeService
 from app.services.task_rotation import TaskRotationService
 from app.core.config import engine
@@ -17,6 +18,9 @@ from app.core.config import engine
 router = APIRouter()
 
 DEFAULT_SESSION_DURATION_RANGE_MINUTES = (5, 10)
+DEV_BASELINE_SCORE = 50.0
+DEV_MAX_SESSIONS_PER_DAY = 999
+DEV_COOLDOWN_MINUTES = 0
 
 def get_session():
     with Session(engine) as session:
@@ -31,6 +35,121 @@ DOMAIN_TASK_MAPPING = {
     "processing_speed": "reaction_time",
     "visual_scanning": "target_search"
 }
+
+
+def _score_to_difficulty(score: float) -> int:
+    """Map a domain score onto the default 1-10 training difficulty bands."""
+    if score < 50:
+        return 2
+    if score < 70:
+        return 4
+    if score < 85:
+        return 7
+    return 9
+
+
+def _apply_dev_access_overrides(plan: TrainingPlan) -> None:
+    """
+    Relax pacing-only constraints for development access.
+
+    This keeps the normal patient-facing backend checks intact while letting the
+    dev tool launch tasks repeatedly for QA without cooldowns or daily caps.
+    """
+    plan.max_sessions_per_day = max(plan.max_sessions_per_day or 0, DEV_MAX_SESSIONS_PER_DAY)
+    plan.cooldown_between_sessions_minutes = DEV_COOLDOWN_MINUTES
+    plan.last_updated = datetime.utcnow()
+
+
+def _ensure_dev_training_plan(user_id: int, session: Session) -> TrainingPlan:
+    """
+    Guarantee that dev-only tooling has an active training plan to work with.
+
+    The public training flow should still require a real baseline. This helper is
+    intentionally used only by `/dev/...` endpoints so direct QA access does not
+    weaken normal backend rules.
+    """
+    plan = session.exec(
+        select(TrainingPlan)
+        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.is_active == True)
+    ).first()
+
+    if plan:
+        _apply_dev_access_overrides(plan)
+        session.add(plan)
+        session.flush()
+        return plan
+
+    user = session.exec(
+        select(User)
+        .where(User.id == user_id)
+        .where(User.is_active == True)
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Active user not found")
+
+    baseline = session.exec(
+        select(BaselineAssessment)
+        .where(BaselineAssessment.user_id == user_id)
+        .order_by(desc(BaselineAssessment.created_at))
+    ).first()
+
+    if not baseline:
+        baseline = BaselineAssessment(
+            user_id=user_id,
+            working_memory_score=DEV_BASELINE_SCORE,
+            attention_score=DEV_BASELINE_SCORE,
+            flexibility_score=DEV_BASELINE_SCORE,
+            planning_score=DEV_BASELINE_SCORE,
+            processing_speed_score=DEV_BASELINE_SCORE,
+            visual_scanning_score=DEV_BASELINE_SCORE,
+            overall_score=DEV_BASELINE_SCORE,
+            raw_metrics=json.dumps({
+                "source": "dev_tools",
+                "generated_for": "direct_task_access",
+                "note": "Synthetic baseline created automatically so the dev tool can launch training games."
+            }),
+            is_baseline=False,
+            assessment_duration_minutes=0,
+        )
+        session.add(baseline)
+        session.flush()
+
+    domain_scores = {
+        "working_memory": baseline.working_memory_score,
+        "attention": baseline.attention_score,
+        "flexibility": baseline.flexibility_score,
+        "planning": baseline.planning_score,
+        "processing_speed": baseline.processing_speed_score,
+        "visual_scanning": baseline.visual_scanning_score,
+    }
+    sorted_domains = sorted(domain_scores.items(), key=lambda item: item[1])
+    recommended_tasks = {
+        domain: DOMAIN_TASK_MAPPING[domain] for domain in domain_scores.keys()
+    }
+    initial_difficulty = {
+        domain: _score_to_difficulty(score) for domain, score in domain_scores.items()
+    }
+
+    assert baseline.id is not None
+
+    plan = TrainingPlan(
+        user_id=user_id,
+        baseline_assessment_id=baseline.id,
+        primary_focus=json.dumps([sorted_domains[0][0], sorted_domains[1][0]]),
+        secondary_focus=json.dumps([sorted_domains[2][0], sorted_domains[3][0]]),
+        maintenance=json.dumps([sorted_domains[4][0], sorted_domains[5][0]]),
+        recommended_tasks=json.dumps(recommended_tasks),
+        initial_difficulty=json.dumps(initial_difficulty),
+        current_difficulty=json.dumps(initial_difficulty),
+        is_active=True,
+        max_sessions_per_day=DEV_MAX_SESSIONS_PER_DAY,
+        cooldown_between_sessions_minutes=DEV_COOLDOWN_MINUTES,
+    )
+    session.add(plan)
+    session.flush()
+
+    return plan
 
 
 def _session_window_start(day: datetime) -> datetime:
@@ -231,18 +350,8 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
     # Score 50-70 → difficulty 3-5
     # Score 70-85 → difficulty 6-8
     # Score > 85 → difficulty 9-10
-    def score_to_difficulty(score):
-        if score < 50:
-            return 2
-        elif score < 70:
-            return 4
-        elif score < 85:
-            return 7
-        else:
-            return 9
-    
     initial_difficulty = {
-        domain: score_to_difficulty(score) for domain, score in domains.items()
+        domain: _score_to_difficulty(score) for domain, score in domains.items()
     }
     
     # Create new training plan
@@ -3547,15 +3656,7 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
     """
     import random
     
-    # Get active training plan
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-    
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
     
     domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
     task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
@@ -3637,14 +3738,7 @@ def dev_complete_single_session(user_id: int, session: Session = Depends(get_ses
     """
     import random
     
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-    
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
     
     domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
     task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
@@ -3717,14 +3811,7 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
     """
     import random
     
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-    
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
     
     domains = ['working_memory', 'processing_speed', 'attention', 'flexibility']
     task_types = ['n_back', 'reaction_time', 'continuous_performance', 'task_switching']
@@ -3797,14 +3884,7 @@ def dev_set_streak(user_id: int, days: int, session: Session = Depends(get_sessi
     """
     DEV TOOL: Set streak to specific number of days.
     """
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-    
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
     
     plan.current_streak = days
     plan.longest_streak = max(plan.longest_streak or 0, days)
@@ -3832,23 +3912,20 @@ def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: 
     """
     domain = request.get("domain")
     difficulty = request.get("difficulty", 5)
+    if not domain:
+        raise HTTPException(status_code=400, detail="Domain is required")
 
     # Validate difficulty
     difficulty = max(1, min(10, int(difficulty)))
 
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
 
     # Parse current difficulty
     current_diff = plan.current_difficulty
     if isinstance(current_diff, str):
         current_diff = json.loads(current_diff)
+    if current_diff is None:
+        current_diff = {}
 
     # Update the specific domain
     if domain in current_diff:
@@ -3864,6 +3941,7 @@ def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: 
             "domain": domain,
             "old_difficulty": old_difficulty,
             "new_difficulty": difficulty,
+            "training_plan_id": plan.id,
             "message": f"Set {domain} difficulty to {difficulty}"
         }
     else:
@@ -3879,6 +3957,7 @@ def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: 
             "domain": domain,
             "old_difficulty": None,
             "new_difficulty": difficulty,
+            "training_plan_id": plan.id,
             "message": f"Added {domain} with difficulty {difficulty}"
         }
 
@@ -3894,7 +3973,11 @@ def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+        return {
+            "success": True,
+            "sessions_deleted": 0,
+            "message": "No active training plan to clear"
+        }
     
     # Delete all sessions
     result = session.exec(
@@ -3968,15 +4051,7 @@ def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
     DEV TOOL: Check what badges would be earned and award them.
     Returns list of newly earned badges.
     """
-    # Get training plan
-    plan = session.exec(
-        select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
-        .where(TrainingPlan.is_active == True)
-    ).first()
-    
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+    plan = _ensure_dev_training_plan(user_id, session)
     
     # Check and award badges
     newly_earned = BadgeService.check_and_award_badges(session, user_id, plan)

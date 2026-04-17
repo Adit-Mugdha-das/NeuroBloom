@@ -136,6 +136,7 @@
 		try {
 			// Ensure difficulty is a valid number between 1-10
 			const validDifficulty = Math.max(1, Math.min(10, Number(selectedDifficulty) || 5));
+			let trainingPlanId = null;
 
 			console.log('🎮 DevPanel - Launching task:', {
 				taskCode,
@@ -155,6 +156,7 @@
 				console.log(`📡 DevPanel - Calling API to set ${domainKey} difficulty to ${validDifficulty}`);
 
 				const result = await training.dev.setDomainDifficulty(currentUser.id, domainKey, validDifficulty);
+				trainingPlanId = result.training_plan_id;
 
 				console.log('✅ DevPanel - API Response:', result);
 				console.log('📊 DevPanel - Difficulty change:', {
@@ -171,17 +173,20 @@
 			} else {
 				console.warn('⚠️ DevPanel - No domain key found for:', selectedDomain);
 				showMessage(`⚠️ Warning: Domain ${selectedDomain} not mapped`, 'error');
+				return;
+			}
+
+			if (!trainingPlanId) {
+				throw new Error('Dev access bootstrap did not return a training plan');
 			}
 
 			const route = getTaskRoute(taskCode);
 			console.log('🚀 DevPanel - Navigating to:', route, 'with difficulty:', validDifficulty);
-			goto(`${route}?training=true&planId=1&taskId=${taskCode}_dev&difficulty=${validDifficulty}`);
+			goto(`${route}?training=true&planId=${trainingPlanId}&taskId=${taskCode}_dev&difficulty=${validDifficulty}`);
 		} catch (error) {
 			console.error('❌ DevPanel - Failed to set difficulty:', error);
 			showMessage(`❌ Failed to set difficulty: ${error.message}`, 'error');
-			// Still navigate even if setting difficulty fails
-			const route = getTaskRoute(taskCode);
-			goto(`${route}?training=true&planId=1&taskId=${taskCode}_dev`);
+			return;
 		} finally {
 			loading = false;
 		}
