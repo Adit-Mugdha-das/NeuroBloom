@@ -12,7 +12,6 @@
 		translateText
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
-	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import { getPracticeCopy } from '$lib/task-practice';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -46,7 +45,6 @@
 	let meanRT = 0;
 	let isPracticeMode = false;
 	let practiceStatusMessage = '';
-	let showHelp = false;
 	let recordedNBackLevel = 1;
 	let recordedTotalTrials = 20;
 	
@@ -133,6 +131,21 @@
 		}
 
 		return `${value} seconds`;
+	}
+
+	function exampleSequence(value = nBackLevel) {
+		switch (value) {
+			case 1:
+				return ['A', 'B', 'B'];
+			case 2:
+				return ['A', 'B', 'A'];
+			default:
+				return ['A', 'B', 'C', 'A'];
+		}
+	}
+
+	function exampleMatchPosition(value = nBackLevel) {
+		return exampleSequence(value).length - value;
 	}
 
 	function upgradeMessage(nextLevel) {
@@ -335,138 +348,132 @@
 	}
 </script>
 
-<div class="test-container" data-localize-skip>
-<div class="test-inner">
+<div class="wm-container" class:intro-layout={stage === 'intro'} data-localize-skip>
 	{#if stage === 'intro'}
-
-		<!-- Header Card -->
-		<div class="nb-header-card">
-			<div class="nb-header-content">
-				<div class="nb-header-text">
-					<h1 class="nb-task-title">{t('N-Back Test')}</h1>
-					<p class="nb-task-domain">{t('Working Memory · Continuous Updating')}</p>
-				</div>
-				<DifficultyBadge difficulty={trainingDifficulty} domain="Working Memory" />
+		<div class="page-content">
+			<div class="task-header">
+				<button class="back-btn" on:click={backToDashboard}>
+					{isTrainingMode ? t('Back to Training') : t('Back to Dashboard')}
+				</button>
+				<h1 class="task-title">{t('Working Memory Test')}</h1>
 			</div>
-		</div>
 
-		<!-- Task Concept Card -->
-		<div class="nb-card nb-task-concept">
-			<div class="nb-concept-badge">
-				<span class="nb-badge-label">{t('N-Back Paradigm')}</span>
-				<span>{t('Kirchner, 1958 · MS Research Gold Standard')}</span>
+			<div class="concept-card">
+				<div class="concept-badge">{nBackLabel()} - {t('Baseline Assessment')}</div>
+				<h2>{t('Hold the recent letters in mind while new ones appear')}</h2>
+				<p>
+					{t('This task measures working memory updating and focused attention.')}
+					{` `}
+					{t('For this round, compare each new letter with the one from')}
+					{` `}
+					<strong>{stepAgoText()}</strong>.
+				</p>
 			</div>
-			<p class="nb-concept-desc">
-				{#if $locale === 'bn'}
-					{`একটি একটি করে অক্ষর দেখানো হবে। প্রতিটি অক্ষর দেখে বলুন এটি ${stepBackText()} আগের অক্ষরের সাথে মিলে কিনা।`}
-				{:else}
-					{`Letters appear one at a time. For each letter, decide whether it matches the one from ${nBackLevel} step${nBackLevel > 1 ? 's' : ''} ago. The task continuously updates what you must hold in working memory, making it sensitive to MS-related cognitive changes.`}
-				{/if}
-			</p>
-		</div>
 
-		<!-- Match / No Match Card -->
-		<div class="nb-card">
-			<h2 class="nb-section-title">{t('How to Respond')}</h2>
-			<div class="nb-instructions-grid">
-				<div class="nb-instruction-item">
-					<div class="nb-icon nb-match-icon">✓</div>
-					<h3>{t('Match')}</h3>
-					<p>
-						{#if $locale === 'bn'}
-							{`বর্তমান অক্ষরটি ${stepBackText()} আগের অক্ষরের মতো হলে Match চাপুন`}
-						{:else}
-							{`Press Match if the current letter is the same as the one from ${stepAgoText()}`}
-						{/if}
-					</p>
-					<div class="nb-example">
-						<div class="nb-example-label">{t('You see:')}</div>
-						<div class="nb-example-sequence">
-							{stimulus('A')} → {stimulus('B')} → <span class="nb-ex-match">{stimulus('A')}</span>
+			<div class="rules-card">
+				<h3>{t('How It Works')}</h3>
+				<ol class="rules-list">
+					<li>{t('A single letter appears in the center of the screen.')}</li>
+					<li>
+						{t('Each letter stays visible for')}
+						{` `}
+						<strong>{secondsText(2)}</strong>.
+					</li>
+					<li>
+						{t('Decide whether it matches the letter from')}
+						{` `}
+						<strong>{stepAgoText()}</strong>.
+					</li>
+					<li>{t('Choose Match for a repeat and No Match for a different letter.')}</li>
+				</ol>
+
+				<div class="response-keys">
+					<div class="response-pill response-pill-match">
+						<div class="pill-label">{t('Match')}</div>
+						<div class="pill-copy">
+							{t('Use this when the current letter is the same as the one from')}
+							{` `}
+							{stepAgoText()}.
 						</div>
-						<div class="nb-example-label">{t('At position 3:')}</div>
-						<div class="nb-example-result nb-match-result">✓ {t('Match!')}</div>
+					</div>
+					<div class="response-pill response-pill-miss">
+						<div class="pill-label">{t('No Match')}</div>
+						<div class="pill-copy">{t('Use this when the current letter is different from the earlier one.')}</div>
 					</div>
 				</div>
-				<div class="nb-instruction-item">
-					<div class="nb-icon nb-no-match-icon">✗</div>
-					<h3>{t('No Match')}</h3>
-					<p>
-						{#if $locale === 'bn'}
-							{`বর্তমান অক্ষরটি ভিন্ন হলে No Match চাপুন`}
-						{:else}
-							{`Press No Match if the letter is different from ${stepAgoText()}`}
-						{/if}
+
+				<div class="example-panel">
+					<div class="card-kicker">{t('Example')}</div>
+					<h4>{nBackLabel()} {t('match walkthrough')}</h4>
+					<div class="example-sequence">
+						{#each exampleSequence() as letter, index}
+							<div
+								class="example-item"
+								class:is-match-anchor={index + 1 === exampleMatchPosition()}
+								class:is-current={index === exampleSequence().length - 1}
+							>
+								<span class="example-position">{t('Position')} {n(index + 1)}</span>
+								<span class="example-letter">{stimulus(letter)}</span>
+								{#if index + 1 === exampleMatchPosition()}
+									<span class="example-tag">{t('Earlier match')}</span>
+								{:else if index === exampleSequence().length - 1}
+									<span class="example-tag current-tag">{t('Current')}</span>
+								{/if}
+							</div>
+							{#if index < exampleSequence().length - 1}
+								<div class="example-arrow">&rarr;</div>
+							{/if}
+						{/each}
+					</div>
+					<p class="example-caption">
+						{t('The last letter matches the one from')}
+						{` `}
+						<strong>{stepAgoText()}</strong>
+						{`, `}
+						{t('so the correct response here is Match.')}
 					</p>
-					<div class="nb-example">
-						<div class="nb-example-label">{t('You see:')}</div>
-						<div class="nb-example-sequence">
-							{stimulus('A')} → {stimulus('B')} → <span class="nb-ex-no-match">{stimulus('C')}</span>
-						</div>
-						<div class="nb-example-label">{t('At position 3:')}</div>
-						<div class="nb-example-result nb-no-match-result">✗ {t('No Match')}</div>
-					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Info Grid -->
-		<div class="nb-info-grid">
-			<!-- Tips -->
-			<div class="nb-card">
-				<h3 class="nb-card-title">{t('Tips for Success')}</h3>
-				<div class="nb-tips-list">
-					<div class="nb-tip-item">✓ <strong>{t('Stay focused:')}</strong> {t('Maintain attention continuously across all trials')}</div>
-					<div class="nb-tip-item">✓ <strong>{t('Use rhythm:')}</strong> {t('Letters appear at a steady pace — use it to pace yourself')}</div>
-					<div class="nb-tip-item">✓ <strong>{t('Trust instinct:')}</strong> {t("Don't overthink — your first impression is usually right")}</div>
-					<div class="nb-tip-item">✓ <strong>{t('Relax:')}</strong> {t('Stress reduces memory — breathe steadily between trials')}</div>
+			<div class="info-grid">
+				<div class="info-card">
+					<div class="info-label">{t('Difficulty')}</div>
+					<div class="info-value">{nBackLabel()}</div>
+					<p class="info-detail">
+						{t('Every choice compares the current letter to the one from')}
+						{` `}
+						{stepAgoText()}.
+					</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">{t('Total Trials')}</div>
+					<div class="info-value">{n(totalTrials)}</div>
+					<p class="info-detail">{t('A longer run helps measure consistency across the full task.')}</p>
+				</div>
+				<div class="info-card">
+					<div class="info-label">{t('Time per Letter')}</div>
+					<div class="info-value">{secondsText(2)}</div>
+					<p class="info-detail">{t('Stay ready, because the sequence advances automatically.')}</p>
 				</div>
 			</div>
-			<!-- Session Details -->
-			<div class="nb-card">
-				<h3 class="nb-card-title">{t('Session Info')}</h3>
-				<div class="nb-details-list">
-					<div class="nb-detail-row">
-						<span>{t('Difficulty')}</span>
-						<strong>{nBackLabel()}</strong>
-					</div>
-					<div class="nb-detail-row">
-						<span>{t('Total Trials')}</span>
-						<strong>{n(totalTrials)} {t('letters')}</strong>
-					</div>
-					<div class="nb-detail-row">
-						<span>{t('Time per Letter')}</span>
-						<strong>{secondsText(2)}</strong>
-					</div>
-					<div class="nb-detail-row">
-						<span>{t('Response Window')}</span>
-						<strong>{t('While letter is shown')}</strong>
-					</div>
-				</div>
+
+			<div class="tip-card">
+				<div class="tip-title">{t('Strategy')}</div>
+				<p>{t('Keep a short rolling memory of the latest letters. Refresh that mini-sequence every time a new letter appears, and avoid guessing when you are unsure.')}</p>
 			</div>
-		</div>
 
-		<!-- Clinical Basis Card -->
-		<div class="nb-clinical-info">
-			<div class="nb-clinical-header">
-				<div class="nb-clinical-badge">{t('Clinical Basis')}</div>
-				<h3>{t('Gold Standard Working Memory Assessment')}</h3>
+			<div class="clinical-card">
+				<h3>{t('Clinical Basis')}</h3>
+				<p>{t('N-back performance reflects working memory updating, attention control, and the ability to keep relevant information active while new stimuli compete for focus. In multiple sclerosis, weaker accuracy or slower responses can reflect disruption in the fronto-parietal networks that support online information maintenance.')}</p>
 			</div>
-			<p>
-				{t('The N-Back task (Kirchner, 1958) is one of the most widely used paradigms in cognitive neuroscience for measuring working memory updating. In MS, N-Back performance sensitively tracks white matter lesion burden and processing speed deficits, making it a key measure in longitudinal cognitive monitoring protocols.')}
-			</p>
-		</div>
 
-		<TaskPracticeActions
-			locale={$locale}
-			startLabel={t('Start Test')}
-			statusMessage={practiceStatusMessage}
-			on:start={() => startTest(false)}
-			on:practice={() => startTest(true)}
-		/>
-
-		<div style="text-align:center; margin-top: 0.5rem;">
-			<button class="nb-btn-back" on:click={backToDashboard}>← {t('Back to Dashboard')}</button>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Start Actual Test')}
+				statusMessage={practiceStatusMessage}
+				on:start={() => startTest(false)}
+				on:practice={() => startTest(true)}
+			/>
 		</div>
 	{:else if stage === 'test'}
 		<div class="test-card test-active">
@@ -607,18 +614,297 @@
 		</div>
 	{/if}
 </div>
-</div>
 
 <style>
-	.test-container {
+	.wm-container {
 		min-height: 100vh;
-		background: #C8DEFA;
-		padding: 1.5rem;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
 	}
 
-	.test-inner {
-		max-width: 1100px;
+	.wm-container.intro-layout {
+		background: #c8defa;
+		display: block;
+		padding: 2rem;
+	}
+
+	.page-content {
+		max-width: 960px;
 		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.task-header {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		flex-wrap: wrap;
+	}
+
+	.back-btn {
+		background: white;
+		color: #0e7490;
+		border: 2px solid #0e7490;
+		padding: 0.6rem 1.25rem;
+		border-radius: 10px;
+		cursor: pointer;
+		font-size: 0.95rem;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+	}
+
+	.back-btn:hover {
+		background: #0e7490;
+		color: white;
+		transform: translateY(-1px);
+	}
+
+	.task-title {
+		font-size: 1.9rem;
+		font-weight: 700;
+		color: #164e63;
+		margin: 0;
+	}
+
+	.concept-card,
+	.rules-card,
+	.tip-card,
+	.clinical-card {
+		background: white;
+		border-radius: 18px;
+		padding: 2rem;
+		box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+	}
+
+	.concept-badge {
+		display: inline-block;
+		background: #cffafe;
+		color: #0e7490;
+		font-size: 0.82rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 0.35rem 0.9rem;
+		border-radius: 999px;
+		margin-bottom: 0.9rem;
+	}
+
+	.concept-card h2,
+	.rules-card h3,
+	.clinical-card h3,
+	.example-panel h4 {
+		margin: 0;
+		color: #164e63;
+		font-weight: 700;
+	}
+
+	.concept-card h2 {
+		font-size: 1.45rem;
+		margin-bottom: 0.8rem;
+	}
+
+	.rules-card h3,
+	.clinical-card h3 {
+		font-size: 1.12rem;
+		margin-bottom: 1rem;
+	}
+
+	.concept-card p,
+	.rules-list,
+	.pill-copy,
+	.example-caption,
+	.info-detail,
+	.tip-card p,
+	.clinical-card p {
+		margin: 0;
+		color: #334155;
+		line-height: 1.68;
+	}
+
+	.rules-list {
+		padding-left: 1.3rem;
+		margin-top: 1.1rem;
+	}
+
+	.rules-list li + li {
+		margin-top: 0.75rem;
+	}
+
+	.response-keys {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+
+	.response-pill {
+		border-radius: 16px;
+		padding: 1rem 1.1rem;
+		border: 1px solid transparent;
+	}
+
+	.response-pill-match {
+		background: #ecfdf5;
+		border-color: #86efac;
+	}
+
+	.response-pill-miss {
+		background: #fef2f2;
+		border-color: #fca5a5;
+	}
+
+	.pill-label {
+		font-size: 0.95rem;
+		font-weight: 700;
+		margin-bottom: 0.35rem;
+	}
+
+	.response-pill-match .pill-label {
+		color: #166534;
+	}
+
+	.response-pill-miss .pill-label {
+		color: #b91c1c;
+	}
+
+	.example-panel {
+		margin-top: 1.5rem;
+		padding: 1.35rem;
+		border-radius: 16px;
+		background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+		border: 1px solid #bfdbfe;
+	}
+
+	.card-kicker {
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: #2563eb;
+		margin-bottom: 0.45rem;
+	}
+
+	.example-panel h4 {
+		font-size: 1.08rem;
+		margin-bottom: 1rem;
+	}
+
+	.example-sequence {
+		display: flex;
+		align-items: stretch;
+		justify-content: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.example-item {
+		min-width: 112px;
+		padding: 0.95rem;
+		border-radius: 14px;
+		background: white;
+		border: 1px solid #dbeafe;
+		text-align: center;
+		box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+	}
+
+	.example-item.is-match-anchor {
+		border-color: #0e7490;
+		background: #ecfeff;
+	}
+
+	.example-item.is-current {
+		border-color: #7c3aed;
+		background: #f5f3ff;
+	}
+
+	.example-position,
+	.example-tag {
+		display: block;
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	.example-position {
+		color: #64748b;
+		margin-bottom: 0.45rem;
+	}
+
+	.example-letter {
+		display: block;
+		font-size: 2.25rem;
+		font-weight: 700;
+		color: #2563eb;
+	}
+
+	.example-tag {
+		margin-top: 0.55rem;
+		color: #0f766e;
+	}
+
+	.current-tag {
+		color: #6d28d9;
+	}
+
+	.example-arrow {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: #64748b;
+	}
+
+	.example-caption {
+		margin-top: 1rem;
+	}
+
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+	}
+
+	.info-card {
+		background: white;
+		border-radius: 18px;
+		padding: 1.35rem;
+		box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+		border: 1px solid #dbeafe;
+	}
+
+	.info-label {
+		display: block;
+		font-size: 0.82rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #64748b;
+		margin-bottom: 0.45rem;
+	}
+
+	.info-value {
+		display: block;
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: #1d4ed8;
+		margin-bottom: 0.45rem;
+	}
+
+	.info-detail {
+		font-size: 0.96rem;
+	}
+
+	.tip-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: #0f766e;
+		margin-bottom: 0.55rem;
 	}
 
 	.test-card {
@@ -636,13 +922,12 @@
 		max-width: 700px;
 	}
 
-	h1 {
+	.test-card h1 {
 		color: #667eea;
 		font-size: 2.5rem;
 		margin-bottom: 0.5rem;
 		font-weight: 700;
 	}
-
 	/* Progress Bar */
 	.progress-bar {
 		width: 100%;
@@ -953,256 +1238,44 @@
 		font-size: 1.1rem;
 	}
 
-	/* ── Intro Multi-Card Layout (matches visual-search pattern) ── */
-
-	.nb-header-card {
-		background: white;
-		border-radius: 16px;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-		margin-bottom: 1rem;
-	}
-
-	.nb-header-content {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 1rem;
-	}
-
-	.nb-task-title {
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: #1a1a2e;
-		margin: 0 0 0.25rem 0;
-	}
-
-	.nb-task-domain {
-		font-size: 0.875rem;
-		color: #1e40af;
-		font-weight: 500;
-		margin: 0;
-	}
-
-	.nb-card {
-		background: white;
-		border-radius: 16px;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-		margin-bottom: 1rem;
-	}
-
-	.nb-task-concept { margin-bottom: 1rem; }
-
-	.nb-concept-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-		color: white;
-		padding: 0.4rem 0.9rem;
-		border-radius: 2rem;
-		font-size: 0.813rem;
-		font-weight: 600;
-		margin-bottom: 1rem;
-	}
-
-	.nb-badge-label { font-weight: 700; letter-spacing: 0.04em; }
-
-	.nb-concept-desc {
-		color: #4b5563;
-		font-size: 0.938rem;
-		line-height: 1.6;
-		margin: 0;
-	}
-
-	.nb-section-title {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: #1a1a2e;
-		margin: 0 0 1rem 0;
-	}
-
-	.nb-card-title {
-		font-size: 1rem;
-		font-weight: 700;
-		color: #1a1a2e;
-		margin: 0 0 1rem 0;
-	}
-
-	.nb-instructions-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem;
-	}
-
-	.nb-instruction-item {
-		border: 1px solid #e5e7eb;
-		border-radius: 12px;
-		padding: 1.25rem;
-		background: #fafafa;
-	}
-
-	.nb-icon {
-		font-size: 2rem;
-		font-weight: 700;
-		margin-bottom: 0.75rem;
-		display: block;
-	}
-
-	.nb-match-icon { color: #16a34a; }
-	.nb-no-match-icon { color: #dc2626; }
-
-	.nb-instruction-item h3 {
-		font-size: 1.05rem;
-		font-weight: 700;
-		margin: 0 0 0.4rem 0;
-		color: #1a1a2e;
-	}
-
-	.nb-instruction-item p {
-		color: #4b5563;
-		font-size: 0.9rem;
-		margin: 0 0 1rem 0;
-		line-height: 1.5;
-	}
-
-	.nb-example {
-		background: white;
-		border-radius: 8px;
-		padding: 0.875rem;
-		border: 1px solid #e5e7eb;
-	}
-
-	.nb-example-label {
-		color: #9ca3af;
-		font-size: 0.78rem;
-		margin-bottom: 0.25rem;
-	}
-
-	.nb-example-sequence {
-		font-weight: 600;
-		color: #374151;
-		font-size: 1rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.nb-ex-match { color: #16a34a; font-weight: 700; }
-	.nb-ex-no-match { color: #dc2626; font-weight: 700; }
-
-	.nb-example-result {
-		font-weight: 700;
-		font-size: 0.875rem;
-		padding: 0.25rem 0.75rem;
-		border-radius: 6px;
-		display: inline-block;
-	}
-
-	.nb-match-result { background: #dcfce7; color: #16a34a; }
-	.nb-no-match-result { background: #fee2e2; color: #dc2626; }
-
-	.nb-info-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-		margin-bottom: 0;
-	}
-
-	.nb-info-grid .nb-card { margin-bottom: 1rem; }
-
-	.nb-tips-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-	}
-
-	.nb-tip-item {
-		font-size: 0.9rem;
-		color: #374151;
-		line-height: 1.5;
-	}
-
-	.nb-tip-item strong { color: #1e40af; }
-
-	.nb-details-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.nb-detail-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 0.9rem;
-		padding: 0.5rem 0;
-		border-bottom: 1px solid #f3f4f6;
-	}
-
-	.nb-detail-row:last-child { border-bottom: none; }
-	.nb-detail-row span { color: #6b7280; }
-	.nb-detail-row strong { color: #1a1a2e; }
-
-	.nb-clinical-info {
-		background: white;
-		border-radius: 16px;
-		padding: 1.5rem;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-		margin-bottom: 1rem;
-	}
-
-	.nb-clinical-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 0.75rem;
-	}
-
-	.nb-clinical-badge {
-		display: inline-flex;
-		background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-		color: white;
-		padding: 0.3rem 0.8rem;
-		border-radius: 2rem;
-		font-size: 0.8rem;
-		font-weight: 600;
-		white-space: nowrap;
-	}
-
-	.nb-clinical-header h3 {
-		font-size: 1rem;
-		font-weight: 600;
-		color: #1a1a2e;
-		margin: 0;
-	}
-
-	.nb-clinical-info p {
-		color: #4b5563;
-		font-size: 0.9rem;
-		line-height: 1.6;
-		margin: 0;
-	}
-
-	.nb-btn-back {
-		background: transparent;
-		color: #6b7280;
-		border: none;
-		padding: 0.5rem 1rem;
-		font-size: 0.9rem;
-		cursor: pointer;
-		transition: color 0.2s;
-	}
-
-	.nb-btn-back:hover { color: #1e40af; }
-
 	@media (max-width: 768px) {
-		.test-card {
-			padding: 2rem 1.5rem;
+		.wm-container,
+		.wm-container.intro-layout {
+			padding: 1rem;
 		}
 
-		h1 {
+		.test-card,
+		.concept-card,
+		.rules-card,
+		.tip-card,
+		.clinical-card {
+			padding: 1.5rem;
+		}
+
+		.task-header {
+			align-items: flex-start;
+		}
+
+		.task-title,
+		.test-card h1 {
 			font-size: 2rem;
+		}
+
+		.rules-list {
+			padding-left: 1.1rem;
+		}
+
+		.response-keys,
+		.info-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.example-sequence {
+			flex-direction: column;
+		}
+
+		.example-arrow {
+			transform: rotate(90deg);
 		}
 
 		.word-display {
@@ -1223,11 +1296,6 @@
 		.btn-secondary {
 			width: 100%;
 			justify-content: center;
-		}
-
-		.nb-instructions-grid,
-		.nb-info-grid {
-			grid-template-columns: 1fr;
 		}
 	}
 </style>
