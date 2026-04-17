@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { locale, translateText } from '$lib/i18n';
+	import { locale, setLocale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 
 	let currentUser = null;
@@ -20,8 +20,8 @@
 
 <div class="page-shell">
 	<div class="language-switcher">
-		<button class:active={$locale === 'en'} on:click={() => locale.set('en')}>EN</button>
-		<button class:active={$locale === 'bn'} on:click={() => locale.set('bn')}>বাং</button>
+		<button class:active={$locale === 'en'} on:click={() => setLocale('en')}>EN</button>
+		<button class:active={$locale === 'bn'} on:click={() => setLocale('bn')}>বাং</button>
 	</div>
 
 	<div class="page-grid">

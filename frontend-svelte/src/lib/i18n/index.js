@@ -512,7 +512,13 @@ export function localize(node, options = 'observe') {
 			}
 
 			if (mutation.type === 'characterData') {
-				textSourceStore.set(mutation.target, mutation.target.nodeValue || '');
+				// Do NOT overwrite the source store here. The translator itself writes
+				// text nodes after flushTranslations() returns, which fires this callback
+				// with isApplying already false. Overwriting the store at that point
+				// would record the translated (Bangla) text as the "English source",
+				// permanently breaking EN→BN→EN round-trips.
+				// resolveSourceValue() already handles genuine app-driven content changes
+				// during the next translation pass via its "else/update" branch.
 				scheduleNodeTranslation(mutation.target);
 			}
 
