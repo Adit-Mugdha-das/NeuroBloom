@@ -366,8 +366,6 @@
 </div>
 
 <style>
-	:global(body) { background: #060d1a !important; }
-
 	/* ── Shell ──────────────────────────────────────────── */
 	.reg-shell {
 		display: flex;
@@ -410,19 +408,18 @@
 		border-radius: 10px; display: flex; align-items: center; justify-content: center;
 		color: #38bdf8; flex-shrink: 0; margin-top: 2px;
 	}
-	.feature-title { font-size: 0.92rem; font-weight: 700; color: #e0f2fe; margin-bottom: 0.2rem; }
-	.feature-desc  { font-size: 0.82rem; color: rgba(148,185,212,0.6); line-height: 1.4; }
+	.feature-title { font-size: 1.05rem; font-weight: 700; color: #e0f2fe; margin-bottom: 0.25rem; }
+	.feature-desc  { font-size: 0.94rem; color: rgba(148,185,212,0.6); line-height: 1.4; }
 	.brand-footer  { position: relative; z-index: 1; font-size: 0.78rem; color: rgba(148,185,212,0.35); letter-spacing: 0.3px; }
 
 	/* ── Form panel ──────────────────────────────────────── */
 	.form-panel {
 		flex: 1;
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: center;
 		background: #ffffff;
-		padding: 3rem 2rem;
-		padding-top: 5rem;
+		padding: 2.5rem 2rem;
 		overflow-y: auto;
 	}
 	.form-inner { width: 100%; max-width: 480px; }

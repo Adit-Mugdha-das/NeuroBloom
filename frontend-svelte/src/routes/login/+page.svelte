@@ -356,14 +356,14 @@
 	}
 
 	.feature-title {
-		font-size: 0.92rem;
+		font-size: 1.05rem;
 		font-weight: 700;
 		color: #e0f2fe;
-		margin-bottom: 0.2rem;
+		margin-bottom: 0.25rem;
 	}
 
 	.feature-desc {
-		font-size: 0.82rem;
+		font-size: 0.94rem;
 		color: rgba(148,185,212,0.6);
 		line-height: 1.4;
 	}
