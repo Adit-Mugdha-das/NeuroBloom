@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
+	import { locale, translateText } from '$lib/i18n';
 
 	let email = '';
 	let password = '';
@@ -16,24 +17,26 @@
 	let showPassword = false;
 	let showConfirm = false;
 
+	function t(str) { return translateText(str, $locale); }
+
 	async function handleRegister() {
 		error = '';
 		success = '';
 
 		if (!email || !password || !confirmPassword || !fullName) {
-			error = 'Please fill in all required fields';
+			error = translateText('Please fill in all required fields', $locale);
 			return;
 		}
 		if (registerType === 'doctor' && (!licenseNumber || !specialization)) {
-			error = 'Please fill in all required clinician fields';
+			error = translateText('Please fill in all required clinician fields', $locale);
 			return;
 		}
 		if (password !== confirmPassword) {
-			error = 'Passwords do not match';
+			error = translateText('Passwords do not match', $locale);
 			return;
 		}
 		if (password.length < 6) {
-			error = 'Password must be at least 6 characters';
+			error = translateText('Password must be at least 6 characters', $locale);
 			return;
 		}
 
@@ -47,14 +50,14 @@
 					specialization,
 					institution: institution || null
 				});
-				success = 'Clinician account created. Your account is pending admin verification — you will be notified when approved.';
+				success = translateText('Clinician account created. Your account is pending admin verification — you will be notified when approved.', $locale);
 				setTimeout(() => goto('/login'), 4000);
 			} else {
 				await api.post('/api/auth/register', { email, password, full_name: fullName });
 				goto('/login');
 			}
 		} catch (err) {
-			error = err.response?.data?.detail || 'Registration failed. Please try again.';
+			error = err.response?.data?.detail || translateText('Registration failed. Please try again.', $locale);
 		} finally {
 			loading = false;
 		}
@@ -82,7 +85,7 @@
 			</div>
 
 			<h1 class="brand-name">NeuroBloom</h1>
-				<p class="brand-tagline">Start your cognitive care journey today</p>
+			<p class="brand-tagline">{t('Start your cognitive care journey today')}</p>
 
 			<div class="feature-list">
 				<div class="feature-item">
@@ -92,8 +95,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Secure &amp; Private</div>
-						<div class="feature-desc">Your health data is encrypted and never shared without consent</div>
+						<div class="feature-title">{t('Secure & Private')}</div>
+						<div class="feature-desc">{t('Your health data is encrypted and never shared without consent')}</div>
 					</div>
 				</div>
 				<div class="feature-item">
@@ -103,8 +106,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Evidence-Based Tasks</div>
-						<div class="feature-desc">Clinically validated assessments used in MS rehabilitation research</div>
+						<div class="feature-title">{t('Evidence-Based Tasks')}</div>
+						<div class="feature-desc">{t('Clinically validated assessments used in MS rehabilitation research')}</div>
 					</div>
 				</div>
 				<div class="feature-item">
@@ -114,14 +117,14 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Clinician-Supervised</div>
-						<div class="feature-desc">Your assigned clinician monitors progress and adjusts your training plan</div>
+						<div class="feature-title">{t('Clinician-Supervised')}</div>
+						<div class="feature-desc">{t('Your assigned clinician monitors progress and adjusts your training plan')}</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="brand-footer">Trusted by MS care teams worldwide</div>
+		<div class="brand-footer">{t('Trusted by MS care teams worldwide')}</div>
 	</div>
 
 	<!-- RIGHT — form panel -->
@@ -135,8 +138,8 @@
 			</div>
 
 			<div class="form-header">
-				<h2>Create your account</h2>
-				<p>Join NeuroBloom and start your cognitive journey</p>
+				<h2>{t('Create your account')}</h2>
+				<p>{t('Join NeuroBloom and start your cognitive journey')}</p>
 			</div>
 
 			<!-- Role selector -->
@@ -150,7 +153,7 @@
 					<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
 						<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
 					</svg>
-					Patient
+					{t('Patient')}
 				</button>
 				<button
 					type="button"
@@ -161,7 +164,7 @@
 					<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
 						<path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
 					</svg>
-					Clinician
+					{t('Clinician')}
 				</button>
 			</div>
 
@@ -187,7 +190,7 @@
 
 				<!-- Full name -->
 				<div class="field">
-					<label for="fullName">Full name</label>
+					<label for="fullName">{t('Full name')}</label>
 					<div class="input-wrap">
 						<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 							<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
@@ -205,7 +208,7 @@
 
 				<!-- Email -->
 				<div class="field">
-					<label for="email">Email address</label>
+					<label for="email">{t('Email address')}</label>
 					<div class="input-wrap">
 						<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 							<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
@@ -229,11 +232,7 @@
 							<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
 								<path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
 							</svg>
-							Clinician credentials
-						</div>
-
-						<div class="field">
-							<label for="licenseNumber">Medical licence number <span class="req">*</span></label>
+								{t('Clinician credentials')}
 							<div class="input-wrap">
 								<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 									<path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
@@ -249,7 +248,7 @@
 						</div>
 
 						<div class="field">
-							<label for="specialization">Specialisation <span class="req">*</span></label>
+								<label for="specialization">{t('Specialisation')} <span class="req">*</span></label>
 							<div class="input-wrap">
 								<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 									<path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zm5.99 7.176A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
@@ -266,8 +265,8 @@
 
 						<div class="field">
 							<label for="institution">
-								Institution
-								<span class="optional">optional</span>
+									{t('Institution')}
+									<span class="optional">{t('optional')}</span>
 							</label>
 							<div class="input-wrap">
 								<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
@@ -277,7 +276,7 @@
 									type="text"
 									id="institution"
 									bind:value={institution}
-									placeholder="Hospital or clinic name"
+									placeholder={t('Hospital or clinic name')}
 									disabled={loading}
 								/>
 							</div>
@@ -287,7 +286,7 @@
 							<svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15" style="flex-shrink:0;margin-top:1px">
 								<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
 							</svg>
-							Clinician accounts require admin verification before login access is granted.
+								{t('Clinician accounts require admin verification before login access is granted.')}
 						</div>
 					</div>
 				{/if}
@@ -295,7 +294,7 @@
 				<!-- Password row -->
 				<div class="field-row">
 					<div class="field">
-						<label for="password">Password</label>
+						<label for="password">{t('Password')}</label>
 						<div class="input-wrap">
 							<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 								<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
@@ -304,7 +303,7 @@
 								type={showPassword ? 'text' : 'password'}
 								id="password"
 								bind:value={password}
-								placeholder="Min. 6 characters"
+									placeholder={t('Min. 6 characters')}
 								disabled={loading}
 								autocomplete="new-password"
 							/>
@@ -319,7 +318,7 @@
 					</div>
 
 					<div class="field">
-						<label for="confirmPassword">Confirm password</label>
+						<label for="confirmPassword">{t('Confirm password')}</label>
 						<div class="input-wrap">
 							<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 								<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
@@ -328,7 +327,7 @@
 								type={showConfirm ? 'text' : 'password'}
 								id="confirmPassword"
 								bind:value={confirmPassword}
-								placeholder="Repeat password"
+									placeholder={t('Repeat password')}
 								disabled={loading}
 								autocomplete="new-password"
 								class:input-mismatch={confirmPassword && password !== confirmPassword}
@@ -347,19 +346,19 @@
 				<button type="submit" class="submit-btn" disabled={loading || !!success}>
 					{#if loading}
 						<span class="spinner"></span>
-						Creating account…
+						{t('Creating account…')}
 					{:else if success}
 						<svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-						Account created
+						{t('Account created')}
 					{:else}
-						Create {registerType === 'doctor' ? 'clinician' : 'patient'} account
+						{registerType === 'doctor' ? t('Create clinician account') : t('Create patient account')}
 					{/if}
 				</button>
 			</form>
 
 			<p class="login-link">
-				Already have an account?
-				<a href="/login">Sign in</a>
+				{t('Already have an account?')}
+				<a href="/login">{t('Sign in')}</a>
 			</p>
 		</div>
 	</div>

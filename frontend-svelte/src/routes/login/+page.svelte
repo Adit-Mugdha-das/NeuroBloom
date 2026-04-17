@@ -58,6 +58,8 @@
 	$: loginButtonLabel = loading
 		? translateText('Signing in…', $locale)
 		: getLoginButtonLabel(loginType, $locale);
+
+	function t(str) { return translateText(str, $locale); }
 </script>
 
 <svelte:head>
@@ -82,7 +84,7 @@
 			</div>
 
 			<h1 class="brand-name">NeuroBloom</h1>
-			<p class="brand-tagline">Cognitive Rehabilitation Platform</p>
+			<p class="brand-tagline">{t('Cognitive Rehabilitation Platform')}</p>
 
 			<div class="feature-list">
 				<div class="feature-item">
@@ -93,8 +95,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Personalised Assessments</div>
-						<div class="feature-desc">Validated baseline tasks across 6 cognitive domains</div>
+						<div class="feature-title">{t('Personalised Assessments')}</div>
+						<div class="feature-desc">{t('Validated baseline tasks across 6 cognitive domains')}</div>
 					</div>
 				</div>
 				<div class="feature-item">
@@ -105,8 +107,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Progress Analytics</div>
-						<div class="feature-desc">Track cognitive trends over time with clinical insights</div>
+						<div class="feature-title">{t('Progress Analytics')}</div>
+						<div class="feature-desc">{t('Track cognitive trends over time with clinical insights')}</div>
 					</div>
 				</div>
 				<div class="feature-item">
@@ -116,15 +118,15 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">Adaptive Training</div>
-						<div class="feature-desc">AI-driven exercises that adjust to your performance</div>
+						<div class="feature-title">{t('Adaptive Training')}</div>
+						<div class="feature-desc">{t('AI-driven exercises that adjust to your performance')}</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<div class="brand-footer">
-			Designed for MS cognitive care
+			{t('Designed for MS cognitive care')}
 		</div>
 	</div>
 
@@ -139,8 +141,8 @@
 			</div>
 
 			<div class="form-header">
-				<h2>Welcome back</h2>
-				<p>Sign in to continue your cognitive journey</p>
+				<h2>{t('Welcome back')}</h2>
+				<p>{t('Sign in to continue your cognitive journey')}</p>
 			</div>
 
 			<!-- Role selector -->
@@ -191,7 +193,7 @@
 
 			<form on:submit|preventDefault={handleLogin} novalidate>
 				<div class="field">
-					<label for="email">Email address</label>
+					<label for="email">{t('Email address')}</label>
 					<div class="input-wrap">
 						<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 							<path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
@@ -209,7 +211,7 @@
 				</div>
 
 				<div class="field">
-					<label for="password">Password</label>
+					<label for="password">{t('Password')}</label>
 					<div class="input-wrap">
 						<svg class="input-icon" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
 							<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
