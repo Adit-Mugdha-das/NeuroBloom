@@ -40,6 +40,7 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrial = null;
+	let readyTimeout = null;
 
 	// Symbol display
 	let symbolDigitMapping = {};
@@ -82,6 +83,7 @@
 
 	onDestroy(() => {
 		if (timerInterval) clearInterval(timerInterval);
+		if (readyTimeout) clearTimeout(readyTimeout);
 	});
 
 	async function loadSession() {
@@ -136,6 +138,15 @@
 
 	/** @param {"practice" | "recorded"} [nextMode] */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (readyTimeout) {
+			clearTimeout(readyTimeout);
+			readyTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		trial = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -144,7 +155,8 @@
 		symbolDigitMapping = trial.symbol_digit_mapping;
 		testSequence = trial.test_sequence;
 		state = STATE.READY;
-		setTimeout(() => {
+		readyTimeout = setTimeout(() => {
+			readyTimeout = null;
 			state = STATE.TESTING;
 			startTime = Date.now();
 			timeRemaining = trial.duration_seconds;
@@ -155,6 +167,32 @@
 			itemStartTime = Date.now();
 			startTimer();
 		}, 2000);
+	}
+
+	function leavePractice(completed = false) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (readyTimeout) {
+			clearTimeout(readyTimeout);
+			readyTimeout = null;
+		}
+
+		trial = structuredClone(recordedTrial);
+		symbolDigitMapping = trial.symbol_digit_mapping;
+		testSequence = trial.test_sequence;
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentIndex = 0;
+		userResponses = [];
+		responseTimes = [];
+		startTime = 0;
+		itemStartTime = 0;
+		timeRemaining = trial.duration_seconds;
+		currentInput = '';
+		currentSymbol = '';
+		state = STATE.INSTRUCTIONS;
 	}
 
 	function startTimer() {
@@ -214,16 +252,18 @@
 
 	async function finishTest() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			trial = structuredClone(recordedTrial);
-			symbolDigitMapping = trial.symbol_digit_mapping;
-			testSequence = trial.test_sequence;
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
-		if (timerInterval) clearInterval(timerInterval);
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (readyTimeout) {
+			clearTimeout(readyTimeout);
+			readyTimeout = null;
+		}
 		state = STATE.LOADING;
 		taskId = $page.url.searchParams.get('taskId');
 		
@@ -421,7 +461,7 @@
 	{:else if state === STATE.READY}
 		<div class="screen-card ready-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<h2>{t('Study the Reference Key')}</h2>
 			<p class="ready-sub">{t('Memorise these symbol–digit pairs before the test begins')}</p>
@@ -440,7 +480,7 @@
 	{:else if state === STATE.TESTING}
 		<div class="screen-card testing-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="test-header">
 				<div class="progress-info">

@@ -133,16 +133,28 @@
     function calculateResults() {
         const totalTime = Date.now() - startTime;
         if (isPracticeMode) {
-            isPracticeMode = false;
-            diskCount = recordedDiskCount;
-            refreshTowerState();
-            selectedTower = null; moves = 0; completed = false; planningTime = 0;
-            practiceStatusMessage = getPracticeCopy($locale).complete;
-            stage = 'intro';
+            leavePractice(true);
             return;
         }
         stage = 'results';
         saveResults(totalTime);
+    }
+
+    function leavePractice(completed = false) {
+        if (invalidTimer) {
+            clearTimeout(invalidTimer);
+            invalidTimer = null;
+        }
+        isPracticeMode = false;
+        diskCount = recordedDiskCount;
+        refreshTowerState();
+        selectedTower = null;
+        moves = 0;
+        completed = false;
+        planningTime = 0;
+        invalidFlash = false;
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+        stage = 'intro';
     }
 
     async function saveResults(totalTime) {
@@ -263,7 +275,7 @@
         <div class="page-content">
 
             {#if isPracticeMode}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
             {/if}
 
             <div class="test-topbar">

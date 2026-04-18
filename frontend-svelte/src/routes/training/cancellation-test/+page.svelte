@@ -8,7 +8,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import { locale, localeText } from '$lib/i18n';
-	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -26,6 +26,7 @@
 	let earnedBadges = [];
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let recordedTrialData = null;
 
 	let loadError = false;
 	let saveError = false;
@@ -76,7 +77,8 @@
 			);
 			if (!response.ok) throw new Error('Failed to load trial');
 			const data = await response.json();
-			trialData = data.trial_data;
+			trialData = structuredClone(data.trial_data);
+			recordedTrialData = structuredClone(data.trial_data);
 			grid = trialData.grid;
 			targetItems = trialData.target_items;
 			elapsedTime = 0;
@@ -88,8 +90,19 @@
 	}
 
 	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
+		trialData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('cancellation-test', { trial_data: recordedTrialData }).trial_data
+				: structuredClone(recordedTrialData);
+		grid = trialData.grid;
+		targetItems = trialData.target_items;
 		markedPositions = [];
 		startTime = Date.now();
 		elapsedTime = 0;
@@ -97,6 +110,23 @@
 		timerInterval = setInterval(() => {
 			elapsedTime = Math.floor((Date.now() - startTime) / 1000);
 		}, 100);
+	}
+
+	function leavePractice(completed = false) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
+		trialData = structuredClone(recordedTrialData);
+		grid = trialData.grid;
+		targetItems = trialData.target_items;
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		markedPositions = [];
+		startTime = null;
+		elapsedTime = 0;
+		gamePhase = 'intro';
 	}
 
 	function toggleCell(row, col, item) {
@@ -122,9 +152,7 @@
 
 	async function submitResults() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			gamePhase = 'intro';
+			leavePractice(true);
 			return;
 		}
 		saveError = false;
@@ -324,7 +352,7 @@
 
 			<div class="game-card" style="--cell-size: {cellSize}; --cell-font-size: {cellFontSize};">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status Bar -->

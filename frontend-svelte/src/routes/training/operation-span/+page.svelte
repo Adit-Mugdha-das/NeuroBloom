@@ -14,7 +14,7 @@
 	  translateText
 	} from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
 	const STATE = {
@@ -57,6 +57,10 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrials = [];
+	let sessionRunId = 0;
+	let readyTimeout = null;
+	let letterRevealTimeout = null;
+	let feedbackTimeout = null;
 
 	// Available letters
 	const LETTERS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -109,6 +113,15 @@
 
 	onMount(async () => {
 		await loadSession();
+	});
+
+	onDestroy(() => {
+		sessionRunId += 1;
+		if (mathTimeout) clearTimeout(mathTimeout);
+		if (timerInterval) clearInterval(timerInterval);
+		if (readyTimeout) clearTimeout(readyTimeout);
+		if (letterRevealTimeout) clearTimeout(letterRevealTimeout);
+		if (feedbackTimeout) clearTimeout(feedbackTimeout);
 	});
 
 	async function loadSession() {
@@ -166,6 +179,14 @@
 
 	/** @param {"practice" | "recorded"} [nextMode] */
 	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		sessionRunId += 1;
+		const runId = sessionRunId;
+		if (mathTimeout) clearTimeout(mathTimeout);
+		if (timerInterval) clearInterval(timerInterval);
+		if (readyTimeout) clearTimeout(readyTimeout);
+		if (letterRevealTimeout) clearTimeout(letterRevealTimeout);
+		if (feedbackTimeout) clearTimeout(feedbackTimeout);
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		state = STATE.LOADING;
@@ -173,10 +194,55 @@
 		trials = nextMode === TASK_PLAY_MODE.PRACTICE
 			? buildPracticePayload('operation-span', { trials: recordedTrials }).trials
 			: structuredClone(recordedTrials);
-		setTimeout(() => startTrial(), 500);
+		readyTimeout = setTimeout(() => {
+			readyTimeout = null;
+			if (runId === sessionRunId) startTrial(runId);
+		}, 500);
 	}
 
-	async function startTrial() {
+	function leavePractice(completed = false) {
+		sessionRunId += 1;
+		if (mathTimeout) {
+			clearTimeout(mathTimeout);
+			mathTimeout = null;
+		}
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (readyTimeout) {
+			clearTimeout(readyTimeout);
+			readyTimeout = null;
+		}
+		if (letterRevealTimeout) {
+			clearTimeout(letterRevealTimeout);
+			letterRevealTimeout = null;
+		}
+		if (feedbackTimeout) {
+			clearTimeout(feedbackTimeout);
+			feedbackTimeout = null;
+		}
+
+		trials = structuredClone(recordedTrials);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentTrialIndex = 0;
+		currentTrial = null;
+		currentItemIndex = 0;
+		currentItem = null;
+		mathResponse = null;
+		mathStartTime = 0;
+		timeRemaining = 0;
+		userLetters = [];
+		mathResponses = [];
+		trialStartTime = 0;
+		lastTrialCorrect = false;
+		lastTrial = null;
+		sessionResults = null;
+		state = STATE.INSTRUCTIONS;
+	}
+
+	async function startTrial(runId = sessionRunId) {
 		currentTrial = trials[currentTrialIndex];
 		currentItemIndex = 0;
 		userLetters = [];
@@ -185,6 +251,7 @@
 		
 		state = STATE.READY;
 		await new Promise(resolve => setTimeout(resolve, 1500));
+		if (runId !== sessionRunId) return;
 		
 		showNextItem();
 	}
@@ -235,22 +302,34 @@
 		// Clear timeout
 		if (mathTimeout) clearTimeout(mathTimeout);
 		if (timerInterval) clearInterval(timerInterval);
+		mathTimeout = null;
+		timerInterval = null;
 		
 		// Show letter
-		setTimeout(() => showLetter(), 300);
+		const runId = sessionRunId;
+		letterRevealTimeout = setTimeout(() => {
+			letterRevealTimeout = null;
+			if (runId === sessionRunId) showLetter(runId);
+		}, 300);
 	}
 
 	function handleMathTimeout() {
 		// User took too long - count as incorrect
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		mathTimeout = null;
 		mathResponses.push(false);
-		showLetter();
+		showLetter(sessionRunId);
 	}
 
-	async function showLetter() {
+	async function showLetter(runId = sessionRunId) {
 		state = STATE.LETTER_DISPLAY;
 		
 		// Show for 1 second
 		await new Promise(resolve => setTimeout(resolve, 1000));
+		if (runId !== sessionRunId) return;
 		
 		// Move to next item
 		currentItemIndex++;
@@ -286,10 +365,13 @@
 
 		state = STATE.FEEDBACK;
 
-		setTimeout(() => {
+		const runId = sessionRunId;
+		feedbackTimeout = setTimeout(() => {
+			feedbackTimeout = null;
+			if (runId !== sessionRunId) return;
 			if (currentTrialIndex < trials.length - 1) {
 				currentTrialIndex++;
-				startTrial();
+				startTrial(runId);
 			} else {
 				submitSession();
 			}
@@ -306,10 +388,7 @@
 
 	async function submitSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			trials = structuredClone(recordedTrials);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -462,7 +541,7 @@
 	{:else if state === STATE.READY}
 		<div class="ready-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<h2>{setLabel(currentTrialIndex + 1, trials.length)}</h2>
 			<p class="set-info">{pairCountLabel(currentTrial.set_size)}</p>
@@ -471,7 +550,7 @@
 	{:else if state === STATE.MATH_PROBLEM}
 		<div class="math-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="header">
 				<div class="progress-info">
@@ -512,7 +591,7 @@
 	{:else if state === STATE.LETTER_DISPLAY}
 		<div class="letter-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<p class="instruction">{t('Remember this letter')}</p>
 			<div class="letter-display">{symbol(currentItem.letter)}</div>
@@ -521,7 +600,7 @@
 	{:else if state === STATE.RECALL}
 		<div class="recall-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="header">
 				<div class="progress-info">
@@ -575,7 +654,7 @@
 	{:else if state === STATE.FEEDBACK}
 		<div class="feedback-screen">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="feedback-icon {lastTrialCorrect ? 'correct' : 'incorrect'}">
 				{lastTrialCorrect ? '✓' : '✗'}

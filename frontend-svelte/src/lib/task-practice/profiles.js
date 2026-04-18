@@ -220,6 +220,8 @@ const PRACTICE_COPY = {
 		helper: 'Practice only. Not recorded.',
 		bannerTitle: 'Practice Round',
 		bannerText: 'This practice run will not affect your recorded performance.',
+		exit: 'Exit practice',
+		exitAriaLabel: 'Exit practice and return to task setup',
 		complete: 'Practice complete. Start when ready.'
 	},
 	bn: {
@@ -227,6 +229,8 @@ const PRACTICE_COPY = {
 		helper: 'শুধু অনুশীলন। এটি রেকর্ড হবে না।',
 		bannerTitle: 'অনুশীলনী রাউন্ড',
 		bannerText: 'এই অনুশীলনের ফল রেকর্ড হবে না।',
+		exit: 'অনুশীলন থেকে বের হন',
+		exitAriaLabel: 'অনুশীলন থেকে বের হয়ে টাস্ক সেটআপে ফিরুন',
 		complete: 'অনুশীলন শেষ। প্রস্তুত হলে শুরু করুন।'
 	}
 };

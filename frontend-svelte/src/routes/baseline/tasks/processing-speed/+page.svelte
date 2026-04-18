@@ -168,12 +168,14 @@
         const choiceRTMean = choiceRTs.length ? choiceRTs.reduce((a, b) => a + b) / choiceRTs.length : 0;
         const choiceAccScore = choiceAccuracy.filter((a) => a).length / choiceAccuracy.length;
         finalScore = calculateProcessingSpeedScore(simpleRTMean, choiceRTMean, simpleRTStd, choiceAccScore);
-        if (isPracticeMode) { finishPractice(); return; }
+        if (isPracticeMode) { finishPractice(true); return; }
         stage = 'results';
         saveResults(simpleRTMean, simpleRTStd, choiceRTMean, choiceAccScore);
     }
 
-    function finishPractice() {
+    function finishPractice(completed = false) {
+        clearTimeout(simpleTimeout);
+        clearTimeout(earlyMsgTimer);
         isPracticeMode = false;
         if (recordedSettings) {
             ({ simpleTrials, choiceTrials, delayMin, delayMax, earlyClickPenalty, choiceShapeCount } = recordedSettings);
@@ -181,7 +183,12 @@
         stage = 'intro';
         simpleCurrentTrial = 0; choiceCurrentTrial = 0;
         simpleRTs = []; choiceRTs = []; choiceAccuracy = [];
-        practiceStatusMessage = getPracticeCopy($locale).complete;
+        earlyClickMessage = '';
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+    }
+
+    function leavePractice() {
+        finishPractice(false);
     }
 
     async function saveResults(simpleRTMean, simpleRTStd, choiceRTMean, choiceAccScore) {
@@ -328,7 +335,9 @@
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
         <div class="arena-wrap" class:arena-green={simpleReady} on:click={handleSimpleClick} role="button" tabindex="0" on:keydown={(e) => (e.key === ' ' || e.key === 'Enter') && handleSimpleClick()}>
             {#if isPracticeMode}
-                <div class="practice-wrap"><PracticeModeBanner locale={$locale} /></div>
+                <div class="practice-wrap">
+                    <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
+                </div>
             {/if}
             <div class="trial-counter" class:counter-green={simpleReady}>
                 {trialLabel(simpleCurrentTrial + 1, simpleTrials)}
@@ -365,7 +374,7 @@
     {:else if stage === 'choice'}
         <div class="page-content">
             {#if isPracticeMode}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
             {/if}
             <div class="choice-panel">
                 <div class="choice-header">

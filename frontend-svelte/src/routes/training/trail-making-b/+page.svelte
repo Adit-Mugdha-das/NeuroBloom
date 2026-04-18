@@ -15,7 +15,7 @@
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
 
@@ -52,6 +52,10 @@
 	let practiceFeedback = null;
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let practiceSetupTimeout = null;
+	let practiceFinishTimeout = null;
+	let canvasInitTimeout = null;
+	let errorFlashTimeout = null;
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -109,6 +113,14 @@
 		await loadSession();
 	});
 
+	onDestroy(() => {
+		if (timerInterval) clearInterval(timerInterval);
+		if (practiceSetupTimeout) clearTimeout(practiceSetupTimeout);
+		if (practiceFinishTimeout) clearTimeout(practiceFinishTimeout);
+		if (canvasInitTimeout) clearTimeout(canvasInitTimeout);
+		if (errorFlashTimeout) clearTimeout(errorFlashTimeout);
+	});
+
 	async function loadSession() {
 		try {
 			loading = true;
@@ -136,18 +148,34 @@
 	}
 
 	function startPractice() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		clearTimeout(practiceSetupTimeout);
+		clearTimeout(practiceFinishTimeout);
+		clearTimeout(canvasInitTimeout);
+		clearTimeout(errorFlashTimeout);
 		playMode = TASK_PLAY_MODE.PRACTICE;
 		practiceStatusMessage = '';
 		phase = 'practice';
 		setupPracticeCanvas();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		clearTimeout(practiceSetupTimeout);
+		clearTimeout(practiceFinishTimeout);
+		clearTimeout(canvasInitTimeout);
+		clearTimeout(errorFlashTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceFeedback = null;
 		practiceIndex = 0;
 		phase = 'instructions';
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	function setupPracticeCanvas() {
@@ -162,7 +190,8 @@
 		practiceIndex = 0;
 		practiceFeedback = null;
 
-		setTimeout(() => {
+		practiceSetupTimeout = setTimeout(() => {
+			practiceSetupTimeout = null;
 			if (canvas) {
 				ctx = canvas.getContext('2d');
 				drawPracticeCanvas();
@@ -241,7 +270,10 @@
 				drawPracticeCanvas();
 
 				if (practiceIndex >= practiceCircles.length) {
-					setTimeout(() => { finishPractice(); }, 1500);
+					practiceFinishTimeout = setTimeout(() => {
+						practiceFinishTimeout = null;
+						finishPractice();
+					}, 1500);
 				}
 			} else {
 				practiceFeedback = {
@@ -255,6 +287,10 @@
 	}
 
 	function startTest() {
+		clearTimeout(practiceSetupTimeout);
+		clearTimeout(practiceFinishTimeout);
+		clearTimeout(canvasInitTimeout);
+		clearTimeout(errorFlashTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		phase = 'test';
@@ -270,7 +306,8 @@
 			elapsedTime = (Date.now() - startTime) / 1000;
 		}, 100);
 
-		setTimeout(() => {
+		canvasInitTimeout = setTimeout(() => {
+			canvasInitTimeout = null;
 			if (canvas) {
 				ctx = canvas.getContext('2d');
 				drawCanvas();
@@ -398,7 +435,10 @@
 			ctx.strokeStyle = '#dc2626';
 			ctx.stroke();
 
-			setTimeout(() => { drawCanvas(); }, 200);
+			errorFlashTimeout = setTimeout(() => {
+				errorFlashTimeout = null;
+				drawCanvas();
+			}, 200);
 		}
 	}
 
@@ -736,7 +776,7 @@
 	<!-- ── PRACTICE ────────────────────────────────────────────── -->
 	{:else if phase === 'practice'}
 		<div class="trial-wrapper">
-			<PracticeModeBanner locale={$locale} />
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 
 			<div class="trial-top">
 				<h2 class="trial-title">{t('Practice Round')}</h2>

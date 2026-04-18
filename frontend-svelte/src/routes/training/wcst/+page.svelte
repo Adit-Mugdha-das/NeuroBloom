@@ -36,6 +36,7 @@
 	let taskId = null;
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let feedbackTimeout = null;
 
 	const COLORS = {
 		red: '#EF4444',
@@ -163,6 +164,7 @@
 	}
 
 	function startPractice() {
+		clearTimeout(feedbackTimeout);
 		playMode = TASK_PLAY_MODE.PRACTICE;
 		practiceStatusMessage = '';
 		isPractice = true;
@@ -173,6 +175,7 @@
 	}
 
 	function startTest() {
+		clearTimeout(feedbackTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		isPractice = false;
@@ -184,13 +187,14 @@
 		trialStartTime = Date.now();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
+		clearTimeout(feedbackTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		isPractice = false;
 		showFeedback = false;
 		currentPracticeIndex = 0;
 		phase = 'instructions';
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	function handleCardSelection(pileIndex) {
@@ -205,7 +209,9 @@
 			feedbackMessage = isCorrect ? t('Correct!') : t('Wrong!');
 			showFeedback = true;
 
-			setTimeout(() => {
+			clearTimeout(feedbackTimeout);
+			feedbackTimeout = setTimeout(() => {
+				feedbackTimeout = null;
 				showFeedback = false;
 				currentPracticeIndex++;
 				if (currentPracticeIndex >= practiceTrials.length) {
@@ -272,7 +278,9 @@
 			console.log(`${isCorrect ? '✅' : '❌'} Trial ${currentTrialIndex + 1}: Building history (${responses.length}/${correctNeeded} minimum), Rule: ${currentRule}`);
 		}
 
-		setTimeout(() => {
+		clearTimeout(feedbackTimeout);
+		feedbackTimeout = setTimeout(() => {
+			feedbackTimeout = null;
 			showFeedback = false;
 			moveToNextTrial();
 		}, 800);
@@ -429,7 +437,7 @@
 			</div>
 		{:else if phase === 'practice'}
 			<div>
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 				<div style="text-align: center; margin-bottom: 20px;">
 					<p style="color: #666;">{practiceModeLabel()}</p>
 					<p style="color: #0066cc; font-size: 14px; margin-top: 5px;">{ruleInstructionLabel()}</p>

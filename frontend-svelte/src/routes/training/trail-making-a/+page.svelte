@@ -38,6 +38,8 @@
 	let errors = [];
 	let lines = [];
 	let timerInterval = null; // Add timer interval reference
+	let countdownHandle = null;
+	let canvasInitTimeout = null;
 
 	let showHelp = false;
 	let sessionResults = null;
@@ -91,6 +93,14 @@
 		if (timerInterval) {
 			clearInterval(timerInterval);
 			timerInterval = null;
+		}
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+		if (canvasInitTimeout) {
+			clearTimeout(canvasInitTimeout);
+			canvasInitTimeout = null;
 		}
 	});
 
@@ -158,6 +168,19 @@
 
 	/** @param {"practice" | "recorded"} nextMode */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+		if (canvasInitTimeout) {
+			clearTimeout(canvasInitTimeout);
+			canvasInitTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		trial = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -166,13 +189,42 @@
 		state = STATE.READY;
 		countdown = 3;
 		
-		const countdownInterval = setInterval(() => {
+		countdownHandle = setInterval(() => {
 			countdown--;
 			if (countdown <= 0) {
-				clearInterval(countdownInterval);
+				clearInterval(countdownHandle);
+				countdownHandle = null;
 				beginTest();
 			}
 		}, 1000);
+	}
+
+	function leavePractice(completed = false) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+		if (canvasInitTimeout) {
+			clearTimeout(canvasInitTimeout);
+			canvasInitTimeout = null;
+		}
+
+		trial = structuredClone(recordedTrial);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentNumber = 1;
+		startTime = 0;
+		completionTime = 0;
+		elapsedTime = 0;
+		clicks = [];
+		errors = [];
+		lines = [];
+		countdown = 3;
+		state = STATE.INSTRUCTIONS;
 	}
 
 	function beginTest() {
@@ -190,7 +242,8 @@
 		}, 100); // Update every 100ms for smooth display
 
 		// Initialize canvas
-		setTimeout(() => {
+		canvasInitTimeout = setTimeout(() => {
+			canvasInitTimeout = null;
 			initCanvas();
 			drawCircles();
 		}, 100);
@@ -374,10 +427,7 @@
 
 	async function submitResults() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			trial = structuredClone(recordedTrial);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -581,7 +631,7 @@
 		{:else if state === STATE.READY}
 			<div class="screen-card ready-screen">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 				<h2>{t('Get Ready!')}</h2>
 				<p class="ready-message">{t('Connect the numbered circles in order as fast as you can')}</p>
@@ -600,7 +650,7 @@
 		{:else if state === STATE.TESTING}
 			<div class="screen-card testing-screen">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 				<div class="test-header">
 					<div class="test-badges">

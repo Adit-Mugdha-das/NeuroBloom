@@ -32,6 +32,8 @@
 	let practiceTrials = [];
 	let currentPractice = 0;
 	let practiceFeedback = null;
+	let practiceAdvanceTimeout = null;
+	let practiceFinishTimeout = null;
 
 	// Test state
 	let startTime = 0;
@@ -287,6 +289,8 @@
 	}
 
 	function startPractice() {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.PRACTICE;
 		practiceStatusMessage = '';
 		practiceTrials = buildPracticeTrials();
@@ -297,26 +301,31 @@
 		showNextPracticeTrial();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
 		clearTimeout(stimulusTimeout);
 		clearTimeout(interStimulusTimeout);
 		clearTimeout(trialTimeout);
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		responded = false;
 		showStimulus = false;
 		practiceFeedback = null;
 		currentPractice = 0;
 		phase = 'instructions';
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	function showNextPracticeTrial() {
 		// Clear any existing timers
 		clearTimeout(stimulusTimeout);
 		clearTimeout(interStimulusTimeout);
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		
 		if (currentPractice >= practiceTrials.length) {
-			setTimeout(() => {
+			practiceFinishTimeout = setTimeout(() => {
+				practiceFinishTimeout = null;
 				finishPractice();
 			}, 1500);
 			return;
@@ -407,7 +416,8 @@
 
 		showStimulus = false;
 
-		setTimeout(() => {
+		practiceAdvanceTimeout = setTimeout(() => {
+			practiceAdvanceTimeout = null;
 			practiceFeedback = null;
 			currentPractice++;
 			showNextPracticeTrial();
@@ -415,6 +425,8 @@
 	}
 
 	function startTest() {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		phase = 'test';
@@ -755,7 +767,7 @@
 
 		{:else if phase === 'practice'}
 			<div class="screen-card trial-screen">
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 				<div class="trial-header">
 					<span class="trial-badge">{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</span>
 					<span class="instr-mini">{lt(`SPACEBAR = ${goDisplayStimulus} | Withhold = ${nogoDisplayStimulus}`, `স্পেসবার = ${goDisplayStimulus} | থামুন = ${nogoDisplayStimulus}`)}</span>

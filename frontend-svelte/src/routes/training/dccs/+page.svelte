@@ -9,7 +9,7 @@
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	let phase = 'intro';
 	let loading = false;
@@ -25,6 +25,7 @@
 	let trialStartTime = null;
 	let showCue = false;
 	let cueText = '';
+	let cueTimeout = null;
 	let results = null;
 	let newBadges = [];
 	let currentUser = null;
@@ -238,6 +239,11 @@
 
 	/** @param {string} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		restoreRecordedSession();
@@ -258,12 +264,43 @@
 	function startTrial() {
 		trialStartTime = Date.now();
 		const trial = getCurrentTrial();
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
 		if (trial && trial.cue_shown) {
 			showCue = true;
 			cueText = cueInstruction(trial.rule);
-			setTimeout(() => {
+			cueTimeout = setTimeout(() => {
+				cueTimeout = null;
 				showCue = false;
 			}, sessionData.config.cue_duration_ms);
+		}
+	}
+
+	async function leavePractice(completed = false) {
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentPhase = null;
+		currentPhaseIndex = 0;
+		currentTrialIndex = 0;
+		responses = [];
+		showCue = false;
+		cueText = '';
+		results = null;
+		startTime = null;
+		trialStartTime = null;
+		phase = 'intro';
+
+		if (completed) {
+			await loadSession();
+		} else {
+			restoreRecordedSession();
 		}
 	}
 
@@ -316,15 +353,7 @@
 
 	async function submitSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			currentPhase = null;
-			currentPhaseIndex = 0;
-			currentTrialIndex = 0;
-			responses = [];
-			showCue = false;
-			phase = 'intro';
-			await loadSession();
+			await leavePractice(true);
 			return;
 		}
 
@@ -358,6 +387,13 @@
 			loading = false;
 		}
 	}
+
+	onDestroy(() => {
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
+	});
 
 	function renderCard(card, size = 80) {
 		const color = COLORS[card.color] || '#999';
@@ -588,7 +624,7 @@
 	{:else if phase === 'phase-transition'}
 		<div class="trial-wrapper">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			<div class="transition-card">
@@ -619,7 +655,7 @@
 
 			<div class="trial-wrapper">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status row -->

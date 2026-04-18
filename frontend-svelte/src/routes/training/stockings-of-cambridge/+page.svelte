@@ -10,7 +10,7 @@
 	import { locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { user } from '$lib/stores.js';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	let userId;
 	let baselineScore = 0;
@@ -36,6 +36,7 @@
 	let gamePhase = 'intro';
 	let planningTimeRemaining = 0;
 	let planningTimer = null;
+	let warningTimeout = null;
 	let userSolutions = [];
 	let solutions = [];
 	let showingGoal = true;
@@ -169,6 +170,15 @@
 
 	/** @param {string} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (planningTimer) {
+			clearInterval(planningTimer);
+			planningTimer = null;
+		}
+		if (warningTimeout) {
+			clearTimeout(warningTimeout);
+			warningTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		restoreRecordedSession();
@@ -200,6 +210,10 @@
 		showingGoal = true;
 		showSolution = false;
 		stockingFullWarning = -1;
+		if (warningTimeout) {
+			clearTimeout(warningTimeout);
+			warningTimeout = null;
+		}
 
 		gamePhase = 'planning';
 		planningTimeRemaining = sessionData.config.planning_time_seconds;
@@ -248,7 +262,11 @@
 		if (targetStocking.length >= STOCKING_CAPACITIES[targetStockingIndex]) {
 			stockingFullWarning = targetStockingIndex;
 			selectedBall = null;
-			setTimeout(() => { stockingFullWarning = -1; }, 1800);
+			if (warningTimeout) clearTimeout(warningTimeout);
+			warningTimeout = setTimeout(() => {
+				warningTimeout = null;
+				stockingFullWarning = -1;
+			}, 1800);
 			return;
 		}
 
@@ -296,18 +314,47 @@
 		loadProblem(currentProblemIndex + 1);
 	}
 
+	async function leavePractice(completed = false) {
+		if (planningTimer) {
+			clearInterval(planningTimer);
+			planningTimer = null;
+		}
+		if (warningTimeout) {
+			clearTimeout(warningTimeout);
+			warningTimeout = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		restoreRecordedSession();
+		currentProblemIndex = 0;
+		currentProblem = null;
+		currentState = [];
+		goalState = [];
+		selectedBall = null;
+		moveHistory = [];
+		problemStartTime = null;
+		totalMoves = 0;
+		stockingFullWarning = -1;
+		planningTimeRemaining = 0;
+		userSolutions = [];
+		solutions = [];
+		showingGoal = true;
+		results = null;
+		earnedBadges = [];
+		showSolution = false;
+		solutionPath = [];
+		actualMinMoves = 0;
+		gamePhase = 'intro';
+
+		if (completed) {
+			await loadSession();
+		}
+	}
+
 	async function finishSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			sessionData = null;
-			currentProblemIndex = 0;
-			currentProblem = null;
-			userSolutions = [];
-			solutions = [];
-			selectedBall = null;
-			gamePhase = 'intro';
-			await loadSession();
+			await leavePractice(true);
 			return;
 		}
 		try {
@@ -350,6 +397,17 @@
 		}
 	}
 
+	onDestroy(() => {
+		if (planningTimer) {
+			clearInterval(planningTimer);
+			planningTimer = null;
+		}
+		if (warningTimeout) {
+			clearTimeout(warningTimeout);
+			warningTimeout = null;
+		}
+	});
+
 	function toggleGoalView() {
 		showingGoal = !showingGoal;
 	}
@@ -372,7 +430,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			{#if loading}
@@ -555,7 +613,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status Bar -->
@@ -632,7 +690,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Solving Status Bar -->
@@ -740,7 +798,7 @@
 
 			<div class="completion-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<div class="completion-badge">{lt('Problem Solved', 'সমস্যা সমাধান হয়েছে')}</div>

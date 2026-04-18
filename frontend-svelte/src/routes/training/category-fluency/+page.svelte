@@ -29,6 +29,7 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedTrialData = null;
+	let focusHandle = null;
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -147,6 +148,15 @@
 
 	/** @param {string} nextMode */
 	function startTrial(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timer) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (focusHandle) {
+			clearTimeout(focusHandle);
+			focusHandle = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		trialData =
@@ -164,9 +174,30 @@
 				endTrial();
 			}
 		}, 1000);
-		setTimeout(() => {
+		focusHandle = setTimeout(() => {
+			focusHandle = null;
 			focusWordInput();
 		}, 100);
+	}
+
+	function leavePractice(completed = false) {
+		if (timer) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (focusHandle) {
+			clearTimeout(focusHandle);
+			focusHandle = null;
+		}
+
+		trialData = structuredClone(recordedTrialData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		timeRemaining = trialData?.time_limit_seconds || 60;
+		startTime = null;
+		currentInput = '';
+		submittedWords = [];
+		gamePhase = 'intro';
 	}
 
 	function submitWord() {
@@ -174,7 +205,11 @@
 		const word = currentInput.trim();
 		submittedWords = [...submittedWords, word];
 		currentInput = '';
-		setTimeout(() => {
+		if (focusHandle) {
+			clearTimeout(focusHandle);
+		}
+		focusHandle = setTimeout(() => {
+			focusHandle = null;
 			focusWordInput();
 		}, 0);
 	}
@@ -192,13 +227,11 @@
 
 	async function endTrial() {
 		clearInterval(timer);
+		timer = null;
 		const timeTaken = (Date.now() - startTime) / 1000;
 
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			trialData = structuredClone(recordedTrialData);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			gamePhase = 'intro';
+			leavePractice(true);
 			return;
 		}
 
@@ -419,7 +452,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status Bar -->

@@ -100,7 +100,12 @@
         startLiveTimer();
     }
 
-    function finishPractice() {
+    function finishPractice(completed = false) {
+        stopLiveTimer();
+        if (wrongTimer) {
+            clearTimeout(wrongTimer);
+            wrongTimer = null;
+        }
         isPracticeMode        = false;
         stage                 = 'intro';
         foundTargets          = [];
@@ -109,7 +114,12 @@
         totalTargets          = recordedTargets;
         searchTime            = 0;
         liveElapsedTime       = 0;
-        practiceStatusMessage = getPracticeCopy($locale).complete;
+        wrongFlash            = false;
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+    }
+
+    function leavePractice() {
+        finishPractice(false);
     }
 
     function generateGrid() {
@@ -148,7 +158,7 @@
     }
 
     function calculateResults() {
-        if (isPracticeMode) { finishPractice(); return; }
+        if (isPracticeMode) { finishPractice(true); return; }
         stage = 'results';
         saveResults();
     }
@@ -261,7 +271,7 @@
         <div class="page-content">
 
             {#if isPracticeMode}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
             {/if}
 
             <div class="test-topbar">

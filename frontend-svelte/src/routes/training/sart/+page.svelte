@@ -41,6 +41,7 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
+	let countdownHandle = null;
 
 	onMount(() => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -51,6 +52,7 @@
 			window.removeEventListener('keydown', handleKeyDown);
 			if (timerHandle) clearTimeout(timerHandle);
 			if (isiHandle) clearTimeout(isiHandle);
+			if (countdownHandle) clearInterval(countdownHandle);
 		};
 	});
 
@@ -98,6 +100,10 @@
 
 	/** @param {"practice" | "recorded"} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerHandle) clearTimeout(timerHandle);
+		if (isiHandle) clearTimeout(isiHandle);
+		if (countdownHandle) clearInterval(countdownHandle);
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -111,13 +117,41 @@
 		waitingForResponse = false;
 		state = STATE.READY;
 		countdown = 3;
-		const countdownInterval = setInterval(() => {
+		countdownHandle = setInterval(() => {
 			countdown -= 1;
 			if (countdown <= 0) {
-				clearInterval(countdownInterval);
+				clearInterval(countdownHandle);
+				countdownHandle = null;
 				beginTrial();
 			}
 		}, 1000);
+	}
+
+	function leavePractice(completed = false) {
+		if (timerHandle) {
+			clearTimeout(timerHandle);
+			timerHandle = null;
+		}
+		if (isiHandle) {
+			clearTimeout(isiHandle);
+			isiHandle = null;
+		}
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentTrialIndex = 0;
+		currentTrial = null;
+		currentDigit = null;
+		showDigit = false;
+		waitingForResponse = false;
+		responses = [];
+		countdown = 3;
+		state = STATE.INSTRUCTIONS;
 	}
 
 	function beginTrial() {
@@ -173,10 +207,7 @@
 
 	async function completeSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			sessionData = structuredClone(recordedSessionData);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -299,7 +330,7 @@
 	{:else if state === STATE.READY}
 		<section class="panel ready">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<p class="eyebrow">Get Ready</p>
 			<h2>{countdown}</h2>
@@ -308,7 +339,7 @@
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="play-header">
 				<div>

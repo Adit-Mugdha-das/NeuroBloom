@@ -32,6 +32,8 @@
 	let practiceTrials = [];
 	let currentPractice = 0;
 	let practiceFeedback = null;
+	let practiceAdvanceTimeout = null;
+	let practiceFinishTimeout = null;
 
 	// Test state
 	let startTime = 0;
@@ -182,12 +184,16 @@
 		phase = 'practice';
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
+		clearTimeout(trialTimeout);
+		clearTimeout(responseTimeout);
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceFeedback = null;
 		currentPractice = 0;
 		phase = 'instructions';
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	function handlePracticeAnswer(answer) {
@@ -210,12 +216,16 @@
 		}
 
 		// Auto-advance after 2 seconds
-		setTimeout(() => {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
+		practiceAdvanceTimeout = setTimeout(() => {
+			practiceAdvanceTimeout = null;
 			if (currentPractice < practiceTrials.length - 1) {
 				currentPractice++;
 				practiceFeedback = null;
 			} else {
-				setTimeout(() => {
+				practiceFinishTimeout = setTimeout(() => {
+					practiceFinishTimeout = null;
 					finishPractice();
 				}, 1000);
 			}
@@ -223,6 +233,8 @@
 	}
 
 	function startTest() {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		phase = 'test';
@@ -546,7 +558,7 @@
 
 		{:else if phase === 'practice'}
 			<div class="screen-card trial-screen">
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 				<div class="trial-header">
 					<span class="trial-badge">
 						{lt(`Practice ${currentPractice + 1} / ${practiceTrials.length}`,

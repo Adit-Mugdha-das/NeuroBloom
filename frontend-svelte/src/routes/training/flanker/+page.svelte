@@ -31,6 +31,8 @@
 	let practiceTrials = [];
 	let currentPractice = 0;
 	let practiceFeedback = null;
+	let practiceAdvanceTimeout = null;
+	let practiceFinishTimeout = null;
 
 	// Test state
 	let startTime = 0;
@@ -251,6 +253,8 @@
 	}
 
 	function startPractice() {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.PRACTICE;
 		practiceStatusMessage = '';
 		practiceTrials = buildPracticeTrials();
@@ -260,25 +264,32 @@
 		showNextPracticeTrial();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
 		clearTimeout(stimulusTimeout);
 		clearTimeout(interStimulusTimeout);
 		clearTimeout(trialTimeout);
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		responded = false;
 		showStimulus = false;
 		practiceFeedback = null;
 		currentPractice = 0;
 		phase = 'instructions';
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	function showNextPracticeTrial() {
 		clearTimeout(stimulusTimeout);
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 
 		if (currentPractice >= practiceTrials.length) {
 			practiceFeedback = { type: 'success', message: practiceCompleteMessage() };
-			setTimeout(() => { finishPractice(); }, 2000);
+			practiceFinishTimeout = setTimeout(() => {
+				practiceFinishTimeout = null;
+				finishPractice();
+			}, 2000);
 			return;
 		}
 
@@ -290,7 +301,8 @@
 			if (!responded) {
 				practiceFeedback = { type: 'warning', message: slowResponseMessage() };
 				showStimulus = false;
-				setTimeout(() => {
+				practiceAdvanceTimeout = setTimeout(() => {
+					practiceAdvanceTimeout = null;
 					practiceFeedback = null;
 					currentPractice++;
 					showNextPracticeTrial();
@@ -315,7 +327,8 @@
 		}
 
 		showStimulus = false;
-		setTimeout(() => {
+		practiceAdvanceTimeout = setTimeout(() => {
+			practiceAdvanceTimeout = null;
 			practiceFeedback = null;
 			currentPractice++;
 			showNextPracticeTrial();
@@ -323,6 +336,8 @@
 	}
 
 	function startTest() {
+		clearTimeout(practiceAdvanceTimeout);
+		clearTimeout(practiceFinishTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		phase = 'test';
@@ -716,7 +731,7 @@
 	<!-- ── PRACTICE ────────────────────────────────────────────── -->
 	{:else if phase === 'practice'}
 		<div class="trial-wrapper">
-			<PracticeModeBanner locale={$locale} />
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 
 			<div class="trial-top">
 				<h2 class="trial-counter">{practiceTrialLabel(currentPractice + 1, practiceTrials.length)}</h2>

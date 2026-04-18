@@ -152,15 +152,32 @@
         switchCostRT = avgSwitch - avgNoSwitch;
         meanRT = reactionTimes.reduce((a,b)=>a+b,0) / reactionTimes.length;
 
-        if (isPracticeMode) {
-            isPracticeMode = false;
-            totalTrials = recordedTotalTrials;
-            practiceStatusMessage = getPracticeCopy($locale).complete;
-            stage = 'intro';
-            return;
-        }
+        if (isPracticeMode) { leavePractice(true); return; }
         stage = 'results';
         saveResults();
+    }
+
+    function leavePractice(completed = false) {
+        if (feedbackTimer) {
+            clearTimeout(feedbackTimer);
+            feedbackTimer = null;
+        }
+        isPracticeMode = false;
+        totalTrials = recordedTotalTrials;
+        currentTrial = 0;
+        responses = [];
+        reactionTimes = [];
+        switchTrials = 0;
+        switchErrors = 0;
+        noSwitchErrors = 0;
+        totalErrors = 0;
+        switchCostRT = 0;
+        perseverationErrors = 0;
+        accuracy = 0;
+        meanRT = 0;
+        lastFeedback = '';
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+        stage = 'intro';
     }
 
     async function saveResults() {
@@ -294,7 +311,9 @@
     {:else if stage === 'test'}
         <div class="test-arena" class:arena-blue={currentColor === 'blue'} class:arena-red={currentColor === 'red'}>
             {#if isPracticeMode}
-                <div class="practice-wrap"><PracticeModeBanner locale={$locale} /></div>
+                <div class="practice-wrap">
+                    <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
+                </div>
             {/if}
 
             <div class="arena-top">

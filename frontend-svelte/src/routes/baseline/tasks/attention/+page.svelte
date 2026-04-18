@@ -72,7 +72,8 @@
         showNextTrial();
     }
 
-    function finishPractice() {
+    function finishPractice(completed = false) {
+        clearTimeout(timeout);
         isPracticeMode = false;
         stage = 'intro';
         currentTrial = 0;
@@ -80,7 +81,11 @@
         responses = []; reactionTimes = [];
         totalTrials = recordedTotalTrials;
         alertActive = false;
-        practiceStatusMessage = getPracticeCopy($locale).complete;
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+    }
+
+    function leavePractice() {
+        finishPractice(false);
     }
 
     function generateSequence() {
@@ -141,7 +146,7 @@
             return isTarget && rt < 1000;
         });
         meanRT = validRTs.length > 0 ? validRTs.reduce((a, b) => a + b, 0) / validRTs.length : 0;
-        if (isPracticeMode) { finishPractice(); return; }
+        if (isPracticeMode) { finishPractice(true); return; }
         stage = 'results';
         saveResults();
     }
@@ -286,7 +291,9 @@
     {:else if stage === 'test'}
         <div class="test-arena">
             {#if isPracticeMode}
-                <div class="practice-wrap"><PracticeModeBanner locale={$locale} /></div>
+                <div class="practice-wrap">
+                    <PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
+                </div>
             {/if}
 
             <div class="arena-header">

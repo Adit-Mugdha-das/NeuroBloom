@@ -60,6 +60,8 @@
 	
 	// Timer for digit presentation
 	let digitTimer = null;
+	let practiceAdvanceTimeout = null;
+	let practiceRunId = 0;
 
 	// Subscribe to user store
 	user.subscribe(value => {
@@ -219,6 +221,9 @@
 	}
 
 	function startPractice() {
+		practiceRunId += 1;
+		clearTimeout(digitTimer);
+		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.PRACTICE;
 		practiceStatusMessage = '';
 		showInstructions = false;
@@ -229,7 +234,10 @@
 		runPracticeTrial();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
+		practiceRunId += 1;
+		clearTimeout(digitTimer);
+		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		showPractice = false;
 		practiceComplete = false;
@@ -237,10 +245,11 @@
 		currentDigit = null;
 		userAnswer = '';
 		showInstructions = true;
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	async function runPracticeTrial() {
+		const runId = practiceRunId;
 		if (practiceIndex >= practiceDigits.length) {
 			finishPractice();
 			return;
@@ -256,6 +265,7 @@
 		if (practiceIndex === 0) {
 			practicePrevious = digit;
 			await sleep(2000);
+			if (runId !== practiceRunId) return;
 			practiceIndex++;
 			runPracticeTrial();
 			return;
@@ -280,7 +290,11 @@
 			practiceIndex++;
 			userAnswer = '';
 			
-			setTimeout(() => runPracticeTrial(), 800);
+			clearTimeout(practiceAdvanceTimeout);
+			practiceAdvanceTimeout = setTimeout(() => {
+				practiceAdvanceTimeout = null;
+				if (runId === practiceRunId) runPracticeTrial();
+			}, 800);
 		} else {
 			// Wrong, show feedback
 			alert(`The correct answer was ${correctAnswer} (${practicePrevious} + ${currentDigit}). Try again!`);
@@ -290,6 +304,9 @@
 	}
 
 	function startTest() {
+		practiceRunId += 1;
+		clearTimeout(digitTimer);
+		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		showInstructions = false;
@@ -635,7 +652,7 @@
 
 		{:else if showPractice}
 			<div class="screen-card practice-screen">
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 				<h2>{t('Practice Mode')}</h2>
 				<p class="practice-intro">{t("Let's practice with 4 digits. Take your time to understand the pattern.")}</p>
 

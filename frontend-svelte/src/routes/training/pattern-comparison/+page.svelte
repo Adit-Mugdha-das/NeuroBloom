@@ -36,6 +36,7 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
+	let countdownHandle = null;
 
 	$: currentTrial = sessionData?.trials?.[currentTrialIndex];
 	$: progress = sessionData ? ((currentTrialIndex + 1) / sessionData.total_trials * 100) : 0;
@@ -106,6 +107,11 @@
 
 	/** @param {"practice" | "recorded"} nextMode */
 	function startTest(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -116,13 +122,29 @@
 		responses = [];
 		countdown = 3;
 		
-		const countdownInterval = setInterval(() => {
+		countdownHandle = setInterval(() => {
 			countdown--;
 			if (countdown <= 0) {
-				clearInterval(countdownInterval);
+				clearInterval(countdownHandle);
+				countdownHandle = null;
 				beginTest();
 			}
 		}, 1000);
+	}
+
+	function leavePractice(completed = false) {
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentTrialIndex = 0;
+		responses = [];
+		countdown = 3;
+		state = STATE.INSTRUCTIONS;
 	}
 
 	function beginTest() {
@@ -156,10 +178,7 @@
 
 	async function completeSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			sessionData = structuredClone(recordedSessionData);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -376,7 +395,7 @@
 		{:else if state === STATE.READY}
 			<div class="screen-card ready-screen">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 				<h2>Get Ready!</h2>
 				<p class="ready-message">Compare patterns and decide: SAME or DIFFERENT</p>
@@ -395,7 +414,7 @@
 		{:else if state === STATE.TESTING}
 			<div class="screen-card testing-screen">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 				<div class="test-header">
 					<div class="test-badges">

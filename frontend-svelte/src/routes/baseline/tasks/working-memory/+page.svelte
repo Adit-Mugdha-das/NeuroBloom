@@ -47,6 +47,7 @@
 	let practiceStatusMessage = '';
 	let recordedNBackLevel = 1;
 	let recordedTotalTrials = 20;
+	let trialTimeout = null;
 	
 	user.subscribe(value => {
 		currentUser = value;
@@ -190,7 +191,8 @@
 		showNextTrial();
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = false) {
+		clearTimeout(trialTimeout);
 		isPracticeMode = false;
 		stage = 'intro';
 		currentTrial = 0;
@@ -199,7 +201,11 @@
 		reactionTimes = [];
 		nBackLevel = recordedNBackLevel;
 		totalTrials = recordedTotalTrials;
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+	}
+
+	function leavePractice() {
+		finishPractice(false);
 	}
 	
 	function generateSequence() {
@@ -229,7 +235,8 @@
 		trialStartTime = Date.now();
 		
 		// Auto-advance after 2 seconds
-		setTimeout(() => {
+		clearTimeout(trialTimeout);
+		trialTimeout = setTimeout(() => {
 			if (responses.length === currentTrial) {
 				// User didn't respond
 				responses.push(false);
@@ -273,7 +280,7 @@
 		meanRT = validRTs.length > 0 ? validRTs.reduce((a, b) => a + b, 0) / validRTs.length : 0;
 		
 		if (isPracticeMode) {
-			finishPractice();
+			finishPractice(true);
 			return;
 		}
 
@@ -478,7 +485,7 @@
 	{:else if stage === 'test'}
 		<div class="test-card test-active">
 			{#if isPracticeMode}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={leavePractice} />
 			{/if}
 			<div class="progress-bar">
 				<div class="progress-fill" style="width: {(currentTrial / totalTrials) * 100}%"></div>

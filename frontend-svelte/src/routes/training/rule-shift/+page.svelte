@@ -105,6 +105,18 @@
 		state = STATE.BLOCK_INTRO;
 	}
 
+	function leavePractice(completed = false) {
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		responses = [];
+		currentTrialIndex = 0;
+		currentTrial = sessionData.trials[0];
+		currentBlock = sessionData.blocks[0];
+		stimulusShownAt = 0;
+		state = STATE.INSTRUCTIONS;
+	}
+
 	function beginBlock() {
 		currentTrial = sessionData.trials[currentTrialIndex];
 		currentBlock = sessionData.blocks[currentTrial.block_index];
@@ -160,13 +172,7 @@
 
 	async function completeSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			sessionData = structuredClone(recordedSessionData);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			currentTrialIndex = 0;
-			currentTrial = sessionData.trials[0];
-			currentBlock = sessionData.blocks[0];
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -326,7 +332,7 @@
 	{:else if state === STATE.BLOCK_INTRO}
 		<section class="panel block-intro">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<p class="eyebrow">Block {currentBlock.block_index + 1} of {sessionData.blocks.length}</p>
 			<h2>{currentBlock.instruction}</h2>
@@ -350,7 +356,7 @@
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="play-header">
 				<div>

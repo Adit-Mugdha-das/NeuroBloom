@@ -9,7 +9,7 @@
 	import { locale } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
 
@@ -48,6 +48,8 @@
 	/** @type {"practice" | "recorded"} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let practiceAdvanceTimeout = null;
+	let practiceRunId = 0;
 
 	// Subscribe to user store
 	user.subscribe(value => {
@@ -90,6 +92,8 @@
 	}
 
 	function startPractice() {
+		practiceRunId += 1;
+		clearTimeout(practiceAdvanceTimeout);
 		/** @type {"practice" | "recorded"} */
 		const practiceMode = TASK_PLAY_MODE.PRACTICE;
 		playMode = practiceMode;
@@ -109,7 +113,9 @@
 		practiceAttempts = 0;
 	}
 
-	function finishPractice() {
+	function finishPractice(completed = true) {
+		practiceRunId += 1;
+		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		showStimulus = false;
 		showMask = false;
@@ -117,20 +123,23 @@
 		showPractice = false;
 		practiceComplete = false;
 		showInstructions = true;
-		practiceStatusMessage = getPracticeCopy($locale).complete;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
 	async function runPracticeTrial() {
+		const runId = practiceRunId;
 		showStimulus = true;
 		
 		// Show stimulus for practice duration
 		await sleep(practiceTrial.presentation_time_ms);
+		if (runId !== practiceRunId) return;
 		
 		showStimulus = false;
 		showMask = true;
 		
 		// Show mask briefly
 		await sleep(500);
+		if (runId !== practiceRunId) return;
 		
 		showMask = false;
 		waitingForResponse = true;
@@ -146,16 +155,28 @@
 				finishPractice();
 			} else {
 				// One more practice
-				setTimeout(() => runPracticeTrial(), 1500);
+				const runId = practiceRunId;
+				clearTimeout(practiceAdvanceTimeout);
+				practiceAdvanceTimeout = setTimeout(() => {
+					practiceAdvanceTimeout = null;
+					if (runId === practiceRunId) runPracticeTrial();
+				}, 1500);
 			}
 		} else {
 			// Wrong, explain and try again
 			alert(`The ${practiceTrial.longer_side} line was longer. Let's try again!`);
-			setTimeout(() => runPracticeTrial(), 2000);
+			const runId = practiceRunId;
+			clearTimeout(practiceAdvanceTimeout);
+			practiceAdvanceTimeout = setTimeout(() => {
+				practiceAdvanceTimeout = null;
+				if (runId === practiceRunId) runPracticeTrial();
+			}, 2000);
 		}
 	}
 
 	function startTest() {
+		practiceRunId += 1;
+		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
 		showPractice = false;
@@ -199,6 +220,11 @@
 		showMask = false;
 		waitingForResponse = true;
 	}
+
+	onDestroy(() => {
+		practiceRunId += 1;
+		clearTimeout(practiceAdvanceTimeout);
+	});
 
 	function handleResponse(answer) {
 		if (!waitingForResponse) return;
@@ -426,7 +452,7 @@
 
 		{:else if showPractice}
 			<div class="screen-card practice-screen">
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
 				<h2>Practice Mode</h2>
 				<p class="practice-intro">Practice with a slower flash to get familiar with the task.</p>
 

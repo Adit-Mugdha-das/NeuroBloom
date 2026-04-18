@@ -102,6 +102,17 @@
 		state = STATE.PLAYING;
 	}
 
+	function leavePractice(completed = false) {
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		responses = [];
+		currentTrialIndex = 0;
+		currentTrial = sessionData.trials[0];
+		trialStartedAt = 0;
+		state = STATE.INSTRUCTIONS;
+	}
+
 	function handleKeyDown(event) {
 		if (state !== STATE.PLAYING) return;
 		if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
@@ -144,12 +155,7 @@
 
 	async function completeSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			sessionData = structuredClone(recordedSessionData);
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			currentTrialIndex = 0;
-			currentTrial = sessionData.trials[0];
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -312,7 +318,7 @@
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="play-header">
 				<div>

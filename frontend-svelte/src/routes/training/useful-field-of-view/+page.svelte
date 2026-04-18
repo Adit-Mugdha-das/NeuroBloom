@@ -53,6 +53,14 @@
     });
 
     async function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+        if (stimulusTimer) {
+            clearTimeout(stimulusTimer);
+            stimulusTimer = null;
+        }
+        if (fixationTimer) {
+            clearTimeout(fixationTimer);
+            fixationTimer = null;
+        }
         playMode = nextMode;
         practiceStatusMessage = '';
         trialsCompleted = 0;
@@ -79,7 +87,8 @@
             gamePhase = 'ready';
             loading = false;
 
-            setTimeout(() => {
+            fixationTimer = setTimeout(() => {
+                fixationTimer = null;
                 showStimulusPhase();
             }, 1500);
         } catch (err) {
@@ -98,6 +107,31 @@
             showStimulus = false;
             gamePhase = 'response';
         }, trialData.presentation_time_ms);
+    }
+
+    function leavePractice(completed = false) {
+        if (stimulusTimer) {
+            clearTimeout(stimulusTimer);
+            stimulusTimer = null;
+        }
+        if (fixationTimer) {
+            clearTimeout(fixationTimer);
+            fixationTimer = null;
+        }
+
+        playMode = TASK_PLAY_MODE.RECORDED;
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+        results = null;
+        earnedBadges = [];
+        loading = false;
+        error = null;
+        centralResponse = null;
+        peripheralResponse = null;
+        responseStartTime = null;
+        responseTime = 0;
+        showStimulus = false;
+        trialsCompleted = 0;
+        gamePhase = 'intro';
     }
 
     function selectCentralTarget(target) {
@@ -149,11 +183,7 @@
     function nextTrial() {
         earnedBadges = [];
         if (playMode === TASK_PLAY_MODE.PRACTICE) {
-            playMode = TASK_PLAY_MODE.RECORDED;
-            practiceStatusMessage = getPracticeCopy($locale).complete;
-            results = null;
-            trialsCompleted = 0;
-            gamePhase = 'intro';
+            leavePractice(true);
             return;
         }
         if (trialsCompleted >= TRIALS_PER_SESSION) {
@@ -282,7 +312,7 @@
     {:else if gamePhase === 'ready'}
         <div class="page-content narrow">
             {#if playMode === TASK_PLAY_MODE.PRACTICE}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="phase-card">
                 <div class="trial-counter">Trial {trialsCompleted + 1} of {TRIALS_PER_SESSION}</div>
@@ -300,7 +330,7 @@
     {:else if gamePhase === 'stimulus'}
         {#if playMode === TASK_PLAY_MODE.PRACTICE}
             <div class="page-content narrow">
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             </div>
         {/if}
         <div class="stimulus-wrap">
@@ -339,7 +369,7 @@
     {:else if gamePhase === 'response'}
         <div class="page-content">
             {#if playMode === TASK_PLAY_MODE.PRACTICE}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="phase-card">
                 <h2>What Did You See?</h2>

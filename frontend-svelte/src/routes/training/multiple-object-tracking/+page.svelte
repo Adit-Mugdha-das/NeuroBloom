@@ -31,6 +31,8 @@
 	let startTime = null;
 	let timeRemaining = 0;
 	let timerInterval = null;
+	let highlightTimeout = null;
+	let trackingStartTimeout = null;
 
 	// ── Selection Timing ──────────────────────────────
 	let selectionStartTime = null;
@@ -76,6 +78,8 @@
 		stopAnimation();
 		if (timerInterval) clearInterval(timerInterval);
 		if (selectionTimerInterval) clearInterval(selectionTimerInterval);
+		if (highlightTimeout) clearTimeout(highlightTimeout);
+		if (trackingStartTimeout) clearTimeout(trackingStartTimeout);
 	});
 
 	// ── Game Logic ─────────────────────────────────────
@@ -104,6 +108,24 @@
 	}
 
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		stopAnimation();
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (selectionTimerInterval) {
+			clearInterval(selectionTimerInterval);
+			selectionTimerInterval = null;
+		}
+		if (highlightTimeout) {
+			clearTimeout(highlightTimeout);
+			highlightTimeout = null;
+		}
+		if (trackingStartTimeout) {
+			clearTimeout(trackingStartTimeout);
+			trackingStartTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		selectedObjects = new Set();
@@ -119,10 +141,52 @@
 			show_highlight: obj.is_target
 		}));
 
-		setTimeout(() => {
+		highlightTimeout = setTimeout(() => {
+			highlightTimeout = null;
 			objects = objects.map(obj => ({ ...obj, show_highlight: false }));
-			setTimeout(() => { startTracking(); }, PAUSE_BEFORE_TRACKING);
+			trackingStartTimeout = setTimeout(() => {
+				trackingStartTimeout = null;
+				startTracking();
+			}, PAUSE_BEFORE_TRACKING);
 		}, HIGHLIGHT_DURATION);
+	}
+
+	function leavePractice(completed = false) {
+		stopAnimation();
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (selectionTimerInterval) {
+			clearInterval(selectionTimerInterval);
+			selectionTimerInterval = null;
+		}
+		if (highlightTimeout) {
+			clearTimeout(highlightTimeout);
+			highlightTimeout = null;
+		}
+		if (trackingStartTimeout) {
+			clearTimeout(trackingStartTimeout);
+			trackingStartTimeout = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		selectedObjects = new Set();
+		results = null;
+		earnedBadges = [];
+		selectionStartTime = null;
+		selectionElapsed = 0;
+		timeRemaining = 0;
+		if (trialData?.objects) {
+			objects = trialData.objects.map((obj) => ({
+				...obj,
+				x: obj.x,
+				y: obj.y,
+				show_highlight: false
+			}));
+		}
+		phase = 'intro';
 	}
 
 	function startTracking() {
@@ -208,14 +272,7 @@
 
 	function nextTrial() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			selectedObjects = new Set();
-			results = null;
-			earnedBadges = [];
-			selectionStartTime = null;
-			selectionElapsed = 0;
-			phase = 'intro';
+			leavePractice(true);
 			return;
 		}
 		selectedObjects = new Set();
@@ -248,7 +305,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			{#if loadError}
@@ -368,7 +425,7 @@
 			<!-- Arena Header -->
 			<div class="arena-header-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				{#if phase === 'highlighting'}

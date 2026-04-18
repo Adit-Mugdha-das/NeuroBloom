@@ -147,6 +147,11 @@
 	}
 
 	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		difficulty = recordedDifficulty;
@@ -165,6 +170,30 @@
 		}, 100);
 	}
 
+	async function leavePractice(completed = false) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		results = null;
+		userAnswer = null;
+		difficulty = recordedDifficulty;
+
+		if (completed) {
+			gamePhase = 'loading';
+			await loadTrial();
+			return;
+		}
+
+		if (recordedTrialData) {
+			applyTrialView(cloneData(recordedTrialData));
+		}
+		gamePhase = 'intro';
+	}
+
 	function handleResponse(answer) {
 		if (userAnswer !== null) return;
 		userAnswer = answer;
@@ -174,12 +203,7 @@
 
 	async function submitResults() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			results = null;
-			userAnswer = null;
-			gamePhase = 'loading';
-			await loadTrial();
+			await leavePractice(true);
 			return;
 		}
 		saveError = false;
@@ -238,7 +262,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			{#if loadError}
@@ -396,7 +420,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Game Status Bar -->

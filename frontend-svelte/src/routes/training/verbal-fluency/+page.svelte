@@ -10,7 +10,7 @@
 	import { formatNumber, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	const ENGLISH_VARIANT_SUFFIXES = ['ing', 'ed', 's', 'es', 'er', 'est', 'ly', 'tion', 'ness', 'ment'];
 	const BANGLA_VARIANT_SUFFIXES = ['গুলো', 'গুলি', 'দের', 'ের', 'টা', 'টি', 'রা', 'তে', 'র'];
@@ -38,6 +38,8 @@
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
+	let focusTimeout = null;
+	let roundTransitionTimeout = null;
 
 	function taskLocale() {
 		return sessionData?.locale === 'bn' ? 'bn' : $locale;
@@ -214,6 +216,19 @@
 
 	/** @param {string} nextMode */
 	function startFirstLetter(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timer) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (focusTimeout) {
+			clearTimeout(focusTimeout);
+			focusTimeout = null;
+		}
+		if (roundTransitionTimeout) {
+			clearTimeout(roundTransitionTimeout);
+			roundTransitionTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -239,9 +254,42 @@
 				endLetterRound();
 			}
 		}, 1000);
-		setTimeout(() => {
+		if (focusTimeout) clearTimeout(focusTimeout);
+		focusTimeout = setTimeout(() => {
+			focusTimeout = null;
 			focusWordInput();
 		}, 60);
+	}
+
+	function leavePractice(completed = false) {
+		if (timer) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (focusTimeout) {
+			clearTimeout(focusTimeout);
+			focusTimeout = null;
+		}
+		if (roundTransitionTimeout) {
+			clearTimeout(roundTransitionTimeout);
+			roundTransitionTimeout = null;
+		}
+
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentLetterIndex = 0;
+		currentLetter = '';
+		timeRemaining = sessionData?.time_per_letter_seconds || 60;
+		currentInput = '';
+		submittedWords = [];
+		validWords = [];
+		invalidWords = [];
+		seenRoots = new Set();
+		allLetterResults = [];
+		results = null;
+		earnedBadges = [];
+		gamePhase = 'intro';
 	}
 
 	function submitWord() {
@@ -256,7 +304,9 @@
 			invalidWords = [...invalidWords, { word, reason: validation.reason }];
 		}
 		currentInput = '';
-		setTimeout(() => {
+		if (focusTimeout) clearTimeout(focusTimeout);
+		focusTimeout = setTimeout(() => {
+			focusTimeout = null;
 			focusWordInput();
 		}, 0);
 	}
@@ -282,18 +332,34 @@
 		if (currentLetterIndex < sessionData.letters.length - 1) {
 			currentLetterIndex++;
 			gamePhase = 'between_letters';
-			setTimeout(() => startLetterRound(), 2000);
+			if (roundTransitionTimeout) clearTimeout(roundTransitionTimeout);
+			roundTransitionTimeout = setTimeout(() => {
+				roundTransitionTimeout = null;
+				startLetterRound();
+			}, 2000);
 		} else {
 			if (playMode === TASK_PLAY_MODE.PRACTICE) {
-				sessionData = structuredClone(recordedSessionData);
-				playMode = TASK_PLAY_MODE.RECORDED;
-				practiceStatusMessage = getPracticeCopy($locale).complete;
-				gamePhase = 'intro';
+				leavePractice(true);
 				return;
 			}
 			finishSession();
 		}
 	}
+
+	onDestroy(() => {
+		if (timer) {
+			clearInterval(timer);
+			timer = null;
+		}
+		if (focusTimeout) {
+			clearTimeout(focusTimeout);
+			focusTimeout = null;
+		}
+		if (roundTransitionTimeout) {
+			clearTimeout(roundTransitionTimeout);
+			roundTransitionTimeout = null;
+		}
+	});
 
 	async function finishSession() {
 		try {
@@ -364,7 +430,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			{#if loadError}
@@ -499,7 +565,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status Bar -->

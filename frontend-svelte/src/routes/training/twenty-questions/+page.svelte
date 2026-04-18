@@ -28,6 +28,9 @@
 	/** @type {string} */
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let recordedGameData = null;
+	let focusTimeout = null;
+	let scrollTimeout = null;
 
 	let loadError = false;
 	let askError = false;
@@ -83,7 +86,8 @@
 			);
 			if (!response.ok) throw new Error('Failed to load game');
 			const data = await response.json();
-			gameData = data.game_data;
+			gameData = structuredClone(data.game_data);
+			recordedGameData = structuredClone(data.game_data);
 			targetObject = gameData.target_object_name;
 			targetAttributes = gameData.target_attributes;
 			gamePhase = 'intro';
@@ -95,8 +99,22 @@
 
 	/** @param {string} nextMode */
 	function startGame(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (focusTimeout) {
+			clearTimeout(focusTimeout);
+			focusTimeout = null;
+		}
+		if (scrollTimeout) {
+			clearTimeout(scrollTimeout);
+			scrollTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
+		if (recordedGameData) {
+			gameData = structuredClone(recordedGameData);
+			targetObject = gameData.target_object_name;
+			targetAttributes = gameData.target_attributes;
+		}
 		questionsAsked = 0;
 		questionsHistory = [];
 		questionInput = '';
@@ -104,9 +122,46 @@
 		showGiveUpConfirm = false;
 		askError = false;
 		gamePhase = 'playing';
-		setTimeout(() => {
+		focusTimeout = setTimeout(() => {
+			focusTimeout = null;
 			document.getElementById('question-input')?.focus();
 		}, 100);
+	}
+
+	async function leavePractice(completed = false) {
+		if (focusTimeout) {
+			clearTimeout(focusTimeout);
+			focusTimeout = null;
+		}
+		if (scrollTimeout) {
+			clearTimeout(scrollTimeout);
+			scrollTimeout = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		questionsAsked = 0;
+		questionsHistory = [];
+		questionInput = '';
+		guessInput = '';
+		results = null;
+		earnedBadges = [];
+		showGiveUpConfirm = false;
+		askError = false;
+		saveError = false;
+
+		if (completed) {
+			gamePhase = 'loading';
+			await loadGame();
+			return;
+		}
+
+		if (recordedGameData) {
+			gameData = structuredClone(recordedGameData);
+			targetObject = gameData.target_object_name;
+			targetAttributes = gameData.target_attributes;
+		}
+		gamePhase = 'intro';
 	}
 
 	async function askQuestion() {
@@ -135,10 +190,14 @@
 			];
 			questionsAsked++;
 			questionInput = '';
-			setTimeout(() => {
+			if (focusTimeout) clearTimeout(focusTimeout);
+			focusTimeout = setTimeout(() => {
+				focusTimeout = null;
 				document.getElementById('question-input')?.focus();
 			}, 0);
-			setTimeout(() => {
+			if (scrollTimeout) clearTimeout(scrollTimeout);
+			scrollTimeout = setTimeout(() => {
+				scrollTimeout = null;
 				const el = document.getElementById('questions-history');
 				if (el) el.scrollTop = el.scrollHeight;
 			}, 100);
@@ -162,12 +221,7 @@
 
 	async function endGame(correctlyIdentified, userGuess) {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			results = null;
-			earnedBadges = [];
-			gamePhase = 'loading';
-			await loadGame();
+			await leavePractice(true);
 			return;
 		}
 		saveError = false;
@@ -235,7 +289,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			{#if loadError}
@@ -359,7 +413,7 @@
 
 			<div class="game-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<!-- Status Bar -->

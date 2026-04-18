@@ -9,7 +9,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
     import { formatNumber, formatPercent, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
     import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
 
     const STATE = {
         LOADING:        'loading',
@@ -50,6 +50,7 @@
     let recordedSessionData = null;
     let loadError = false;
     let saveError = false;
+    let sessionRunId = 0;
 
     function t(text) { return translateText(text, $locale); }
     function n(value, options = {}) { return formatNumber(value, $locale, options); }
@@ -106,12 +107,20 @@
 
         return () => {
             isDisposed = true;
+            sessionRunId += 1;
             window.removeEventListener('keydown', handleKeyDown);
             if (speechEnabled) window.speechSynthesis.cancel();
         };
     });
 
+    onDestroy(() => {
+        isDisposed = true;
+        sessionRunId += 1;
+        if (speechEnabled) window.speechSynthesis.cancel();
+    });
+
     function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+    function isRunActive(runId) { return !isDisposed && runId === sessionRunId; }
 
     async function loadSession() {
         loadError = false;
@@ -181,6 +190,10 @@
 
     /** @param {"practice" | "recorded"} nextMode */
     async function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+        sessionRunId += 1;
+        const runId = sessionRunId;
+        if (speechEnabled) window.speechSynthesis.cancel();
+
         playMode = nextMode;
         practiceStatusMessage = '';
         sessionData = nextMode === TASK_PLAY_MODE.PRACTICE
@@ -189,23 +202,55 @@
         trials = structuredClone(sessionData.trials);
         sessionStartedAt = Date.now();
         currentTrialIndex = 0;
-        await startTrial();
+        currentTrial = null;
+        currentStimulusIndex = -1;
+        highlightedPosition = null;
+        currentLetter = '';
+        feedbackSummary = null;
+        visualResponseSelected = false;
+        audioResponseSelected = false;
+        responseEnabled = false;
+        responseLocked = false;
+        await startTrial(runId);
     }
 
-    async function startTrial() {
+    function leavePractice(completed = false) {
+        sessionRunId += 1;
+        if (speechEnabled) window.speechSynthesis.cancel();
+        playMode = TASK_PLAY_MODE.RECORDED;
+        sessionData = structuredClone(recordedSessionData);
+        trials = structuredClone(recordedTrials);
+        currentTrialIndex = 0;
+        currentTrial = null;
+        currentStimulusIndex = -1;
+        highlightedPosition = null;
+        currentLetter = '';
+        feedbackSummary = null;
+        visualResponseSelected = false;
+        audioResponseSelected = false;
+        responseEnabled = false;
+        responseLocked = false;
+        stepStartTime = 0;
+        lastActionTime = 0;
+        sessionStartedAt = 0;
+        practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+        state = STATE.INSTRUCTIONS;
+    }
+
+    async function startTrial(runId = sessionRunId) {
         currentTrial = structuredClone(trials[currentTrialIndex]);
         currentStimulusIndex = -1;
         feedbackSummary = null;
         state = STATE.ROUND_INTRO;
         await delay(1400);
-        if (isDisposed) return;
+        if (!isRunActive(runId)) return;
         state = STATE.PLAYING;
-        await playTrial(currentTrial);
+        await playTrial(currentTrial, runId);
     }
 
-    async function playTrial(trial) {
+    async function playTrial(trial, runId = sessionRunId) {
         for (let index = 0; index < trial.stimuli.length; index += 1) {
-            if (isDisposed) return;
+            if (!isRunActive(runId)) return;
             const stim = trial.stimuli[index];
             currentStimulusIndex = index;
             currentLetter = stim.letter;
@@ -219,10 +264,10 @@
 
             speakLetter(stim.letter);
             await delay(trial.stimulus_ms);
-            if (isDisposed) return;
+            if (!isRunActive(runId)) return;
             highlightedPosition = null;
             await delay(trial.response_window_ms);
-            if (isDisposed) return;
+            if (!isRunActive(runId)) return;
 
             responseLocked = true;
             stim.user_visual_match = responseEnabled ? visualResponseSelected : false;
@@ -234,13 +279,13 @@
         feedbackSummary = summarizeTrial(currentTrial);
         state = STATE.TRIAL_FEEDBACK;
         await delay(1800);
-        if (isDisposed) return;
+        if (!isRunActive(runId)) return;
 
         if (currentTrialIndex < trials.length - 1) {
             currentTrialIndex += 1;
-            await startTrial();
+            await startTrial(runId);
         } else {
-            await submitSession();
+            await submitSession(runId);
         }
     }
 
@@ -253,13 +298,10 @@
         };
     }
 
-    async function submitSession() {
+    async function submitSession(runId = sessionRunId) {
+        if (!isRunActive(runId)) return;
         if (playMode === TASK_PLAY_MODE.PRACTICE) {
-            playMode = TASK_PLAY_MODE.RECORDED;
-            sessionData = structuredClone(recordedSessionData);
-            trials = structuredClone(recordedTrials);
-            practiceStatusMessage = getPracticeCopy($locale).complete;
-            state = STATE.INSTRUCTIONS;
+            leavePractice(true);
             return;
         }
 
@@ -407,7 +449,7 @@
     {:else if state === STATE.ROUND_INTRO}
         <div class="play-wrap">
             {#if playMode === TASK_PLAY_MODE.PRACTICE}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="play-card centred">
                 <div class="round-badge">{roundLabel(currentTrialIndex + 1, trials.length)}</div>
@@ -420,7 +462,7 @@
     {:else if state === STATE.PLAYING}
         <div class="play-wrap">
             {#if playMode === TASK_PLAY_MODE.PRACTICE}
-                <PracticeModeBanner locale={$locale} />
+                <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="play-card">
 

@@ -24,6 +24,7 @@
 	let startTime = null;
 	let elapsedTime = 0;
 	let timerInterval = null;
+	let cueTimeout = null;
 	let trialStartTime = null;
 	let showCue = false;
 	let cueText = '';
@@ -174,6 +175,15 @@
 
 	/** @param {string} nextMode */
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		restoreRecordedSession();
@@ -200,12 +210,48 @@
 		trialStartTime = Date.now();
 		userAnswer = '';
 		const trial = getCurrentTrial();
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
 		if (trial && currentBlock.name === 'alternating') {
 			showCue = true;
 			cueText = trial.operation === 'add' ? '+3' : '-3';
-			setTimeout(() => {
+			cueTimeout = setTimeout(() => {
+				cueTimeout = null;
 				showCue = false;
 			}, sessionData.config.cue_duration_ms);
+		}
+	}
+
+	async function leavePractice(completed = false) {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
+
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentBlock = null;
+		currentBlockIndex = 0;
+		currentTrialIndex = 0;
+		responses = [];
+		showCue = false;
+		cueText = '';
+		userAnswer = '';
+		results = null;
+		startTime = null;
+		elapsedTime = 0;
+		phase = 'intro';
+
+		if (completed) {
+			await loadSession();
+		} else {
+			restoreRecordedSession();
 		}
 	}
 
@@ -283,15 +329,7 @@
 			timerInterval = null;
 		}
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			currentBlock = null;
-			currentBlockIndex = 0;
-			currentTrialIndex = 0;
-			responses = [];
-			showCue = false;
-			phase = 'intro';
-			await loadSession();
+			await leavePractice(true);
 			return;
 		}
 		try {
@@ -337,6 +375,10 @@
 			clearInterval(timerInterval);
 			timerInterval = null;
 		}
+		if (cueTimeout) {
+			clearTimeout(cueTimeout);
+			cueTimeout = null;
+		}
 	});
 </script>
 
@@ -365,7 +407,7 @@
 			</div>
 
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 
 			<!-- Task Concept -->
@@ -552,7 +594,7 @@
 			<!-- Block Transition -->
 			<div class="transition-card">
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
-					<PracticeModeBanner locale={$locale} />
+					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
 
 				<div class="transition-badge">
@@ -587,7 +629,7 @@
 
 				<div class="task-container">
 					{#if playMode === TASK_PLAY_MODE.PRACTICE}
-						<PracticeModeBanner locale={$locale} />
+						<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 					{/if}
 
 					<!-- Status Bar -->

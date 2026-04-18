@@ -36,6 +36,7 @@
 	let sessionResults = null;
 	let newBadges = [];
 	let timerHandle;
+	let countdownHandle;
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
@@ -55,6 +56,7 @@
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 			if (timerHandle) clearTimeout(timerHandle);
+			if (countdownHandle) clearInterval(countdownHandle);
 		};
 	});
 
@@ -104,6 +106,9 @@
 	}
 
 	function startTask(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (timerHandle) clearTimeout(timerHandle);
+		if (countdownHandle) clearInterval(countdownHandle);
+
 		playMode = nextMode;
 		practiceStatusMessage = '';
 		sessionData =
@@ -116,13 +121,38 @@
 		currentTrialIndex = 0;
 		responses = [];
 
-		const countdownInterval = setInterval(() => {
+		countdownHandle = setInterval(() => {
 			countdown -= 1;
 			if (countdown <= 0) {
-				clearInterval(countdownInterval);
+				clearInterval(countdownHandle);
+				countdownHandle = null;
 				beginTrial();
 			}
 		}, 1000);
+	}
+
+	function leavePractice(completed = false) {
+		if (timerHandle) {
+			clearTimeout(timerHandle);
+			timerHandle = null;
+		}
+		if (countdownHandle) {
+			clearInterval(countdownHandle);
+			countdownHandle = null;
+		}
+
+		sessionData = structuredClone(recordedSessionData);
+		playMode = TASK_PLAY_MODE.RECORDED;
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentTrialIndex = 0;
+		currentTrial = null;
+		progress = 0;
+		countdown = 3;
+		stimulusVisible = false;
+		responseWindowOpen = false;
+		selectedKey = '';
+		responses = [];
+		state = STATE.INSTRUCTIONS;
 	}
 
 	function beginTrial() {
@@ -176,10 +206,7 @@
 
 	async function completeSession() {
 		if (playMode === TASK_PLAY_MODE.PRACTICE) {
-			sessionData = recordedSessionData;
-			playMode = TASK_PLAY_MODE.RECORDED;
-			practiceStatusMessage = getPracticeCopy($locale).complete;
-			state = STATE.INSTRUCTIONS;
+			leavePractice(true);
 			return;
 		}
 
@@ -291,7 +318,7 @@
 	{:else if state === STATE.READY}
 		<section class="panel ready">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<p class="eyebrow">Get Ready</p>
 			<h2>{countdown}</h2>
@@ -300,7 +327,7 @@
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
-				<PracticeModeBanner locale={$locale} />
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
 			<div class="play-header">
 				<div>
