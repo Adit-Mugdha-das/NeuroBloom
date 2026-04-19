@@ -3325,6 +3325,7 @@ class FlankerSubmitRequest(BaseModel):
     difficulty: int
     session_data: dict
     responses: List[dict]
+    task_id: Optional[str] = None
 
 
 @router.post("/tasks/flanker/generate/{user_id}")

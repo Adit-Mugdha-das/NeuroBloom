@@ -6,6 +6,7 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import {
 		formatNumber,
 		formatPercent,
@@ -15,6 +16,7 @@
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -519,6 +521,7 @@
 
 	<!-- ── INTRO ──────────────────────────────────────────────── -->
 	{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			<!-- Title row -->
@@ -830,6 +833,7 @@
 
 	<!-- ── RESULTS ─────────────────────────────────────────────── -->
 	{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			{#if newBadges.length > 0}
@@ -1680,3 +1684,5 @@
 		.metrics-grid { grid-template-columns: 1fr; }
 	}
 </style>
+
+

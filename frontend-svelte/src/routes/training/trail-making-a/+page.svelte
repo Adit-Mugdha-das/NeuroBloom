@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -483,6 +485,7 @@
 		{#if state === STATE.LOADING}
 			<LoadingSkeleton variant="card" count={3} />
 		{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
@@ -685,6 +688,7 @@
 			</div>
 
 		{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="screen-card complete-screen">
 				{#if sessionResults}
 					{@const perfColor = getPerformanceColor(sessionResults.metrics.performance_level)}
@@ -1628,3 +1632,4 @@
 		.screen-card { padding: 1.25rem; }
 	}
 </style>
+

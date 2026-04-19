@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -210,10 +212,10 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-content">
 			<div class="hero-banner">
 				<div class="hero-inner">
-					<button class="back-btn" on:click={() => goto('/training')}>← Training</button>
 					<div class="hero-text">
 						<span class="hero-badge">Visual Scanning · Spatial Attention</span>
 						<h1 class="hero-title">Landmark Task</h1>
@@ -354,6 +356,7 @@
 			</div>
 		</section>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
 			<div class="header">
 				<div>
@@ -499,21 +502,6 @@
 		font-size: 0.95rem;
 		margin: 0;
 	}
-
-	.back-btn {
-		background: rgba(255, 255, 255, 0.15);
-		color: white;
-		border: 1.5px solid rgba(255, 255, 255, 0.35);
-		padding: 0.6rem 1.25rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-size: 0.875rem;
-		font-weight: 600;
-		white-space: nowrap;
-		transition: background 0.2s;
-		flex-shrink: 0;
-	}
-	.back-btn:hover { background: rgba(255, 255, 255, 0.28); }
 
 	.practice-note {
 		background: rgba(254, 249, 195, 0.92);
@@ -827,6 +815,6 @@
 		.header, .play-header { flex-direction: column; }
 		.hero-inner { flex-direction: column; text-align: center; }
 		.hero-text { text-align: center; }
-		.back-btn { align-self: flex-start; }
 	}
 </style>
+

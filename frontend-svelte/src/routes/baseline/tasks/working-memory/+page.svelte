@@ -4,6 +4,7 @@
 	import { tasks, training } from '$lib/api';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import {
 		formatNumber,
 		formatPercent,
@@ -13,6 +14,7 @@
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -357,12 +359,9 @@
 
 <div class="wm-container" class:intro-layout={stage === 'intro'} data-localize-skip>
 	{#if stage === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 		<div class="page-content">
-			<div class="task-header">
-				<button class="back-btn" on:click={backToDashboard}>
-					{isTrainingMode ? t('Back to Training') : t('Back to Dashboard')}
-				</button>
-				<h1 class="task-title">{t('Working Memory Test')}</h1>
+			<div class="task-header">				<h1 class="task-title">{t('Working Memory Test')}</h1>
 			</div>
 
 			<div class="concept-card">
@@ -534,6 +533,7 @@
 		</div>
 	
 	{:else if stage === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 		<div class="test-card">
 			<h1>🎉 {t('Test Complete!')}</h1>
 			
@@ -651,25 +651,6 @@
 		align-items: center;
 		gap: 1.25rem;
 		flex-wrap: wrap;
-	}
-
-	.back-btn {
-		background: white;
-		color: #0e7490;
-		border: 2px solid #0e7490;
-		padding: 0.6rem 1.25rem;
-		border-radius: 10px;
-		cursor: pointer;
-		font-size: 0.95rem;
-		font-weight: 600;
-		white-space: nowrap;
-		transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-	}
-
-	.back-btn:hover {
-		background: #0e7490;
-		color: white;
-		transform: translateY(-1px);
 	}
 
 	.task-title {
@@ -1306,3 +1287,6 @@
 		}
 	}
 </style>
+
+
+

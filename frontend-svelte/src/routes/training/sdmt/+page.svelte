@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -321,6 +323,7 @@
 		</div>
 
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
@@ -525,6 +528,7 @@
 		</div>
 
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="screen-card complete-screen">
 			<h1>{t('SDMT Complete!')}</h1>
 
@@ -1461,3 +1465,4 @@
 		.metrics-grid { grid-template-columns: 1fr 1fr; }
 	}
 </style>
+

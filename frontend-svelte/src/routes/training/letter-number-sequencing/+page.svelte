@@ -4,6 +4,9 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import {
 	  formatNumber,
 	  formatPercent,
@@ -12,7 +15,9 @@
 	  localizeStimulusSymbol,
 	  translateText
 	} from '$lib/i18n';
-	import { onMount } from 'svelte';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
+	import { onDestroy, onMount } from 'svelte';
 
 	const STATE = {
 		LOADING: 'loading',
@@ -27,6 +32,7 @@
 	let state = STATE.LOADING;
 	let difficulty = 5;
 	let trials = [];
+	let recordedTrials = [];
 	let currentTrialIndex = 0;
 	let currentTrial = null;
 	let userNumbers = [];
@@ -36,6 +42,12 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let sessionRunId = 0;
+	let isDisposed = false;
+	let lastResponseCorrect = false;
+	const scheduledTimeouts = new Set();
 
 	const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 	const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
@@ -54,6 +66,48 @@
 			maximumFractionDigits: 1,
 			...options
 		});
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function clearScheduledTimeouts() {
+		for (const timeoutId of scheduledTimeouts) {
+			clearTimeout(timeoutId);
+		}
+		scheduledTimeouts.clear();
+	}
+
+	function invalidateRun() {
+		sessionRunId += 1;
+		clearScheduledTimeouts();
+	}
+
+	function scheduleTimeout(callback, delay, runId = sessionRunId) {
+		const timeoutId = setTimeout(() => {
+			scheduledTimeouts.delete(timeoutId);
+			if (isDisposed || runId !== sessionRunId) return;
+			callback();
+		}, delay);
+
+		scheduledTimeouts.add(timeoutId);
+		return timeoutId;
+	}
+
+	function resetSessionState() {
+		currentTrialIndex = 0;
+		currentTrial = null;
+		userNumbers = [];
+		userLetters = [];
+		currentItemIndex = 0;
+		startTime = 0;
+		sessionResults = null;
+		lastResponseCorrect = false;
 	}
 
 	function symbol(value) {
@@ -109,8 +163,14 @@
 		await loadSession();
 	});
 
+	onDestroy(() => {
+		isDisposed = true;
+		invalidateRun();
+	});
+
 	async function loadSession() {
 		try {
+			state = STATE.LOADING;
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
@@ -144,12 +204,16 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map((trial) => ({
+			recordedTrials = data.trials.map((trial) => ({
 				...trial,
 				user_numbers: [],
 				user_letters: [],
 				reaction_time: 0
 			}));
+			trials = cloneData(recordedTrials);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = '';
+			resetSessionState();
 
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
@@ -159,42 +223,66 @@
 		}
 	}
 
-	function startSession() {
-		state = STATE.LOADING;
-		currentTrialIndex = 0;
-		setTimeout(() => startTrial(), 500);
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (!recordedTrials.length) return;
+
+		invalidateRun();
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		resetSessionState();
+		const practicePayload = buildPracticePayload('letter-number-sequencing', { trials: recordedTrials });
+		trials = nextMode === TASK_PLAY_MODE.PRACTICE ? practicePayload.trials : cloneData(recordedTrials);
+		startTrial();
 	}
 
-	async function startTrial() {
+	function leavePractice(completed = false) {
+		invalidateRun();
+		playMode = TASK_PLAY_MODE.RECORDED;
+		trials = cloneData(recordedTrials);
+		resetSessionState();
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		state = STATE.INSTRUCTIONS;
+	}
+
+	function startTrial() {
+		const runId = sessionRunId;
 		currentTrial = trials[currentTrialIndex];
 		userNumbers = [];
 		userLetters = [];
-
+		currentItemIndex = -1;
 		state = STATE.READY;
-		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-		state = STATE.SHOWING;
-		await playSequence();
-
-		state = STATE.INPUT;
-		startTime = Date.now();
+		scheduleTimeout(() => {
+			state = STATE.SHOWING;
+			playSequence(runId);
+		}, 1000, runId);
 	}
 
-	async function playSequence() {
+	function playSequence(runId = sessionRunId, index = 0) {
+		if (!currentTrial) return;
+
 		const displayTime = currentTrial.display_ms ?? 1000;
 		const intervalTime = currentTrial.interval_ms ?? 400;
 
-		for (let index = 0; index < currentTrial.sequence.length; index += 1) {
-			currentItemIndex = index;
-			await new Promise((resolve) => setTimeout(resolve, displayTime));
-
-			if (index < currentTrial.sequence.length - 1) {
-				currentItemIndex = -1;
-				await new Promise((resolve) => setTimeout(resolve, intervalTime));
-			}
+		if (index >= currentTrial.sequence.length) {
+			currentItemIndex = -1;
+			state = STATE.INPUT;
+			startTime = Date.now();
+			return;
 		}
 
-		currentItemIndex = -1;
+		currentItemIndex = index;
+		scheduleTimeout(() => {
+			currentItemIndex = -1;
+			if (index >= currentTrial.sequence.length - 1) {
+				playSequence(runId, index + 1);
+				return;
+			}
+
+			scheduleTimeout(() => {
+				playSequence(runId, index + 1);
+			}, intervalTime, runId);
+		}, displayTime, runId);
 	}
 
 	function addNumber(value) {
@@ -232,17 +320,30 @@
 		trials[currentTrialIndex].user_numbers = userNumbers;
 		trials[currentTrialIndex].user_letters = userLetters;
 		trials[currentTrialIndex].reaction_time = reactionTime;
+		lastResponseCorrect = checkCorrect();
 
 		state = STATE.FEEDBACK;
 
-		setTimeout(() => {
+		const runId = sessionRunId;
+		scheduleTimeout(() => {
 			if (currentTrialIndex < trials.length - 1) {
 				currentTrialIndex += 1;
 				startTrial();
-			} else {
-				submitSession();
+				return;
 			}
-		}, 1500);
+
+			if (playMode === TASK_PLAY_MODE.PRACTICE) {
+				leavePractice(true);
+				return;
+			}
+
+			submitSession();
+		}, 1500, runId);
+	}
+
+	function skipTrial() {
+		if (state !== STATE.INPUT) return;
+		submitResponse();
 	}
 
 	function checkCorrect() {
@@ -293,6 +394,7 @@
 			<LoadingSkeleton variant="card" count={3} />
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
@@ -394,16 +496,19 @@
 				</div>
 			</div>
 
-			<div class="button-group">
-				<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-					{t('Begin Training')}
-				</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{t('Back to Dashboard')}
-				</button>
-			</div>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Begin Training')}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession()}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="ready-screen">
 			<div class="ready-card">
 				<h2>{trialLabel(currentTrialIndex + 1, trials.length)}</h2>
@@ -411,6 +516,9 @@
 			</div>
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="trial-screen">
 			<div class="trial-header">
 				<div class="trial-info">
@@ -514,21 +622,24 @@
 					<button class="submit-btn" on:click={submitResponse}>
 						{t('Submit Answer')}
 					</button>
-					<button class="skip-btn" on:click={startTrial}>
+					<button class="skip-btn" on:click={skipTrial}>
 						{t('Skip Trial')}
 					</button>
 				</div>
 			{/if}
 		</div>
 	{:else if state === STATE.FEEDBACK}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="feedback-screen">
-			<div class="feedback-icon {checkCorrect() ? 'correct' : 'incorrect'}">
-				{checkCorrect() ? '✓' : '✗'}
+			<div class="feedback-icon {lastResponseCorrect ? 'correct' : 'incorrect'}">
+				{lastResponseCorrect ? '✓' : '✗'}
 			</div>
 			<p class="feedback-text">
-				{checkCorrect() ? t('Correct!') : t('Incorrect')}
+				{lastResponseCorrect ? t('Correct!') : t('Incorrect')}
 			</p>
-			{#if !checkCorrect()}
+			{#if !lastResponseCorrect}
 				<div class="correct-answer">
 					<p>{t('Correct answer:')}</p>
 					<div class="answer-display">
@@ -540,6 +651,7 @@
 			{/if}
 		</div>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="complete-screen">
 			<h1>{t('Session Complete!')}</h1>
 
@@ -618,7 +730,7 @@
 			</div>
 
 			<div class="button-group">
-				<button class="start-button" on:click={() => goto('/training')}>{t('Back to Training')}</button>
+				<button class="start-button" on:click={loadSession}>{t('Train Again')}</button>
 				<button class="btn-secondary" on:click={() => goto('/dashboard')}>{t('View Dashboard')}</button>
 			</div>
 		</div>

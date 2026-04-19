@@ -4,6 +4,7 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import {
 	  formatNumber,
 	  formatPercent,
@@ -14,6 +15,7 @@
 	  translateText
 	} from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
@@ -433,6 +435,7 @@
 			<LoadingSkeleton variant="card" count={3} />
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
@@ -669,6 +672,7 @@
 			{/if}
 		</div>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="complete-screen">
 			<h1>{t('Session Complete!')}</h1>
 			
@@ -1569,3 +1573,4 @@
 		line-height: 1.6;
 	}
 </style>
+

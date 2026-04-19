@@ -7,8 +7,10 @@
     import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+    import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, formatPercent, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
     import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+    import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onDestroy, onMount } from 'svelte';
 
     const STATE = {
@@ -355,11 +357,11 @@
 
     <!-- Instructions -->
     {:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
         <div class="page-content">
 
             <!-- Header -->
             <div class="task-header">
-                <button class="back-btn" on:click={() => goto('/training')}>Back to Training</button>
                 <div class="header-center">
                     <h1 class="task-title">Dual N-Back</h1>
                     <DifficultyBadge {difficulty} domain="Working Memory" />
@@ -552,10 +554,10 @@
 
     <!-- Complete -->
     {:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
         <div class="page-content">
 
             <div class="task-header">
-                <button class="back-btn" on:click={() => goto('/training')}>Back to Training</button>
                 <div class="header-center">
                     <h1 class="task-title">Session Complete</h1>
                 </div>
@@ -657,20 +659,6 @@
         align-items: center;
         gap: 1rem;
     }
-
-    .back-btn {
-        background: white;
-        color: #4338ca;
-        border: 2px solid #4338ca;
-        padding: 0.6rem 1.25rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 600;
-        white-space: nowrap;
-        transition: background 0.2s, color 0.2s;
-    }
-    .back-btn:hover { background: #4338ca; color: white; }
 
     .header-center {
         flex: 1;
@@ -1149,7 +1137,6 @@
     @media (max-width: 768px) {
         .nback-container { padding: 1rem; }
         .task-title { font-size: 1.35rem; }
-        .back-btn { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
         .play-top { flex-direction: column; }
         .grid-board { grid-template-columns: repeat(3, minmax(52px, 1fr)); gap: 0.6rem; }
         .response-row { flex-direction: column; }
@@ -1158,3 +1145,4 @@
         .results-body { padding: 1.25rem; }
     }
 </style>
+

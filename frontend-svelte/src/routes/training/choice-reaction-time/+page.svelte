@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 
 	const STATE = {
@@ -253,6 +255,7 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
 			<div class="header">
 				<div>
@@ -311,9 +314,7 @@
 					statusMessage={practiceStatusMessage}
 					on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
 					on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
-				/>
-				<button class="secondary" on:click={() => goto('/training')}>Back to Training</button>
-			</div>
+				/>			</div>
 		</section>
 	{:else if state === STATE.READY}
 		<section class="panel ready">
@@ -372,6 +373,7 @@
 			</div>
 		</section>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
 			<div class="header">
 				<div>
@@ -724,3 +726,5 @@
 		}
 	}
 </style>
+
+

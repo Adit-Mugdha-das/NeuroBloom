@@ -6,35 +6,31 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
-	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
-	import { onMount } from 'svelte';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
+	import { onDestroy, onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
 
 	let currentUser = null;
 	let loading = true;
 	let sessionData = null;
+	let recordedSessionData = null;
 	let difficulty = 1;
 	let currentTrial = 0;
 	let responses = [];
-	let phase = 'intro'; // intro, instructions, practice, test, results
-	let showResults = false;
+	let phase = 'intro';
 	let metrics = null;
 	let newBadges = [];
 	let taskId = null;
 	let playMode = TASK_PLAY_MODE.RECORDED;
 	let practiceStatusMessage = '';
+	let sessionRunId = 0;
+	let isDisposed = false;
 
-	// Practice state
-	let practiceTrials = [];
-	let currentPractice = 0;
-	let practiceFeedback = null;
-	let practiceAdvanceTimeout = null;
-	let practiceFinishTimeout = null;
-
-	// Test state
 	let startTime = 0;
 	let responded = false;
 	let showStimulus = false;
@@ -42,7 +38,6 @@
 	let stimulusTimeout = null;
 	let interStimulusTimeout = null;
 
-	// Help modal
 	let showHelp = false;
 
 	// Subscribe to user store
@@ -68,6 +63,34 @@
 			maximumFractionDigits: 1,
 			...options
 		});
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function clearTrialTimers() {
+		if (stimulusTimeout) {
+			clearTimeout(stimulusTimeout);
+			stimulusTimeout = null;
+		}
+		if (interStimulusTimeout) {
+			clearTimeout(interStimulusTimeout);
+			interStimulusTimeout = null;
+		}
+		if (trialTimeout) {
+			clearTimeout(trialTimeout);
+			trialTimeout = null;
+		}
+	}
+
+	function invalidateRun() {
+		sessionRunId += 1;
+		clearTrialTimers();
 	}
 
 	function msText(value) {
@@ -215,6 +238,11 @@
 		await loadSession();
 	});
 
+	onDestroy(() => {
+		isDisposed = true;
+		invalidateRun();
+	});
+
 	async function loadSession() {
 		try {
 			loading = true;
@@ -233,8 +261,16 @@
 			}
 
 			const data = await response.json();
-			sessionData = data.session_data;
+			recordedSessionData = cloneData(data.session_data);
+			sessionData = cloneData(data.session_data);
 			difficulty = data.difficulty;
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = '';
+			responses = [];
+			currentTrial = 0;
+			responded = false;
+			showStimulus = false;
+			phase = 'intro';
 			loading = false;
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -253,105 +289,53 @@
 	}
 
 	function startPractice() {
-		clearTimeout(practiceAdvanceTimeout);
-		clearTimeout(practiceFinishTimeout);
-		playMode = TASK_PLAY_MODE.PRACTICE;
-		practiceStatusMessage = '';
-		practiceTrials = buildPracticeTrials();
-		currentPractice = 0;
-		practiceFeedback = null;
-		phase = 'practice';
-		showNextPracticeTrial();
+		startSession(TASK_PLAY_MODE.PRACTICE);
 	}
 
-	function finishPractice(completed = true) {
-		clearTimeout(stimulusTimeout);
-		clearTimeout(interStimulusTimeout);
-		clearTimeout(trialTimeout);
-		clearTimeout(practiceAdvanceTimeout);
-		clearTimeout(practiceFinishTimeout);
+	function leavePractice(completed = false) {
+		invalidateRun();
 		playMode = TASK_PLAY_MODE.RECORDED;
+		sessionData = cloneData(recordedSessionData);
+		responses = [];
+		currentTrial = 0;
 		responded = false;
 		showStimulus = false;
-		practiceFeedback = null;
-		currentPractice = 0;
 		phase = 'instructions';
 		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
 	}
 
-	function showNextPracticeTrial() {
-		clearTimeout(stimulusTimeout);
-		clearTimeout(practiceAdvanceTimeout);
-		clearTimeout(practiceFinishTimeout);
-
-		if (currentPractice >= practiceTrials.length) {
-			practiceFeedback = { type: 'success', message: practiceCompleteMessage() };
-			practiceFinishTimeout = setTimeout(() => {
-				practiceFinishTimeout = null;
-				finishPractice();
-			}, 2000);
-			return;
-		}
-
-		responded = false;
-		showStimulus = true;
-		startTime = Date.now();
-
-		stimulusTimeout = setTimeout(() => {
-			if (!responded) {
-				practiceFeedback = { type: 'warning', message: slowResponseMessage() };
-				showStimulus = false;
-				practiceAdvanceTimeout = setTimeout(() => {
-					practiceAdvanceTimeout = null;
-					practiceFeedback = null;
-					currentPractice++;
-					showNextPracticeTrial();
-				}, 1500);
-			}
-		}, 3000);
-	}
-
-	function handlePracticeResponse(direction) {
-		if (!showStimulus || responded) return;
-		clearTimeout(stimulusTimeout);
-		responded = true;
-
-		const trial = practiceTrials[currentPractice];
-		const rt = Date.now() - startTime;
-		const correct = direction === trial.direction;
-
-		if (correct) {
-			practiceFeedback = { type: 'success', message: practiceSuccessMessage(rt, trial) };
-		} else {
-			practiceFeedback = { type: 'error', message: practiceErrorMessage(trial) };
-		}
-
-		showStimulus = false;
-		practiceAdvanceTimeout = setTimeout(() => {
-			practiceAdvanceTimeout = null;
-			practiceFeedback = null;
-			currentPractice++;
-			showNextPracticeTrial();
-		}, 2000);
-	}
+	const finishPractice = leavePractice;
 
 	function startTest() {
-		clearTimeout(practiceAdvanceTimeout);
-		clearTimeout(practiceFinishTimeout);
-		playMode = TASK_PLAY_MODE.RECORDED;
-		practiceStatusMessage = '';
-		phase = 'test';
-		currentTrial = 0;
-		responses = [];
-		showNextTrial();
+		startSession(TASK_PLAY_MODE.RECORDED);
 	}
 
-	function showNextTrial() {
-		clearTimeout(stimulusTimeout);
-		clearTimeout(interStimulusTimeout);
-		clearTimeout(trialTimeout);
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (!recordedSessionData) return;
+
+		invalidateRun();
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		sessionData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('flanker', recordedSessionData)
+				: cloneData(recordedSessionData);
+		currentTrial = 0;
+		responses = [];
+		responded = false;
+		showStimulus = false;
+		phase = 'test';
+		showNextTrial(sessionRunId);
+	}
+
+	function showNextTrial(runId = sessionRunId) {
+		clearTrialTimers();
 
 		if (currentTrial >= sessionData.trials.length) {
+			if (playMode === TASK_PLAY_MODE.PRACTICE) {
+				leavePractice(true);
+				return;
+			}
 			completeSession();
 			return;
 		}
@@ -360,13 +344,16 @@
 		showStimulus = false;
 
 		interStimulusTimeout = setTimeout(() => {
+			if (isDisposed || runId !== sessionRunId) return;
 			showStimulus = true;
 			startTime = Date.now();
 
 			stimulusTimeout = setTimeout(() => {
+				if (isDisposed || runId !== sessionRunId) return;
 				showStimulus = false;
 				if (!responded) {
 					trialTimeout = setTimeout(() => {
+						if (isDisposed || runId !== sessionRunId) return;
 						recordResponse(null, 0);
 					}, 300);
 				}
@@ -376,53 +363,45 @@
 
 	function recordResponse(direction, reactionTime) {
 		if (responded) return;
-		clearTimeout(stimulusTimeout);
-		clearTimeout(interStimulusTimeout);
-		clearTimeout(trialTimeout);
+		const runId = sessionRunId;
+		clearTrialTimers();
 		responded = true;
 
 		const trial = sessionData.trials[currentTrial];
-
-		responses.push({
+		responses = [...responses, {
 			trial_number: trial.trial_number,
 			trial_type: trial.trial_type,
 			target_direction: trial.target_direction,
 			responded_direction: direction,
 			reaction_time_ms: reactionTime,
 			correct: direction === trial.target_direction
-		});
+		}];
 
 		currentTrial++;
 		showStimulus = false;
 
 		interStimulusTimeout = setTimeout(() => {
-			showNextTrial();
+			if (isDisposed || runId !== sessionRunId) return;
+			showNextTrial(runId);
 		}, 300);
 	}
 
 	function handleKeyPress(event) {
-		if (phase === 'practice' && showStimulus && !responded) {
-			if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
-				event.preventDefault();
-				handlePracticeResponse('left');
-			} else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
-				event.preventDefault();
-				handlePracticeResponse('right');
-			}
-		} else if (phase === 'test' && showStimulus && !responded) {
-			const rt = Date.now() - startTime;
-			if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
-				event.preventDefault();
-				recordResponse('left', rt);
-			} else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
-				event.preventDefault();
-				recordResponse('right', rt);
-			}
+		if (phase !== 'test' || !showStimulus || responded) return;
+
+		const rt = Date.now() - startTime;
+		if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
+			event.preventDefault();
+			recordResponse('left', rt);
+		} else if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') {
+			event.preventDefault();
+			recordResponse('right', rt);
 		}
 	}
 
 	async function completeSession() {
 		try {
+			clearTrialTimers();
 			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(`${API_BASE_URL}/api/training/tasks/flanker/submit/${currentUser.id}`, {
 				method: 'POST',
@@ -441,7 +420,6 @@
 			metrics = data.metrics;
 			newBadges = data.new_badges || [];
 			phase = 'results';
-			showResults = true;
 		} catch (error) {
 			console.error('Error submitting session:', error);
 			alert(lt('Failed to submit results. Please try again.', 'ফলাফল জমা দেওয়া যায়নি। আবার চেষ্টা করুন।'));
@@ -497,6 +475,7 @@
 
 	<!-- ── INTRO ──────────────────────────────────────────────── -->
 	{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			<!-- Task title -->
@@ -645,15 +624,12 @@
 			<div class="btn-row">
 				<button class="start-button" on:click={startInstructions}>
 					{lt('Begin Task', 'টাস্ক শুরু করুন')}
-				</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
-				</button>
-			</div>
+				</button>			</div>
 		</div>
 
 	<!-- ── INSTRUCTIONS ───────────────────────────────────────── -->
 	{:else if phase === 'instructions'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 			<div class="card instructions-card">
 				<h2 class="instr-title">{lt('Quick Instructions', 'দ্রুত নির্দেশনা')}</h2>
@@ -756,6 +732,9 @@
 	<!-- ── TEST ───────────────────────────────────────────────── -->
 	{:else if phase === 'test'}
 		<div class="trial-wrapper">
+			{#if playMode === TASK_PLAY_MODE.PRACTICE}
+				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+			{/if}
 			<div class="progress-bar-row">
 				<span class="progress-label">{trialLabel(currentTrial + 1, sessionData.trials.length)}</span>
 				<span class="remaining-badge">{remainingTrialsLabel(trialsRemaining)}</span>
@@ -779,6 +758,7 @@
 
 	<!-- ── RESULTS ─────────────────────────────────────────────── -->
 	{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			{#if newBadges.length > 0}
@@ -916,8 +896,11 @@
 			</div>
 
 			<div class="btn-row">
-				<button class="start-button" on:click={returnToDashboard}>
-					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
+				<button class="start-button" on:click={() => goto('/training')}>
+					{lt('Back to Training', 'ট্রেনিংয়ে ফিরে যান')}
+				</button>
+				<button class="secondary-button" on:click={returnToDashboard}>
+					{lt('View Dashboard', 'ড্যাশবোর্ড দেখুন')}
 				</button>
 			</div>
 		</div>
@@ -1751,3 +1734,4 @@
 		.metrics-grid { grid-template-columns: 1fr; }
 	}
 </style>
+

@@ -4,8 +4,13 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
-	import { onMount } from 'svelte';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Task states
 	const STATE = {
@@ -21,6 +26,7 @@
 	let state = STATE.LOADING;
 	let difficulty = 5;
 	let trials = [];
+	let recordedTrials = [];
 	let currentTrialIndex = 0;
 	let currentTrial = null;
 	let userResponse = [];
@@ -30,6 +36,12 @@
 	let showHelp = false;
 	let sessionResults = null;
 	let taskId = null;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let sessionRunId = 0;
+	let isDisposed = false;
+	let lastResponseCorrect = false;
+	const scheduledTimeouts = new Set();
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -45,6 +57,48 @@
 			maximumFractionDigits: 1,
 			...options
 		});
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	function clearScheduledTimeouts() {
+		for (const timeoutId of scheduledTimeouts) {
+			clearTimeout(timeoutId);
+		}
+		scheduledTimeouts.clear();
+	}
+
+	function invalidateRun() {
+		sessionRunId += 1;
+		clearScheduledTimeouts();
+	}
+
+	function scheduleTimeout(callback, delay, runId = sessionRunId) {
+		const timeoutId = setTimeout(() => {
+			scheduledTimeouts.delete(timeoutId);
+			if (isDisposed || runId !== sessionRunId) return;
+			callback();
+		}, delay);
+
+		scheduledTimeouts.add(timeoutId);
+		return timeoutId;
+	}
+
+	function resetSessionState() {
+		currentTrialIndex = 0;
+		currentTrial = null;
+		userResponse = [];
+		gridSize = 3;
+		highlightedBlock = null;
+		startTime = 0;
+		sessionResults = null;
+		lastResponseCorrect = false;
 	}
 
 	function trialLabel(current, total) {
@@ -73,8 +127,14 @@
 		await loadSession();
 	});
 
+	onDestroy(() => {
+		isDisposed = true;
+		invalidateRun();
+	});
+
 	async function loadSession() {
 		try {
+			state = STATE.LOADING;
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
@@ -111,12 +171,15 @@
 			if (!response.ok) throw new Error('Failed to load session');
 
 			const data = await response.json();
-			trials = data.trials.map(t => ({
-				...t,
+			recordedTrials = data.trials.map((trial) => ({
+				...trial,
 				user_response: [],
 				reaction_time: 0
 			}));
-			
+			trials = cloneData(recordedTrials);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = '';
+			resetSessionState();
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -125,51 +188,67 @@
 		}
 	}
 
-	function startSession() {
-		console.log('Starting session, trials:', trials.length);
-		state = STATE.READY;
-		currentTrialIndex = 0;
-		setTimeout(() => startTrial(), 1000);
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (!recordedTrials.length) return;
+
+		invalidateRun();
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		resetSessionState();
+		const practicePayload = buildPracticePayload('spatial-span', { trials: recordedTrials });
+		trials = nextMode === TASK_PLAY_MODE.PRACTICE ? practicePayload.trials : cloneData(recordedTrials);
+		startTrial();
 	}
 
-	async function startTrial() {
-		console.log('Starting trial', currentTrialIndex, 'of', trials.length);
-		
-		// Set up trial data first
+	function leavePractice(completed = false) {
+		invalidateRun();
+		playMode = TASK_PLAY_MODE.RECORDED;
+		trials = cloneData(recordedTrials);
+		resetSessionState();
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		state = STATE.INSTRUCTIONS;
+	}
+
+	function startTrial() {
+		const runId = sessionRunId;
 		currentTrial = trials[currentTrialIndex];
 		gridSize = currentTrial.grid_size;
 		userResponse = [];
-		console.log('Current trial:', currentTrial);
-		
-		// Show ready screen
+		highlightedBlock = null;
 		state = STATE.READY;
-		await new Promise(resolve => setTimeout(resolve, 800));
-		
-		// Show sequence
-		state = STATE.SHOWING;
-		await playSequence();
-		
-		// Allow user input
-		state = STATE.INPUT;
-		startTime = Date.now();
+
+		scheduleTimeout(() => {
+			state = STATE.SHOWING;
+			playSequence(runId);
+		}, 800, runId);
 	}
 
-	async function playSequence() {
-		const sequence = currentTrial.sequence;
-		const highlightTime = currentTrial.display_ms  ?? 750;
-		const intervalTime  = currentTrial.interval_ms ?? 300;
+	function playSequence(runId = sessionRunId, stepIndex = 0) {
+		if (!currentTrial) return;
 
-		for (let i = 0; i < sequence.length; i++) {
-			highlightedBlock = sequence[i];
-			await new Promise(resolve => setTimeout(resolve, highlightTime));
+		const sequence = currentTrial.sequence;
+		const highlightTime = currentTrial.display_ms ?? 750;
+		const intervalTime = currentTrial.interval_ms ?? 300;
+
+		if (stepIndex >= sequence.length) {
 			highlightedBlock = null;
-			
-			if (i < sequence.length - 1) {
-				await new Promise(resolve => setTimeout(resolve, intervalTime));
-			}
+			state = STATE.INPUT;
+			startTime = Date.now();
+			return;
 		}
 
-		highlightedBlock = null;
+		highlightedBlock = sequence[stepIndex];
+		scheduleTimeout(() => {
+			highlightedBlock = null;
+			if (stepIndex >= sequence.length - 1) {
+				playSequence(runId, stepIndex + 1);
+				return;
+			}
+
+			scheduleTimeout(() => {
+				playSequence(runId, stepIndex + 1);
+			}, intervalTime, runId);
+		}, highlightTime, runId);
 	}
 
 	function handleBlockClick(blockIndex) {
@@ -191,18 +270,24 @@
 		const reactionTime = Date.now() - startTime;
 		trials[currentTrialIndex].user_response = userResponse;
 		trials[currentTrialIndex].reaction_time = reactionTime;
-
-		// Show feedback
+		lastResponseCorrect = checkCorrect();
 		state = STATE.FEEDBACK;
-		
-		setTimeout(() => {
+
+		const runId = sessionRunId;
+		scheduleTimeout(() => {
 			if (currentTrialIndex < trials.length - 1) {
-				currentTrialIndex++;
+				currentTrialIndex += 1;
 				startTrial();
-			} else {
-				submitSession();
+				return;
 			}
-		}, 1500);
+
+			if (playMode === TASK_PLAY_MODE.PRACTICE) {
+				leavePractice(true);
+				return;
+			}
+
+			submitSession();
+		}, 1500, runId);
 	}
 
 	function checkCorrect() {
@@ -270,6 +355,7 @@
 			<LoadingSkeleton variant="card" count={3} />
 		</div>
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
@@ -352,16 +438,19 @@
 				</div>
 			</div>
 
-			<div class="button-group">
-				<button class="start-button" on:click={startSession} disabled={state !== STATE.INSTRUCTIONS}>
-					{t('Begin Training')}
-				</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{t('Back to Dashboard')}
-				</button>
-			</div>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Begin Training')}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession()}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if state === STATE.READY}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="ready-screen">
 			<h1 class="ready-text">{t('Get Ready...')}</h1>
 			<div class="trial-counter">{trialLabel(currentTrialIndex + 1, trials.length)}</div>
@@ -372,6 +461,9 @@
 			{/if}
 		</div>
 	{:else if state === STATE.SHOWING || state === STATE.INPUT}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="trial-screen">
 			<div class="header">
 				<div class="trial-info">
@@ -427,11 +519,15 @@
 			</div>
 		</div>
 	{:else if state === STATE.FEEDBACK}
-		<div class="feedback-screen {checkCorrect() ? 'correct' : 'incorrect'}">
-			<div class="feedback-icon">{checkCorrect() ? '✓' : '✗'}</div>
-			<p class="feedback-text">{checkCorrect() ? t('Correct!') : t('Incorrect')}</p>
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
+		<div class="feedback-screen {lastResponseCorrect ? 'correct' : 'incorrect'}">
+			<div class="feedback-icon">{lastResponseCorrect ? '✓' : '✗'}</div>
+			<p class="feedback-text">{lastResponseCorrect ? t('Correct!') : t('Incorrect')}</p>
 		</div>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="complete-screen">
 			<div class="results-header">
 				<h1>{t('Session Complete!')}</h1>
@@ -488,9 +584,9 @@
 
 			<div class="actions">
 				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
-					{t('Back to Dashboard')}
+					{t('View Dashboard')}
 				</button>
-				<button class="start-button" on:click={() => window.location.reload()}>
+				<button class="start-button" on:click={loadSession}>
 					{t('Train Again')}
 				</button>
 			</div>

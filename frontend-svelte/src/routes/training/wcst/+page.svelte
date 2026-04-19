@@ -5,9 +5,11 @@
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 
 	let phase = 'intro';
@@ -355,6 +357,7 @@
 				</button>
 			</div>
 		{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div>
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 15px; color: #333;">{t('Executive Function Assessment')}</h2>
 				
@@ -603,6 +606,7 @@
 				{/if}
 			</div>
 		{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div>
 				<h2 style="font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #2e7d32;">✓ {t('Test Complete!')}</h2>
 
@@ -659,3 +663,4 @@
 		{/if}
 	</div>
 </div>
+

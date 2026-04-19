@@ -6,9 +6,11 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -366,6 +368,7 @@
 			<LoadingSkeleton variant="card" count={3} />
 
 		{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
@@ -642,6 +645,7 @@
 			</div>
 
 		{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="screen-card complete-screen">
 				{#if metrics}
 					<div class="perf-banner">
@@ -1247,3 +1251,4 @@
 		.color-btn          { padding: 0.55rem 1.1rem; font-size: 0.88rem; min-width: 75px; }
 	}
 </style>
+

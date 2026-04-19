@@ -6,9 +6,11 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	let phase = 'intro';
@@ -439,6 +441,7 @@
 
 	<!-- ── INTRO ──────────────────────────────────────────────── -->
 	{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			<!-- Title row -->
@@ -723,6 +726,7 @@
 
 	<!-- ── RESULTS ─────────────────────────────────────────────── -->
 	{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-wrapper">
 
 			{#if newBadges && newBadges.length > 0}
@@ -1496,3 +1500,4 @@
 		.targets-row { flex-direction: column; align-items: center; }
 	}
 </style>
+

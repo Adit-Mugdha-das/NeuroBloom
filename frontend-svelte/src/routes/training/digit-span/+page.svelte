@@ -4,23 +4,32 @@
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import DifficultyBadge from '$lib/components/DifficultyBadge.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
+	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
+	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
-	import { onMount } from 'svelte';
+	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Game states
 	const STATE_LOADING = 'loading';
 	const STATE_INSTRUCTIONS = 'instructions';
-	const STATE_READY = 'ready'; // Get ready...
-	const STATE_SHOWING = 'showing'; // Display sequence
-	const STATE_INPUT = 'input'; // User input
-	const STATE_FEEDBACK = 'feedback'; // Show if correct/incorrect
-	const STATE_COMPLETE = 'complete'; // Session complete
+	const STATE_READY = 'ready';
+	const STATE_SHOWING = 'showing';
+	const STATE_INPUT = 'input';
+	const STATE_FEEDBACK = 'feedback';
+	const STATE_COMPLETE = 'complete';
+	const READY_DISPLAY_TIME = 2000;
+	const FEEDBACK_DISPLAY_TIME = 1500;
+	const INPUT_FOCUS_DELAY = 50;
 
 	let currentState = STATE_LOADING;
 	let sessionData = null;
+	let recordedSessionData = null;
 	let currentTrialIndex = 0;
 	let currentTrial = null;
-	let taskId = null; // Track which specific task in session this is
+	let taskId = null;
 
 	// Display state
 	let displayedDigits = [];
@@ -40,10 +49,15 @@
 	// UI state
 	let showHelp = false;
 	let currentDifficulty = 5;
+	let playMode = TASK_PLAY_MODE.RECORDED;
+	let practiceStatusMessage = '';
+	let sessionRunId = 0;
+	let isDisposed = false;
 
 	// Timing variables - will be set based on difficulty
 	let DIGIT_DISPLAY_TIME = 1400;
 	let INTER_DIGIT_INTERVAL = 600;
+	const scheduledTimeouts = new Set();
 
 	function t(text) {
 		return translateText(text, $locale);
@@ -55,6 +69,14 @@
 
 	function pct(value, options = {}) {
 		return formatPercent(value, $locale, options);
+	}
+
+	function cloneData(value) {
+		if (typeof structuredClone === 'function') {
+			return structuredClone(value);
+		}
+
+		return JSON.parse(JSON.stringify(value));
 	}
 
 	function formatSequence(values, delimiter = ' → ') {
@@ -73,10 +95,42 @@
 		return value === '' ? '' : n(value);
 	}
 
-	onMount(() => {
-		// Get taskId from URL params
-		taskId = $page.url.searchParams.get('taskId');
-	});
+	function clearScheduledTimeouts() {
+		for (const timeoutId of scheduledTimeouts) {
+			clearTimeout(timeoutId);
+		}
+		scheduledTimeouts.clear();
+	}
+
+	function invalidateRun() {
+		sessionRunId += 1;
+		clearScheduledTimeouts();
+	}
+
+	function scheduleTimeout(callback, delay, runId = sessionRunId) {
+		const timeoutId = setTimeout(() => {
+			scheduledTimeouts.delete(timeoutId);
+			if (isDisposed || runId !== sessionRunId) return;
+			callback();
+		}, delay);
+
+		scheduledTimeouts.add(timeoutId);
+		return timeoutId;
+	}
+
+	function resetSessionState() {
+		currentTrialIndex = 0;
+		currentTrial = null;
+		displayedDigits = [];
+		currentDigitIndex = 0;
+		digitSlots = [];
+		activeSlot = 0;
+		isCorrect = false;
+		trialStartTime = 0;
+		completedTrials = [];
+		sessionResults = null;
+		newBadges = [];
+	}
 
 	// Timing - adjusts based on difficulty
 	function getDisplayTime(difficulty) {
@@ -93,16 +147,19 @@
 		return 400;
 	}
 
-	const READY_DISPLAY_TIME = 2000;
-
 	onMount(async () => {
-		// Get taskId from URL params
 		taskId = $page.url.searchParams.get('taskId');
 		await loadSession();
 	});
 
+	onDestroy(() => {
+		isDisposed = true;
+		invalidateRun();
+	});
+
 	async function loadSession() {
 		try {
+			currentState = STATE_LOADING;
 			const userData = JSON.parse(localStorage.getItem('user') || '{}');
 			const userId = userData.id;
 
@@ -141,7 +198,12 @@
 
 			if (!res.ok) throw new Error('Failed to load session');
 
-			sessionData = await res.json();
+			const data = await res.json();
+			recordedSessionData = cloneData(data);
+			sessionData = cloneData(data);
+			playMode = TASK_PLAY_MODE.RECORDED;
+			practiceStatusMessage = '';
+			resetSessionState();
 			currentState = STATE_INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading session:', error);
@@ -150,68 +212,82 @@
 		}
 	}
 
-	function startSession() {
-		currentState = STATE_READY;
-		currentTrialIndex = 0;
-		completedTrials = [];
+	function startSession(nextMode = TASK_PLAY_MODE.RECORDED) {
+		if (!recordedSessionData) return;
+
+		invalidateRun();
+		playMode = nextMode;
+		practiceStatusMessage = '';
+		resetSessionState();
+		sessionData =
+			nextMode === TASK_PLAY_MODE.PRACTICE
+				? buildPracticePayload('digit-span', recordedSessionData)
+				: cloneData(recordedSessionData);
 		startTrial();
 	}
 
-	function startTrial() {
-		currentTrial = sessionData.trials[currentTrialIndex];
-
-		// Show "Get ready" screen
-		currentState = STATE_READY;
-
-		setTimeout(() => {
-			// Start showing sequence
-			currentState = STATE_SHOWING;
-			displayedDigits = [];
-			currentDigitIndex = 0;
-			showNextDigit();
-		}, READY_DISPLAY_TIME);
+	function leavePractice(completed = false) {
+		invalidateRun();
+		playMode = TASK_PLAY_MODE.RECORDED;
+		sessionData = cloneData(recordedSessionData);
+		resetSessionState();
+		practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
+		currentState = STATE_INSTRUCTIONS;
 	}
 
-	function showNextDigit() {
+	function startTrial() {
+		const runId = sessionRunId;
+		currentTrial = sessionData?.trials?.[currentTrialIndex] ?? null;
+		displayedDigits = [];
+		currentDigitIndex = 0;
+		digitSlots = [];
+		activeSlot = 0;
+		currentState = STATE_READY;
+
+		scheduleTimeout(() => {
+			currentState = STATE_SHOWING;
+			showNextDigit(runId);
+		}, READY_DISPLAY_TIME, runId);
+	}
+
+	function showNextDigit(runId = sessionRunId) {
+		if (!currentTrial) return;
+
 		if (currentDigitIndex < currentTrial.sequence.length) {
-			// Add digit to display
 			displayedDigits = [...displayedDigits, currentTrial.sequence[currentDigitIndex]];
 
-			setTimeout(() => {
-				// Clear digit
+			scheduleTimeout(() => {
 				displayedDigits = [...displayedDigits.slice(0, -1), ''];
-
-				setTimeout(() => {
-					currentDigitIndex++;
-					showNextDigit();
-				}, INTER_DIGIT_INTERVAL);
-			}, DIGIT_DISPLAY_TIME);
-		} else {
-			// All digits shown, switch to input
-			setTimeout(() => {
-				currentState = STATE_INPUT;
-				digitSlots = Array(currentTrial.sequence.length).fill('');
-				activeSlot = 0;
-				trialStartTime = Date.now();
-				// Focus first slot after DOM updates
-				setTimeout(() => focusSlot(0), 50);
-			}, INTER_DIGIT_INTERVAL);
+				scheduleTimeout(() => {
+					currentDigitIndex += 1;
+					showNextDigit(runId);
+				}, INTER_DIGIT_INTERVAL, runId);
+			}, DIGIT_DISPLAY_TIME, runId);
+			return;
 		}
+
+		scheduleTimeout(() => {
+			currentState = STATE_INPUT;
+			digitSlots = Array(currentTrial.sequence.length).fill('');
+			activeSlot = 0;
+			trialStartTime = Date.now();
+			scheduleTimeout(() => focusSlot(0), INPUT_FOCUS_DELAY, runId);
+		}, INTER_DIGIT_INTERVAL, runId);
 	}
 
 	function focusSlot(index) {
-		const el = document.getElementById(`slot-${index}`);
-		if (el) el.focus();
+		const element = document.getElementById(`slot-${index}`);
+		if (element) element.focus();
 	}
 
 	function submitResponse() {
 		// All slots must be filled
-		if (digitSlots.some((s) => s === '')) return;
+		if (!currentTrial || digitSlots.some((slot) => slot === '')) return;
 
 		const reactionTime = Date.now() - trialStartTime;
 
 		// Each slot holds exactly one digit string — convert to integers directly
-		const userDigits = digitSlots.map((s) => parseInt(s));
+		const userDigits = digitSlots.map((slot) => Number.parseInt(slot, 10));
 
 		// Expected sequence
 		const expectedSequence =
@@ -221,7 +297,7 @@
 
 		isCorrect =
 			userDigits.length === expectedSequence.length &&
-			userDigits.every((d, i) => d === expectedSequence[i]);
+			userDigits.every((digit, index) => digit === expectedSequence[index]);
 
 		const trialResult = {
 			...currentTrial,
@@ -230,17 +306,24 @@
 			correct: isCorrect
 		};
 
-		completedTrials.push(trialResult);
+		completedTrials = [...completedTrials, trialResult];
 		currentState = STATE_FEEDBACK;
 
-		setTimeout(() => {
-			currentTrialIndex++;
+		const runId = sessionRunId;
+		scheduleTimeout(() => {
+			currentTrialIndex += 1;
 			if (currentTrialIndex < sessionData.trials.length) {
 				startTrial();
-			} else {
-				completeSession();
+				return;
 			}
-		}, 1500);
+
+			if (playMode === TASK_PLAY_MODE.PRACTICE) {
+				leavePractice(true);
+				return;
+			}
+
+			completeSession();
+		}, FEEDBACK_DISPLAY_TIME, runId);
 	}
 
 	function handleSlotKeydown(event, index) {
@@ -328,6 +411,7 @@
 	{#if currentState === STATE_LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if currentState === STATE_INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="instructions-card">
 			<div class="header">
 				<div class="header-content">
@@ -421,12 +505,19 @@
 				</div>
 			</div>
 
-			<div class="button-group">
-				<button class="start-button" on:click={startSession}>{t('Begin Training')}</button>
-				<button class="btn-secondary" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
-			</div>
+			<TaskPracticeActions
+				locale={$locale}
+				startLabel={t('Begin Training')}
+				statusMessage={practiceStatusMessage}
+				align="center"
+				on:start={() => startSession()}
+				on:practice={() => startSession(TASK_PLAY_MODE.PRACTICE)}
+			/>
 		</div>
 	{:else if currentState === STATE_READY}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="ready-screen">
 			<h1 class="ready-text">{t('Get Ready...')}</h1>
 			<div class="trial-counter">
@@ -441,6 +532,9 @@
 			{/if}
 		</div>
 	{:else if currentState === STATE_SHOWING}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="display-screen">
 			<div class="trial-counter">
 				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
@@ -459,6 +553,9 @@
 			</div>
 		</div>
 	{:else if currentState === STATE_INPUT}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="input-screen">
 			<div class="trial-counter">
 				{t('Trial')} {n(currentTrialIndex + 1)} {t('of')} {n(sessionData.trials.length)}
@@ -497,6 +594,9 @@
 			</button>
 		</div>
 	{:else if currentState === STATE_FEEDBACK}
+		{#if playMode === TASK_PLAY_MODE.PRACTICE}
+			<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
+		{/if}
 		<div class="feedback-screen {isCorrect ? 'correct' : 'incorrect'}">
 			<div class="feedback-icon">{isCorrect ? '✓' : '✗'}</div>
 			<div class="feedback-text">{isCorrect ? t('Correct!') : t('Incorrect')}</div>
@@ -513,6 +613,7 @@
 			{/if}
 		</div>
 	{:else if currentState === STATE_COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="complete-screen">
 			<div class="header">
 				<h1>{t('Session Complete!')}</h1>
@@ -564,9 +665,9 @@
 
 			<div class="actions">
 				<button class="secondary-button" on:click={() => goto('/dashboard')}>
-					{t('Back to Dashboard')}
+					{t('View Dashboard')}
 				</button>
-				<button class="primary-button" on:click={() => window.location.reload()}>
+				<button class="primary-button" on:click={loadSession}>
 					{t('Train Again')}
 				</button>
 			</div>

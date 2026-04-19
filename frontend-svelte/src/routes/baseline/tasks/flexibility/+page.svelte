@@ -3,10 +3,12 @@
     import { page } from '$app/stores';
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { locale, localeText } from '$lib/i18n';
     import { tasks, training } from '$lib/api';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onMount } from 'svelte';
 
     let stage = 'intro'; // intro | test | results
@@ -234,13 +236,10 @@
 
     <!-- INTRO -->
     {#if stage === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">
-                <button class="back-btn" on:click={backToDashboard}>
-                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
-                </button>
-                <h1 class="task-title">Task Switching</h1>
+            <div class="task-header">                <h1 class="task-title">Task Switching</h1>
             </div>
 
             <div class="concept-card">
@@ -348,13 +347,10 @@
 
     <!-- RESULTS -->
     {:else if stage === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">
-                <button class="back-btn" on:click={backToDashboard}>
-                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
-                </button>
-                <h1 class="task-title">Results</h1>
+            <div class="task-header">                <h1 class="task-title">Results</h1>
             </div>
 
             {#if isTrainingMode}
@@ -442,20 +438,6 @@
         gap: 1.25rem;
         flex-wrap: wrap;
     }
-
-    .back-btn {
-        background: white;
-        color: #a21caf;
-        border: 2px solid #a21caf;
-        padding: 0.6rem 1.25rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 600;
-        white-space: nowrap;
-        transition: background 0.2s, color 0.2s;
-    }
-    .back-btn:hover { background: #a21caf; color: white; }
 
     .task-title {
         font-size: 1.75rem;
@@ -780,3 +762,6 @@
         .start-button   { width: calc(100% - 2.5rem); margin: 1.25rem; }
     }
 </style>
+
+
+

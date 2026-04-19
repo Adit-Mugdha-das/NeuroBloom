@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 
 	const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -229,9 +231,9 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<div class="page-content">
 			<div class="task-header">
-				<button class="back-btn" on:click={() => goto('/training')}>← Back to Training</button>
 				<div class="header-center">
 					<h1 class="task-title">Rule Shift Task</h1>
 					<DifficultyBadge {difficulty} domain="Flexibility" />
@@ -406,6 +408,7 @@
 			<p class="hint">Keyboard: `A` or left arrow for left, `L` or right arrow for right.</p>
 		</section>
 	{:else if state === STATE.COMPLETE}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
 			<div class="header">
 				<div>
@@ -492,20 +495,6 @@
 		align-items: center;
 		gap: 1rem;
 	}
-
-	.back-btn {
-		background: white;
-		color: #9c5c23;
-		border: 2px solid #9c5c23;
-		padding: 0.6rem 1.25rem;
-		border-radius: 8px;
-		cursor: pointer;
-		font-size: 0.9rem;
-		font-weight: 600;
-		white-space: nowrap;
-		transition: background 0.2s, color 0.2s;
-	}
-	.back-btn:hover { background: #9c5c23; color: white; }
 
 	.header-center {
 		flex: 1;
@@ -858,3 +847,4 @@
 		.response-btn { min-width: 0; width: 100%; }
 	}
 </style>
+

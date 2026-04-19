@@ -7,8 +7,10 @@
     import { generateUFOVTrial, submitUFOVResponse } from '$lib/api.js';
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { locale, localeText } from '$lib/i18n';
     import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onDestroy, onMount } from 'svelte';
 
     let userId = null;
@@ -224,9 +226,7 @@
 <div class="ufov-container">
 
     <!-- Header -->
-    <div class="task-header">
-        <button class="back-btn" on:click={exitTask}>Back to Dashboard</button>
-        <div class="header-center">
+    <div class="task-header">        <div class="header-center">
             <h1 class="task-title">Useful Field of View</h1>
             <DifficultyBadge {difficulty} domain="Visual Scanning" />
         </div>
@@ -248,6 +248,7 @@
 
     <!-- Intro -->
     {:else if gamePhase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
         <div class="page-content">
 
             <div class="concept-card">
@@ -424,6 +425,7 @@
 
     <!-- Results -->
     {:else if gamePhase === 'results' && results}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
         <div class="page-content">
             <div class="results-card">
                 <div class="perf-header" style="background: {perfColor(results.performance)}">
@@ -541,9 +543,7 @@
                             </button>
                         {:else}
                             <button class="start-button" on:click={exitTask}>Complete Session</button>
-                        {/if}
-                        <button class="btn-secondary" on:click={exitTask}>Exit to Dashboard</button>
-                    </div>
+                        {/if}                    </div>
 
                 </div>
             </div>
@@ -1410,3 +1410,5 @@
         .page-content { gap: 1rem; }
     }
 </style>
+
+

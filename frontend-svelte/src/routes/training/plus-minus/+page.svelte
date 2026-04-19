@@ -6,8 +6,10 @@
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
+import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
+import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
 	import { onMount, onDestroy } from 'svelte';
 
@@ -394,6 +396,7 @@
 			</div>
 
 		{:else if phase === 'intro'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			<!-- Header Card -->
 			<div class="header-card">
@@ -702,6 +705,7 @@
 			{/if}
 
 		{:else if phase === 'results'}
+		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			<!-- Results Header -->
 			<div class="results-header">
@@ -1589,3 +1593,4 @@
 		.action-buttons     { flex-direction: column; }
 	}
 </style>
+
