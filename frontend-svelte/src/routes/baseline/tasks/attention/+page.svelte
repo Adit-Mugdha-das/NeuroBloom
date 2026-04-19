@@ -57,7 +57,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     });
 
     function backToDashboard() {
-        goto(isTrainingMode ? '/training' : '/dashboard');
+        goto('/dashboard');
     }
 
     function startTest(practice = false) {
@@ -379,7 +379,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 </div>
 
                 <button class="start-button" on:click={backToDashboard}>
-                    {isTrainingMode ? 'Back to Training' : 'Back to Dashboard'}
+                    {'Back to Dashboard'}
                 </button>
             </div>
         </div>

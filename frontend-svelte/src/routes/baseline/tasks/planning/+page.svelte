@@ -86,7 +86,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         refreshTowerState();
     });
 
-    function backToDashboard() { goto(isTrainingMode ? '/training' : '/dashboard'); }
+    function backToDashboard() { goto('/dashboard'); }
 
     function startTest(practice = false) {
         isPracticeMode = practice;
@@ -404,7 +404,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 </div>
 
                 <button class="start-button" on:click={backToDashboard}>
-                    {isTrainingMode ? t('Back to Training') : t('Back to Dashboard')}
+                    {t('Back to Dashboard')}
                 </button>
             </div>
         </div>

@@ -413,7 +413,7 @@
 			<p class="subtitle center">{sessionResults.adaptation_reason}</p>
 
 			<div class="actions">
-				<button class="primary" on:click={() => goto('/training')}>Return To Training</button>
+				<button class="primary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
 				<button class="secondary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
 			</div>
 		</section>

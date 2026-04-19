@@ -189,14 +189,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             return;
         }
         if (trialsCompleted >= TRIALS_PER_SESSION) {
-            goto('/training');
+            goto('/dashboard');
         } else {
             loadTrial();
         }
     }
 
     function exitTask() {
-        goto('/training');
+        goto('/dashboard');
     }
 
     function getPeripheralPositions() {

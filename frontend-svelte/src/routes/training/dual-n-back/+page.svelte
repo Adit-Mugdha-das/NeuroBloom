@@ -619,7 +619,7 @@
                         </div>
 
                         <div class="action-row">
-                            <button class="start-button" on:click={() => goto('/training')}>{t('Return to Training')}</button>
+                            <button class="start-button" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
                             <button class="btn-secondary" on:click={() => goto('/dashboard')}>{t('Back to Dashboard')}</button>
                         </div>
                     </div>

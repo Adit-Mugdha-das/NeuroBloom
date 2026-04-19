@@ -1,5 +1,6 @@
 <script>
 	import { training } from '$lib/api';
+	import { buildTrainingTaskUrl } from '$lib/training-launch';
 	import { user } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	
@@ -25,53 +26,6 @@
 		'Cognitive Flexibility': 'flexibility',
 		'Executive Planning': 'planning',
 		'Visual Scanning': 'visual_scanning'
-	};
-
-	// Route mapping for all tasks - maps task code to actual route
-	const taskRoutes = {
-		// Working Memory
-		'n_back': '/baseline/tasks/working-memory',
-		'dual-n-back': '/training/dual-n-back',
-		'digit-span': '/training/digit-span',
-		'spatial-span': '/training/spatial-span',
-		'letter-number-sequencing': '/training/letter-number-sequencing',
-		'operation-span': '/training/operation-span',
-
-		// Processing Speed
-		'simple_reaction': '/baseline/tasks/processing-speed',
-		'choice-reaction-time': '/training/choice-reaction-time',
-		'sdmt': '/training/sdmt',
-		'pasat': '/training/pasat',
-		'inspection-time': '/training/inspection-time',
-		'pattern-comparison': '/training/pattern-comparison',
-
-		// Attention
-		'sart': '/training/sart',
-		'gonogo': '/training/gonogo',
-		'flanker': '/training/flanker',
-		'stroop': '/training/stroop',
-
-		// Cognitive Flexibility
-		'dccs': '/training/dccs',
-		'rule_shift': '/training/rule-shift',
-		'trail-making-a': '/training/trail-making-a',
-		'trail-making-b': '/training/trail-making-b',
-		'plus-minus': '/training/plus-minus',
-		'wcst': '/training/wcst',
-
-		// Executive Planning
-		'tower-of-london': '/training/tower-of-london',
-		'stockings-of-cambridge': '/training/stockings-of-cambridge',
-		'twenty-questions': '/training/twenty-questions',
-		'category-fluency': '/training/category-fluency',
-		'verbal-fluency': '/training/verbal-fluency',
-
-		// Visual Scanning
-		'visual-search': '/training/visual-search',
-		'cancellation-test': '/training/cancellation-test',
-		'landmark_task': '/training/landmark-task',
-		'multiple-object-tracking': '/training/multiple-object-tracking',
-		'useful-field-of-view': '/training/useful-field-of-view'
 	};
 
 	const tasksByDomain = {
@@ -120,10 +74,6 @@
 			{ name: 'Useful Field of View', code: 'useful-field-of-view' }
 		]
 	};
-
-	function getTaskRoute(taskCode) {
-		return taskRoutes[taskCode] || `/training/${taskCode}`;
-	}
 
 	async function launchTask(taskCode) {
 		if (!currentUser) {
@@ -180,9 +130,14 @@
 				throw new Error('Dev access bootstrap did not return a training plan');
 			}
 
-			const route = getTaskRoute(taskCode);
+			const route = buildTrainingTaskUrl({
+				taskCode,
+				planId: trainingPlanId,
+				taskId: `${taskCode}_dev`,
+				difficulty: validDifficulty
+			});
 			console.log('🚀 DevPanel - Navigating to:', route, 'with difficulty:', validDifficulty);
-			goto(`${route}?training=true&planId=${trainingPlanId}&taskId=${taskCode}_dev&difficulty=${validDifficulty}`);
+			goto(route);
 		} catch (error) {
 			console.error('❌ DevPanel - Failed to set difficulty:', error);
 			showMessage(`❌ Failed to set difficulty: ${error.message}`, 'error');

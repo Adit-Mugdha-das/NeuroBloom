@@ -923,7 +923,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<button class="start-button" on:click={() => goto('/dashboard')}>
 					{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরুন')}
 				</button>
-				<button class="btn-secondary" on:click={() => goto('/training')}>
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
 					{lt('Next Task', 'পরবর্তী টাস্ক')}
 				</button>
 			</div>

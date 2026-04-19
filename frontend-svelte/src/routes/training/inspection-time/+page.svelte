@@ -654,7 +654,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 					<div class="button-group">
 						<button class="start-button" on:click={returnToDashboard}>Return to Dashboard</button>
-						<button class="btn-secondary" on:click={() => goto('/training')}>Back to Training</button>
+						<button class="btn-secondary" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
 					</div>
 				{/if}
 			</div>

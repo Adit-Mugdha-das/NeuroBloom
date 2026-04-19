@@ -4,7 +4,9 @@
 	import { training } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
+	import { formatNumber, locale } from '$lib/i18n';
 	import { user } from '$lib/stores';
+	import { buildTrainingTaskUrl } from '$lib/training-launch';
 	import { onMount } from 'svelte';
 
 	let currentUser = null;
@@ -18,6 +20,14 @@
 	let pendingTaskRoute = null;
 	let pacingWarning = null;
 	const SESSION_CONTEXT_PREFIX = 'training-session-context';
+
+	function lt(en, bn) {
+		return $locale === 'bn' ? bn : en;
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
 
 	user.subscribe((value) => {
 		currentUser = value;
@@ -70,71 +80,21 @@
 
 	function getDomainName(domain) {
 		const names = {
-			working_memory: 'Working Memory',
-			attention: 'Attention',
-			flexibility: 'Cognitive Flexibility',
-			planning: 'Planning',
-			processing_speed: 'Processing Speed',
-			visual_scanning: 'Visual Scanning'
+			working_memory: lt('Working Memory', 'ওয়ার্কিং মেমরি'),
+			attention: lt('Attention', 'মনোযোগ'),
+			flexibility: lt('Cognitive Flexibility', 'কগনিটিভ ফ্লেক্সিবিলিটি'),
+			planning: lt('Planning', 'পরিকল্পনা'),
+			processing_speed: lt('Processing Speed', 'প্রসেসিং স্পিড'),
+			visual_scanning: lt('Visual Scanning', 'ভিজুয়াল স্ক্যানিং')
 		};
 
 		return names[domain] || domain;
 	}
 
-	function getTaskRoute(taskType, domain, difficulty, planId, taskId) {
-		const routes = {
-			n_back: '/baseline/tasks/working-memory',
-			dual_n_back: '/training/dual-n-back',
-			digit_span: '/training/digit-span',
-			spatial_span: '/training/spatial-span',
-			letter_number_sequencing: '/training/letter-number-sequencing',
-			operation_span: '/training/operation-span',
-			simple_reaction: '/baseline/tasks/processing-speed',
-			choice_reaction_time: '/training/choice-reaction-time',
-			reaction_time: '/baseline/tasks/processing-speed',
-			sdmt: '/training/sdmt',
-			trails_a: '/training/trail-making-a',
-			trail_making_a: '/training/trail-making-a',
-			pattern_comparison: '/training/pattern-comparison',
-			inspection_time: '/training/inspection-time',
-			continuous_performance: '/baseline/tasks/attention',
-			cpt: '/baseline/tasks/attention',
-			pasat: '/training/pasat',
-			sart: '/training/sart',
-			stroop: '/training/stroop',
-			go_nogo: '/training/gonogo',
-			flanker: '/training/flanker',
-			trail_making_b: '/training/trail-making-b',
-			wcst: '/training/wcst',
-			dccs: '/training/dccs',
-			rule_shift: '/training/rule-shift',
-			plus_minus: '/training/plus-minus',
-			tower_of_hanoi: '/baseline/tasks/planning',
-			tower_of_london: '/baseline/tasks/planning',
-			stockings_cambridge: '/training/stockings-of-cambridge',
-			verbal_fluency: '/training/verbal-fluency',
-			category_fluency: '/training/category-fluency',
-			twenty_questions: '/training/twenty-questions',
-			target_search: '/baseline/tasks/visual-scanning',
-			visual_search: '/training/visual-search',
-			landmark_task: '/training/landmark-task',
-			cancellation: '/training/cancellation-test',
-			cancellation_test: '/training/cancellation-test',
-			feature_conjunction: '/training/feature-conjunction',
-			mot: '/training/multiple-object-tracking',
-			multiple_object_tracking: '/training/multiple-object-tracking',
-			ufov: '/training/useful-field-of-view',
-			useful_field_of_view: '/training/useful-field-of-view'
-		};
-
-		const baseRoute = routes[taskType] || '/dashboard';
-		return `${baseRoute}?training=true&planId=${planId}&difficulty=${difficulty}&taskId=${encodeURIComponent(taskId)}`;
-	}
-
 	function getPriorityLabel(priority) {
-		if (priority === 'primary') return 'Primary Focus';
-		if (priority === 'secondary') return 'Secondary Focus';
-		return 'Maintenance';
+		if (priority === 'primary') return lt('Primary Focus', 'প্রধান ফোকাস');
+		if (priority === 'secondary') return lt('Secondary Focus', 'দ্বিতীয় ফোকাস');
+		return lt('Maintenance', 'রক্ষণাবেক্ষণ');
 	}
 
 	function getPriorityTone(priority) {
@@ -144,15 +104,15 @@
 	}
 
 	function getDifficultyLabel(difficulty) {
-		if (difficulty <= 3) return 'Gentle';
-		if (difficulty <= 6) return 'Steady';
-		if (difficulty <= 8) return 'Focused';
-		return 'Advanced';
+		if (difficulty <= 3) return lt('Gentle', 'সহজ');
+		if (difficulty <= 6) return lt('Steady', 'স্থিতিশীল');
+		if (difficulty <= 8) return lt('Focused', 'মনোযোগী');
+		return lt('Advanced', 'উন্নত');
 	}
 
 	function formatClockTime(value) {
-		if (!value) return 'later today';
-		return new Date(value).toLocaleTimeString([], {
+		if (!value) return lt('later today', 'আজ পরে');
+		return new Date(value).toLocaleTimeString($locale === 'bn' ? 'bn-BD' : 'en-US', {
 			hour: 'numeric',
 			minute: '2-digit'
 		});
@@ -162,6 +122,11 @@
 		const totalSeconds = Math.max(0, Number(seconds) || 0);
 		const minutes = Math.floor(totalSeconds / 60);
 		const remainingSeconds = totalSeconds % 60;
+		if ($locale === 'bn') {
+			if (minutes <= 0) return `${n(remainingSeconds)} সেকেন্ড`;
+			if (remainingSeconds === 0) return `${n(minutes)} মিনিট`;
+			return `${n(minutes)} মিনিট ${n(remainingSeconds)} সেকেন্ড`;
+		}
 		if (minutes <= 0) return `${remainingSeconds} sec`;
 		if (remainingSeconds === 0) return `${minutes} min`;
 		return `${minutes} min ${remainingSeconds} sec`;
@@ -211,9 +176,15 @@
 		if (!sessionAlreadyStarted && sessionPacing?.remaining_sessions_today === 0) {
 			pacingWarning = {
 				type: 'limit',
-				title: 'Daily training limit reached',
-				message: `You have already completed ${trainingPlan?.session_constraints?.max_sessions_per_day || 3} sessions today. Take a longer rest and come back tomorrow.`,
-				guidance: 'Use this time for recovery, hydration, and low-effort activities before your next training day.'
+				title: lt('Daily training limit reached', 'আজকের ট্রেনিং সীমা পূর্ণ হয়েছে'),
+				message: lt(
+					`You have already completed ${trainingPlan?.session_constraints?.max_sessions_per_day || 3} sessions today. Take a longer rest and come back tomorrow.`,
+					`আপনি আজ ইতিমধ্যে ${n(trainingPlan?.session_constraints?.max_sessions_per_day || 3)}টি সেশন শেষ করেছেন। একটু বেশি বিশ্রাম নিন এবং আগামীকাল আবার আসুন।`
+				),
+				guidance: lt(
+					'Use this time for recovery, hydration, and low-effort activities before your next training day.',
+					'পরের ট্রেনিং দিনের আগে এই সময়টা বিশ্রাম, পানি পান এবং হালকা কাজের জন্য ব্যবহার করুন।'
+				)
 			};
 			return;
 		}
@@ -221,16 +192,27 @@
 		if (!sessionAlreadyStarted && sessionPacing?.cooldown_active) {
 			pacingWarning = {
 				type: 'cooldown',
-				title: 'Cooldown still active',
-				message: `Please wait ${formatDuration(sessionPacing.cooldown_remaining_seconds)} before starting another session.`,
-				guidance: `Your next session window opens around ${formatClockTime(sessionPacing.next_session_available_at)}. Stretch, rest your eyes, and return when the cooldown ends.`
+				title: lt('Cooldown still active', 'বিরতির সময় এখনো চলছে'),
+				message: lt(
+					`Please wait ${formatDuration(sessionPacing.cooldown_remaining_seconds)} before starting another session.`,
+					`আরেকটি সেশন শুরু করার আগে ${formatDuration(sessionPacing.cooldown_remaining_seconds)} অপেক্ষা করুন।`
+				),
+				guidance: lt(
+					`Your next session window opens around ${formatClockTime(sessionPacing.next_session_available_at)}. Stretch, rest your eyes, and return when the cooldown ends.`,
+					`আপনার পরের সেশনের সময় আনুমানিক ${formatClockTime(sessionPacing.next_session_available_at)}-এ শুরু হবে। একটু স্ট্রেচ করুন, চোখকে বিশ্রাম দিন, তারপর আবার ফিরে আসুন।`
+				)
 			};
 			return;
 		}
 
 		pacingWarning = null;
 
-		pendingTaskRoute = getTaskRoute(task.task_type, task.domain, task.difficulty, trainingPlan.id, task.task_id);
+		pendingTaskRoute = buildTrainingTaskUrl({
+			taskCode: task.task_type,
+			planId: trainingPlan.id,
+			difficulty: task.difficulty,
+			taskId: task.task_id
+		});
 		const hasHandledQuestionnaire = !!getStoredSessionContextValue();
 
 		if (hasHandledQuestionnaire || sessionAlreadyStarted) {
@@ -264,7 +246,9 @@
 	}
 
 	function formatDate(dateValue) {
-		return dateValue ? new Date(dateValue).toLocaleDateString() : 'Not yet';
+		return dateValue
+			? new Date(dateValue).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US')
+			: lt('Not yet', 'এখনও নয়');
 	}
 
 	function getSummaryValue(key) {
@@ -278,9 +262,9 @@
 	}
 
 	$: summaryCards = [
-		{ key: 'total', label: 'Total Sessions' },
-		{ key: 'completed', label: 'Sessions Completed' },
-		{ key: 'last', label: 'Last Training' }
+		{ key: 'total', label: lt('Total Sessions', 'মোট সেশন') },
+		{ key: 'completed', label: lt('Sessions Completed', 'সম্পন্ন সেশন') },
+		{ key: 'last', label: lt('Last Training', 'সর্বশেষ ট্রেনিং') }
 	];
 	$: primaryTasks = getTasksByPriority('primary');
 	$: secondaryTasks = getTasksByPriority('secondary');
@@ -292,20 +276,29 @@
 		: sessionPacing.current_session_in_progress
 			? {
 				kind: 'info',
-				title: 'Session in progress',
-				message: `You have ${nextTasks?.completed_tasks || 0} of ${nextTasks?.total_tasks || sessionConstraints?.tasks_per_session || 4} tasks done in this session. Finish the remaining tasks whenever you are ready.`
+				title: lt('Session in progress', 'সেশন চলছে'),
+				message: lt(
+					`You have ${nextTasks?.completed_tasks || 0} of ${nextTasks?.total_tasks || sessionConstraints?.tasks_per_session || 4} tasks done in this session. Finish the remaining tasks whenever you are ready.`,
+					`এই সেশনে আপনি ${n(nextTasks?.completed_tasks || 0)}টি কাজ শেষ করেছেন, মোট ${n(nextTasks?.total_tasks || sessionConstraints?.tasks_per_session || 4)}টির মধ্যে। প্রস্তুত হলে বাকি কাজগুলো শেষ করুন।`
+				)
 			}
 			: sessionPacing.remaining_sessions_today === 0
 				? {
 					kind: 'warning',
-					title: 'Daily limit reached',
-					message: `You have completed ${sessionConstraints?.max_sessions_per_day || 3} sessions today. NeuroBloom is holding the next session until tomorrow to protect recovery.`
+					title: lt('Daily limit reached', 'আজকের সীমা পূর্ণ হয়েছে'),
+					message: lt(
+						`You have completed ${sessionConstraints?.max_sessions_per_day || 3} sessions today. NeuroBloom is holding the next session until tomorrow to protect recovery.`,
+						`আপনি আজ ${n(sessionConstraints?.max_sessions_per_day || 3)}টি সেশন সম্পন্ন করেছেন। পুনরুদ্ধারের স্বার্থে NeuroBloom আগামীকাল পর্যন্ত পরের সেশনটি আটকে রাখছে।`
+					)
 				}
 				: sessionPacing.cooldown_active
 					? {
 						kind: 'warning',
-						title: 'Cooldown in effect',
-						message: `Your next session becomes available in ${formatDuration(sessionPacing.cooldown_remaining_seconds)}.`
+						title: lt('Cooldown in effect', 'বিরতি চলছে'),
+						message: lt(
+							`Your next session becomes available in ${formatDuration(sessionPacing.cooldown_remaining_seconds)}.`,
+							`আপনার পরের সেশন ${formatDuration(sessionPacing.cooldown_remaining_seconds)} পরে পাওয়া যাবে।`
+						)
 					}
 					: null;
 </script>
@@ -326,26 +319,26 @@
 	<div class="training-layout">
 		{#if loading}
 			<section class="state-card">
-				<p>Loading your training plan...</p>
+				<p>{lt('Loading your training plan...', 'আপনার ট্রেনিং পরিকল্পনা লোড হচ্ছে...')}</p>
 			</section>
 		{:else if error}
 			<section class="state-card error-card">
-				<h3>Training plan unavailable</h3>
+				<h3>{lt('Training plan unavailable', 'ট্রেনিং পরিকল্পনা পাওয়া যাচ্ছে না')}</h3>
 				<p>{error}</p>
-				<button class="primary-btn" on:click={() => goto('/baseline/results')}>Go to Baseline Results</button>
+				<button class="primary-btn" on:click={() => goto('/baseline/results')}>{lt('Go to Baseline Results', 'বেসলাইন ফলাফলে যান')}</button>
 			</section>
 		{:else if trainingPlan && nextTasks}
 			<header class="training-header glass-panel">
 				<div class="header-copy">
 					<p class="eyebrow">NeuroBloom</p>
-					<h1>Your Training Plan</h1>
-					<p class="header-subcopy">A lightweight view of today’s session, recommended tasks, and your current focus areas.</p>
+					<h1>{lt('Your Training Plan', 'আপনার ট্রেনিং পরিকল্পনা')}</h1>
+					<p class="header-subcopy">{lt("A lightweight view of today's session, recommended tasks, and your current focus areas.", 'আজকের সেশন, প্রস্তাবিত কাজ এবং আপনার বর্তমান ফোকাস এলাকা সহজভাবে দেখুন।')}</p>
 				</div>
 				<div class="header-actions">
 					<button class="ghost-btn" on:click={loadTrainingData} disabled={loading}>
-						{#if loading}Refreshing...{:else}Refresh{/if}
+						{#if loading}{lt('Refreshing...', 'রিফ্রেশ হচ্ছে...')}{:else}{lt('Refresh', 'রিফ্রেশ')}{/if}
 					</button>
-					<button class="secondary-btn" on:click={backToDashboard}>Back to Dashboard</button>
+					<button class="secondary-btn" on:click={backToDashboard}>{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
 				</div>
 
 				<div class="summary-strip">
@@ -360,13 +353,13 @@
 
 			{#if pacingBanner || pacingWarning}
 				<section class="section-panel glass-panel pacing-panel {(pacingWarning?.type || pacingBanner?.kind) === 'warning' || (pacingWarning?.type || pacingBanner?.kind) === 'limit' || (pacingWarning?.type || pacingBanner?.kind) === 'cooldown' ? 'warning' : 'info'}">
-					<p class="section-kicker">Session Guidance</p>
+					<p class="section-kicker">{lt('Session Guidance', 'সেশন নির্দেশনা')}</p>
 					<h2>{pacingWarning?.title || pacingBanner?.title}</h2>
 					<p class="section-note">{pacingWarning?.message || pacingBanner?.message}</p>
 					{#if pacingWarning?.guidance}
 						<p class="guidance-copy">{pacingWarning.guidance}</p>
 					{:else if sessionConstraints}
-						<p class="guidance-copy">Recommended pace: up to {sessionConstraints.max_sessions_per_day} sessions per day, {sessionConstraints.recommended_sessions_per_week} sessions per week, {sessionConstraints.recommended_session_length_minutes.min}-{sessionConstraints.recommended_session_length_minutes.max} minutes each, with a {sessionConstraints.cooldown_between_sessions_minutes}-minute cooldown.</p>
+						<p class="guidance-copy">{lt(`Recommended pace: up to ${sessionConstraints.max_sessions_per_day} sessions per day, ${sessionConstraints.recommended_sessions_per_week} sessions per week, ${sessionConstraints.recommended_session_length_minutes.min}-${sessionConstraints.recommended_session_length_minutes.max} minutes each, with a ${sessionConstraints.cooldown_between_sessions_minutes}-minute cooldown.`, `প্রস্তাবিত গতি: দিনে সর্বোচ্চ ${n(sessionConstraints.max_sessions_per_day)}টি সেশন, সপ্তাহে ${n(sessionConstraints.recommended_sessions_per_week)}টি সেশন, প্রতিটি ${n(sessionConstraints.recommended_session_length_minutes.min)}-${n(sessionConstraints.recommended_session_length_minutes.max)} মিনিট, এবং সেশনগুলোর মাঝে ${n(sessionConstraints.cooldown_between_sessions_minutes)} মিনিট বিরতি।`)}</p>
 					{/if}
 				</section>
 			{/if}
@@ -374,11 +367,11 @@
 			<section class="section-panel glass-panel">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Today's Session</p>
-						<h2>Session {nextTasks.session_number}</h2>
+						<p class="section-kicker">{lt("Today's Session", 'আজকের সেশন')}</p>
+						<h2>{lt(`Session ${nextTasks.session_number}`, `সেশন ${n(nextTasks.session_number)}`)}</h2>
 					</div>
 					<div class="session-progress">
-						<p class="progress-label">{nextTasks.completed_tasks} of {nextTasks.total_tasks} tasks completed</p>
+						<p class="progress-label">{lt(`${nextTasks.completed_tasks} of ${nextTasks.total_tasks} tasks completed`, `${n(nextTasks.completed_tasks)} / ${n(nextTasks.total_tasks)}টি কাজ সম্পন্ন`)}</p>
 						<div class="progress-track">
 							<div class="progress-fill" style="width: {(nextTasks.completed_tasks / nextTasks.total_tasks) * 100}%"></div>
 						</div>
@@ -388,22 +381,22 @@
 				{#if nextTasks.session_complete}
 					<button class="session-complete-banner" on:click={() => goto(`/session-summary?session=${trainingPlan.total_sessions}`)}>
 						<div>
-							<p class="complete-kicker">Session complete</p>
-							<h3>All recommended tasks are done.</h3>
-							<p>Open your session summary to review progress and next steps.</p>
+							<p class="complete-kicker">{lt('Session complete', 'সেশন সম্পন্ন')}</p>
+							<h3>{lt('All recommended tasks are done.', 'সব প্রস্তাবিত কাজ শেষ হয়েছে।')}</h3>
+							<p>{lt('Open your session summary to review progress and next steps.', 'আপনার অগ্রগতি ও পরের ধাপ দেখতে সেশন সারাংশ খুলুন।')}</p>
 						</div>
-						<span>View Summary</span>
+						<span>{lt('View Summary', 'সারাংশ দেখুন')}</span>
 					</button>
 				{:else}
-					<p class="section-note">Your session is designed to stay focused and compact. Complete the recommended tasks below in any order.</p>
+					<p class="section-note">{lt('Your session is designed to stay focused and compact. Complete the recommended tasks below in any order.', 'আপনার সেশনটি সংক্ষিপ্ত ও মনোযোগী রাখার জন্য সাজানো হয়েছে। নিচের কাজগুলো যেকোনো ক্রমে সম্পন্ন করুন।')}</p>
 				{/if}
 			</section>
 
 			<section class="section-panel glass-panel">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Recommended Tasks</p>
-						<h2>Today’s actionable tasks</h2>
+						<p class="section-kicker">{lt('Recommended Tasks', 'প্রস্তাবিত কাজ')}</p>
+						<h2>{lt("Today's actionable tasks", 'আজকের করণীয় কাজ')}</h2>
 					</div>
 				</div>
 
@@ -416,11 +409,11 @@
 							</div>
 							<div class="task-meta">
 								<span>{getDifficultyLabel(task.difficulty)}</span>
-								<span>Level {task.difficulty}/10</span>
+								<span>{lt(`Level ${task.difficulty}/10`, `লেভেল ${n(task.difficulty)}/10`)}</span>
 							</div>
 							<p class="task-reason">{task.focus_reason}</p>
 							<button class="primary-btn task-btn" disabled={task.completed} on:click={() => startTask(task)}>
-								{task.completed ? 'Completed' : 'Start Task'}
+								{task.completed ? lt('Completed', 'সম্পন্ন') : lt('Start Task', 'কাজ শুরু করুন')}
 							</button>
 						</article>
 					{/each}
@@ -430,15 +423,15 @@
 			<section class="section-panel glass-panel">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Focus Areas</p>
-						<h2>How today’s plan is balanced</h2>
+						<p class="section-kicker">{lt('Focus Areas', 'ফোকাস এলাকা')}</p>
+						<h2>{lt("How today's plan is balanced", 'আজকের পরিকল্পনা কীভাবে ভারসাম্যপূর্ণ')}</h2>
 					</div>
 				</div>
 
 				<div class="focus-grid">
 					<div class="focus-card primary">
-						<h3>Primary Focus</h3>
-						<p>Areas needing the most support right now.</p>
+						<h3>{lt('Primary Focus', 'প্রধান ফোকাস')}</h3>
+						<p>{lt('Areas needing the most support right now.', 'এই মুহূর্তে যেসব এলাকায় সবচেয়ে বেশি সহায়তা দরকার।')}</p>
 						<ul>
 							{#each trainingPlan.primary_focus as domain}
 								<li>{getDomainName(domain)}</li>
@@ -454,8 +447,8 @@
 					</div>
 
 					<div class="focus-card secondary">
-						<h3>Secondary Focus</h3>
-						<p>Areas with room for steady improvement.</p>
+						<h3>{lt('Secondary Focus', 'দ্বিতীয় ফোকাস')}</h3>
+						<p>{lt('Areas with room for steady improvement.', 'যেসব এলাকায় ধীর কিন্তু স্থির উন্নতির সুযোগ আছে।')}</p>
 						<ul>
 							{#each trainingPlan.secondary_focus as domain}
 								<li>{getDomainName(domain)}</li>
@@ -471,8 +464,8 @@
 					</div>
 
 					<div class="focus-card maintenance">
-						<h3>Maintenance</h3>
-						<p>Areas to keep stable while the plan adapts.</p>
+						<h3>{lt('Maintenance', 'রক্ষণাবেক্ষণ')}</h3>
+						<p>{lt('Areas to keep stable while the plan adapts.', 'পরিকল্পনা বদলালেও যেসব এলাকা স্থির রাখা দরকার।')}</p>
 						<ul>
 							{#each trainingPlan.maintenance as domain}
 								<li>{getDomainName(domain)}</li>

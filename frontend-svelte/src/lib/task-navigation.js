@@ -3,14 +3,9 @@ export const TASK_RETURN_CONTEXT = Object.freeze({
 	BASELINE: 'baseline'
 });
 
-export function resolveTaskReturn(url, context = TASK_RETURN_CONTEXT.TRAINING) {
-	const isBaselineContext = context === TASK_RETURN_CONTEXT.BASELINE;
-	const launchedFromTraining = isBaselineContext
-		? url?.searchParams?.get('training') === 'true'
-		: true;
-
+export function resolveTaskReturn(_url, _context = TASK_RETURN_CONTEXT.TRAINING) {
 	return {
-		href: launchedFromTraining ? '/training' : '/dashboard',
-		labelKey: launchedFromTraining ? 'Back to Training' : 'Back to Dashboard'
+		href: '/dashboard',
+		labelKey: 'Back to Dashboard'
 	};
 }

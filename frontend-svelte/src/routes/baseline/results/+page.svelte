@@ -98,7 +98,7 @@
 		try {
 			trainingPlan = await training.generatePlan(currentUser.id);
 			// Redirect to training page
-			goto('/training');
+			goto('/dashboard');
 		} catch (err) {
 			console.error('Error generating training plan:', err);
 			error = err.response?.data?.detail || 'Failed to generate training plan.';
@@ -687,7 +687,7 @@
 				{:else}
 					<button 
 						class="btn-training" 
-						on:click={() => goto('/training')}
+						on:click={() => goto('/dashboard')}
 						style="margin-left: 1rem;"
 					>
 						View Training Plan

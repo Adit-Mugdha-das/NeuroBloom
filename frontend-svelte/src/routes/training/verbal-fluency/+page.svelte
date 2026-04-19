@@ -754,7 +754,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<button class="start-button" on:click={() => goto('/dashboard')}>
 					{t('Return to Dashboard', taskLocale())}
 				</button>
-				<button class="btn-secondary" on:click={() => goto('/training')}>
+				<button class="btn-secondary" on:click={() => goto('/dashboard')}>
 					{t('Next Task', taskLocale())}
 				</button>
 			</div>

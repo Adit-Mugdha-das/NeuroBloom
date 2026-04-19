@@ -350,7 +350,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	
 	function backToDashboard() {
 		if (isTrainingMode) {
-			goto('/training');
+			goto('/dashboard');
 		} else {
 			goto('/dashboard');
 		}

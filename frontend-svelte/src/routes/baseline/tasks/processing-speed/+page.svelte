@@ -254,7 +254,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         return Math.min(100, simpleScore + choiceSpeedScore + choiceAccuracyScore + consistencyScore);
     }
 
-    function backToDashboard() { goto(isTrainingMode ? '/training' : '/dashboard'); }
+    function backToDashboard() { goto('/dashboard'); }
 </script>
 
 <svelte:head>
@@ -488,7 +488,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 </div>
 
                 <button class="start-button" on:click={backToDashboard}>
-                    {isTrainingMode ? t('Back to Training') : t('Back to Dashboard')}
+                    {t('Back to Dashboard')}
                 </button>
             </div>
         </div>

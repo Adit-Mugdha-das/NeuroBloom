@@ -896,8 +896,8 @@
 			</div>
 
 			<div class="btn-row">
-				<button class="start-button" on:click={() => goto('/training')}>
-					{lt('Back to Training', 'ট্রেনিংয়ে ফিরে যান')}
+				<button class="start-button" on:click={() => goto('/dashboard')}>
+					{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
 				</button>
 				<button class="secondary-button" on:click={returnToDashboard}>
 					{lt('View Dashboard', 'ড্যাশবোর্ড দেখুন')}
