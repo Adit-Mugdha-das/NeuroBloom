@@ -4,6 +4,7 @@
 	export let brand = 'NeuroBloom';
 	export let title = '';
 	export let subtitle = '';
+	export let description = '';
 	export let actions = [];
 	export let logoutLabel = 'Logout';
 
@@ -20,6 +21,9 @@
 		<h1>{title}</h1>
 		{#if subtitle}
 			<p class="subtitle">{subtitle}</p>
+		{/if}
+		{#if description}
+			<p class="description">{description}</p>
 		{/if}
 	</div>
 
@@ -57,7 +61,8 @@
 
 	.brand-mark,
 	h1,
-	.subtitle {
+	.subtitle,
+	.description {
 		margin: 0;
 	}
 
@@ -77,9 +82,16 @@
 
 	.subtitle {
 		font-size: 1rem;
-		line-height: 1.55;
+		font-weight: 700;
+		line-height: 1.4;
+		color: #0f172a;
+	}
+
+	.description {
+		font-size: 0.98rem;
+		line-height: 1.6;
 		color: #64748b;
-		max-width: 48rem;
+		max-width: 44rem;
 	}
 
 	.topbar-actions {

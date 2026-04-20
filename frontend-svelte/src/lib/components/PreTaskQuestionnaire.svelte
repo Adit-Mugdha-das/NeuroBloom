@@ -1,36 +1,35 @@
 <script>
-	import api from '$lib/api.js';
+	import { training } from '$lib/api.js';
+	import { locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
 
-	// Props
 	export let showQuestionnaire = true;
 
-	// Form state
 	let fatigueLevel = 5;
 	let sleepQuality = 5;
 	let medicationTaken = null;
 	let hoursSinceMedication = null;
 	let readinessLevel = 7;
 
-	// UI state
 	let submitting = false;
 	let error = '';
-
-	// Get current user
 	let currentUser;
-	user.subscribe(value => {
+
+	user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	async function submitQuestionnaire() {
 		submitting = true;
 		error = '';
 
 		try {
-			const response = await api.post('/api/training/session-context', {
+			const response = await training.createSessionContext({
 				user_id: currentUser.id,
 				fatigue_level: fatigueLevel,
 				sleep_quality: sleepQuality,
@@ -44,16 +43,18 @@
 				location: null
 			});
 
-			// Emit event with context_id
 			dispatch('complete', {
-				contextId: response.data.context_id,
-				timeOfDay: response.data.time_of_day
+				contextId: response.context_id,
+				timeOfDay: response.time_of_day
 			});
 
 			showQuestionnaire = false;
-		} catch (err) {
-			error = 'Failed to save responses. Please try again.';
-			console.error(err);
+		} catch (requestError) {
+			error = lt(
+				'Failed to save your answers. Please try again.',
+				'আপনার উত্তর সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।'
+			);
+			console.error(requestError);
 		} finally {
 			submitting = false;
 		}
@@ -69,8 +70,8 @@
 	<div class="questionnaire-overlay">
 		<div class="questionnaire-modal">
 			<div class="modal-header">
-				<h2>📋 Quick Check-In</h2>
-				<p class="subtitle">4 quick answers before this 4-task training session</p>
+				<h2>{lt('Quick Check-In', 'দ্রুত চেক-ইন')}</h2>
+				<p class="subtitle">{lt('A few short answers before this training session', 'এই ট্রেনিং সেশনের আগে কয়েকটি ছোট উত্তর দিন')}</p>
 			</div>
 
 			<div class="modal-body">
@@ -78,19 +79,17 @@
 					<div class="error-message">{error}</div>
 				{/if}
 
-				<!-- Essential Questions -->
 				<div class="question-section">
-					<h3>Session Readiness</h3>
+					<h3>{lt('Session readiness', 'সেশন প্রস্তুতি')}</h3>
 
-					<!-- Fatigue Level -->
 					<div class="question-group">
 						<label for="fatigue-level">
-							<span class="label-text">Energy Level</span>
+							<span class="label-text">{lt('Energy level', 'শক্তির মাত্রা')}</span>
 							<span class="label-value">{fatigueLevel}/10</span>
 						</label>
 						<div class="scale-labels">
-							<span>Exhausted</span>
-							<span>Energized</span>
+							<span>{lt('Exhausted', 'ক্লান্ত')}</span>
+							<span>{lt('Energized', 'শক্তিশালী')}</span>
 						</div>
 						<input id="fatigue-level" type="range" min="1" max="10" bind:value={fatigueLevel} class="slider" />
 						<div class="scale-indicators">
@@ -100,15 +99,14 @@
 						</div>
 					</div>
 
-					<!-- Sleep Quality -->
 					<div class="question-group">
 						<label for="sleep-quality">
-							<span class="label-text">Sleep Quality (last night)</span>
+							<span class="label-text">{lt('Sleep quality last night', 'গত রাতের ঘুমের মান')}</span>
 							<span class="label-value">{sleepQuality}/10</span>
 						</label>
 						<div class="scale-labels">
-							<span>Terrible</span>
-							<span>Excellent</span>
+							<span>{lt('Poor', 'খারাপ')}</span>
+							<span>{lt('Excellent', 'চমৎকার')}</span>
 						</div>
 						<input id="sleep-quality" type="range" min="1" max="10" bind:value={sleepQuality} class="slider" />
 						<div class="scale-indicators">
@@ -118,15 +116,14 @@
 						</div>
 					</div>
 
-					<!-- Readiness -->
 					<div class="question-group">
 						<label for="readiness-level">
-							<span class="label-text">Feeling Ready for Cognitive Tasks?</span>
+							<span class="label-text">{lt('How ready do you feel for cognitive tasks?', 'মানসিক কাজের জন্য আপনি কতটা প্রস্তুত?')}</span>
 							<span class="label-value">{readinessLevel}/10</span>
 						</label>
 						<div class="scale-labels">
-							<span>Not Ready</span>
-							<span>Very Ready</span>
+							<span>{lt('Not ready', 'প্রস্তুত নই')}</span>
+							<span>{lt('Very ready', 'খুব প্রস্তুত')}</span>
 						</div>
 						<input id="readiness-level" type="range" min="1" max="10" bind:value={readinessLevel} class="slider" />
 						<div class="scale-indicators">
@@ -137,17 +134,17 @@
 					</div>
 
 					<div class="question-group inline">
-						<label for="medication">Medication taken today?</label>
+						<label for="medication">{lt('Medication taken today?', 'আজ ওষুধ নিয়েছেন?')}</label>
 						<select id="medication" bind:value={medicationTaken} class="select-input">
-							<option value={null}>Not sure</option>
-							<option value={true}>Yes</option>
-							<option value={false}>No</option>
+							<option value={null}>{lt('Not sure', 'নিশ্চিত নই')}</option>
+							<option value={true}>{lt('Yes', 'হ্যাঁ')}</option>
+							<option value={false}>{lt('No', 'না')}</option>
 						</select>
 					</div>
 
 					{#if medicationTaken}
 						<div class="question-group inline">
-							<label for="hours-since-med">Hours since last dose</label>
+							<label for="hours-since-med">{lt('Hours since last dose', 'শেষ ডোজের পর ঘণ্টা')}</label>
 							<input
 								id="hours-since-med"
 								type="number"
@@ -164,15 +161,15 @@
 
 			<div class="modal-footer">
 				<button class="btn-skip" on:click={skip} disabled={submitting}>
-					Skip for Now
+					{lt('Skip for now', 'এখন এড়িয়ে যান')}
 				</button>
 				<button class="btn-submit" on:click={submitQuestionnaire} disabled={submitting}>
-					{submitting ? 'Saving...' : 'Start Training →'}
+					{submitting ? lt('Saving...', 'সংরক্ষণ হচ্ছে...') : lt('Start training', 'ট্রেনিং শুরু করুন')}
 				</button>
 			</div>
 
 			<div class="privacy-note">
-				🔒 This check-in is saved once and reused across the full 4-task session.
+				{lt('This check-in is saved once and reused across the session.', 'এই চেক-ইন একবার সংরক্ষণ হলে পুরো সেশনে ব্যবহার করা হবে।')}
 			</div>
 		</div>
 	</div>
@@ -181,11 +178,8 @@
 <style>
 	.questionnaire-overlay {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0, 0, 0, 0.7);
+		inset: 0;
+		background: rgba(15, 23, 42, 0.58);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -194,121 +188,125 @@
 	}
 
 	.questionnaire-modal {
-		background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-		border-radius: 20px;
-		max-width: 600px;
+		background: linear-gradient(160deg, #0f766e 0%, #0369a1 100%);
+		border-radius: 24px;
+		max-width: 620px;
 		width: 100%;
 		max-height: 90vh;
 		overflow-y: auto;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+		box-shadow: 0 28px 70px rgba(15, 23, 42, 0.4);
+	}
+
+	.modal-header,
+	.modal-body,
+	.modal-footer,
+	.privacy-note {
+		padding-left: 28px;
+		padding-right: 28px;
 	}
 
 	.modal-header {
-		background: rgba(255, 255, 255, 0.1);
-		padding: 30px;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+		padding-top: 28px;
+		padding-bottom: 22px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+	}
+
+	.modal-header h2,
+	.subtitle,
+	.question-section h3,
+	label,
+	.privacy-note {
+		margin: 0;
+		color: #fff;
 	}
 
 	.modal-header h2 {
-		margin: 0 0 10px 0;
-		color: white;
-		font-size: 28px;
+		font-size: 1.9rem;
 	}
 
-	.subtitle {
-		margin: 0;
-		color: rgba(255, 255, 255, 0.8);
-		font-size: 14px;
+	.subtitle,
+	.privacy-note {
+		margin-top: 0.45rem;
+		color: rgba(255, 255, 255, 0.82);
+		line-height: 1.5;
 	}
 
 	.modal-body {
-		padding: 30px;
+		padding-top: 24px;
+		padding-bottom: 24px;
 	}
 
 	.question-section {
-		margin-bottom: 20px;
+		display: grid;
+		gap: 1rem;
 	}
 
 	.question-section h3 {
-		color: white;
-		font-size: 16px;
-		margin-bottom: 20px;
+		font-size: 0.9rem;
+		font-weight: 800;
 		text-transform: uppercase;
-		letter-spacing: 1px;
+		letter-spacing: 0.1em;
 	}
 
 	.question-group {
-		margin-bottom: 25px;
+		display: grid;
+		gap: 0.65rem;
 	}
 
 	.question-group.inline {
-		display: flex;
+		grid-template-columns: 1fr 180px;
 		align-items: center;
-		gap: 15px;
-	}
-
-	.question-group.inline label {
-		flex: 1;
-		margin-bottom: 0;
 	}
 
 	label {
 		display: flex;
 		justify-content: space-between;
-		color: white;
-		font-size: 15px;
-		font-weight: 500;
-		margin-bottom: 10px;
-	}
-
-	.label-text {
-		flex: 1;
+		gap: 1rem;
+		font-size: 0.98rem;
+		font-weight: 600;
 	}
 
 	.label-value {
-		color: #4fc3f7;
-		font-weight: bold;
-		font-size: 16px;
+		color: #bae6fd;
+		font-weight: 800;
 	}
 
 	.scale-labels {
 		display: flex;
 		justify-content: space-between;
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.6);
-		margin-bottom: 8px;
+		font-size: 0.8rem;
+		color: rgba(255, 255, 255, 0.72);
 	}
 
 	.slider {
 		width: 100%;
 		height: 8px;
-		border-radius: 5px;
+		border-radius: 999px;
 		background: rgba(255, 255, 255, 0.2);
 		outline: none;
 		-webkit-appearance: none;
 		appearance: none;
-		margin-bottom: 10px;
 	}
 
 	.slider::-webkit-slider-thumb {
 		-webkit-appearance: none;
 		appearance: none;
-		width: 24px;
-		height: 24px;
+		width: 22px;
+		height: 22px;
 		border-radius: 50%;
-		background: #4fc3f7;
+		background: #ffffff;
 		cursor: pointer;
-		box-shadow: 0 2px 10px rgba(79, 195, 247, 0.5);
+		box-shadow: 0 2px 12px rgba(125, 211, 252, 0.42);
 	}
 
 	.slider::-moz-range-thumb {
-		width: 24px;
-		height: 24px;
+		width: 22px;
+		height: 22px;
 		border-radius: 50%;
-		background: #4fc3f7;
+		background: #ffffff;
 		cursor: pointer;
 		border: none;
-		box-shadow: 0 2px 10px rgba(79, 195, 247, 0.5);
+		box-shadow: 0 2px 12px rgba(125, 211, 252, 0.42);
 	}
 
 	.scale-indicators {
@@ -319,72 +317,52 @@
 	.indicator {
 		flex: 1;
 		height: 4px;
-		background: rgba(255, 255, 255, 0.2);
-		border-radius: 2px;
-		transition: background 0.2s;
+		background: rgba(255, 255, 255, 0.18);
+		border-radius: 999px;
 	}
 
 	.indicator.active {
-		background: #4fc3f7;
+		background: #bae6fd;
 	}
 
 	.number-input,
 	.select-input {
-		padding: 10px 15px;
-		border-radius: 8px;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		background: rgba(255, 255, 255, 0.1);
-		color: white;
-		font-size: 15px;
-		min-width: 120px;
-	}
-
-	.number-input:focus,
-	.select-input:focus {
-		outline: none;
-		border-color: #4fc3f7;
+		padding: 0.85rem 0.95rem;
+		border-radius: 14px;
+		border: 1px solid rgba(255, 255, 255, 0.24);
+		background: rgba(255, 255, 255, 0.12);
+		color: #ffffff;
+		font: inherit;
 	}
 
 	.modal-footer {
-		padding: 20px 30px;
+		padding-top: 18px;
+		padding-bottom: 18px;
 		display: flex;
-		gap: 15px;
-		border-top: 1px solid rgba(255, 255, 255, 0.2);
+		gap: 14px;
+		border-top: 1px solid rgba(255, 255, 255, 0.16);
+	}
+
+	.btn-skip,
+	.btn-submit {
+		border: none;
+		border-radius: 999px;
+		padding: 0.95rem 1.1rem;
+		font-weight: 800;
+		cursor: pointer;
 	}
 
 	.btn-skip {
 		flex: 1;
-		padding: 15px 25px;
-		background: rgba(255, 255, 255, 0.1);
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-radius: 10px;
-		color: white;
-		font-size: 16px;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.btn-skip:hover:not(:disabled) {
-		background: rgba(255, 255, 255, 0.15);
-		transform: translateY(-2px);
+		background: rgba(255, 255, 255, 0.12);
+		color: #fff;
+		border: 1px solid rgba(255, 255, 255, 0.24);
 	}
 
 	.btn-submit {
 		flex: 2;
-		padding: 15px 25px;
-		background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
-		border: none;
-		border-radius: 10px;
-		color: white;
-		font-size: 16px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.btn-submit:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 5px 20px rgba(79, 195, 247, 0.4);
+		background: linear-gradient(135deg, #ffffff, #e0f2fe);
+		color: #0f172a;
 	}
 
 	.btn-skip:disabled,
@@ -394,38 +372,27 @@
 	}
 
 	.privacy-note {
-		padding: 15px 30px 20px;
+		padding-bottom: 22px;
 		text-align: center;
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.6);
+		font-size: 0.8rem;
 	}
 
 	.error-message {
-		padding: 12px;
-		background: rgba(244, 67, 54, 0.2);
-		border: 1px solid rgba(244, 67, 54, 0.5);
-		border-radius: 8px;
-		color: #ff5252;
-		margin-bottom: 20px;
-		font-size: 14px;
+		padding: 0.9rem 1rem;
+		border-radius: 14px;
+		background: rgba(239, 68, 68, 0.16);
+		border: 1px solid rgba(254, 202, 202, 0.32);
+		color: #fee2e2;
+		font-size: 0.92rem;
 	}
 
-	/* Scrollbar styling */
-	.questionnaire-modal::-webkit-scrollbar {
-		width: 8px;
-	}
+	@media (max-width: 640px) {
+		.question-group.inline {
+			grid-template-columns: 1fr;
+		}
 
-	.questionnaire-modal::-webkit-scrollbar-track {
-		background: rgba(0, 0, 0, 0.2);
-		border-radius: 10px;
-	}
-
-	.questionnaire-modal::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.3);
-		border-radius: 10px;
-	}
-
-	.questionnaire-modal::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.4);
+		.modal-footer {
+			flex-direction: column;
+		}
 	}
 </style>

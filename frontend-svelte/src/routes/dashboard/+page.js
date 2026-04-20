@@ -15,8 +15,6 @@ export async function load({ fetch, depends }) {
 	}
 
 	return {
-		currentUser: user,
-		localeCode: locale,
 		dashboard: await createPatientDashboardViewModel({
 			fetchImpl: fetch,
 			user,

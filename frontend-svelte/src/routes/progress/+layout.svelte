@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 
 	let currentUser = null;
@@ -10,11 +11,29 @@
 	});
 
 	const tabs = [
-		{ href: '/progress', label: 'Overview' },
-		{ href: '/progress/domains', label: 'Domain Performance' },
-		{ href: '/progress/history', label: 'Training History' },
-		{ href: '/progress/achievements', label: 'Achievements' }
+		{
+			href: '/progress',
+			label: { en: 'Overview', bn: 'ওভারভিউ' }
+		},
+		{
+			href: '/progress/domains',
+			label: { en: 'Domains', bn: 'ডোমেইন' }
+		},
+		{
+			href: '/progress/history',
+			label: { en: 'History', bn: 'হিস্ট্রি' }
+		},
+		{
+			href: '/progress/achievements',
+			label: { en: 'Achievements', bn: 'অর্জন' }
+		},
+		{
+			href: '/progress/insights',
+			label: { en: 'Insights', bn: 'ইনসাইট' }
+		}
 	];
+
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	function isActive(href) {
 		return href === '/progress' ? page.url.pathname === href : page.url.pathname.startsWith(href);
@@ -25,20 +44,20 @@
 	<header class="progress-header">
 		<div class="header-copy">
 			<p class="eyebrow">NeuroBloom Progress</p>
-			<h1>Your Progress Area</h1>
-			<p class="header-subcopy">Each view focuses on one purpose only, so reviewing progress stays calm and easy to follow.</p>
+			<h1>{lt('Your Progress Area', 'আপনার অগ্রগতির এলাকা')}</h1>
+			<p class="header-subcopy">{lt('Each view focuses on one purpose only, so reviewing progress stays calm and easy to follow.', 'প্রতিটি ভিউ একটি নির্দিষ্ট কাজের জন্য, তাই অগ্রগতি দেখা সহজ ও শান্ত থাকে।')}</p>
 		</div>
 		<div class="header-actions">
 			{#if currentUser}
 				<span class="user-email">{currentUser.email}</span>
 			{/if}
-			<button class="back-btn" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
+			<button class="back-btn" on:click={() => goto('/dashboard')}>{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
 		</div>
 	</header>
 
 	<nav class="progress-nav" aria-label="Progress sections">
 		{#each tabs as tab}
-			<a href={tab.href} class:selected={isActive(tab.href)}>{tab.label}</a>
+			<a href={tab.href} class:selected={isActive(tab.href)}>{localeText(tab.label, $locale)}</a>
 		{/each}
 	</nav>
 

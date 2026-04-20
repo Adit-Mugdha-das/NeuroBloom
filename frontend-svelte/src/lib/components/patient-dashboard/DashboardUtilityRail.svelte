@@ -1,9 +1,7 @@
 <script>
 	export let label = '';
 	export let title = '';
-	export let items = [];
-	export let detailsLabel = '';
-	export let detailsOpen = false;
+	export let cards = [];
 </script>
 
 <section class="rail-panel">
@@ -11,44 +9,25 @@
 	<h2>{title}</h2>
 
 	<div class="rail-list">
-		{#each items as item}
+		{#each cards as card}
 			<article class="rail-card">
-				<div class="rail-copy">
-					<p class="item-label">{item.label}</p>
-					<p class="item-value">{item.value}</p>
-					{#if item.note}
-						<p class="item-note">{item.note}</p>
-					{/if}
-				</div>
-				{#if item.action}
-					<a class="item-action" href={item.action.href}>
-						{item.action.label}
-						{#if item.action.badge}
-							<span class="action-badge">{item.action.badge}</span>
-						{/if}
-					</a>
+				<p class="card-eyebrow">{card.eyebrow}</p>
+				<h3>{card.title}</h3>
+				<p class="card-body">{card.body}</p>
+
+				{#if card.action}
+					<a class="card-action" href={card.action.href}>{card.action.label}</a>
 				{/if}
 			</article>
 		{/each}
 	</div>
-
-	{#if detailsLabel}
-		<details class="rail-details" bind:open={detailsOpen}>
-			<summary>{detailsLabel}</summary>
-			{#if detailsOpen}
-				<div class="rail-details__body">
-					<slot />
-				</div>
-			{/if}
-		</details>
-	{/if}
 </section>
 
 <style>
 	.rail-panel {
 		padding: 1.25rem;
 		border-radius: 24px;
-		background: rgba(255, 255, 255, 0.86);
+		background: rgba(255, 255, 255, 0.9);
 		border: 1px solid rgba(203, 213, 225, 0.82);
 		box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
 		display: grid;
@@ -57,9 +36,9 @@
 
 	.label,
 	h2,
-	.item-label,
-	.item-value,
-	.item-note {
+	.card-eyebrow,
+	h3,
+	.card-body {
 		margin: 0;
 	}
 
@@ -72,7 +51,7 @@
 	}
 
 	h2 {
-		font-size: 1.45rem;
+		font-size: 1.4rem;
 		color: #0f172a;
 	}
 
@@ -87,81 +66,49 @@
 		background: #f8fafc;
 		border: 1px solid rgba(203, 213, 225, 0.82);
 		display: grid;
-		gap: 0.8rem;
+		gap: 0.45rem;
 	}
 
-	.rail-copy {
-		display: grid;
-		gap: 0.28rem;
-	}
-
-	.item-label {
-		font-size: 0.88rem;
-		font-weight: 700;
+	.card-eyebrow {
+		font-size: 0.8rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 		color: #64748b;
 	}
 
-	.item-value {
-		font-size: 1.08rem;
-		font-weight: 800;
+	h3 {
+		font-size: 1rem;
+		line-height: 1.35;
 		color: #0f172a;
 	}
 
-	.item-note {
+	.card-body {
 		font-size: 0.94rem;
-		line-height: 1.5;
+		line-height: 1.58;
 		color: #475569;
 	}
 
-	.item-action {
+	.card-action {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.45rem;
-		min-height: 44px;
-		padding: 0.75rem 0.95rem;
+		width: fit-content;
+		margin-top: 0.2rem;
+		min-height: 42px;
+		padding: 0.72rem 0.9rem;
 		border-radius: 999px;
-		background: #ffffff;
-		border: 1px solid rgba(148, 163, 184, 0.75);
+		background: rgba(239, 246, 255, 0.92);
+		border: 1px solid rgba(147, 197, 253, 0.5);
 		color: #0f172a;
 		text-decoration: none;
 		font-weight: 800;
+		font-size: 0.88rem;
 	}
 
-	.action-badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 1.45rem;
-		height: 1.45rem;
-		padding: 0 0.35rem;
-		border-radius: 999px;
-		background: #1d4ed8;
-		color: #ffffff;
-		font-size: 0.76rem;
-	}
-
-	.rail-details {
-		border-radius: 18px;
-		background: #f8fafc;
-		border: 1px solid rgba(203, 213, 225, 0.82);
-		overflow: hidden;
-	}
-
-	.rail-details summary {
-		padding: 1rem;
-		cursor: pointer;
-		list-style: none;
-		font-size: 0.98rem;
-		font-weight: 800;
-		color: #0f172a;
-	}
-
-	.rail-details summary::-webkit-details-marker {
-		display: none;
-	}
-
-	.rail-details__body {
-		padding: 0 1rem 1rem;
+	@media (max-width: 720px) {
+		.card-action {
+			width: 100%;
+		}
 	}
 </style>

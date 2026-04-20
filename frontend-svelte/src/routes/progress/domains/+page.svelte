@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
+	import { locale, localeText } from '$lib/i18n';
 	import { domainOrder, getDomainName, getScoreColor, getTrendLabel, getTrendTone } from '$lib/progress';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -13,6 +14,8 @@
 	user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -31,7 +34,7 @@
 			metrics = await training.getMetrics(currentUser.id);
 		} catch (loadError) {
 			console.error('Error loading domain performance:', loadError);
-			error = 'Complete more training sessions to review domain performance.';
+			error = lt('Complete more training sessions to review domain performance.', 'ডোমেইন পারফরম্যান্স দেখতে আরও কিছু ট্রেনিং সেশন সম্পন্ন করুন।');
 		} finally {
 			loading = false;
 		}
@@ -45,40 +48,40 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
-			<p>Loading domain performance...</p>
-		</section>
-	{:else if error}
-		<section class="state-panel glass-card">
-			<h2>Domain performance unavailable</h2>
-			<p>{error}</p>
-		</section>
-	{:else}
+				<p>{lt('Loading domain performance...', 'ডোমেইন পারফরম্যান্স লোড হচ্ছে...')}</p>
+			</section>
+		{:else if error}
+			<section class="state-panel glass-card">
+				<h2>{lt('Domain performance unavailable', 'ডোমেইন পারফরম্যান্স পাওয়া যাচ্ছে না')}</h2>
+				<p>{error}</p>
+			</section>
+		{:else}
 		<section class="domains-grid">
 			{#each domainCards as entry}
 				<article class="glass-card domain-card {getTrendTone(entry.data.improvement)}">
 					<div class="card-topline">
 						<div>
-							<p class="card-label">{getDomainName(entry.domain)}</p>
+							<p class="card-label">{getDomainName(entry.domain, $locale)}</p>
 							<h2>{entry.data.average_score.toFixed(1)}</h2>
 						</div>
-						<span class="trend-pill {getTrendTone(entry.data.improvement)}">{getTrendLabel(entry.data.improvement)}</span>
+						<span class="trend-pill {getTrendTone(entry.data.improvement)}">{getTrendLabel(entry.data.improvement, $locale)}</span>
 					</div>
 
 					<div class="metric-row">
 						<div>
-							<p class="metric-label">Sessions</p>
+							<p class="metric-label">{lt('Sessions', 'সেশন')}</p>
 							<p class="metric-value">{entry.data.total_sessions}</p>
 						</div>
 						<div>
-							<p class="metric-label">Average Score</p>
+							<p class="metric-label">{lt('Average score', 'গড় স্কোর')}</p>
 							<p class="metric-value" style="color: {getScoreColor(entry.data.average_score)}">{entry.data.average_score.toFixed(1)}</p>
 						</div>
 						<div>
-							<p class="metric-label">Accuracy</p>
+							<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
 							<p class="metric-value">{entry.data.average_accuracy.toFixed(1)}%</p>
 						</div>
 						<div>
-							<p class="metric-label">Improvement</p>
+							<p class="metric-label">{lt('Improvement', 'উন্নতি')}</p>
 							<p class="metric-value">{entry.data.improvement > 0 ? '+' : ''}{entry.data.improvement.toFixed(1)}</p>
 						</div>
 					</div>

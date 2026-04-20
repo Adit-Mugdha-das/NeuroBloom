@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
 	import SimpleTrendChart from '$lib/components/SimpleTrendChart.svelte';
+	import { locale, localeText } from '$lib/i18n';
 	import {
 	  calculateBaselineDifficulty,
 	  calculateOverallScore,
@@ -29,6 +30,8 @@
 		currentUser = value;
 	});
 
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
 	onMount(async () => {
 		if (!currentUser) {
 			goto('/login');
@@ -50,7 +53,7 @@
 			comparisonData = await training.getPerformanceComparison(currentUser.id);
 		} catch (loadError) {
 			console.error('Error loading progress overview:', loadError);
-			error = 'Complete more training sessions to unlock your progress overview.';
+			error = lt('Complete more training sessions to unlock your progress overview.', 'আপনার প্রগ্রেস ওভারভিউ দেখতে আরও কিছু ট্রেনিং সেশন সম্পন্ন করুন।');
 		} finally {
 			loading = false;
 		}
@@ -62,10 +65,10 @@
 	$: comparisonEntries = Object.entries(comparisonData?.comparison || {});
 	$: baselineCards = comparisonEntries.map(([domain, values]) => ({
 		domain,
-		label: getDomainName(domain),
-		status: getClinicalStatusLabel(values.improvement),
+		label: getDomainName(domain, $locale),
+		status: getClinicalStatusLabel(values.improvement, $locale),
 		tone: getClinicalStatusTone(values.improvement),
-		pointChange: formatPointChange(values.improvement)
+		pointChange: formatPointChange(values.improvement, $locale)
 	}));
 	$: difficultyEntries = comparisonEntries
 		.map(([domain, values]) => {
@@ -75,7 +78,7 @@
 
 			return {
 				domain,
-				label: getDomainName(domain),
+				label: getDomainName(domain, $locale),
 				baselineDifficulty,
 				currentDifficulty,
 				delta
@@ -88,40 +91,40 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
-			<p>Loading progress overview...</p>
-		</section>
-	{:else if error}
-		<section class="state-panel glass-card">
-			<h2>Progress overview unavailable</h2>
-			<p>{error}</p>
-			<a class="action-link" href="/training">Start Training</a>
-		</section>
-	{:else}
+				<p>{lt('Loading progress overview...', 'প্রগ্রেস ওভারভিউ লোড হচ্ছে...')}</p>
+			</section>
+		{:else if error}
+			<section class="state-panel glass-card">
+				<h2>{lt('Progress overview unavailable', 'প্রগ্রেস ওভারভিউ পাওয়া যাচ্ছে না')}</h2>
+				<p>{error}</p>
+				<a class="action-link" href="/training">{lt('Start training', 'ট্রেনিং শুরু করুন')}</a>
+			</section>
+		{:else}
 		<div class="overview-stack">
 			<section class="summary-grid">
 				<article class="glass-card stat-card compact-card">
-					<p class="card-label">Weekly Summary</p>
-					<h2>{weeklySummary?.total_sessions || 0} sessions</h2>
-					<p class="card-copy">{weeklySummary?.active_days || 0} active days and {weeklySummary?.total_time_minutes || 0} minutes this week.</p>
+					<p class="card-label">{lt('Weekly summary', 'সাপ্তাহিক সারাংশ')}</p>
+					<h2>{weeklySummary?.total_sessions || 0} {lt('sessions', 'সেশন')}</h2>
+					<p class="card-copy">{weeklySummary?.active_days || 0} {lt('active days and', 'সক্রিয় দিন এবং')} {weeklySummary?.total_time_minutes || 0} {lt('minutes this week.', 'মিনিট এই সপ্তাহে।')}</p>
 				</article>
 
 				<article class="glass-card stat-card compact-card">
-					<p class="card-label">Overall Score</p>
+					<p class="card-label">{lt('Overall score', 'সামগ্রিক স্কোর')}</p>
 					<h2>{overallScore}</h2>
-					<p class="card-copy">A simplified average across your active cognitive domains.</p>
+					<p class="card-copy">{lt('A simplified average across your active cognitive domains.', 'আপনার সক্রিয় মানসিক ডোমেইনগুলোর একটি সরল গড়।')}</p>
 				</article>
 
 				<article class="glass-card stat-card compact-card">
-					<p class="card-label">Training Streak</p>
-					<h2>{streakData?.current_streak || 0} days</h2>
-					<p class="card-copy">Longest streak: {streakData?.longest_streak || 0} days.</p>
+					<p class="card-label">{lt('Training streak', 'ট্রেনিং ধারাবাহিকতা')}</p>
+					<h2>{streakData?.current_streak || 0} {lt('days', 'দিন')}</h2>
+					<p class="card-copy">{lt('Longest streak:', 'সবচেয়ে বড় ধারাবাহিকতা:')} {streakData?.longest_streak || 0} {lt('days.', 'দিন।')}</p>
 				</article>
 
 				<article class="glass-card trend-card compact-card {trendTone}">
 					<div class="trend-head">
 						<div>
-							<p class="card-label">Trend</p>
-							<h2>{getTrendLabel(trendDelta)}</h2>
+							<p class="card-label">{lt('Trend', 'ট্রেন্ড')}</p>
+							<h2>{getTrendLabel(trendDelta, $locale)}</h2>
 						</div>
 						<p class="trend-delta">{trendDelta > 0 ? '+' : ''}{trendDelta}</p>
 					</div>
@@ -133,8 +136,8 @@
 				<article class="glass-card detail-card">
 					<div class="detail-head">
 						<div>
-							<p class="card-label">Improvement Since Baseline</p>
-							<h2>Cognitive improvement since baseline</h2>
+							<p class="card-label">{lt('Improvement since baseline', 'বেসলাইন থেকে উন্নতি')}</p>
+							<h2>{lt('Cognitive improvement since baseline', 'বেসলাইন থেকে মানসিক উন্নতি')}</h2>
 						</div>
 					</div>
 
@@ -154,8 +157,8 @@
 				<article class="glass-card detail-card">
 					<div class="detail-head">
 						<div>
-							<p class="card-label">Difficulty Progress</p>
-							<h2>Training challenge since baseline</h2>
+							<p class="card-label">{lt('Difficulty progress', 'কঠিনতার অগ্রগতি')}</p>
+							<h2>{lt('Training challenge since baseline', 'বেসলাইন থেকে ট্রেনিংয়ের পরিবর্তন')}</h2>
 						</div>
 					</div>
 
@@ -164,12 +167,12 @@
 							{#each difficultyEntries.slice(0, 4) as entry}
 								<div class="difficulty-row">
 									<p class="difficulty-domain">{entry.label}</p>
-									<p class="difficulty-copy">Your training difficulty {entry.delta > 0 ? 'increased' : 'decreased'} by {Math.abs(entry.delta)} level{Math.abs(entry.delta) === 1 ? '' : 's'} since baseline.</p>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<p class="card-copy">Your training difficulty is stable so far. As you complete more sessions, this section will update automatically.</p>
+								<p class="difficulty-copy">{entry.delta > 0 ? lt('Your training difficulty increased by', 'আপনার ট্রেনিংয়ের কঠিনতা বেড়েছে') : lt('Your training difficulty decreased by', 'আপনার ট্রেনিংয়ের কঠিনতা কমেছে')} {Math.abs(entry.delta)} {lt('level', 'লেভেল')}{Math.abs(entry.delta) === 1 ? '' : 's'} {lt('since baseline.', 'বেসলাইন থেকে।')}</p>
+							</div>
+						{/each}
+					</div>
+				{:else}
+						<p class="card-copy">{lt('Your training difficulty is stable so far. As you complete more sessions, this section will update automatically.', 'এখন পর্যন্ত আপনার ট্রেনিংয়ের কঠিনতা স্থিতিশীল। আরও সেশন সম্পন্ন করলে এই অংশ নিজে থেকে হালনাগাদ হবে।')}</p>
 					{/if}
 				</article>
 			</section>

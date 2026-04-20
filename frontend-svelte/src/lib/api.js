@@ -83,6 +83,28 @@ export const baseline = {
 };
 
 export const training = {
+	createSessionContext: async (payload) => {
+		const response = await api.post('/api/training/session-context', payload);
+		return response.data;
+	},
+
+	getRecentContext: async (userId, limit = 10) => {
+		const response = await api.get(`/api/training/session-context/${userId}/recent`, {
+			params: { limit }
+		});
+		return response.data;
+	},
+
+	getLongitudinalAnalytics: async (userId, days = 30, domain = null) => {
+		const response = await api.get(`/api/training/advanced-analytics/${userId}/longitudinal`, {
+			params: {
+				days,
+				...(domain ? { domain } : {})
+			}
+		});
+		return response.data;
+	},
+
 	linkContextToSession: async (sessionId, contextId) => {
 		const response = await api.patch(`/api/training/training-session/${sessionId}/link-context`, null, {
 			params: { context_id: contextId }

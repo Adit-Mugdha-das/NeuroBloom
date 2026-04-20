@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api, { API_BASE_URL } from '$lib/api.js';
+	import { locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -12,6 +13,8 @@
 	const unsubscribe = user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	onMount(() => {
 		if (!currentUser) {
@@ -32,15 +35,17 @@
 			const response = await api.get(`/api/auth/patient/${currentUser.id}/prescriptions`);
 			prescriptionData = response.data;
 		} catch (requestError) {
-			error = requestError.response?.data?.detail || 'Failed to load prescriptions';
+			error =
+				requestError.response?.data?.detail ||
+				lt('Failed to load prescriptions.', 'প্রেসক্রিপশন লোড করা যায়নি।');
 		} finally {
 			loading = false;
 		}
 	}
 
 	function formatDate(dateValue) {
-		if (!dateValue) return 'Not scheduled';
-		return new Date(dateValue).toLocaleDateString('en-GB', {
+		if (!dateValue) return lt('Not scheduled', 'নির্ধারিত নয়');
+		return new Date(dateValue).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-GB', {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric'
@@ -48,8 +53,8 @@
 	}
 
 	function formatDateTime(dateValue) {
-		if (!dateValue) return 'Not available';
-		return new Date(dateValue).toLocaleString('en-GB', {
+		if (!dateValue) return lt('Not available', 'পাওয়া যায়নি');
+		return new Date(dateValue).toLocaleString($locale === 'bn' ? 'bn-BD' : 'en-GB', {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
@@ -59,14 +64,19 @@
 	}
 
 	function viewPdf(prescription) {
-		window.open(`${API_BASE_URL}/api/auth/patient/${currentUser.id}/prescriptions/${prescription.id}/pdf`, '_blank', 'noopener');
+		window.open(
+			`${API_BASE_URL}/api/auth/patient/${currentUser.id}/prescriptions/${prescription.id}/pdf`,
+			'_blank',
+			'noopener'
+		);
 	}
 
 	async function downloadPdf(prescription) {
 		try {
-			const response = await api.get(`/api/auth/patient/${currentUser.id}/prescriptions/${prescription.id}/pdf`, {
-				responseType: 'blob'
-			});
+			const response = await api.get(
+				`/api/auth/patient/${currentUser.id}/prescriptions/${prescription.id}/pdf`,
+				{ responseType: 'blob' }
+			);
 			const blob = new Blob([response.data], { type: 'application/pdf' });
 			const url = window.URL.createObjectURL(blob);
 			const anchor = document.createElement('a');
@@ -77,17 +87,40 @@
 			anchor.remove();
 			window.URL.revokeObjectURL(url);
 		} catch (requestError) {
-			error = requestError.response?.data?.detail || 'Failed to download the prescription PDF';
+			error =
+				requestError.response?.data?.detail ||
+				lt('Failed to download the prescription PDF.', 'প্রেসক্রিপশনের PDF ডাউনলোড করা যায়নি।');
 		}
+	}
+
+	function translateStatus(status) {
+		const normalized = String(status || '').replaceAll('_', ' ');
+		if ($locale !== 'bn') return normalized;
+		if (normalized === 'active') return 'সক্রিয়';
+		if (normalized === 'revised') return 'সংশোধিত';
+		if (normalized === 'inactive') return 'নিষ্ক্রিয়';
+		return normalized;
 	}
 
 	$: latestPrescription = prescriptionData?.prescriptions?.[0] || null;
 	$: overviewCards = prescriptionData
 		? [
-				{ label: 'Total prescriptions', value: prescriptionData.summary?.total || 0 },
-				{ label: 'Active prescriptions', value: prescriptionData.summary?.active || 0 },
-				{ label: 'Treating doctor', value: prescriptionData.doctor?.name || 'Not assigned' },
-				{ label: 'Latest issued', value: latestPrescription ? formatDate(latestPrescription.created_at) : 'Not available' }
+				{
+					label: lt('Total prescriptions', 'মোট প্রেসক্রিপশন'),
+					value: prescriptionData.summary?.total || 0
+				},
+				{
+					label: lt('Active prescriptions', 'সক্রিয় প্রেসক্রিপশন'),
+					value: prescriptionData.summary?.active || 0
+				},
+				{
+					label: lt('Treating doctor', 'চিকিৎসক'),
+					value: prescriptionData.doctor?.name || lt('Not assigned', 'নির্ধারিত নয়')
+				},
+				{
+					label: lt('Latest issued', 'সর্বশেষ ইস্যু'),
+					value: latestPrescription ? formatDate(latestPrescription.created_at) : lt('Not available', 'পাওয়া যায়নি')
+				}
 			]
 		: [];
 </script>
@@ -96,25 +129,26 @@
 	<header class="topbar">
 		<div>
 			<p class="eyebrow">NeuroBloom</p>
-			<h1>My Prescriptions</h1>
-			<p class="subcopy">Digital prescriptions issued by your clinician, available to review online or download as a PDF.</p>
+			<h1>{lt('My Prescriptions', 'আমার প্রেসক্রিপশন')}</h1>
+			<p class="subcopy">{lt('Your clinician-issued care plans live here, with quick access to the latest PDF and a calmer history view.', 'চিকিৎসকের দেওয়া কেয়ার প্ল্যানগুলো এখানে থাকবে, সঙ্গে থাকবে সর্বশেষ PDF ও একটি শান্ত ইতিহাস ভিউ।')}</p>
 		</div>
 		<div class="header-actions">
-			<button class="ghost-btn" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
-			<button class="ghost-btn" on:click={() => goto('/messages')}>Messages</button>
+			<button class="ghost-btn" on:click={() => goto('/dashboard')}>{lt('Back to dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
+			<button class="ghost-btn" on:click={() => goto('/messages')}>{lt('Messages', 'বার্তা')}</button>
+			<button class="ghost-btn" on:click={() => goto('/profile')}>{lt('Profile', 'প্রোফাইল')}</button>
 		</div>
 	</header>
 
 	<main class="page-main">
 		{#if loading}
-			<section class="state-card"><p>Loading prescriptions...</p></section>
+			<section class="state-card"><p>{lt('Loading prescriptions...', 'প্রেসক্রিপশন লোড হচ্ছে...')}</p></section>
 		{:else if error}
 			<section class="state-card error-state"><p>{error}</p></section>
 		{:else if !prescriptionData?.has_doctor}
 			<section class="empty-card">
-				<h2>No assigned doctor yet</h2>
-				<p>Once a treating clinician is assigned and issues a prescription, it will appear here automatically.</p>
-				<button class="primary-btn" on:click={() => goto('/dashboard')}>Return To Dashboard</button>
+				<h2>{lt('No assigned doctor yet', 'এখনো কোনো ডাক্তার নির্ধারিত হয়নি')}</h2>
+				<p>{lt('Once a treating clinician is assigned and issues a prescription, it will appear here automatically.', 'চিকিৎসক নির্ধারিত হলে এবং প্রেসক্রিপশন দিলে তা এখানে দেখা যাবে।')}</p>
+				<button class="primary-btn" on:click={() => goto('/find-doctor')}>{lt('Find a doctor', 'ডাক্তার খুঁজুন')}</button>
 			</section>
 		{:else}
 			<section class="overview-grid">
@@ -128,22 +162,22 @@
 
 			<section class="hero-card">
 				<div>
-					<p class="section-kicker">Care Summary</p>
-					<h2>{prescriptionData.doctor?.name || 'Assigned doctor'}</h2>
+					<p class="section-kicker">{lt('Care summary', 'কেয়ার সারাংশ')}</p>
+					<h2>{prescriptionData.doctor?.name || lt('Assigned doctor', 'নির্ধারিত ডাক্তার')}</h2>
 					<p class="hero-copy">
 						{#if latestPrescription}
-							<span>Latest prescription:</span>
+							<span>{lt('Latest prescription:', 'সর্বশেষ প্রেসক্রিপশন:')}</span>
 							<span data-localize-skip> {latestPrescription.title}</span>
-							<span>. Review the PDF for the full medication and instructions list.</span>
+							<span>{lt('Review the PDF for the full medication and instructions list.', 'পূর্ণ ওষুধ ও নির্দেশনার তালিকা দেখতে PDF খুলুন।')}</span>
 						{:else}
-							Your clinician is connected. Prescriptions issued by them will appear here.
+							{lt('Your clinician is connected. New prescriptions will appear here.', 'আপনার চিকিৎসক সংযুক্ত আছেন। নতুন প্রেসক্রিপশন এখানে দেখা যাবে।')}
 						{/if}
 					</p>
 				</div>
 				{#if latestPrescription}
 					<div class="hero-actions">
-						<button class="ghost-btn" on:click={() => viewPdf(latestPrescription)}>View Latest PDF</button>
-						<button class="primary-btn" on:click={() => downloadPdf(latestPrescription)}>Download Latest</button>
+						<button class="ghost-btn" on:click={() => viewPdf(latestPrescription)}>{lt('View latest PDF', 'সর্বশেষ PDF দেখুন')}</button>
+						<button class="primary-btn" on:click={() => downloadPdf(latestPrescription)}>{lt('Download latest', 'সর্বশেষটি ডাউনলোড করুন')}</button>
 					</div>
 				{/if}
 			</section>
@@ -151,15 +185,15 @@
 			<section class="history-card">
 				<div class="section-head">
 					<div>
-						<p class="section-kicker">Prescription History</p>
-						<h2>Issued documents</h2>
+						<p class="section-kicker">{lt('Prescription history', 'প্রেসক্রিপশন ইতিহাস')}</p>
+						<h2>{lt('Issued documents', 'ইস্যু করা নথি')}</h2>
 					</div>
-					<span class="meta-pill">{prescriptionData.prescriptions.length} total</span>
+					<span class="meta-pill">{prescriptionData.prescriptions.length} {lt('total', 'মোট')}</span>
 				</div>
 
 				{#if !prescriptionData.prescriptions.length}
 					<div class="empty-card inline-empty">
-						<p>No prescriptions have been issued yet.</p>
+						<p>{lt('No prescriptions have been issued yet.', 'এখনো কোনো প্রেসক্রিপশন দেওয়া হয়নি।')}</p>
 					</div>
 				{:else}
 					<div class="prescription-list">
@@ -172,17 +206,17 @@
 										<p class="summary-copy" data-localize-skip>{prescription.summary || prescription.patient_instructions}</p>
 									</div>
 									<div class="card-meta">
-										<span class="status-pill status-{prescription.status}">{prescription.status.replaceAll('_', ' ')}</span>
-										<span>Version {prescription.version_number}</span>
+										<span class="status-pill status-{prescription.status}">{translateStatus(prescription.status)}</span>
+										<span>{lt('Version', 'সংস্করণ')} {prescription.version_number}</span>
 										<span>{formatDateTime(prescription.created_at)}</span>
 									</div>
 								</div>
 
 								<div class="detail-grid">
-									<div><span>Doctor</span><strong data-localize-skip>{prescription.doctor_name}</strong></div>
-									<div><span>Review date</span><strong>{formatDate(prescription.review_date)}</strong></div>
-									<div><span>Valid until</span><strong>{formatDate(prescription.valid_until)}</strong></div>
-									<div><span>Medication count</span><strong>{prescription.medication_count}</strong></div>
+									<div><span>{lt('Doctor', 'ডাক্তার')}</span><strong data-localize-skip>{prescription.doctor_name}</strong></div>
+									<div><span>{lt('Review date', 'রিভিউ তারিখ')}</span><strong>{formatDate(prescription.review_date)}</strong></div>
+									<div><span>{lt('Valid until', 'কার্যকর থাকবে')}</span><strong>{formatDate(prescription.valid_until)}</strong></div>
+									<div><span>{lt('Medication count', 'ওষুধের সংখ্যা')}</span><strong>{prescription.medication_count}</strong></div>
 								</div>
 
 								{#if prescription.medications?.length}
@@ -201,7 +235,7 @@
 
 								{#if prescription.lifestyle_plan?.length}
 									<div class="support-block">
-										<p class="card-kicker">Lifestyle Recommendations</p>
+										<p class="card-kicker">{lt('Lifestyle recommendations', 'জীবনযাপন-সংক্রান্ত পরামর্শ')}</p>
 										<ul data-localize-skip>
 											{#each prescription.lifestyle_plan as item}
 												<li>{item}</li>
@@ -211,8 +245,8 @@
 								{/if}
 
 								<div class="action-row">
-									<button class="ghost-btn" on:click={() => viewPdf(prescription)}>View PDF</button>
-									<button class="primary-btn" on:click={() => downloadPdf(prescription)}>Download</button>
+									<button class="ghost-btn" on:click={() => viewPdf(prescription)}>{lt('View PDF', 'PDF দেখুন')}</button>
+									<button class="primary-btn" on:click={() => downloadPdf(prescription)}>{lt('Download', 'ডাউনলোড')}</button>
 								</div>
 							</article>
 						{/each}
@@ -295,6 +329,7 @@
 	.medication-item span,
 	.medication-item small {
 		color: #6b7280;
+		line-height: 1.58;
 	}
 
 	.header-actions,

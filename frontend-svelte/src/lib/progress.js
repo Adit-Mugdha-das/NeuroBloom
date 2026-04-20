@@ -1,3 +1,5 @@
+import { localeText } from '$lib/i18n';
+
 export const domainOrder = [
 	'working_memory',
 	'attention',
@@ -8,16 +10,17 @@ export const domainOrder = [
 ];
 
 export const domainNames = {
-	working_memory: 'Working Memory',
-	attention: 'Attention',
-	flexibility: 'Cognitive Flexibility',
-	planning: 'Planning',
-	processing_speed: 'Processing Speed',
-	visual_scanning: 'Visual Scanning'
+	working_memory: { en: 'Working Memory', bn: 'ওয়ার্কিং মেমরি' },
+	attention: { en: 'Attention', bn: 'মনোযোগ' },
+	flexibility: { en: 'Cognitive Flexibility', bn: 'মানসিক নমনীয়তা' },
+	planning: { en: 'Planning', bn: 'পরিকল্পনা' },
+	processing_speed: { en: 'Processing Speed', bn: 'প্রসেসিং স্পিড' },
+	visual_scanning: { en: 'Visual Scanning', bn: 'ভিজ্যুয়াল স্ক্যানিং' }
 };
 
-export function getDomainName(domain) {
-	return domainNames[domain] || domain;
+export function getDomainName(domain, targetLocale = 'en') {
+	const variants = domainNames[domain];
+	return variants ? localeText(variants, targetLocale) : domain;
 }
 
 export function getScoreColor(score) {
@@ -26,10 +29,10 @@ export function getScoreColor(score) {
 	return '#b91c1c';
 }
 
-export function getTrendLabel(value) {
-	if (value > 0) return 'Improving';
-	if (value < 0) return 'Needs attention';
-	return 'Stable';
+export function getTrendLabel(value, targetLocale = 'en') {
+	if (value > 0) return localeText({ en: 'Improving', bn: 'উন্নতি হচ্ছে' }, targetLocale);
+	if (value < 0) return localeText({ en: 'Needs attention', bn: 'আরও মনোযোগ দরকার' }, targetLocale);
+	return localeText({ en: 'Stable', bn: 'স্থিতিশীল' }, targetLocale);
 }
 
 export function getTrendTone(value) {
@@ -55,35 +58,40 @@ export function calculateTrendDelta(trendsData) {
 	return Number((last - first).toFixed(1));
 }
 
-export function formatDuration(totalSeconds) {
+export function formatDuration(totalSeconds, targetLocale = 'en') {
 	const minutes = Math.floor((totalSeconds || 0) / 60);
 	const seconds = (totalSeconds || 0) % 60;
+	if (targetLocale === 'bn') {
+		if (minutes <= 0) return `${seconds} সেকেন্ড`;
+		if (seconds === 0) return `${minutes} মিনিট`;
+		return `${minutes} মিনিট ${seconds} সেকেন্ড`;
+	}
 	return `${minutes}m ${seconds}s`;
 }
 
-export function formatShortDate(dateValue) {
-	return new Date(dateValue).toLocaleDateString();
+export function formatShortDate(dateValue, targetLocale = 'en') {
+	return new Date(dateValue).toLocaleDateString(targetLocale === 'bn' ? 'bn-BD' : 'en-US');
 }
 
 export function calculateBaselineDifficulty(score) {
 	return Math.max(1, Math.floor((score || 0) / 10));
 }
 
-export function formatImprovementPercentage(value) {
-	if (Math.abs(value || 0) < 1) return 'Stable';
+export function formatImprovementPercentage(value, targetLocale = 'en') {
+	if (Math.abs(value || 0) < 1) return localeText({ en: 'Stable', bn: 'স্থিতিশীল' }, targetLocale);
 	return `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)}%`;
 }
 
-export function getComparisonSummary(value) {
-	if (Math.abs(value || 0) < 1) return 'Stable';
-	if ((value || 0) > 0) return 'Improved';
-	return 'Below baseline';
+export function getComparisonSummary(value, targetLocale = 'en') {
+	if (Math.abs(value || 0) < 1) return localeText({ en: 'Stable', bn: 'স্থিতিশীল' }, targetLocale);
+	if ((value || 0) > 0) return localeText({ en: 'Improved', bn: 'উন্নত' }, targetLocale);
+	return localeText({ en: 'Below baseline', bn: 'বেসলাইনের নিচে' }, targetLocale);
 }
 
-export function getClinicalStatusLabel(value) {
-	if ((value || 0) >= 5) return 'Improving';
-	if ((value || 0) <= -5) return 'Needs Attention';
-	return 'Stable';
+export function getClinicalStatusLabel(value, targetLocale = 'en') {
+	if ((value || 0) >= 5) return localeText({ en: 'Improving', bn: 'উন্নতি হচ্ছে' }, targetLocale);
+	if ((value || 0) <= -5) return localeText({ en: 'Needs Attention', bn: 'মনোযোগ দরকার' }, targetLocale);
+	return localeText({ en: 'Stable', bn: 'স্থিতিশীল' }, targetLocale);
 }
 
 export function getClinicalStatusTone(value) {
@@ -92,7 +100,14 @@ export function getClinicalStatusTone(value) {
 	return 'stable';
 }
 
-export function formatPointChange(value) {
-	if (Math.abs(value || 0) < 1) return 'No meaningful change since baseline';
-	return `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} points since baseline`;
+export function formatPointChange(value, targetLocale = 'en') {
+	if (Math.abs(value || 0) < 1) {
+		return localeText(
+			{ en: 'No meaningful change since baseline', bn: 'বেসলাইন থেকে তেমন পরিবর্তন নেই' },
+			targetLocale
+		);
+	}
+	return targetLocale === 'bn'
+		? `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} পয়েন্ট বেসলাইন থেকে`
+		: `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} points since baseline`;
 }

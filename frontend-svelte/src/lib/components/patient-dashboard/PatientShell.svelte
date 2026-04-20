@@ -1,9 +1,16 @@
 <script>
 	import PatientTopbar from '$lib/components/patient-dashboard/PatientTopbar.svelte';
 
-	export let header = { brand: 'NeuroBloom', title: '', subtitle: '', logoutLabel: 'Logout' };
+	export let header = {
+		brand: 'NeuroBloom',
+		title: '',
+		subtitle: '',
+		description: '',
+		logoutLabel: 'Logout'
+	};
 	export let actions = [];
 	export let warnings = [];
+	export let layout = 'split';
 </script>
 
 <div class="patient-shell" data-localize-skip>
@@ -12,6 +19,7 @@
 			brand={header.brand}
 			title={header.title}
 			subtitle={header.subtitle}
+			description={header.description}
 			logoutLabel={header.logoutLabel}
 			{actions}
 			on:logout
@@ -23,14 +31,16 @@
 			</section>
 		{/if}
 
-		<div class="patient-layout">
+		<div class="patient-layout {layout === 'single' ? 'patient-layout--single' : ''}">
 			<div class="patient-main patient-main--top">
 				<slot name="main-top" />
 			</div>
 
-			<aside class="patient-rail">
-				<slot name="rail" />
-			</aside>
+			{#if layout !== 'single'}
+				<aside class="patient-rail">
+					<slot name="rail" />
+				</aside>
+			{/if}
 
 			<div class="patient-main patient-main--bottom">
 				<slot name="main-bottom" />
@@ -82,6 +92,13 @@
 		gap: 1rem;
 	}
 
+	.patient-layout--single {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			'main-top'
+			'main-bottom';
+	}
+
 	.patient-main,
 	.patient-rail {
 		display: grid;
@@ -99,8 +116,6 @@
 
 	.patient-rail {
 		grid-area: rail;
-		position: sticky;
-		top: 1.25rem;
 	}
 
 	@media (max-width: 1024px) {
@@ -113,7 +128,7 @@
 		}
 
 		.patient-rail {
-			position: static;
+			order: 2;
 		}
 	}
 
