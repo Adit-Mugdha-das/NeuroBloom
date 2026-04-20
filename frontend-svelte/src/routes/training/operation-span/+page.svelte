@@ -5,6 +5,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
+	import { getPatientBadgeCopy } from '$lib/patient-copy.js';
 	import {
 	  formatNumber,
 	  formatPercent,
@@ -69,6 +70,10 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	function t(text) {
 		return translateText(text, $locale);
+	}
+
+	function getBadgeName(badge) {
+		return getPatientBadgeCopy(badge?.badge_id || badge?.id, $locale).name;
 	}
 
 	function n(value, options = {}) {
@@ -718,7 +723,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{#each sessionResults.new_badges as badge}
 						<div class="badge">
 							<span class="badge-icon">{badge.icon}</span>
-							<span class="badge-name">{badge.name}</span>
+							<span class="badge-name">{getBadgeName(badge)}</span>
 						</div>
 					{/each}
 				</div>

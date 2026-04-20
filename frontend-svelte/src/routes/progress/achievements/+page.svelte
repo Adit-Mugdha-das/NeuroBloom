@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
 	import { locale, localeText } from '$lib/i18n';
+	import { getPatientBadgeCopy } from '$lib/patient-copy.js';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -42,6 +43,10 @@
 	function formatDate(dateValue) {
 		return new Date(dateValue).toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US');
 	}
+
+	function getBadgeDisplay(badge) {
+		return getPatientBadgeCopy(badge?.badge_id || badge?.id, $locale);
+	}
 </script>
 
 <div class="progress-panel">
@@ -66,10 +71,11 @@
 
 			<div class="achievement-grid">
 				{#each badgeData.all_badges as badge}
+					{@const badgeCopy = getBadgeDisplay(badge)}
 					<article class="badge-card {badge.earned ? 'earned' : 'locked'}">
 						<div class="badge-icon">{badge.icon}</div>
-						<p class="badge-name">{badge.name}</p>
-						<p class="badge-description">{badge.description}</p>
+						<p class="badge-name">{badgeCopy.name}</p>
+						<p class="badge-description">{badgeCopy.description}</p>
 						{#if badge.earned}
 							<p class="badge-status earned-status">{lt('Earned', 'অর্জিত')} {formatDate(badge.earned_at)}</p>
 						{:else}

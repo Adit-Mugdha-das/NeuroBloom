@@ -82,6 +82,13 @@ export const baseline = {
 	}
 };
 
+export const patientJourney = {
+	get: async (userId) => {
+		const response = await api.get(`/api/patient-journey/${userId}?_t=${Date.now()}`);
+		return response.data;
+	}
+};
+
 export const training = {
 	createSessionContext: async (payload) => {
 		const response = await api.post('/api/training/session-context', payload);

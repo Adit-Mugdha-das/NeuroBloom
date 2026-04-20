@@ -7,6 +7,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"audit:bangla-ui": "node ./scripts/audit-bangla-ui.mjs",
+		"audit:patient-i18n": "node ./scripts/audit-patient-native-i18n.mjs",
 		"report:bangla-ui": "node ./scripts/localization-verification-report.mjs"
 	},
 	"devDependencies": {

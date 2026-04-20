@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.auth import router as auth_router
+from app.api.patient_journey import router as patient_journey_router
 from app.api.tasks import router as tasks_router
 from app.api.baseline import router as baseline_router
 from app.api.training import router as training_router
@@ -59,6 +60,7 @@ def on_startup():
     init_db()
 
 app.include_router(auth_router, prefix="/api/auth")
+app.include_router(patient_journey_router, prefix="/api/patient-journey")
 app.include_router(tasks_router, prefix="/api/tasks")
 app.include_router(baseline_router, prefix="/api/baseline")
 app.include_router(training_router, prefix="/api/training")

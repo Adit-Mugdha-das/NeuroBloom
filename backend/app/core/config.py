@@ -53,6 +53,13 @@ def _ensure_legacy_account_columns():
             session.execute(text(statement))
         session.commit()
 
+
+def _ensure_reference_data():
+    """Populate required reference tables for a fresh environment."""
+    from seed_cognitive_tasks import seed_cognitive_tasks
+
+    seed_cognitive_tasks(verbose=False)
+
 def init_db():
     # Import all models here so SQLModel knows about them
     from app.models.admin import Admin
@@ -104,3 +111,4 @@ def init_db():
     # Ensure legacy deployments receive required new columns.
     _ensure_legacy_account_columns()
     _ensure_training_plan_pacing_columns()
+    _ensure_reference_data()

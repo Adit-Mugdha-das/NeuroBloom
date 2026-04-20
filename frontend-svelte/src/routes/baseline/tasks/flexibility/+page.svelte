@@ -4,7 +4,7 @@
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-    import { locale, localeText } from '$lib/i18n';
+    import { formatNumber, locale, localeText } from '$lib/i18n';
     import { tasks, training } from '$lib/api';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
@@ -45,6 +45,15 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     // Feedback flash
     let lastFeedback = ''; // 'correct' | 'wrong' | ''
     let feedbackTimer = null;
+    let acceptingResponse = false;
+
+    function lt(en, bn) {
+        return localeText({ en, bn }, $locale);
+    }
+
+    function n(value, options = {}) {
+        return formatNumber(value, $locale, options);
+    }
 
     onMount(() => {
         if (!$user) return goto('/login');
@@ -72,6 +81,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         switchTrials = switchErrors = noSwitchErrors = totalErrors = 0;
         switchCostRT = perseverationErrors = accuracy = meanRT = 0;
         lastFeedback = '';
+        acceptingResponse = false;
         stage = 'test';
         generateTrials();
         showNextTrial();
@@ -98,15 +108,27 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     function showNextTrial() {
         if (currentTrial >= totalTrials) { calculateResults(); return; }
         const trial = trials[currentTrial];
+        if (!trial) {
+            calculateResults();
+            return;
+        }
         currentNumber = trial.number;
         currentColor  = trial.color;
         currentRule   = trial.rule;
         trialStartTime = Date.now();
+        acceptingResponse = true;
     }
 
     function handleResponse(answer) {
+        if (!acceptingResponse) return;
         const rt = Date.now() - trialStartTime;
         const trial = trials[currentTrial];
+        if (!trial) {
+            acceptingResponse = false;
+            calculateResults();
+            return;
+        }
+        acceptingResponse = false;
         let correctAnswer;
         if (trial.rule === 'parity') {
             correctAnswer = trial.number % 2 === 0 ? 'even' : 'odd';
@@ -148,11 +170,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             if (r.isSwitch) switchRTs.push(r.rt);
             else if (i > 0) noSwitchRTs.push(r.rt);
         }
-        accuracy = ((responses.length - totalErrors) / responses.length) * 100;
+        accuracy = responses.length > 0 ? ((responses.length - totalErrors) / responses.length) * 100 : 0;
         const avgSwitch   = switchRTs.length   ? switchRTs.reduce((a,b)=>a+b,0)/switchRTs.length     : 0;
         const avgNoSwitch = noSwitchRTs.length ? noSwitchRTs.reduce((a,b)=>a+b,0)/noSwitchRTs.length : 0;
         switchCostRT = avgSwitch - avgNoSwitch;
-        meanRT = reactionTimes.reduce((a,b)=>a+b,0) / reactionTimes.length;
+        meanRT = reactionTimes.length > 0 ? reactionTimes.reduce((a,b)=>a+b,0) / reactionTimes.length : 0;
 
         if (isPracticeMode) { leavePractice(true); return; }
         stage = 'results';
@@ -178,6 +200,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         accuracy = 0;
         meanRT = 0;
         lastFeedback = '';
+        acceptingResponse = false;
         practiceStatusMessage = completed ? getPracticeCopy($locale).complete : '';
         stage = 'intro';
     }
@@ -229,7 +252,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 </script>
 
 <svelte:head>
-    <title>Cognitive Flexibility Test - NeuroBloom</title>
+    <title>{lt('Cognitive Flexibility Test - NeuroBloom', 'মানসিক নমনীয়তা পরীক্ষা - NeuroBloom')}</title>
 </svelte:head>
 
 <div class="flex-container" data-localize-skip>
@@ -239,7 +262,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">                <h1 class="task-title">Task Switching</h1>
+            <div class="task-header">                <h1 class="task-title">{lt('Task Switching', 'টাস্ক সুইচিং')}</h1>
             </div>
 
             <div class="concept-card">
@@ -316,9 +339,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             {/if}
 
             <div class="arena-top">
-                <div class="trial-pill">{currentTrial + 1} / {totalTrials}</div>
+                <div class="trial-pill">{n(currentTrial + 1)} / {n(totalTrials)}</div>
                 {#if trials[currentTrial]?.isSwitch}
-                    <div class="switch-pill">Rule switch</div>
+                    <div class="switch-pill">{lt('Rule switch', 'নিয়ম বদল')}</div>
                 {/if}
             </div>
 
@@ -336,11 +359,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
             <div class="response-buttons">
                 {#if currentRule === 'parity'}
-                    <button class="resp-btn resp-left" on:click={() => handleResponse('odd')}>Odd</button>
-                    <button class="resp-btn resp-right" on:click={() => handleResponse('even')}>Even</button>
+                    <button class="resp-btn resp-left" on:click={() => handleResponse('odd')} disabled={!acceptingResponse}>{lt('Odd', 'বিজোড়')}</button>
+                    <button class="resp-btn resp-right" on:click={() => handleResponse('even')} disabled={!acceptingResponse}>{lt('Even', 'জোড়')}</button>
                 {:else}
-                    <button class="resp-btn resp-left" on:click={() => handleResponse('low')}>&lt; 5&ensp;Low</button>
-                    <button class="resp-btn resp-right" on:click={() => handleResponse('high')}>&gt; 5&ensp;High</button>
+                    <button class="resp-btn resp-left" on:click={() => handleResponse('low')} disabled={!acceptingResponse}>&lt; 5&ensp;{lt('Low', 'কম')}</button>
+                    <button class="resp-btn resp-right" on:click={() => handleResponse('high')} disabled={!acceptingResponse}>&gt; 5&ensp;{lt('High', 'বেশি')}</button>
                 {/if}
             </div>
         </div>
@@ -350,7 +373,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">                <h1 class="task-title">Results</h1>
+            <div class="task-header">                <h1 class="task-title">{lt('Results', 'ফলাফল')}</h1>
             </div>
 
             {#if isTrainingMode}
@@ -367,38 +390,38 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             <div class="results-card">
                 <div class="score-header">
                     <div class="score-big">{accuracy.toFixed(1)}%</div>
-                    <div class="score-label">Overall Accuracy</div>
+                    <div class="score-label">{lt('Overall Accuracy', 'সামগ্রিক নির্ভুলতা')}</div>
                 </div>
 
                 <div class="metrics-grid">
                     <div class="metric-cell">
                         <div class="metric-value">{meanRT.toFixed(0)}ms</div>
-                        <div class="metric-label">Avg Response Time</div>
+                        <div class="metric-label">{lt('Avg Response Time', 'গড় প্রতিক্রিয়া সময়')}</div>
                     </div>
                     <div class="metric-cell {switchCostRT < 150 ? 'metric-good' : switchCostRT < 300 ? '' : 'metric-warn'}">
                         <div class="metric-value">{switchCostRT > 0 ? '+' : ''}{switchCostRT.toFixed(0)}ms</div>
-                        <div class="metric-label">Switch Cost (RT)</div>
+                        <div class="metric-label">{lt('Switch Cost (RT)', 'সুইচ কস্ট (RT)')}</div>
                     </div>
                     <div class="metric-cell {totalErrors === 0 ? 'metric-good' : 'metric-warn'}">
                         <div class="metric-value">{totalErrors}</div>
-                        <div class="metric-label">Total Errors</div>
+                        <div class="metric-label">{lt('Total Errors', 'মোট ভুল')}</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-value">{switchErrors}</div>
-                        <div class="metric-label">Switch Errors</div>
+                        <div class="metric-label">{lt('Switch Errors', 'নিয়ম বদলের ভুল')}</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-value">{noSwitchErrors}</div>
-                        <div class="metric-label">Repeat Errors</div>
+                        <div class="metric-label">{lt('Repeat Errors', 'একই নিয়মের ভুল')}</div>
                     </div>
                     <div class="metric-cell {perseverationErrors > 3 ? 'metric-warn' : ''}">
                         <div class="metric-value">{perseverationErrors}</div>
-                        <div class="metric-label">Perseveration Errors</div>
+                        <div class="metric-label">{lt('Perseveration Errors', 'পুরোনো নিয়মে আটকে যাওয়ার ভুল')}</div>
                     </div>
                 </div>
 
                 <div class="interp-card">
-                    <div class="interp-title">Interpretation</div>
+                    <div class="interp-title">{lt('Interpretation', 'ব্যাখ্যা')}</div>
                     <p>{flexibilityLabel()}</p>
                     {#if perseverationErrors > 3}
                         <p class="persev-note">You had {perseverationErrors} perseveration errors — applying the old rule after a switch. Focus on the background color change as your cue to reset.</p>
@@ -406,7 +429,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 </div>
 
                 <button class="start-button" on:click={backToDashboard}>
-                    {'Back to Dashboard'}
+                    {lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
                 </button>
             </div>
         </div>

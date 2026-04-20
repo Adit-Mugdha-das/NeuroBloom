@@ -1,11 +1,28 @@
 export const TASK_RETURN_CONTEXT = Object.freeze({
 	TRAINING: 'training',
-	BASELINE: 'baseline'
+	BASELINE: 'baseline',
+	DEV: 'dev'
 });
 
-export function resolveTaskReturn(_url, _context = TASK_RETURN_CONTEXT.TRAINING) {
+export function resolveTaskReturn(url, context = TASK_RETURN_CONTEXT.TRAINING) {
+	const taskId = url?.searchParams?.get('taskId') || '';
+
+	if (context === TASK_RETURN_CONTEXT.BASELINE) {
+		return {
+			href: '/baseline',
+			labelKey: 'Back to Baseline'
+		};
+	}
+
+	if (context === TASK_RETURN_CONTEXT.DEV || taskId.includes('_dev')) {
+		return {
+			href: '/dev/games',
+			labelKey: 'Back to Game Lab'
+		};
+	}
+
 	return {
-		href: '/dashboard',
-		labelKey: 'Back to Dashboard'
+		href: '/training',
+		labelKey: 'Back to Training'
 	};
 }

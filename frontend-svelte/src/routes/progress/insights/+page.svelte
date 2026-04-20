@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { training } from '$lib/api';
+	import { patientJourney, training } from '$lib/api';
 	import BiomarkersPanel from '$lib/components/BiomarkersPanel.svelte';
 	import { locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores';
@@ -9,9 +9,12 @@
 	let currentUser = null;
 	let loading = true;
 	let error = null;
+	let actionHref = '/training';
+	let actionLabel = null;
 	let biomarkerData = null;
 	let recentContext = [];
 	let longitudinal = null;
+	let journey = null;
 
 	user.subscribe((value) => {
 		currentUser = value;
@@ -31,33 +34,48 @@
 	async function loadInsights() {
 		loading = true;
 		error = null;
+		actionHref = '/training';
+		actionLabel = lt('Open training', 'ট্রেনিং খুলুন');
 
 		try {
+			journey = await patientJourney.get(currentUser.id);
+
+			if (!journey?.progress?.unlocked) {
+				error = lt(
+					'Insights open only after your training history starts to build.',
+					'আপনার ট্রেনিং ইতিহাস জমতে শুরু করলে তবেই ইনসাইটস খুলবে।'
+				);
+				actionHref = journey?.next_route || '/training';
+				actionLabel = journey?.next_label || lt('Open training', 'ট্রেনিং খুলুন');
+				return;
+			}
+
 			const [biomarkersResponse, contextResponse, longitudinalResponse] = await Promise.allSettled([
 				training.getBiomarkers(currentUser.id, 30),
 				training.getRecentContext(currentUser.id, 4),
 				training.getLongitudinalAnalytics(currentUser.id, 30)
 			]);
 
-			biomarkerData =
-				biomarkersResponse.status === 'fulfilled' ? biomarkersResponse.value : null;
-			recentContext =
-				contextResponse.status === 'fulfilled' ? contextResponse.value?.contexts || [] : [];
-			longitudinal =
-				longitudinalResponse.status === 'fulfilled' ? longitudinalResponse.value : null;
+			biomarkerData = biomarkersResponse.status === 'fulfilled' ? biomarkersResponse.value : null;
+			recentContext = contextResponse.status === 'fulfilled' ? contextResponse.value?.contexts || [] : [];
+			longitudinal = longitudinalResponse.status === 'fulfilled' ? longitudinalResponse.value : null;
 
 			if (!biomarkerData && !longitudinal && recentContext.length === 0) {
 				error = lt(
 					'Complete more training to unlock patient insights.',
 					'রোগী-ইনসাইট দেখতে আরও কিছু ট্রেনিং সম্পন্ন করুন।'
 				);
+				actionHref = '/training';
+				actionLabel = lt('Continue training', 'ট্রেনিং চালিয়ে যান');
 			}
 		} catch (loadError) {
 			console.error('Error loading patient insights:', loadError);
 			error = lt(
 				'We could not load your insights right now.',
-				'এই মুহূর্তে আপনার ইনসাইট লোড করা যায়নি।'
+				'এই মুহূর্তে আপনার ইনসাইটস লোড করা যাচ্ছে না।'
 			);
+			actionHref = journey?.next_route || '/training';
+			actionLabel = journey?.next_label || lt('Open training', 'ট্রেনিং খুলুন');
 		} finally {
 			loading = false;
 		}
@@ -77,43 +95,19 @@
 		}
 
 		const absolute = Math.abs(value);
-		if (absolute >= 0.6) {
-			return value > 0 ? lt('Strong positive effect', 'শক্তিশালী ইতিবাচক প্রভাব') : lt('Strong negative effect', 'শক্তিশালী নেতিবাচক প্রভাব');
-		}
-		if (absolute >= 0.3) {
-			return value > 0 ? lt('Moderate positive effect', 'মাঝারি ইতিবাচক প্রভাব') : lt('Moderate negative effect', 'মাঝারি নেতিবাচক প্রভাব');
-		}
+		if (absolute >= 0.6) return value > 0 ? lt('Strong positive effect', 'শক্তিশালী ইতিবাচক প্রভাব') : lt('Strong negative effect', 'শক্তিশালী নেতিবাচক প্রভাব');
+		if (absolute >= 0.3) return value > 0 ? lt('Moderate positive effect', 'মাঝারি ইতিবাচক প্রভাব') : lt('Moderate negative effect', 'মাঝারি নেতিবাচক প্রভাব');
 		return lt('Weak relationship', 'দুর্বল সম্পর্ক');
 	}
 
 	$: report = longitudinal?.report || null;
 	$: summaryCards = [
-		{
-			label: lt('Sessions analysed', 'বিশ্লেষিত সেশন'),
-			value: report?.summary?.total_sessions ?? 0
-		},
+		{ label: lt('Sessions analysed', 'বিশ্লেষিত সেশন'), value: report?.summary?.total_sessions ?? 0 },
 		{
 			label: lt('Score trend', 'স্কোর ট্রেন্ড'),
-			value:
-				report?.trends?.score_trend?.trend_direction
-					? localeText(
-						{
-							en: report.trends.score_trend.trend_direction,
-							bn:
-								report.trends.score_trend.trend_direction === 'improving'
-									? 'উন্নতি'
-									: report.trends.score_trend.trend_direction === 'declining'
-										? 'কমছে'
-										: 'স্থিতিশীল'
-						},
-						$locale
-					)
-					: lt('Unavailable', 'পাওয়া যায়নি')
+			value: report?.trends?.score_trend?.trend_direction || lt('Unavailable', 'পাওয়া যায়নি')
 		},
-		{
-			label: lt('Recent check-ins', 'সাম্প্রতিক চেক-ইন'),
-			value: recentContext.length
-		}
+		{ label: lt('Recent check-ins', 'সাম্প্রতিক চেক-ইন'), value: recentContext.length }
 	];
 </script>
 
@@ -126,6 +120,7 @@
 		<section class="state-panel glass-card">
 			<h2>{lt('Insights unavailable', 'ইনসাইট পাওয়া যাচ্ছে না')}</h2>
 			<p>{error}</p>
+			<a class="action-link" href={actionHref}>{actionLabel}</a>
 		</section>
 	{:else}
 		<section class="summary-shell glass-card">
@@ -147,7 +142,7 @@
 			</div>
 		</section>
 
-		<BiomarkersPanel {biomarkerData} doctorView={false} days={30} />
+		<BiomarkersPanel biomarkerData={biomarkerData} doctorView={false} days={30} />
 
 		<section class="detail-grid">
 			<article class="glass-card detail-card">
@@ -178,54 +173,26 @@
 			<article class="glass-card detail-card">
 				<div class="section-head">
 					<div>
-						<p class="card-label">{lt('Longitudinal trends', 'দীর্ঘমেয়াদি ট্রেন্ড')}</p>
-						<h3>{lt('Patterns across your recent sessions', 'সাম্প্রতিক সেশনজুড়ে ধারা')}</h3>
+						<p class="card-label">{lt('Context clues', 'প্রসঙ্গের ইঙ্গিত')}</p>
+						<h3>{lt('What seems to affect your sessions most', 'কোন বিষয়গুলো সেশনে সবচেয়ে বেশি প্রভাব ফেলছে')}</h3>
 					</div>
 				</div>
 
-				<div class="trend-list">
-					<div class="trend-row">
-						<span>{lt('Performance trend', 'পারফরম্যান্স ট্রেন্ড')}</span>
-						<strong>{report?.trends?.score_trend?.trend_direction || lt('Unavailable', 'পাওয়া যায়নি')}</strong>
-					</div>
-					<div class="trend-row">
-						<span>{lt('Reaction-time trend', 'প্রতিক্রিয়া-সময়ের ট্রেন্ড')}</span>
-						<strong>{report?.trends?.rt_trend?.trend_direction || lt('Unavailable', 'পাওয়া যায়নি')}</strong>
-					</div>
-					<div class="trend-row">
-						<span>{lt('Reliable change index', 'রিলায়েবল চেঞ্জ ইনডেক্স')}</span>
-						<strong>{report?.biomarkers?.rci ?? 0}</strong>
-					</div>
-					<div class="trend-row">
-						<span>{lt('Across-session score variability', 'সেশনজুড়ে স্কোর ভ্যারিয়েবিলিটি')}</span>
-						<strong>{report?.variability?.score_cv ?? 0}</strong>
-					</div>
+				<div class="correlation-grid">
+					<article class="correlation-card">
+						<p>{lt('Fatigue', 'ক্লান্তি')}</p>
+						<strong>{formatCorrelation(report?.contextual_analysis?.fatigue_level?.correlation_with_score)}</strong>
+					</article>
+					<article class="correlation-card">
+						<p>{lt('Sleep quality', 'ঘুমের মান')}</p>
+						<strong>{formatCorrelation(report?.contextual_analysis?.sleep_quality?.correlation_with_score)}</strong>
+					</article>
+					<article class="correlation-card">
+						<p>{lt('Medication timing', 'ওষুধের সময়')}</p>
+						<strong>{formatCorrelation(report?.contextual_analysis?.hours_since_medication?.correlation_with_score)}</strong>
+					</article>
 				</div>
 			</article>
-		</section>
-
-		<section class="glass-card detail-card">
-			<div class="section-head">
-				<div>
-					<p class="card-label">{lt('Context clues', 'প্রসঙ্গের ইঙ্গিত')}</p>
-					<h3>{lt('What seems to affect your sessions most', 'কোন বিষয়গুলো সেশনে সবচেয়ে বেশি প্রভাব ফেলছে')}</h3>
-				</div>
-			</div>
-
-			<div class="correlation-grid">
-				<article class="correlation-card">
-					<p>{lt('Fatigue', 'ক্লান্তি')}</p>
-					<strong>{formatCorrelation(report?.contextual_analysis?.fatigue_level?.correlation_with_score)}</strong>
-				</article>
-				<article class="correlation-card">
-					<p>{lt('Sleep quality', 'ঘুমের মান')}</p>
-					<strong>{formatCorrelation(report?.contextual_analysis?.sleep_quality?.correlation_with_score)}</strong>
-				</article>
-				<article class="correlation-card">
-					<p>{lt('Medication timing', 'ওষুধের সময়')}</p>
-					<strong>{formatCorrelation(report?.contextual_analysis?.hours_since_medication?.correlation_with_score)}</strong>
-				</article>
-			</div>
 		</section>
 	{/if}
 </div>
@@ -241,10 +208,20 @@
 		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 	}
 
+	.action-link {
+		display: inline-flex;
+		margin-top: 1rem;
+		padding: 0.8rem 1.1rem;
+		border-radius: 999px;
+		font-weight: 700;
+		text-decoration: none;
+		background: linear-gradient(135deg, #4f46e5, #6366f1);
+		color: white;
+	}
+
 	.summary-shell,
-	.detail-card {
-		display: grid;
-		gap: 1rem;
+	.detail-grid {
+		margin-bottom: 1rem;
 	}
 
 	.summary-head,
@@ -252,109 +229,47 @@
 		display: flex;
 		justify-content: space-between;
 		gap: 1rem;
-		align-items: flex-start;
-	}
-
-	.card-label,
-	.summary-label,
-	.context-date,
-	.context-note,
-	.empty-copy,
-	.summary-copy,
-	h2,
-	h3 {
-		margin: 0;
-	}
-
-	.card-label,
-	.summary-label {
-		font-size: 0.78rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		font-weight: 800;
-		color: #4f46e5;
-	}
-
-	h2,
-	h3 {
-		margin-top: 0.25rem;
-		color: #111827;
-	}
-
-	.summary-copy,
-	.empty-copy {
-		max-width: 34ch;
-		line-height: 1.6;
-		color: #64748b;
+		margin-bottom: 1rem;
 	}
 
 	.summary-grid,
 	.detail-grid,
 	.correlation-grid {
 		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 1rem;
 	}
 
-	.summary-grid {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-
-	.detail-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-
-	.summary-card,
-	.context-row,
-	.trend-row,
-	.correlation-card {
-		padding: 0.95rem 1rem;
-		border-radius: 18px;
-		background: rgba(255, 255, 255, 0.74);
-		border: 1px solid rgba(255, 255, 255, 0.8);
-	}
-
-	.summary-card strong,
-	.correlation-card strong,
-	.trend-row strong {
-		display: block;
-		margin-top: 0.3rem;
-		font-size: 1.08rem;
-		color: #0f172a;
-	}
-
-	.context-list,
-	.trend-list {
+	.context-list {
 		display: grid;
 		gap: 0.75rem;
 	}
 
 	.context-row,
-	.trend-row {
-		display: flex;
-		justify-content: space-between;
-		gap: 1rem;
-		align-items: flex-start;
+	.summary-card,
+	.correlation-card {
+		padding: 1rem;
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.65);
 	}
 
-	.context-date {
+	.card-label,
+	.summary-label {
+		margin: 0;
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 		font-weight: 800;
-		color: #0f172a;
-	}
-
-	.context-meta,
-	.context-note,
-	.correlation-card p,
-	.trend-row span {
-		margin: 0.3rem 0 0;
 		color: #64748b;
-		line-height: 1.5;
 	}
 
-	.correlation-grid {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+	h2,
+	h3,
+	p {
+		margin-top: 0;
 	}
 
-	@media (max-width: 960px) {
+	@media (max-width: 860px) {
 		.summary-grid,
 		.detail-grid,
 		.correlation-grid {
@@ -362,9 +277,7 @@
 		}
 
 		.summary-head,
-		.section-head,
-		.context-row,
-		.trend-row {
+		.section-head {
 			flex-direction: column;
 		}
 	}

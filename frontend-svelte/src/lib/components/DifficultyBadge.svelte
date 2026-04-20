@@ -1,19 +1,13 @@
 <script>
-	import { formatNumber, locale, translateText } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
+	import { getPatientDifficultyLabel, getPatientDomainLabel } from '$lib/patient-copy.js';
 
 	export let difficulty = 5;
 	export let domain = '';
 
-	function getDifficultyLabel(diff) {
-		if (diff <= 3) return 'Easy';
-		if (diff <= 6) return 'Medium';
-		if (diff <= 8) return 'Hard';
-		return 'Expert';
-	}
-
-	$: label = translateText(getDifficultyLabel(difficulty), $locale);
-	$: domainLabel = domain ? translateText(domain, $locale) : '';
-	$: difficultyLabel = translateText('Level', $locale);
+	$: label = getPatientDifficultyLabel(difficulty, $locale);
+	$: domainLabel = domain ? getPatientDomainLabel(domain, $locale) : '';
+	$: difficultyLabel = localeText({ en: 'Level', bn: 'লেভেল' }, $locale);
 	$: displayDifficulty = formatNumber(difficulty, $locale);
 </script>
 

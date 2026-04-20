@@ -8,6 +8,7 @@ from datetime import datetime
 from app.models.test_result import TestResult
 from app.schemas.test_result import TestResultCreate, TestResultRead
 from app.core.config import engine
+from app.services.patient_journey import get_baseline_status as build_baseline_status
 from app.services.dccs_task import dccs_task_service
 from app.services.plus_minus_task import plus_minus_task_service
 from app.services.tol_task import tol_task_service
@@ -120,37 +121,7 @@ def get_user_stats(user_id: int, session: Session = Depends(get_session)):
 @router.get("/results/{user_id}/baseline-status")
 def get_baseline_status(user_id: int, session: Session = Depends(get_session)):
     """Get baseline task completion status for a user"""
-    # Define the 6 baseline tasks
-    baseline_tasks = [
-        "working_memory",
-        "attention", 
-        "flexibility",
-        "planning",
-        "processing_speed",
-        "visual_scanning"
-    ]
-    
-    # Get all results for this user
-    results = session.exec(
-        select(TestResult).where(TestResult.user_id == user_id)
-    ).all()
-    
-    # Check which tasks have been completed
-    completed_tasks = set(r.task_type for r in results)
-    
-    status = {}
-    for task in baseline_tasks:
-        status[task] = task in completed_tasks
-    
-    # Calculate overall completion
-    completed_count = sum(1 for task in baseline_tasks if status[task])
-    
-    return {
-        "tasks": status,
-        "completed_count": completed_count,
-        "total_tasks": len(baseline_tasks),
-        "all_completed": completed_count == len(baseline_tasks)
-    }
+    return build_baseline_status(session, user_id)
 
 
 # DCCS Task endpoints

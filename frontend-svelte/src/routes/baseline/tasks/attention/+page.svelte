@@ -5,7 +5,7 @@
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-    import { locale, localeText } from '$lib/i18n';
+    import { formatNumber, locale, localeText } from '$lib/i18n';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -42,6 +42,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     // Alert-on-target indicator (replaces the ⚠️ inline style)
     let alertActive = false;
+
+    function lt(en, bn) {
+        return localeText({ en, bn }, $locale);
+    }
+
+    function n(value, options = {}) {
+        return formatNumber(value, $locale, options);
+    }
 
     onMount(() => {
         if (!$user) return goto('/login');
@@ -204,14 +212,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
 
     function performanceLabel() {
-        if (accuracy >= 80) return 'Excellent sustained attention.';
-        if (accuracy >= 60) return 'Good performance. Continue practicing to improve consistency.';
-        return 'Keep practicing. Sustained attention improves with regular training.';
+        if (accuracy >= 80) return lt('Excellent sustained attention.', 'চমৎকার স্থায়ী মনোযোগ।');
+        if (accuracy >= 60) return lt('Good performance. Continue practicing to improve consistency.', 'ভালো পারফরম্যান্স। ধারাবাহিকতা বাড়াতে অনুশীলন চালিয়ে যান।');
+        return lt('Keep practicing. Sustained attention improves with regular training.', 'অনুশীলন চালিয়ে যান। নিয়মিত চর্চায় স্থায়ী মনোযোগ উন্নত হয়।');
     }
 </script>
 
 <svelte:head>
-    <title>Attention Test - NeuroBloom</title>
+    <title>{lt('Attention Test - NeuroBloom', 'মনোযোগ পরীক্ষা - NeuroBloom')}</title>
 </svelte:head>
 
 <div class="cpt-container" data-localize-skip>
@@ -221,7 +229,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">                <h1 class="task-title">Continuous Performance Test</h1>
+            <div class="task-header">                <h1 class="task-title">{lt('Continuous Performance Test', 'কন্টিনিউয়াস পারফরম্যান্স টেস্ট')}</h1>
             </div>
 
             <div class="concept-card">
@@ -326,7 +334,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
         <div class="page-content">
 
-            <div class="task-header">                <h1 class="task-title">Results</h1>
+            <div class="task-header">                <h1 class="task-title">{lt('Results', 'ফলাফল')}</h1>
             </div>
 
             {#if isTrainingMode}
@@ -343,43 +351,43 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             <div class="results-card">
                 <div class="score-header">
                     <div class="score-big">{accuracy.toFixed(1)}%</div>
-                    <div class="score-label">Hit Rate (Sustained Attention Score)</div>
+                    <div class="score-label">{lt('Hit Rate (Sustained Attention Score)', 'হিট রেট (স্থায়ী মনোযোগ স্কোর)')}</div>
                 </div>
 
                 <div class="metrics-grid">
                     <div class="metric-cell">
                         <div class="metric-value">{targetsShown}</div>
-                        <div class="metric-label">Targets (AX)</div>
+                        <div class="metric-label">{lt('Targets (AX)', 'টার্গেট (AX)')}</div>
                     </div>
                     <div class="metric-cell metric-good">
                         <div class="metric-value">{targetsHit}</div>
-                        <div class="metric-label">Hits</div>
+                        <div class="metric-label">{lt('Hits', 'সঠিক ধরন')}</div>
                     </div>
                     <div class="metric-cell metric-warn">
                         <div class="metric-value">{misses}</div>
-                        <div class="metric-label">Misses</div>
+                        <div class="metric-label">{lt('Misses', 'মিস')}</div>
                     </div>
                     <div class="metric-cell metric-warn">
                         <div class="metric-value">{falseAlarms}</div>
-                        <div class="metric-label">False Alarms</div>
+                        <div class="metric-label">{lt('False Alarms', 'ভুল সংকেত')}</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-value">{meanRT.toFixed(0)}ms</div>
-                        <div class="metric-label">Avg. Reaction Time</div>
+                        <div class="metric-label">{lt('Avg. Reaction Time', 'গড় প্রতিক্রিয়া সময়')}</div>
                     </div>
                     <div class="metric-cell">
                         <div class="metric-value">{totalTrials}</div>
-                        <div class="metric-label">Total Trials</div>
+                        <div class="metric-label">{lt('Total Trials', 'মোট ট্রায়াল')}</div>
                     </div>
                 </div>
 
                 <div class="interp-card">
-                    <div class="interp-title">Interpretation</div>
+                    <div class="interp-title">{lt('Interpretation', 'ব্যাখ্যা')}</div>
                     <p>{performanceLabel()}</p>
                 </div>
 
                 <button class="start-button" on:click={backToDashboard}>
-                    {'Back to Dashboard'}
+                    {lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}
                 </button>
             </div>
         </div>

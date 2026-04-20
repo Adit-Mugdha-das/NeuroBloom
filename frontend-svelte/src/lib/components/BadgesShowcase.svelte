@@ -1,5 +1,7 @@
 <script>
 	import EmptyState from './EmptyState.svelte';
+	import { locale, localeText } from '$lib/i18n';
+	import { getPatientBadgeCategoryLabel, getPatientBadgeCopy } from '$lib/patient-copy.js';
 	
 	export let badges = [];
 	export let totalBadges = 0;
@@ -8,14 +10,14 @@
 	let selectedCategory = 'all';
 	
 	const categories = {
-		all: { name: 'All Badges', icon: '🏆' },
-		getting_started: { name: 'Getting Started', icon: '🎯' },
-		milestone: { name: 'Milestones', icon: '🏔️' },
-		streak: { name: 'Streaks', icon: '🔥' },
-		performance: { name: 'Performance', icon: '💯' },
-		mastery: { name: 'Mastery', icon: '🎓' },
-		speed: { name: 'Speed', icon: '⚡' },
-		improvement: { name: 'Improvement', icon: '📈' }
+		all: { icon: '🏆' },
+		getting_started: { icon: '🎯' },
+		milestone: { icon: '🏔️' },
+		streak: { icon: '🔥' },
+		performance: { icon: '💯' },
+		mastery: { icon: '🎓' },
+		speed: { icon: '⚡' },
+		improvement: { icon: '📈' }
 	};
 	
 	$: filteredBadges = selectedCategory === 'all' 
@@ -26,24 +28,34 @@
 	
 	function formatDate(dateStr) {
 		const date = new Date(dateStr);
-		return date.toLocaleDateString('en-US', { 
+		return date.toLocaleDateString($locale === 'bn' ? 'bn-BD' : 'en-US', { 
 			month: 'short', 
 			day: 'numeric',
 			year: 'numeric'
 		});
+	}
+
+	function getCategoryName(key) {
+		return key === 'all'
+			? localeText({ en: 'All Badges', bn: 'সব ব্যাজ' }, $locale)
+			: getPatientBadgeCategoryLabel(key, $locale);
+	}
+
+	function getBadgeCopy(badge) {
+		return getPatientBadgeCopy(badge?.badge_id || badge?.id, $locale);
 	}
 </script>
 
 <div class="badges-section">
 	<div class="badges-header">
 		<div class="header-left">
-			<h2>🏆 Achievement Badges</h2>
-			<p class="subtitle">Unlock badges by completing milestones and challenges</p>
+			<h2>🏆 {localeText({ en: 'Achievement Badges', bn: 'অর্জনের ব্যাজ' }, $locale)}</h2>
+			<p class="subtitle">{localeText({ en: 'Unlock badges by completing milestones and challenges', bn: 'মাইলস্টোন ও চ্যালেঞ্জ সম্পন্ন করে ব্যাজ আনলক করুন' }, $locale)}</p>
 		</div>
 		<div class="badge-stats">
 			<div class="stat">
 				<span class="stat-number">{earnedCount}</span>
-				<span class="stat-label">/ {totalBadges} Earned</span>
+				<span class="stat-label">/ {totalBadges} {localeText({ en: 'Earned', bn: 'অর্জিত' }, $locale)}</span>
 			</div>
 			<div class="progress-ring">
 				<svg width="80" height="80">
@@ -69,7 +81,7 @@
 				on:click={() => selectedCategory = key}
 			>
 				<span class="cat-icon">{category.icon}</span>
-				<span class="cat-name">{category.name}</span>
+				<span class="cat-name">{getCategoryName(key)}</span>
 			</button>
 		{/each}
 	</div>
@@ -77,22 +89,23 @@
 	<!-- Badges Grid -->
 	<div class="badges-grid">
 		{#each filteredBadges as badge}
+			{@const badgeCopy = getBadgeCopy(badge)}
 			<div class="badge-card {badge.earned ? 'earned' : 'locked'}">
 				<div class="badge-icon {badge.earned ? 'earned-icon' : 'locked-icon'}">
 					{badge.icon}
 				</div>
 				<div class="badge-info">
-					<h3 class="badge-name">{badge.name}</h3>
-					<p class="badge-description">{badge.description}</p>
+					<h3 class="badge-name">{badgeCopy.name}</h3>
+					<p class="badge-description">{badgeCopy.description}</p>
 					{#if badge.earned}
 						<div class="earned-date">
 							<span class="checkmark">✓</span>
-							Earned {formatDate(badge.earned_at)}
+							{localeText({ en: 'Earned', bn: 'অর্জিত' }, $locale)} {formatDate(badge.earned_at)}
 						</div>
 					{:else}
 						<div class="locked-label">
 							<span class="lock-icon">🔒</span>
-							Locked
+							{localeText({ en: 'Locked', bn: 'লকড' }, $locale)}
 						</div>
 					{/if}
 				</div>
@@ -104,11 +117,11 @@
 		<div style="margin: 2rem 0;">
 			<EmptyState 
 				icon="🎯"
-				title={selectedCategory === 'all' ? 'Start Earning Badges!' : 'No Badges in This Category'}
-				message={selectedCategory === 'all' ? 'Complete training sessions to unlock your first achievement badge!' : 'Try other categories or complete more sessions to unlock badges here.'}
-				actionText="Start Training"
+				title={selectedCategory === 'all' ? localeText({ en: 'Start Earning Badges!', bn: 'ব্যাজ অর্জন শুরু করুন!' }, $locale) : localeText({ en: 'No Badges in This Category', bn: 'এই বিভাগে এখনো কোনো ব্যাজ নেই' }, $locale)}
+				message={selectedCategory === 'all' ? localeText({ en: 'Complete training sessions to unlock your first achievement badge!', bn: 'আপনার প্রথম অর্জন ব্যাজ পেতে ট্রেনিং সেশন সম্পন্ন করুন!' }, $locale) : localeText({ en: 'Try other categories or complete more sessions to unlock badges here.', bn: 'অন্য বিভাগ দেখুন বা আরও সেশন সম্পন্ন করে এখানে ব্যাজ আনলক করুন।' }, $locale)}
+				actionText={localeText({ en: 'Start Training', bn: 'ট্রেনিং শুরু করুন' }, $locale)}
 				actionLink="/training"
-				tip="Badges track your progress, consistency, and mastery across all cognitive domains"
+				tip={localeText({ en: 'Badges track your progress, consistency, and mastery across all cognitive domains.', bn: 'ব্যাজ আপনার অগ্রগতি, ধারাবাহিকতা, এবং বিভিন্ন জ্ঞানীয় ডোমেইনে দক্ষতা দেখায়।' }, $locale)}
 				variant="compact"
 			/>
 		</div>

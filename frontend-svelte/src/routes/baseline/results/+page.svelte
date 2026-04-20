@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { baseline, tasks, training } from '$lib/api';
+	import { baseline, patientJourney, training } from '$lib/api';
 	import { user } from '$lib/stores';
 	import { downloadCSV, downloadSVGAsPNG } from '$lib/utils/chartDownload';
 	import { onMount } from 'svelte';
@@ -33,20 +33,32 @@
 		error = null;
 		
 		try {
-			// Check completion status
-			baselineStatus = await tasks.getBaselineStatus(currentUser.id);
+			const journey = await patientJourney.get(currentUser.id);
+			baselineStatus = journey?.baseline || null;
+
+			if (!journey?.baseline?.all_completed) {
+				goto('/baseline');
+				return;
+			}
 			
 			// Try to get existing baseline
 			try {
-				baselineData = await baseline.get(currentUser.id);
+				const baselineResponse = await baseline.get(currentUser.id);
+				baselineData = baselineResponse?.assessment || null;
 				
 				// Check if training plan exists
 				try {
 					trainingPlan = await training.getPlan(currentUser.id);
+					if (trainingPlan && trainingPlan.has_plan === false) {
+						trainingPlan = null;
+					}
 					
 					// If training plan exists, get performance comparison
 					try {
 						comparisonData = await training.getPerformanceComparison(currentUser.id);
+						if (comparisonData && comparisonData.has_data === false) {
+							comparisonData = null;
+						}
 						console.log('Comparison data loaded:', comparisonData);
 					} catch (e) {
 						console.log('No comparison data yet:', e);

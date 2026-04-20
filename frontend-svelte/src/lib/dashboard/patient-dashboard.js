@@ -1,4 +1,10 @@
-import { API_BASE_URL } from '$lib/api.js';
+﻿import { API_BASE_URL } from '$lib/api.js';
+import {
+	getPatientBadgeCopy,
+	getPatientCopy,
+	getPatientFocusReason,
+	getPatientTaskLabel
+} from '$lib/patient-copy.js';
 
 const baselineModules = [
 	{
@@ -137,6 +143,25 @@ function getDifficultyLabel(locale, difficulty) {
 	return localeText(locale, { en: 'Advanced', bn: 'উন্নত' });
 }
 
+function getTaskLabel(locale, task) {
+	return getPatientTaskLabel(task?.task_key || task?.task_type || '', locale, task?.domain);
+}
+
+function getBadgeCopy(locale, badge) {
+	return getPatientBadgeCopy(badge?.badge_id || badge?.id || '', locale);
+}
+
+function getFocusReason(locale, task) {
+	const fallbackKey =
+		task?.priority === 'primary'
+			? 'weakest_area'
+			: task?.priority === 'secondary'
+				? 'growth_area'
+				: 'maintenance_area';
+
+	return getPatientFocusReason(task?.focus_reason_key || fallbackKey, locale);
+}
+
 function createWarnings(locale, settledEntries) {
 	const failedCount = settledEntries.filter((entry) => entry.status === 'rejected').length;
 	if (!failedCount) return [];
@@ -239,8 +264,8 @@ function createHero(locale, { baselineStatus, nextTasks, streak, metrics }) {
 			}),
 		description: recommendedTask
 			? locale === 'bn'
-				? `${recommendedTask.task_name || getDomainName(locale, recommendedTask.domain)} দিয়ে আজকের সেশন শুরু করলে গতি ধরে রাখা সহজ হবে।`
-				: `Start with ${recommendedTask.task_name || getDomainName(locale, recommendedTask.domain)} to keep today simple and consistent.`
+				? `${getTaskLabel(locale, recommendedTask)} দিয়ে আজকের সেশন শুরু করলে গতি ধরে রাখা সহজ হবে।`
+				: `Start with ${getTaskLabel(locale, recommendedTask)} to keep today simple and consistent.`
 			: localeText(locale, {
 				en: 'Open your training plan when you are ready to continue.',
 				bn: 'চালিয়ে যেতে প্রস্তুত হলে ট্রেনিং প্ল্যান খুলুন।'
@@ -309,7 +334,7 @@ function createQuickActions(locale, { baselineStatus, doctorState, prescriptionS
 		{
 			label: localeText(locale, { en: 'Insights', bn: 'ইনসাইট' }),
 			href: '/progress/insights',
-			eyebrow: localeText(locale, { en: 'Advanced view', bn: 'উন্নত ভিউ' }),
+			eyebrow: localeText(locale, { en: 'Insight view', bn: 'ইনসাইট ভিউ' }),
 			description: localeText(locale, {
 				en: 'Review biomarkers and check-in trends.',
 				bn: 'বায়োমার্কার ও চেক-ইন ট্রেন্ড দেখুন।'
@@ -359,7 +384,7 @@ function createTodayPlan(locale, { baselineStatus, nextTasks, weeklySummary, doc
 			},
 			{
 				eyebrow: localeText(locale, { en: 'Next step', bn: 'পরের ধাপ' }),
-				title: nextTask?.task_name || localeText(locale, { en: 'Open your training plan', bn: 'ট্রেনিং প্ল্যান খুলুন' }),
+				title: nextTask ? getTaskLabel(locale, nextTask) : localeText(locale, { en: 'Open your training plan', bn: 'ট্রেনিং প্ল্যান খুলুন' }),
 				meta: nextTask
 					? locale === 'bn'
 						? `${getDomainName(locale, nextTask.domain)} · ${getDifficultyLabel(locale, nextTask.difficulty)}`
@@ -460,8 +485,8 @@ function createProgressPreview(locale, { weeklySummary, comparisonData, trendsDa
 			},
 			{
 				eyebrow: localeText(locale, { en: 'Latest badge', bn: 'সর্বশেষ ব্যাজ' }),
-				title: latestBadge?.name || localeText(locale, { en: 'No badge yet', bn: 'এখনো কোনো ব্যাজ নেই' }),
-				description: latestBadge?.description || localeText(locale, { en: 'Badges appear as your practice becomes more consistent.', bn: 'নিয়মিত অনুশীলনের সঙ্গে ব্যাজ দেখা যাবে।' })
+				title: latestBadge ? getBadgeCopy(locale, latestBadge).name : getPatientCopy('no_badge_yet', locale),
+				description: latestBadge ? getBadgeCopy(locale, latestBadge).description : localeText(locale, { en: 'Badges appear as your practice becomes more consistent.', bn: 'নিয়মিত অনুশীলনের সঙ্গে ব্যাজ দেখা যাবে।' })
 			}
 		],
 		links: [
@@ -573,10 +598,9 @@ function createTrainingPreview(locale, { baselineStatus, nextTasks, metrics }) {
 					: task.priority === 'secondary'
 						? localeText(locale, { en: 'Secondary focus', bn: 'দ্বিতীয় ফোকাস' })
 						: localeText(locale, { en: 'Maintenance', bn: 'রক্ষণাবেক্ষণ' }),
-			title: task.task_name || getDomainName(locale, task.domain),
+			title: getTaskLabel(locale, task),
 			description:
-				task.focus_reason ||
-				localeText(locale, { en: 'Included in your next recommended session.', bn: 'আপনার পরের প্রস্তাবিত সেশনে রাখা হয়েছে।' }),
+				getFocusReason(locale, task),
 			meta: [
 				getDomainName(locale, task.domain),
 				locale === 'bn'
@@ -701,7 +725,7 @@ function createDashboardHero(locale, { baselineStatus, nextTasks, streak, metric
 
 	return {
 		label: localeText(locale, { en: 'Today', bn: 'আজ' }),
-		title: nextTask?.task_name || localeText(locale, { en: 'Training is ready', bn: 'ট্রেনিং প্রস্তুত' }),
+		title: nextTask ? getTaskLabel(locale, nextTask) : localeText(locale, { en: 'Training is ready', bn: 'ট্রেনিং প্রস্তুত' }),
 		description: nextTask
 			? locale === 'bn'
 				? `${getDomainName(locale, nextTask.domain)} দিয়ে আজকের সেশন শুরু করুন।`
@@ -831,8 +855,8 @@ function createProgressPulse(locale, { metrics, weeklySummary, comparisonData, t
 			},
 			{
 				label: localeText(locale, { en: 'Best signal', bn: 'সেরা সংকেত' }),
-				value: latestBadge?.name
-					? latestBadge.name
+				value: latestBadge
+					? getBadgeCopy(locale, latestBadge).name
 					: strongestGain?.improvement > 0
 						? getDomainName(locale, strongestGain.domain)
 						: trendDelta !== null
@@ -949,99 +973,399 @@ function createInsightPulse(locale, { biomarkers, recentContext, trendsData }) {
 	};
 }
 
+function createJourneyDashboardHero(locale, { journey, nextTasks, streak, metrics }) {
+	const baselineStatus = journey?.baseline || {};
+	const nextTask = nextTasks?.tasks?.find((task) => !task.completed) || nextTasks?.tasks?.[0] || null;
+	const baselineProgress =
+		locale === 'bn'
+			? `${numberText(locale, baselineStatus?.completed_count || 0)}/${numberText(locale, baselineStatus?.total_tasks || 6)} complete`
+			: `${baselineStatus?.completed_count || 0}/${baselineStatus?.total_tasks || 6} complete`;
+
+	if (journey?.state === 'new_user' || journey?.state === 'baseline_in_progress') {
+		return {
+			label: localeText(locale, { en: 'Start here', bn: 'শুরু' }),
+			title:
+				journey?.state === 'new_user'
+					? localeText(locale, { en: 'Start your baseline journey', bn: 'আপনার বেসলাইন যাত্রা শুরু করুন' })
+					: localeText(locale, { en: 'Continue your baseline', bn: 'আপনার বেসলাইন চালিয়ে যান' }),
+			description: localeText(locale, {
+				en: 'Complete the six baseline domains once. That unlocks the regular training and progress flow.',
+				bn: 'ছয়টি বেসলাইন ডোমেইন একবার সম্পন্ন করুন। তারপরই নিয়মিত ট্রেনিং ও অগ্রগতির প্রবাহ খুলবে।'
+			}),
+			status: {
+				label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+				value: baselineProgress
+			},
+			primaryAction: {
+				label:
+					journey?.state === 'new_user'
+						? localeText(locale, { en: 'Open baseline', bn: 'বেসলাইন খুলুন' })
+						: localeText(locale, { en: 'Continue baseline', bn: 'বেসলাইন চালিয়ে যান' }),
+				href: '/baseline'
+			},
+			secondaryAction: baselineStatus?.next_route
+				? {
+					label: localeText(locale, { en: 'Open next task', bn: 'পরের টাস্ক খুলুন' }),
+					href: baselineStatus.next_route
+				}
+				: null,
+			facts: [
+				{
+					label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+					value: baselineProgress
+				},
+				{
+					label: localeText(locale, { en: 'Next unlock', bn: 'পরের ধাপ' }),
+					value: localeText(locale, { en: 'Baseline calculation', bn: 'বেসলাইন ক্যালকুলেশন' })
+				},
+				{
+					label: localeText(locale, { en: 'Training', bn: 'ট্রেনিং' }),
+					value: localeText(locale, { en: 'Locked for now', bn: 'এখনো লকড' })
+				}
+			]
+		};
+	}
+
+	if (journey?.state === 'baseline_ready_to_calculate') {
+		return {
+			label: localeText(locale, { en: 'Ready', bn: 'প্রস্তুত' }),
+			title: localeText(locale, { en: 'Your baseline is ready to calculate', bn: 'আপনার বেসলাইন ক্যালকুলেট করার জন্য প্রস্তুত' }),
+			description: localeText(locale, {
+				en: 'All six baseline tasks are complete. Calculate the baseline first, then generate the first training plan.',
+				bn: 'ছয়টি বেসলাইন টাস্ক সম্পন্ন হয়েছে। আগে বেসলাইন ক্যালকুলেট করুন, তারপর প্রথম ট্রেনিং প্ল্যান তৈরি করুন।'
+			}),
+			status: {
+				label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+				value: baselineProgress
+			},
+			primaryAction: {
+				label: localeText(locale, { en: 'Open baseline workspace', bn: 'বেসলাইন ওয়ার্কস্পেস খুলুন' }),
+				href: '/baseline'
+			},
+			facts: [
+				{
+					label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+					value: baselineProgress
+				},
+				{
+					label: localeText(locale, { en: 'Next unlock', bn: 'পরের ধাপ' }),
+					value: localeText(locale, { en: 'Training plan', bn: 'ট্রেনিং প্ল্যান' })
+				},
+				{
+					label: localeText(locale, { en: 'Progress', bn: 'অগ্রগতি' }),
+					value: localeText(locale, { en: 'Available after training starts', bn: 'ট্রেনিং শুরু হলে পাওয়া যাবে' })
+				}
+			]
+		};
+	}
+
+	if (journey?.state === 'training_plan_missing') {
+		return {
+			label: localeText(locale, { en: 'Next step', bn: 'পরের ধাপ' }),
+			title: localeText(locale, { en: 'Generate your first training plan', bn: 'আপনার প্রথম ট্রেনিং প্ল্যান তৈরি করুন' }),
+			description: localeText(locale, {
+				en: 'Your baseline has been calculated. Generate the personalized plan to unlock daily training.',
+				bn: 'আপনার বেসলাইন ক্যালকুলেট হয়েছে। এখন ব্যক্তিগত ট্রেনিং প্ল্যান তৈরি করলেই দৈনিক ট্রেনিং খুলবে।'
+			}),
+			status: {
+				label: localeText(locale, { en: 'Plan', bn: 'প্ল্যান' }),
+				value: localeText(locale, { en: 'Not generated yet', bn: 'এখনো তৈরি হয়নি' })
+			},
+			primaryAction: {
+				label: localeText(locale, { en: 'Open baseline results', bn: 'বেসলাইন রেজাল্ট খুলুন' }),
+				href: '/baseline/results'
+			},
+			facts: [
+				{
+					label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+					value: localeText(locale, { en: 'Calculated', bn: 'ক্যালকুলেটেড' })
+				},
+				{
+					label: localeText(locale, { en: 'Training', bn: 'ট্রেনিং' }),
+					value: localeText(locale, { en: 'Opens after plan generation', bn: 'প্ল্যান তৈরি হলে খুলবে' })
+				},
+				{
+					label: localeText(locale, { en: 'Progress', bn: 'অগ্রগতি' }),
+					value: localeText(locale, { en: 'Later in the journey', bn: 'যাত্রার পরের ধাপে' })
+				}
+			]
+		};
+	}
+
+	if (journey?.state === 'system_not_ready') {
+		return {
+			label: localeText(locale, { en: 'System', bn: 'সিস্টেম' }),
+			title: localeText(locale, { en: 'Training is blocked by setup', bn: 'সেটআপের কারণে ট্রেনিং আটকে আছে' }),
+			description:
+				journey?.blocking_reason ||
+				localeText(locale, {
+					en: 'The task catalog is missing, so today’s session cannot be assembled yet.',
+					bn: 'টাস্ক ক্যাটালগ অনুপস্থিত, তাই আজকের সেশন এখনো তৈরি করা যাচ্ছে না।'
+				}),
+			status: {
+				label: localeText(locale, { en: 'Training', bn: 'ট্রেনিং' }),
+				value: localeText(locale, { en: 'Blocked', bn: 'আটকে আছে' })
+			},
+			primaryAction: {
+				label: localeText(locale, { en: 'Open training', bn: 'ট্রেনিং খুলুন' }),
+				href: '/training'
+			},
+			facts: [
+				{
+					label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+					value: localeText(locale, { en: 'Ready', bn: 'প্রস্তুত' })
+				},
+				{
+					label: localeText(locale, { en: 'Plan', bn: 'প্ল্যান' }),
+					value: localeText(locale, { en: 'Available', bn: 'পাওয়া গেছে' })
+				},
+				{
+					label: localeText(locale, { en: 'Catalog', bn: 'ক্যাটালগ' }),
+					value: localeText(locale, { en: 'Needs setup', bn: 'সেটআপ দরকার' })
+				}
+			]
+		};
+	}
+
+	return {
+		label: localeText(locale, { en: 'Today', bn: 'আজ' }),
+		title: nextTask ? getTaskLabel(locale, nextTask) : localeText(locale, { en: 'Training is ready', bn: '??????? ????????' }),
+		description: nextTask
+			? locale === 'bn'
+				? `${getDomainName(locale, nextTask.domain)} দিয়ে আজকের সেশন শুরু করুন।`
+				: `Start today with ${getDomainName(locale, nextTask.domain)}.`
+			: localeText(locale, {
+				en: 'Open your training workspace when you are ready for the next session.',
+				bn: 'পরের সেশনের জন্য প্রস্তুত হলে ট্রেনিং ওয়ার্কস্পেস খুলুন।'
+			}),
+		status: nextTask
+			? {
+				label: localeText(locale, { en: 'Focus', bn: 'ফোকাস' }),
+				value: `${getDifficultyLabel(locale, nextTask.difficulty)} · ${localeText(locale, { en: 'Level', bn: 'লেভেল' })} ${numberText(locale, nextTask.difficulty)}/10`
+			}
+			: null,
+		primaryAction: {
+			label:
+				journey?.state === 'training_in_session'
+					? localeText(locale, { en: 'Continue session', bn: 'সেশন চালিয়ে যান' })
+					: (metrics?.total_sessions || 0) > 0
+						? localeText(locale, { en: 'Continue training', bn: 'ট্রেনিং চালিয়ে যান' })
+						: localeText(locale, { en: 'Start training', bn: 'ট্রেনিং শুরু করুন' }),
+			href: '/training'
+		},
+		secondaryAction:
+			journey?.state === 'progress_available'
+				? {
+					label: localeText(locale, { en: 'Open progress', bn: 'অগ্রগতি খুলুন' }),
+					href: '/progress'
+				}
+				: null,
+		facts: [
+			{
+				label: localeText(locale, { en: 'Streak', bn: 'ধারাবাহিকতা' }),
+				value:
+					streak?.current_streak > 0
+						? `${numberText(locale, streak.current_streak)} ${localeText(locale, { en: 'days', bn: 'দিন' })}`
+						: localeText(locale, { en: 'Start today', bn: 'আজ শুরু করুন' })
+			},
+			{
+				label: localeText(locale, { en: 'Sessions', bn: 'সেশন' }),
+				value: numberText(locale, metrics?.total_sessions || 0)
+			},
+			{
+				label: localeText(locale, { en: 'Last activity', bn: 'সর্বশেষ কাজ' }),
+				value: metrics?.last_training_date
+					? shortDate(locale, metrics.last_training_date)
+					: localeText(locale, { en: 'No session yet', bn: 'এখনো সেশন হয়নি' })
+			}
+		]
+	};
+}
+
+function createJourneyTodayStats(locale, { journey, nextTasks, weeklySummary, doctorState, unreadCount }) {
+	const baselineStatus = journey?.baseline || {};
+	const baselineIncomplete = journey?.state === 'new_user' || journey?.state === 'baseline_in_progress';
+	const hasDoctor = Boolean(doctorState?.assigned && doctorState?.doctor);
+
+	return [
+		{
+			label: baselineIncomplete
+				? localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' })
+				: journey?.state === 'baseline_ready_to_calculate'
+					? localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' })
+					: journey?.state === 'training_plan_missing'
+						? localeText(locale, { en: 'Plan', bn: 'প্ল্যান' })
+						: localeText(locale, { en: 'Session', bn: 'সেশন' }),
+			value: baselineIncomplete
+				? `${numberText(locale, baselineStatus?.completed_count || 0)}/${numberText(locale, baselineStatus?.total_tasks || 6)}`
+				: journey?.state === 'baseline_ready_to_calculate'
+					? localeText(locale, { en: 'Ready to calculate', bn: 'ক্যালকুলেটের জন্য প্রস্তুত' })
+					: journey?.state === 'training_plan_missing'
+						? localeText(locale, { en: 'Needs generation', bn: 'তৈরি করা বাকি' })
+						: `${localeText(locale, { en: 'Session', bn: 'সেশন' })} ${numberText(locale, nextTasks?.session_number || 1)}`
+		},
+		{
+			label: localeText(locale, { en: 'This week', bn: 'এই সপ্তাহ' }),
+			value: weeklySummary?.has_data
+				? `${numberText(locale, weeklySummary.total_sessions || 0)} ${localeText(locale, { en: 'sessions', bn: 'সেশন' })}`
+				: baselineIncomplete
+					? localeText(locale, { en: 'Begins after baseline', bn: 'বেসলাইন শেষ হলে শুরু হবে' })
+					: localeText(locale, { en: 'Building', bn: 'তৈরি হচ্ছে' })
+		},
+		{
+			label: localeText(locale, { en: 'Care', bn: 'কেয়ার' }),
+			value: hasDoctor
+				? localeText(locale, { en: 'Connected', bn: 'যুক্ত' })
+				: localeText(locale, { en: 'Independent', bn: 'স্বতন্ত্র' })
+		},
+		{
+			label: localeText(locale, { en: 'Updates', bn: 'আপডেট' }),
+			value:
+				unreadCount > 0
+					? `${numberText(locale, unreadCount)} ${localeText(locale, { en: 'new', bn: 'নতুন' })}`
+					: localeText(locale, { en: 'Calm', bn: 'শান্ত' })
+		}
+	];
+}
+
+function createLockedProgressPulse(locale, journey) {
+	return {
+		label: localeText(locale, { en: 'Progress', bn: 'অগ্রগতি' }),
+		title: localeText(locale, { en: 'Progress unlocks after training starts', bn: 'ট্রেনিং শুরু হলে অগ্রগতি খুলবে' }),
+		tone: 'progress',
+		action: {
+			label: localeText(locale, { en: 'Open next step', bn: 'পরের ধাপ খুলুন' }),
+			href: journey?.next_route || '/baseline'
+		},
+		metrics: [
+			{
+				label: localeText(locale, { en: 'Current stage', bn: 'বর্তমান ধাপ' }),
+				value: journey?.next_label || localeText(locale, { en: 'Start baseline', bn: 'বেসলাইন শুরু করুন' })
+			},
+			{
+				label: localeText(locale, { en: 'Baseline', bn: 'বেসলাইন' }),
+				value: `${numberText(locale, journey?.baseline?.completed_count || 0)}/${numberText(locale, journey?.baseline?.total_tasks || 6)}`
+			},
+			{
+				label: localeText(locale, { en: 'Training sessions', bn: 'ট্রেনিং সেশন' }),
+				value: numberText(locale, journey?.progress?.training_sessions_count || 0)
+			}
+		]
+	};
+}
+
 export async function createPatientDashboardViewModel({ fetchImpl, user, locale }) {
 	const userId = user?.id;
-
-	const requestSet = await Promise.allSettled([
-		requestJson(fetchImpl, `/api/tasks/results/${userId}/baseline-status`),
+	const journey = await requestJson(fetchImpl, `/api/patient-journey/${userId}`);
+	const sharedRequestSet = await Promise.allSettled([
 		requestJson(fetchImpl, `/api/auth/patient/${userId}/notifications`),
-		requestJson(fetchImpl, `/api/training/training-session/metrics/${userId}?_t=${Date.now()}`),
-		requestJson(fetchImpl, `/api/training/training-plan/${userId}/streak`),
-		requestJson(fetchImpl, `/api/training/training-plan/${userId}/next-tasks?_t=${Date.now()}`),
 		requestJson(fetchImpl, `/api/auth/patient/${userId}/prescriptions`),
-		requestJson(fetchImpl, `/api/training/training-session/performance-comparison/${userId}?_t=${Date.now()}`),
-		requestJson(fetchImpl, `/api/training/trends/${userId}?days=30`),
-		requestJson(fetchImpl, `/api/training/weekly-summary/${userId}`),
-		requestJson(fetchImpl, `/api/training/badges/recent/${userId}?limit=3`),
-		requestJson(fetchImpl, `/api/doctor/patient/${userId}/assigned-doctor`),
-		requestJson(fetchImpl, `/api/training/advanced-analytics/${userId}/biomarkers?days=30`),
-		requestJson(fetchImpl, `/api/training/session-context/${userId}/recent?limit=4`)
+		requestJson(fetchImpl, `/api/doctor/patient/${userId}/assigned-doctor`)
 	]);
+	const [notificationsResult, prescriptionsResult, doctorResult] = sharedRequestSet;
 
-	const [
-		baselineStatusResult,
-		notificationsResult,
-		metricsResult,
-		streakResult,
-		nextTasksResult,
-		prescriptionsResult,
-		comparisonResult,
-		trendsResult,
-		weeklySummaryResult,
-		recentBadgesResult,
-		doctorResult,
-		biomarkersResult,
-		recentContextResult
-	] = requestSet;
+	let trainingRequestSet = [];
+	let metrics = null;
+	let streak = null;
+	let nextTasks = null;
+	let weeklySummary = null;
+	let comparisonData = null;
+	let trendsData = null;
+	let recentBadges = null;
+	let biomarkers = null;
+	let recentContext = null;
 
-	const baselineStatus = baselineStatusResult.status === 'fulfilled' ? baselineStatusResult.value : null;
+	const shouldLoadTraining =
+		journey?.state === 'training_ready' ||
+		journey?.state === 'training_in_session' ||
+		journey?.state === 'progress_available' ||
+		journey?.state === 'system_not_ready';
+
+	if (shouldLoadTraining) {
+		trainingRequestSet = await Promise.allSettled([
+			requestJson(fetchImpl, `/api/training/training-session/metrics/${userId}?_t=${Date.now()}`),
+			requestJson(fetchImpl, `/api/training/training-plan/${userId}/streak`),
+			requestJson(fetchImpl, `/api/training/training-plan/${userId}/next-tasks?_t=${Date.now()}`),
+			requestJson(fetchImpl, `/api/training/weekly-summary/${userId}`)
+		]);
+
+		metrics = trainingRequestSet[0].status === 'fulfilled' ? trainingRequestSet[0].value : null;
+		if (metrics?.has_data === false) metrics = null;
+		streak = trainingRequestSet[1].status === 'fulfilled' ? trainingRequestSet[1].value : null;
+		nextTasks = trainingRequestSet[2].status === 'fulfilled' ? trainingRequestSet[2].value : null;
+		weeklySummary = trainingRequestSet[3].status === 'fulfilled' ? trainingRequestSet[3].value : null;
+	}
+
+	let progressRequestSet = [];
+	const shouldLoadProgress = journey?.progress?.unlocked;
+	if (shouldLoadProgress) {
+		progressRequestSet = await Promise.allSettled([
+			requestJson(fetchImpl, `/api/training/training-session/performance-comparison/${userId}?_t=${Date.now()}`),
+			requestJson(fetchImpl, `/api/training/trends/${userId}?days=30`),
+			requestJson(fetchImpl, `/api/training/badges/recent/${userId}?limit=3`),
+			requestJson(fetchImpl, `/api/training/advanced-analytics/${userId}/biomarkers?days=30`),
+			requestJson(fetchImpl, `/api/training/session-context/${userId}/recent?limit=4`)
+		]);
+
+		comparisonData = progressRequestSet[0].status === 'fulfilled' ? progressRequestSet[0].value : null;
+		if (comparisonData?.has_data === false) comparisonData = null;
+		trendsData = progressRequestSet[1].status === 'fulfilled' ? progressRequestSet[1].value : null;
+		recentBadges = progressRequestSet[2].status === 'fulfilled' ? progressRequestSet[2].value : null;
+		biomarkers = progressRequestSet[3].status === 'fulfilled' ? progressRequestSet[3].value : null;
+		recentContext = progressRequestSet[4].status === 'fulfilled' ? progressRequestSet[4].value : null;
+	}
+
 	const notifications =
 		notificationsResult.status === 'fulfilled' ? notificationsResult.value?.notifications || [] : [];
-	const metrics = metricsResult.status === 'fulfilled' ? metricsResult.value : null;
-	const streak = streakResult.status === 'fulfilled' ? streakResult.value : null;
-	const nextTasks = nextTasksResult.status === 'fulfilled' ? nextTasksResult.value : null;
 	const prescriptionSummary =
 		prescriptionsResult.status === 'fulfilled' ? prescriptionsResult.value : null;
-	const comparisonData = comparisonResult.status === 'fulfilled' ? comparisonResult.value : null;
-	const trendsData = trendsResult.status === 'fulfilled' ? trendsResult.value : null;
-	const weeklySummary = weeklySummaryResult.status === 'fulfilled' ? weeklySummaryResult.value : null;
-	const recentBadges = recentBadgesResult.status === 'fulfilled' ? recentBadgesResult.value : null;
 	const doctorState =
 		doctorResult.status === 'fulfilled'
 			? doctorResult.value
 			: { assigned: false, doctor: null, error: true };
-	const biomarkers = biomarkersResult.status === 'fulfilled' ? biomarkersResult.value : null;
-	const recentContext = recentContextResult.status === 'fulfilled' ? recentContextResult.value : null;
 	const unreadCount = getUnreadCount(userId, notifications);
+	const requestSet = [...sharedRequestSet, ...trainingRequestSet, ...progressRequestSet];
 
 	return {
 		header: {
 			brand: 'NeuroBloom',
-			title: localeText(locale, { en: 'Patient Workspace', bn: 'রোগী ওয়ার্কস্পেস' }),
-			subtitle: getDisplayName(user, locale),
-			description: localeText(locale, {
-				en: 'A calmer home for training, progress, care, and your account.',
-				bn: 'ট্রেনিং, অগ্রগতি, কেয়ার ও আপনার অ্যাকাউন্টের জন্য আরও শান্ত একটি হোম।'
-			}),
+			title: getPatientCopy('dashboard_title', locale),
+			subtitle: '',
+			description: getPatientCopy('dashboard_description', locale),
 			logoutLabel: localeText(locale, { en: 'Logout', bn: 'লগআউট' })
 		},
 		headerActions: createHeaderActions(locale, unreadCount),
-		hero: createDashboardHero(locale, { baselineStatus, nextTasks, streak, metrics }),
-		todayStats: createTodayStats(locale, {
-			baselineStatus,
+		hero: createJourneyDashboardHero(locale, { journey, nextTasks, streak, metrics }),
+		todayStats: createJourneyTodayStats(locale, {
+			journey,
 			nextTasks,
 			weeklySummary,
 			doctorState,
 			unreadCount
 		}),
-		progressPulse: createProgressPulse(locale, {
-			metrics,
-			weeklySummary,
-			comparisonData,
-			trendsData,
-			recentBadges
-		}),
+		progressPulse: shouldLoadProgress
+			? createProgressPulse(locale, {
+				metrics,
+				weeklySummary,
+				comparisonData,
+				trendsData,
+				recentBadges
+			})
+			: createLockedProgressPulse(locale, journey),
 		carePulse: createCarePulse(locale, {
 			doctorState,
 			prescriptionSummary,
 			unreadCount,
 			notifications
 		}),
-		insightPulse: createInsightPulse(locale, {
-			biomarkers,
-			recentContext,
-			trendsData
-		}),
+		insightPulse: shouldLoadProgress
+			? createInsightPulse(locale, {
+				biomarkers,
+				recentContext,
+				trendsData
+			})
+			: null,
 		warnings: createWarnings(locale, requestSet)
 	};
 }
+

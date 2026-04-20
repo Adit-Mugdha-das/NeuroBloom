@@ -215,6 +215,7 @@ class BadgeService:
             if badge_def:
                 result.append({
                     "id": ub.badge_id,
+                    "badge_id": ub.badge_id,
                     "name": badge_def["name"],
                     "description": badge_def["description"],
                     "icon": badge_def["icon"],
@@ -234,6 +235,7 @@ class BadgeService:
         for badge_id, badge_def in BadgeDefinition.get_all_badges().items():
             badge_info = {
                 "id": badge_id,
+                "badge_id": badge_id,
                 "name": badge_def["name"],
                 "description": badge_def["description"],
                 "icon": badge_def["icon"],
