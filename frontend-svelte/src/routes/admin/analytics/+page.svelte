@@ -56,6 +56,7 @@
 			]);
 			stats = statsResponse.data;
 			riskAlerts = alertsResponse.data.alerts;
+			loading = false;
 			await tick();
 			renderActivityChart();
 			renderPerformanceChart();
@@ -63,7 +64,6 @@
 			renderCompletionChart();
 		} catch (requestError) {
 			error = requestError.response?.data?.detail || 'Failed to load analytics';
-		} finally {
 			loading = false;
 		}
 	}

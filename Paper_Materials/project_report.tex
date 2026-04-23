@@ -1,0 +1,979 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[left=2cm,right=2cm,top=1in,bottom=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{placeins}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{algpseudocode}
+\usepackage{newtxtext,newtxmath}
+
+\onehalfspacing
+\setlength{\parindent}{0.5in}
+\setlength{\parskip}{0pt}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+\setcounter{topnumber}{4}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.85}
+
+\newcommand{\projectgraphic}[2][0.9\textwidth]{%
+    \IfFileExists{#2.pdf}{\includegraphics[width=#1]{#2.pdf}}{%
+        \IfFileExists{#2.png}{\includegraphics[width=#1]{#2.png}}{%
+            \IfFileExists{#2.jpg}{\includegraphics[width=#1]{#2.jpg}}{%
+                \fbox{\parbox[c][2.2in][c]{0.82\textwidth}{\centering Placeholder for image file\\#2.pdf}}
+            }%
+        }%
+    }%
+}
+
+\newcommand{\projectsubgraphic}[2][\linewidth]{%
+    \IfFileExists{#2.pdf}{\includegraphics[width=#1,height=0.28\textheight,keepaspectratio]{#2.pdf}}{%
+        \IfFileExists{#2.png}{\includegraphics[width=#1,height=0.28\textheight,keepaspectratio]{#2.png}}{%
+            \IfFileExists{#2.jpg}{\includegraphics[width=#1,height=0.28\textheight,keepaspectratio]{#2.jpg}}{%
+                \fbox{\parbox[c][1.8in][c]{0.9\linewidth}{\centering Placeholder for image file\\#2.pdf}}
+            }%
+        }%
+    }%
+}
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+{\Large\bfseries NeuroBloom: A Modular Digital Platform for Long-Term Cognitive Monitoring and Clinician-Guided Rehabilitation in Multiple Sclerosis\par}
+
+\vspace{1.5cm}
+by
+
+\vspace{1cm}
+{\large ABHIJEET DEB NATH}\\
+Roll: 2107083
+
+\vspace{0.5cm}
+and
+
+\vspace{0.5cm}
+{\large Adit Mugdha Das}\\
+Roll: 2107118
+
+\vfill
+Supervisor:\\
+{\bfseries Kazi Saeed Alam}\\
+Assistant Professor\\
+Department of Computer Science and Engineering\\
+Khulna University of Engineering \& Technology
+
+\vfill
+Department of Computer Science and Engineering\\
+Khulna University of Engineering \& Technology\\
+Khulna 9203, Bangladesh\\
+[Month, Year]
+\end{center}
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\chapter*{Acknowledgment}
+\addcontentsline{toc}{chapter}{Acknowledgment}
+The completion of this project was made possible through the guidance, support, and encouragement of several people. We would like to express our sincere gratitude to our supervisor, Kazi Saeed Alam, for valuable advice, regular feedback, and continuous encouragement throughout the development of this work. The suggestions provided during the design, implementation, and writing stages helped us improve both the technical quality of the system and the clarity of this report.
+
+We are also grateful to the teachers of the Department of Computer Science and Engineering, KUET, for providing the academic environment and technical foundation needed to complete this project. Finally, we would like to thank our family members and well-wishers for their patience, support, and motivation during the entire project period.
+
+\clearpage
+
+\begin{center}
+{\Large\bfseries Abstract}
+\end{center}
+
+\addcontentsline{toc}{chapter}{Abstract}
+
+NeuroBloom is a modular web-based platform developed for long-term cognitive monitoring and clinician-guided rehabilitation support in multiple sclerosis (MS). The project was designed to address a common limitation in MS care: cognitive problems often develop slowly and may not be captured well through occasional hospital visits or one-time paper-based tests. Instead of treating cognition as something that is measured only once, NeuroBloom supports repeated digital task performance, structured contextual data collection, progress review over time, and coordinated follow-up by clinicians within one system.
+
+The implemented platform combines patient-side cognitive assessment and training with doctor-side review tools and administrative oversight. In its current form, NeuroBloom supports 35 cognitive task variants across six domains: working memory, processing speed, attention, cognitive flexibility, planning, and visual scanning. A baseline assessment is used to create an initial cognitive profile, and this profile is then used to generate a personalized training plan that controls task selection, focus areas, and difficulty progression. The system also includes a short pre-task questionnaire so that performance can be interpreted together with factors such as fatigue, sleep quality, medication timing, stress, pain, and readiness. Using these inputs, the platform produces understandable analytical indicators such as fatigue-related decline, reaction-time variability, performance trends, and reliable change summaries.
+
+From a technical point of view, NeuroBloom follows a role-based architecture built with a Svelte frontend, a FastAPI backend, SQLModel-based data modeling, and PostgreSQL storage. The system also includes bilingual patient-facing support in Bangla and English, secure authentication, messaging, doctor assignment workflows, notifications, progress reports, and administrative monitoring features. By bringing cognitive tasks, contextual analytics, adaptive training logic, and multi-role clinical coordination into a single low-cost digital platform, NeuroBloom provides a practical framework for accessible rehabilitation-focused follow-up and for reproducible digital health research, especially in resource-constrained settings.
+
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+\clearpage
+
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\clearpage
+
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+
+\section{Introduction}
+Multiple sclerosis is a chronic neurological disorder in which cognitive problems may appear gradually and may continue to change over time. Along with motor and sensory symptoms, many patients experience difficulty in areas such as processing speed, attention, working memory, executive control, and mental fatigue. These changes are not always sudden or easy to notice in a normal clinical visit. In many cases, they develop slowly and need repeated observation over time to be understood properly. Because of this, follow-up methods that depend only on occasional in-person assessment are often not enough to capture subtle but important changes in daily functioning and rehabilitation needs.
+
+NeuroBloom was developed to address this need through a digital platform that supports repeated cognitive interaction, structured data collection, and clinician-guided review. Instead of working as only a single computerized test, the project combines baseline assessment, training sessions, contextual questionnaires, longitudinal analytics, and separate workflows for patients, doctors, and administrators. This makes the system useful not only for cognitive exercise, but also for organized monitoring and rehabilitation support in MS-related care.
+
+\section{Background / Problem Statement}
+The main motivation behind NeuroBloom comes from several practical problems in current cognitive follow-up systems. First, many existing assessments are clinic-based and done only from time to time. They provide useful snapshots, but they are not always suitable for repeated, low-cost monitoring between visits. Second, cognitive performance in MS is often influenced by contextual factors such as fatigue, sleep quality, medication timing, stress, and pain. If these factors are not recorded in a structured way, daily changes in performance become difficult to explain. Third, rehabilitation activities are often separated from clinical review, which means patients may complete cognitive tasks without a clear way for doctors to check progress, adjust recommendations, or respond to possible risks.
+
+These problems become even more serious in resource-constrained settings, where repeated MRI, laboratory tests, or specialist consultation may not be available regularly for continuous follow-up. In this situation, there is a clear need for an accessible software system that can support repeated cognitive assessment and training, preserve long-term records, generate understandable analytics, and connect patient-side activity with doctor-side supervision. Therefore, the problem addressed by this project is not only how to deliver cognitive tasks digitally, but how to build a complete workflow for monitoring and rehabilitation-oriented decision support in multiple sclerosis.
+
+\section{Objectives}
+The main objective of this project is to design and implement a modular digital platform for long-term cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis.
+
+The specific objectives are as follows:
+
+\begin{itemize}[leftmargin=0.6in]
+\item To develop a patient-facing system that supports baseline cognitive assessment and repeated training sessions across multiple cognitive domains.
+\item To build an adaptive session-planning mechanism that selects tasks, controls domain focus, and updates difficulty based on patient performance.
+\item To capture contextual factors such as fatigue, sleep quality, medication timing, pain, stress, and readiness before task execution.
+\item To generate understandable analytical indicators such as fatigue-related decline, reaction-time variability, long-term trends, and reliable change summaries.
+\item To provide doctor-facing tools for patient assignment, progress review, intervention tracking, prescription support, and report generation.
+\item To provide administrative tools for controlled deployment, role management, activity monitoring, and risk-oriented oversight.
+\item To improve accessibility through a bilingual patient-facing interface in Bangla and English.
+\item To create a reusable software framework that can support future research and further extension in digital cognitive rehabilitation.
+\end{itemize}
+
+\section{Scope}
+The scope of NeuroBloom includes the design and implementation of a full-stack, role-based web application for cognitive monitoring and rehabilitation support. The project uses a Svelte-based frontend for user interaction, a FastAPI backend for application logic and API delivery, SQLModel for data modeling, and PostgreSQL for persistent storage. The implemented modules include authentication, baseline assessment, training-plan generation, adaptive difficulty control, task rotation, long-term progress tracking, pre-task contextual questionnaires, advanced analytics, doctor assignment workflows, messaging, notifications, progress reporting, and administrative monitoring.
+
+From a functional perspective, the project focuses on six cognitive domains and currently supports 35 task variants stored in the platform database. The system is intended for structured monitoring, supervised rehabilitation support, and research-oriented digital data collection. It is not designed to replace formal neurological diagnosis, MRI-based disease evaluation, or clinical judgment. Instead, it acts as a supporting digital environment that helps organize repeated observation, training activity, and clinician-patient coordination.
+
+\section{Unfamiliarity of the Problem/Topic/Solution}
+The originality of this project does not come from creating a completely new neuropsychological test. Most of the task paradigms used in NeuroBloom are based on established cognitive assessment methods and clinically known task families. The new contribution of this project lies in how these elements are brought together in one software system for long-term MS-oriented monitoring and rehabilitation support.
+
+NeuroBloom is not a direct copy of any single existing application. It combines several features in one platform, including multi-domain task delivery, personalized session planning, task rotation to reduce repetition, contextual questionnaire capture, deterministic digital biomarker extraction, bilingual patient-facing accessibility, doctor-guided intervention workflows, and administrative governance. The problem definition and the system design were developed by combining literature-based understanding, clinical motivation, and project-specific software engineering decisions. For this reason, the project should be considered a new system design and implementation effort rather than a direct reproduction of an existing product or publication.
+
+\section{Project Planning and Work Distribution}
+
+\subsection{Work Plan}
+The project was organized in several phases so that the core features could be implemented first and then extended with clinician and analytics modules. Figure~\ref{fig:gantt} presents the overall work plan of NeuroBloom using a Gantt chart.
+
+\begin{figure}[htbp]
+    \centering
+    \projectgraphic[0.92\textwidth]{project_timeline_gantt}
+    \caption{Gantt chart of the NeuroBloom project work plan.}
+    \label{fig:gantt}
+\end{figure}
+This phased plan reflects the actual engineering dependency structure of the project. The patient-side task workflow needed to be stable before doctor-facing review and analytics could be added in a meaningful way, and the multi-role workflow required the database and authentication layers to be completed first.
+
+\subsection{Work Distribution}
+If the project is submitted by two students, the work distribution can be presented in a role-based form similar to Table~\ref{tab:distribution}. The names can be replaced with the actual student names before final submission.
+
+\begin{table}[h!]
+\centering
+\caption{Example work distribution for a two-member team}
+\label{tab:distribution}
+\begin{tabular}{|p{3.4cm}|p{5.2cm}|p{5.2cm}|}
+\hline
+\textbf{Team Member} & \textbf{Primary Responsibilities} & \textbf{Supporting Contributions} \\
+\hline
+Student 1 & Backend architecture, database design, API implementation, analytics logic, training-plan logic & Testing, integration support, report preparation \\
+\hline
+Student 2 & Frontend design, bilingual UI, patient workflow integration, doctor/admin dashboards, figure preparation & Testing, documentation, report formatting \\
+\hline
+\end{tabular}
+\end{table}
+
+If the work is completed by a single student, this subsection can instead explain how requirement analysis, implementation, testing, and documentation were handled step by step by one developer. The important point is to show that the project was planned in a structured way rather than developed without clear organization.
+
+\section{Applications of the Work}
+NeuroBloom has both practical and research-oriented applications in several areas:
+
+\begin{itemize}[leftmargin=0.6in]
+\item Long-term cognitive monitoring for patients with multiple sclerosis between formal clinical visits.
+\item Clinician-guided cognitive rehabilitation where doctors can review progress and adjust interventions over time.
+\item Low-cost digital follow-up in settings where repeated specialist assessment and advanced diagnostic facilities are limited.
+\item Research-oriented collection of behavioral and contextual data for studying fatigue, variability, adherence, and rehabilitation-related change.
+\item Educational demonstration of a full-stack digital health platform that integrates analytics, multilingual accessibility, and multi-role workflow management.
+\end{itemize}
+
+\section{Organization of the Project}
+The rest of this report is organized as follows. Chapter II reviews the relevant literature and existing systems related to cognitive assessment, rehabilitation, and digital monitoring in multiple sclerosis. Chapter III presents the methodology of the project, including the system architecture, task framework, adaptive planning logic, and analytics workflow. Chapter IV describes the implementation details, experimental setup, evaluation measures, datasets or demo data strategy, and the main results of the completed system. Chapter V discusses intellectual property, ethical, legal, societal, health, cultural, safety, and environmental considerations. Chapter VI explains the complex engineering problems and activities involved in the design and implementation of the system. Finally, Chapter VII summarizes the project, identifies its limitations, and outlines possible future extensions.
+
+\chapter{Related Works}
+
+\section{Introduction}
+The work presented in NeuroBloom is connected to several existing research directions in multiple sclerosis care. These include clinical studies on cognitive impairment in MS, structured screening and management recommendations, and the more recent development of digital biomarkers and digital phenotyping for neurological monitoring \cite{chiaravalloti2008,rocca2015,kalb2018,insel2017,coravos2019}. Therefore, to understand the position of this project, it is necessary to review not only traditional cognitive assessment approaches, but also recent software-oriented and data-driven directions that aim to support long-term monitoring.
+
+In the literature, most relevant work can be grouped into a few broad categories. One group focuses on clinical understanding of cognitive impairment in MS and on standardized assessment batteries. Another group focuses on guidelines for screening and management in real clinical care. A third group focuses on digital measurement, digital biomarkers, and data collected through repeated patient interaction. NeuroBloom draws ideas from all of these directions, but its contribution lies in how these elements are combined into one usable software platform rather than in proposing a new single test or a new isolated metric.
+
+\section{Related Works}
+Research on cognition in multiple sclerosis shows that impairment is common and often affects processing speed, attention, working memory, and executive functioning \cite{chiaravalloti2008,amato2006,rocca2015}. These studies established the clinical importance of cognitive decline in MS, but they mainly explain the condition rather than provide a deployable software system for long-term monitoring.
+
+Another major direction is structured screening and management. BICAMS offered a practical framework for cognitive screening in MS \cite{benedict2012}, and later care recommendations emphasized routine monitoring and follow-up \cite{kalb2018}. These contributions are highly relevant, but they are mostly screening-oriented and do not provide adaptive training, contextual questionnaires, messaging, or coordinated doctor and administrator workflows.
+
+Recent literature on digital phenotyping and digital biomarkers argues that repeated digital interaction can reveal meaningful behavioral patterns over time \cite{insel2017,dorsey2017,coravos2019}. This line of work supports the value of continuous measurement, but much of it remains conceptual or research-focused. In practice, there is still a gap between clinically grounded assessment structure and full software platforms that combine patient interaction, analytics, and supervised review. NeuroBloom was designed in response to that gap.
+
+\section{Discussion}
+The review above shows that NeuroBloom is informed by established research, but it is not acquired directly from any single earlier source. Prior clinical studies explain why cognitive monitoring matters in MS \cite{chiaravalloti2008,rocca2015}. Screening frameworks such as BICAMS and later care recommendations show how monitoring can be organized in practice \cite{benedict2012,kalb2018}. Digital phenotyping and digital biomarker research explain why repeated digital interaction can produce useful longitudinal signals \cite{insel2017,dorsey2017,coravos2019}. However, none of these directions alone provides the same combination of features implemented in this project.
+
+Table~\ref{tab:related_comparison} summarizes the literature and supports the argument that the problem idea and solution structure of NeuroBloom are new at the system level. The individual task ideas are grounded in existing neuropsychological concepts, but the contribution of this project lies in integrating those concepts with adaptive training, contextual capture, analytics, doctor-patient coordination, administrative oversight, and bilingual accessibility in one platform.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of related work and comparison with NeuroBloom}
+\label{tab:related_comparison}
+\begin{tabularx}{\textwidth}{|p{3.5cm}|X|X|}
+\hline
+\textbf{Related work direction} & \textbf{Main contribution} & \textbf{Limitation relative to NeuroBloom} \\
+\hline
+Clinical reviews of cognitive impairment in MS \cite{chiaravalloti2008,amato2006,rocca2015} & Established that cognitive problems in MS are common, clinically important, and spread across multiple domains such as processing speed, attention, memory, and executive function. & These works explain the clinical problem well, but they do not provide an implemented digital system for repeated patient interaction, monitoring, and clinician-guided follow-up. \\
+\hline
+Structured screening and assessment frameworks such as BICAMS and care recommendations \cite{benedict2012,kalb2018} & Provided practical screening structure and encouraged routine cognitive management in MS care. & These approaches are mainly assessment- and screening-focused. They do not by themselves provide adaptive training, contextual data capture, messaging, doctor portals, or administrative coordination. \\
+\hline
+Digital phenotyping and digital biomarker literature \cite{insel2017,dorsey2017,coravos2019} & Introduced the importance of repeated digital measurement, behavioral signals, and interpretable digital markers for health monitoring. & Much of this work is conceptual or research-oriented and does not directly deliver a complete role-based rehabilitation platform tied to MS-oriented task workflows. \\
+\hline
+General software-oriented monitoring direction combining repeated interaction and analytics \cite{kalb2018,coravos2019} & Motivates the need for systems that connect data capture with meaningful interpretation over time. & Existing directions often emphasize only one part of the workflow, such as screening, analytics, or training, rather than combining patient, doctor, and administrative functions in one system. \\
+\hline
+NeuroBloom (this project) & Combines multi-domain cognitive tasks, adaptive session planning, contextual questionnaires, longitudinal analytics, doctor-guided review, administrative oversight, and bilingual patient-facing support in one platform. & The project contribution is system-level integration rather than invention of a completely new standalone cognitive test. \\
+\hline
+\end{tabularx}
+\end{table}
+
+For this reason, NeuroBloom should be viewed as a new integrated software solution developed from multiple research directions rather than as a direct copy of an existing application or publication.
+
+\chapter{Methodology}
+
+\section{Introduction}
+This chapter describes the methodology followed in the design of NeuroBloom. The goal of this chapter is to explain how the problem was translated into a structured software solution. For that reason, the discussion here focuses on design logic, system workflow, task planning, contextual data capture, analytics generation, and role-based coordination. The chapter does not focus on final results or user-interface outcomes; those are presented later in the implementation and results chapter.
+
+\section{Detailed Methodology}
+
+\subsection{Problem Design and Analysis}
+The design of NeuroBloom started from the observation that cognitive change in multiple sclerosis is often gradual and difficult to capture through isolated clinical visits alone \cite{chiaravalloti2008,amato2006,rocca2015}. A useful digital system for this problem therefore had to satisfy more than one requirement. It had to support repeated task performance, preserve session history over time, and allow clinicians to review patterns rather than only single scores. In addition, because MS-related performance can be influenced by fatigue, sleep quality, medication timing, stress, and pain, the system needed a way to capture contextual information together with cognitive outcomes.
+
+From this problem analysis, several design goals were identified. First, the system had to support longitudinal observation rather than one-time testing. Second, it had to be structured around clinically meaningful cognitive domains. Third, it had to generate understandable analytical outputs instead of relying on opaque prediction models. Fourth, it had to support more than one type of user, since patients, doctors, and administrators all have different responsibilities in a real monitoring environment. Finally, the system had to remain accessible and practical in settings where resources are limited, which motivated a web-based, low-cost, bilingual approach.
+
+\subsection{Overall Framework and Architecture}
+NeuroBloom was designed as a role-based web platform with three main operational contexts: patient, doctor, and administrator. These user groups share a common backend and database, but each has a different interface and a different set of responsibilities. The patient side is responsible for task execution and contextual self-report. The doctor side is responsible for reviewing progress, interpreting summaries, and making intervention-related decisions. The administrator side is responsible for oversight, governance, and system-level monitoring.
+
+Technically, the system follows a layered architecture. The frontend was built using Svelte and handles page rendering, task interaction, localization, and role-specific dashboards. The backend was developed with FastAPI and manages authentication, session planning, storage, messaging, analytics access, doctor workflows, and administrative functionality. SQLModel is used for application data modeling, and PostgreSQL provides persistent storage. An analytics layer processes stored session and trial records to produce longitudinal summaries and biomarker-oriented outputs. This layered separation improves maintainability and allows different modules to evolve without redesigning the entire system.
+
+Figure~\ref{fig:method_architecture} presents this layered role-based architecture and shows how the patient, doctor, and administrator interfaces connect to the shared backend, analytics, and database layers.
+
+At system level, the workflow begins when a patient logs in and either completes baseline assessment tasks or continues with scheduled training tasks. Before a session starts, the system can collect contextual information such as fatigue, sleep quality, medication timing, stress, pain, and readiness. After the patient completes the assigned tasks, the results and contextual records are stored in the database. These stored records are then processed into summary metrics and analytical indicators. Doctors review these outputs through their dashboard, while administrators observe system-wide activity and alerts. This framework keeps data collection, interpretation, and action connected inside one coordinated process.
+
+This end-to-end operational flow is summarized in Figure~\ref{fig:overall_workflow}, which places patient interaction, contextual capture, data storage, analytics generation, and clinician review in one continuous process.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{methodology_system_architecture}
+    \caption{Overall system architecture of NeuroBloom.}
+    \label{fig:method_architecture}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \projectgraphic[0.92\textwidth]{methodology_complete_workflow}
+    \caption{Complete workflow of NeuroBloom from patient interaction to clinical review and administrative oversight.}
+    \label{fig:overall_workflow}
+\end{figure}
+
+\subsection{Patient-Side Methodology}
+The patient-side methodology consists of four major stages: access, assessment, training, and progress preservation. In the access stage, the user logs in and enters the patient-facing dashboard. In the assessment stage, the user completes baseline tasks that represent the major cognitive domains. The baseline results are then used to estimate the user's starting cognitive profile. In the training stage, the user completes repeated four-task sessions selected according to the training plan. During these sessions, the system records measures such as score, accuracy, reaction time, completion state, and contextual variables. In the final stage, the stored data are used to update progress summaries and guide future task selection.
+
+This methodology was chosen because it supports repeated interaction without making the user repeat the full baseline process every time. It also preserves continuity between one session and the next, which is essential for long-term monitoring.
+
+\subsection{Personalized Training and Task Rotation Methodology}
+One of the central methodological features of NeuroBloom is its personalized session-planning process. After baseline assessment, the six cognitive domains are ranked according to the patient's performance. The weakest domains are treated as primary focus areas, the middle domains as secondary focus areas, and the strongest domains as maintenance areas. Initial difficulty levels are assigned according to baseline scores, and subsequent sessions are generated by selecting tasks from the appropriate focus areas.
+
+Task rotation is used so that the same task is not repeated too often in a short period. This reduces boredom, lowers practice effects, and supports more balanced engagement with the task library. After each completed task, the system updates the stored result. After each full session, the system updates difficulty levels according to performance. In this way, the methodology supports both personalization and progression without depending on manual adjustment in every case.
+
+\begin{center}
+\begin{minipage}{0.92\linewidth}
+\small
+\textbf{Algorithm 1. Personalized session planning and task rotation in NeuroBloom}
+\begin{algorithmic}[1]
+\Require Baseline scores $B[d]$, recent task history $H[d]$, current difficulties $L[d]$
+\State $\textit{sorted\_domains} \gets \Call{SortAscending}{B}$
+\State $\textit{primary\_focus} \gets \textit{sorted\_domains}[0:2]$
+\State $\textit{secondary\_focus} \gets \textit{sorted\_domains}[2:4]$
+\State $\textit{maintenance} \gets \textit{sorted\_domains}[4:6]$
+\ForAll{domain $d$ in $B$}
+    \State $L[d] \gets \Call{ScoreToDifficulty}{B[d]}$
+\EndFor
+\State $\textit{session\_domains} \gets \textit{primary\_focus} \cup \textit{secondary\_focus}$
+\ForAll{domain $d$ in $\textit{session\_domains}$}
+    \State $\textit{available} \gets \Call{GetAvailableTasks}{d}$
+    \State $\textit{recent} \gets \Call{GetRecentTasks}{H[d], d}$
+    \State $\textit{candidates} \gets \Call{ExcludeRecentWhenPossible}{\textit{available}, \textit{recent}}$
+    \State $\textit{strategy} \gets \Call{RotationStrategy}{d}$
+    \State $\textit{task}[d] \gets \Call{SelectTask}{\textit{candidates}, \textit{strategy}, L[d]}$
+\EndFor
+\ForAll{completed task result $r$}
+    \State \Call{StoreTrainingSession}{$r$}
+    \State $L[r.domain] \gets \Call{UpdateDifficulty}{L[r.domain], r.score, r.accuracy, r.reaction\_time}$
+\EndFor
+\If{\Call{ShouldRebalanceFocusAreas}{active training plan}}
+    \State \Call{RebalanceFocusAreas}{active training plan}
+\EndIf
+\State \Return personalized four-task session plan
+\end{algorithmic}
+\end{minipage}
+\end{center}
+
+\subsection{Contextual Data Capture and Analytics Methodology}
+An important part of the NeuroBloom methodology is the integration of contextual data with task performance. Before a training session begins, the platform may collect information about fatigue level, sleep quality, hours of sleep, medication timing, pain, stress, and readiness. These values are stored in a separate session-context record and linked with training-session data. This method was chosen because task performance in MS can vary meaningfully across days, and isolated cognitive scores may be misleading if the surrounding condition is unknown.
+
+The analytics methodology of the project is based on deterministic feature extraction rather than black-box prediction. Instead of generating opaque scores, the system produces a small set of interpretable indicators that help doctors and researchers understand how performance is changing over time. The main indicators used in the platform are fatigue-related change within a session, reaction-time variability, trend smoothing through exponentially weighted moving averages, and reliable change relative to baseline.
+
+Figure~\ref{fig:biomarker_pipeline_method} summarizes the full analytics pipeline, starting from contextual and task-level inputs and ending in biomarker-oriented summary measures for interpretation.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\textwidth]{methodology_biomarker_analytics_pipeline}
+    \caption{Biomarker analytics pipeline used in NeuroBloom.}
+    \label{fig:biomarker_pipeline_method}
+\end{figure}
+
+To make the analytical design easier to understand, the main calculations are introduced below in the same order in which they are interpreted.
+
+First, the system estimates within-session change by comparing early and late parts of a task session. A reduction in accuracy and an increase in reaction time may indicate fatigue-related decline during continued task performance. These values are represented as:
+
+\begin{equation}
+\Delta Acc = Acc_{Q1} - Acc_{Q4}, \qquad \Delta RT = RT_{Q4} - RT_{Q1}
+\end{equation}
+
+Here, $Acc_{Q1}$ and $Acc_{Q4}$ represent accuracy in the early and late parts of the session, while $RT_{Q1}$ and $RT_{Q4}$ represent the corresponding reaction times.
+
+Second, the platform combines multiple components into a simple composite fatigue indicator. In this formulation, $A$ represents an accuracy-related component, $R$ represents a reaction-time-related component, and $S$ represents a self-report or symptom-related component collected from contextual input:
+
+\begin{equation}
+F = 0.5A + 0.3R + 0.2S
+\end{equation}
+
+The weighted form makes the calculation interpretable, because the relative contribution of each component is visible rather than hidden inside a black-box model.
+
+Third, the system measures response consistency using the coefficient of variation of reaction time:
+
+\begin{equation}
+CV = \frac{\sigma_{RT}}{\mu_{RT}}
+\end{equation}
+
+In this expression, $\sigma_{RT}$ is the standard deviation of reaction time and $\mu_{RT}$ is the mean reaction time. A larger value indicates more unstable responding.
+
+Fourth, NeuroBloom uses an exponentially weighted moving average to summarize performance trends across repeated sessions while still giving more importance to recent observations:
+
+\begin{equation}
+EWMA_t = \alpha x_t + (1-\alpha)EWMA_{t-1}
+\end{equation}
+
+Here, $x_t$ is the current observation and $\alpha$ controls how strongly the newest performance affects the updated trend.
+
+Finally, the system estimates reliable change relative to baseline through the following index:
+
+\begin{equation}
+RCI = \frac{X_{\mathrm{latest}} - X_{\mathrm{baseline}}}{\sqrt{2}\,\sigma_X}
+\end{equation}
+
+This measure compares the latest performance with baseline performance while scaling the difference by expected variability. As a result, it helps distinguish meaningful change from ordinary fluctuation.
+
+Together, these equations are not intended to overwhelm the reader with mathematics. Rather, they show that the platform uses a transparent and clinically interpretable analytics design in which each indicator has a clear purpose and a direct connection to observed task behavior.
+
+\subsection{Doctor and Administrative Workflow Logic}
+The doctor-side methodology begins after patient data are stored and summarized. Doctors are able to inspect patient history, review domain-wise performance, observe longitudinal patterns, inspect biomarker-oriented summaries, and record interventions such as recommendations, prescription adjustments, or progress reports. This workflow was designed so that patient activity can lead to supervised action rather than remaining as passive stored data.
+
+Administrative methodology operates at the system level. Administrators manage oversight functions such as account supervision, alert monitoring, and institutional coordination. This role is important because the platform is intended to function as a managed service rather than a standalone task interface. Together, the doctor and administrative layers ensure that the methodology extends beyond task execution into review, governance, and coordinated deployment.
+
+\section{Conclusion}
+The methodology of NeuroBloom was designed to support long-term cognitive monitoring in a structured and practical way. The system combines clinically relevant task design, adaptive training logic, contextual self-report, analytics generation, and role-based coordination in one framework. This methodological foundation supports the implementation described in the next chapter.
+
+\chapter{Implementation, Results and Discussion}
+
+\section{Introduction}
+This chapter presents the practical implementation of NeuroBloom and discusses the main outcomes obtained from the completed system. The focus here is not on a clinical trial or a hospital deployment study. Rather, it is on implementation-level validation: whether the platform works as an integrated multi-role system, whether the major workflows execute correctly from end to end, and whether the generated outputs are detailed enough to support monitoring and rehabilitation-oriented review.
+
+In simple terms, this chapter answers three questions. First, what exactly was built? Second, how was the system evaluated in its working form? Third, what do the implemented screens, stored records, and analytical outputs show about the usefulness of the platform? Some parts of the chapter are necessarily quantitative. Others are more descriptive, because a platform like NeuroBloom cannot be judged only by counts. The quality of coordination between patient, doctor, and administrator also matters.
+
+\section{Experimental Setup}
+The completed NeuroBloom prototype was implemented as a full-stack web application. The frontend was developed using Svelte and SvelteKit, while the backend was implemented using FastAPI. Persistent storage was handled through PostgreSQL, and SQLModel was used as the data modeling layer between application logic and the database. This architecture allowed the system to remain modular while still supporting a shared data pipeline across all user roles.
+
+For implementation testing, the platform was executed in a local integrated environment in which the frontend, backend, and database were connected to the same working dataset. The goal of this setup was to verify real workflow continuity rather than isolated mock interfaces. In other words, the screenshots and observations discussed in this chapter were taken from running pages backed by actual API responses, stored task data, generated plans, contextual records, and analytics computations.
+
+The evaluation also used structured synthetic demonstration data. This decision was important for two reasons. First, it allowed the system to be demonstrated without exposing sensitive patient information. Second, it made it possible to prepare believable longitudinal trends for doctor and administrator analytics views. A targeted seeding step was used to populate recent activity windows so that charts, trend cards, and cohort views reflected realistic usage patterns instead of empty dashboards.
+
+The screens available for Chapter IV documentation cover the major workflow surfaces of the system:
+
+\begin{itemize}[leftmargin=0.6in]
+\item patient dashboard,
+\item training plan page,
+\item live test-taking screen,
+\item test result screen,
+\item Bangla task and result views,
+\item doctor dashboard,
+\item doctor patient details page,
+\item doctor cohort analytics page,
+\item admin dashboard, and
+\item admin analytics page.
+\end{itemize}
+
+Taken together, these screens represent the complete operational path of NeuroBloom, from patient interaction to clinician review and administrative oversight.
+
+\section{Evaluation Metrics}
+Since NeuroBloom is a software platform rather than a single prediction model, the evaluation was based on a combination of engineering and workflow metrics. The system was examined using the following criteria:
+
+\begin{enumerate}[leftmargin=0.6in]
+\item \textbf{Functional completeness:} whether the major patient, doctor, and admin modules were implemented and reachable through the interface.
+\item \textbf{End-to-end workflow continuity:} whether actions performed in one role produced usable outputs in another role, such as patient training results appearing in doctor review pages.
+\item \textbf{Data persistence and traceability:} whether completed sessions, contextual questionnaire values, training plans, and intervention-related records were stored and could be retrieved reliably.
+\item \textbf{Analytics availability:} whether trend views, fatigue-related indicators, adherence summaries, and session-based charts were generated from stored data instead of static placeholders.
+\item \textbf{Accessibility and presentation quality:} whether the interface remained understandable across different views, including Bangla patient-facing screens.
+\item \textbf{Administrative observability:} whether system-wide activity, role counts, risk monitoring, and analytics summaries were available for governance tasks.
+\end{enumerate}
+
+These metrics were chosen because they match the actual objectives of the project. A system like NeuroBloom should not be judged only by a final score value. It should also be judged by whether it connects the right people, the right data, and the right decisions.
+
+Table~\ref{tab:chapter4_eval_metrics} summarizes the evaluation dimensions used in this chapter.
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation dimensions used for implementation validation}
+\label{tab:chapter4_eval_metrics}
+\begin{tabularx}{\textwidth}{|p{4.1cm}|X|p{3.1cm}|}
+\hline
+\textbf{Evaluation dimension} & \textbf{What was checked} & \textbf{Observed through} \\
+\hline
+Functional completeness & Availability of major modules for patient, doctor, and admin roles & Running pages and route-level access \\
+\hline
+Workflow continuity & Whether outputs from one module became inputs for another module & Linked dashboards, reports, analytics, and stored session records \\
+\hline
+Data persistence & Storage of task results, plans, and context variables & Database-backed pages and analytics retrieval \\
+\hline
+Analytics availability & Presence of charts, trend summaries, and biomarker-oriented views & Doctor analytics and admin analytics pages \\
+\hline
+Localization support & Practical use of Bangla interface elements in patient workflow & Bangla task and result screens \\
+\hline
+Administrative oversight & System-level monitoring, risk visibility, and operational summaries & Admin dashboard and analytics layer \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Dataset}
+The dataset used in the implemented system is best described as a structured operational dataset with seeded demonstration support. It is not a public clinical benchmark dataset, and it is not presented here as a substitute for formal clinical evidence. Instead, it is the working data foundation used to validate whether NeuroBloom can support realistic longitudinal monitoring, contextual interpretation, and multi-role review.
+
+At the time of preparing this chapter, the working database contained active records for patients, doctors, training plans, task definitions, completed sessions, and session-context entries. The database snapshot also included recent seeded activity so that short-window analytics, especially cohort and administrative trend charts, would show meaningful output rather than sparse or blank visualizations.
+
+Table~\ref{tab:chapter4_dataset_snapshot} presents a compact snapshot of the implementation dataset used during Chapter IV preparation.
+
+\begin{table}[htbp]
+\centering
+\caption{Implementation dataset snapshot during Chapter IV preparation}
+\label{tab:chapter4_dataset_snapshot}
+\begin{tabular}{|p{7.6cm}|p{4cm}|}
+\hline
+\textbf{Dataset component} & \textbf{Count} \\
+\hline
+Patient accounts & 13 \\
+\hline
+Doctor accounts & 10 \\
+\hline
+Administrator accounts & 1 \\
+\hline
+Cognitive task definitions stored in database & 42 \\
+\hline
+Training plans & 12 \\
+\hline
+Completed training sessions & 927 \\
+\hline
+Session-context records & 462 \\
+\hline
+Recent seeded sessions added for analytics presentation & 166 \\
+\hline
+\end{tabular}
+\end{table}
+
+Two points are important here. First, the session total is large enough to support trend-based views instead of only one-off score displays. Second, the presence of session-context records is especially valuable because those records drive fatigue-aware and context-aware interpretation. Without them, the advanced analytics layer would be much less convincing and much less clinically meaningful.
+
+The recent analytics seeding step focused on the latest fourteen-day window. This was necessary because doctor and admin analytics screens rely on recent data density. As a result, the charts shown in the final system are based on the same structures that would be used in a real deployment: completed training sessions linked to timestamps, task scores, and contextual questionnaire values.
+
+\section{Implementation and Results}
+
+\subsection{System Implementation Summary}
+By the end of development, NeuroBloom had evolved from a simple cognitive task interface into a connected monitoring platform. The implemented system includes baseline assessment, personalized training-plan generation, repeated session execution, session-level context capture, longitudinal analytics, doctor review workflows, progress reporting, prescription support, messaging, notifications, and administrator-level monitoring.
+
+This matters because the project objective was never just to digitize one test. The practical result is a coordinated environment in which repeated patient activity becomes useful clinical information. A patient trains. The system stores the result. Context is attached. Trends are updated. Doctors can then review the case, and administrators can observe broader system behavior. That chain is the real implemented outcome of the project.
+
+Table~\ref{tab:chapter4_implementation_summary} summarizes the major implementation areas.
+
+\begin{table}[htbp]
+\centering
+\caption{Major implementation areas completed in NeuroBloom}
+\label{tab:chapter4_implementation_summary}
+\begin{tabularx}{\textwidth}{|p{3.7cm}|X|}
+\hline
+\textbf{Implementation area} & \textbf{Delivered capability} \\
+\hline
+Patient workflow & Baseline assessment, dashboard, personalized training plan, task execution, result view, longitudinal progress access \\
+\hline
+Context-aware training & Pre-task questionnaire capturing fatigue, sleep, medication timing, stress, pain, and readiness \\
+\hline
+Analytics layer & Trend tracking, fatigue-related interpretation, variability indicators, performance summaries, chart-based visualizations \\
+\hline
+Doctor workflow & Dashboard, patient list, detailed patient review, cohort analytics, interventions, reports, and prescription-related support \\
+\hline
+Administrative workflow & Role supervision, dashboard summaries, system analytics, risk monitoring, and oversight-oriented views \\
+\hline
+Accessibility support & Bangla and English patient-facing interaction surfaces \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Patient-Side Implementation Results}
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{patient_dashboard}
+        \caption{Patient dashboard showing the main entry point for training and progress review.}
+        \label{fig:chapter4_patient_dashboard}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{training_plan_page}
+        \caption{Training plan page showing personalized task structure and domain-oriented planning.}
+        \label{fig:chapter4_training_plan}
+    \end{subfigure}
+    \caption{Patient-side planning and navigation screens in NeuroBloom.}
+    \label{fig:chapter4_patient_pair1}
+\end{figure}
+
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{live_test_taking_screen}
+        \caption{Live cognitive task execution during patient-side training.}
+        \label{fig:chapter4_live_test}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{test_result_screen}
+        \caption{Task result screen showing immediate post-session feedback.}
+        \label{fig:chapter4_test_result}
+    \end{subfigure}
+    \caption{Patient task execution and feedback views.}
+    \label{fig:chapter4_patient_pair2}
+\end{figure}
+
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{bangla_test_interface}
+        \caption{Bangla-language task interface used in the patient workflow.}
+        \label{fig:chapter4_bangla_interface}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{bangla_test_result}
+        \caption{Bangla-language result screen showing localized feedback.}
+        \label{fig:chapter4_bangla_result}
+    \end{subfigure}
+    \caption{Localized Bangla patient-facing screens.}
+    \label{fig:chapter4_patient_pair3}
+\end{figure}
+
+The patient-facing side of NeuroBloom demonstrates the most visible part of the system. It begins with the dashboard, where the user can immediately understand their current position in the training journey. The patient dashboard acts as a starting point, but it is more than a home page. It pulls together baseline status, training availability, progress indicators, and the user's next action.
+
+The training plan page is one of the more important implementation outcomes because it shows that the platform is not assigning random tasks. Instead, the page communicates a structured plan derived from baseline performance and ongoing monitoring. This is where the project begins to move beyond simple assessment and toward guided rehabilitation.
+
+The live task-taking screen provides direct evidence that the system supports active cognitive interaction rather than only static reporting. During this stage, patient input is captured in real time, task logic is executed in the browser, and the final output is submitted back to the backend for storage and later analysis.
+
+Once a task is completed, the result screen gives immediate feedback. This is a small detail, but it matters. Patients need reinforcement and understandable feedback if long-term engagement is expected. The result view therefore serves both as a motivational element and as a short-term interpretation layer.
+
+Another meaningful result is the existence of Bangla patient-facing screens. Many projects mention accessibility only in theory. Here, bilingual support is implemented as part of the usable interface. This makes the system more realistic for local deployment and more aligned with the social context in which the project is intended to operate.
+
+Taken together, the patient-side results show that NeuroBloom supports repeated training in a way that is structured, interactive, and understandable. That is a substantial implementation outcome on its own.
+
+\FloatBarrier
+
+\subsection{Doctor-Side Implementation Results}
+The doctor-facing implementation is where the system becomes clinically useful. A doctor dashboard is not valuable just because it exists. It becomes valuable when patient-side activity is transformed into something that can be reviewed efficiently. The implemented doctor dashboard therefore focuses on overview, assignment awareness, and actionable monitoring.
+
+The doctor patient-details page is one of the strongest results in the project because it shows the integration of multiple data layers in one place. Instead of forcing a clinician to move across unrelated pages, the system brings together patient identity, session history, trend summaries, and review-oriented information within the same workflow.
+
+Two groups of doctor-side screens are especially relevant in this chapter. Figure~\ref{fig:chapter4_doctor_pair1} presents the main workflow entry points used by the clinician: the dashboard and the patient-details page. Figure~\ref{fig:chapter4_doctor_pair2} then presents the analysis-oriented views, where the doctor can move from broader cohort monitoring to direct baseline-versus-current comparison for an individual patient.
+
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{doctor_dashboard}
+        \caption{Doctor dashboard providing patient overview and monitoring-oriented access points.}
+        \label{fig:chapter4_doctor_dashboard}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{doctor_patient_details}
+        \caption{Doctor patient-details page combining identity, session history, and review information.}
+        \label{fig:chapter4_doctor_patient_details}
+    \end{subfigure}
+    \caption{Main doctor-facing monitoring interfaces in NeuroBloom.}
+    \label{fig:chapter4_doctor_pair1}
+\end{figure}
+
+The doctor cohort analytics page extends this from individual monitoring to group-level observation. This is useful in practice because clinicians often need both perspectives. Individual detail helps with case interpretation, while cohort-level monitoring helps identify broader adherence patterns, overall improvement direction, and possible outliers.
+
+The baseline-comparison view complements that cohort perspective by returning attention to the individual patient. It allows the doctor to compare current performance with the baseline cognitive profile and to judge whether visible changes are broad, domain-specific, stable, or uneven. Putting these two analytical views together makes the doctor module more coherent, because the clinician can move from group patterns to patient-specific interpretation without leaving the analytical workflow.
+
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{doctor_cohort_analytics}
+        \caption{Doctor cohort analytics screen showing group-level trends and monitoring summaries.}
+        \label{fig:chapter4_doctor_cohort}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{doctor_baseline_comparison}
+        \caption{Doctor baseline-comparison screen showing current patient performance against baseline.}
+        \label{fig:chapter4_doctor_baseline_comparison}
+    \end{subfigure}
+    \caption{Doctor-side analytical views used for cohort monitoring and patient-level baseline comparison.}
+    \label{fig:chapter4_doctor_pair2}
+\end{figure}
+
+An important implementation result here is that doctor analytics are not just copies of patient charts. They are role-specific. Recent monitoring, lifetime summaries, and longitudinal views are organized differently because the doctor needs interpretation support, not only visual output. This distinction makes the clinician-facing layer more defensible as a serious software feature.
+
+\FloatBarrier
+
+\subsection{Administrative Implementation Results}
+\begin{figure}[!t]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{admin_dashboard}
+        \caption{Administrative dashboard showing high-level operational oversight.}
+        \label{fig:chapter4_admin_dashboard}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \projectsubgraphic{admin_analytics}
+        \caption{Administrative analytics layer showing system-wide recent trends.}
+        \label{fig:chapter4_admin_analytics}
+    \end{subfigure}
+    \caption{Administrator-facing oversight and analytics screens.}
+    \label{fig:chapter4_admin_pair1}
+\end{figure}
+
+The administrator side of NeuroBloom completes the multi-role design. If the patient layer handles activity and the doctor layer handles interpretation, the admin layer handles governance. This includes user supervision, system-wide visibility, and operational awareness.
+
+The admin dashboard provides a high-level summary view of the platform. It is useful for checking whether the system is active, whether user groups are growing, and whether recent activity is occurring at a level consistent with expected usage.
+
+The admin analytics page is especially important for presentation and evaluation because it demonstrates that the platform is not limited to patient-specific reporting. It can also produce system-level views such as patient activity, cognitive performance trend, fatigue trend, and completion rate trend across recent time windows.
+
+One practical lesson from implementation is worth noting here. Time-windowed analytics require recent data density. During evaluation, realistic recent session data had to be seeded so that the admin analytics layer would show proper charts instead of sparse or blank panels. This was not a cosmetic trick. It confirmed that the analytics logic was working correctly and that the frontend charts were data-driven.
+
+\FloatBarrier
+
+\subsection{Quantitative Results}
+The quantitative results of the project are implementation-oriented rather than diagnostic. They show what the system currently supports, how much structured data it can store, and whether the analytics surfaces have enough underlying records to behave like a real application.
+
+The first quantitative result is scale of implementation. The platform includes 24 role-bound accounts in the working database when patients, doctors, and administrators are combined. It also contains 12 training plans, 927 completed training sessions, and 462 contextual session records. These numbers indicate that the system is operating well beyond a toy prototype.
+
+The second quantitative result is analytics readiness. The targeted seeding process added 166 recent sessions specifically to populate short-window trend views. This made it possible to verify cohort-level and administrator-level charts that depend on recent dates, completion counts, and session-context linkage.
+
+The third quantitative result is breadth of task support. The database currently contains 42 cognitive task definitions, including the core task families, baseline-linked tasks, and extended variants used across the platform. This breadth supports variety, rotation, and domain-wise planning.
+
+Table~\ref{tab:chapter4_quantitative_results} summarizes the most relevant implementation counts.
+
+\begin{table}[htbp]
+\centering
+\caption{Quantitative implementation results of NeuroBloom}
+\label{tab:chapter4_quantitative_results}
+\begin{tabular}{|p{8cm}|p{3.5cm}|}
+\hline
+\textbf{Metric} & \textbf{Observed value} \\
+\hline
+Total operational accounts in working database & 24 \\
+\hline
+Patient accounts & 13 \\
+\hline
+Doctor accounts & 10 \\
+\hline
+Administrator accounts & 1 \\
+\hline
+Task definitions stored in database & 42 \\
+\hline
+Generated training plans & 12 \\
+\hline
+Completed training sessions stored & 927 \\
+\hline
+Session-context records linked to training activity & 462 \\
+\hline
+Recent sessions seeded for short-window analytics validation & 166 \\
+\hline
+\end{tabular}
+\end{table}
+
+These values should be interpreted carefully. They do not prove clinical effectiveness by themselves. What they do show is that the implemented platform can sustain multi-step workflows, retain longitudinal data, and support analytics views that rely on more than a few sample records.
+
+\subsection{Qualitative Results}
+The qualitative result of NeuroBloom is the feeling of continuity across roles. A patient can move from dashboard to training plan, from plan to live task, and from task to result without the experience breaking apart. That alone is valuable because many health-oriented software projects look complete in architecture diagrams but feel disconnected in actual use.
+
+On the doctor side, the qualitative result is interpretability. The clinician does not only see a raw score. They see progress-oriented context, patient-level details, and trend-oriented summaries. This makes the data more usable. It also makes the platform much easier to defend as a clinician-guided system rather than a simple practice application.
+
+On the admin side, the qualitative result is observability. The administrator views show that NeuroBloom can be managed as a service. There is enough information to monitor recent activity, identify broad trends, and supervise the operational environment.
+
+Another strong qualitative outcome is the bilingual patient experience. The Bangla task and result screens suggest that the system was designed with actual users in mind, not only with technical completeness in mind. That design choice improves accessibility and makes the overall platform more grounded in local reality.
+
+\subsection{Analysis of the Results}
+The results suggest that NeuroBloom succeeds most clearly in integration. Many of the individual ideas used in the project are familiar on their own: cognitive tasks, trend charts, dashboards, messaging, reports. The real achievement is that these parts now work together in a single environment.
+
+The patient-facing implementation shows that training is not isolated from monitoring. The doctor-facing implementation shows that monitoring is not isolated from action. The admin-facing implementation shows that governance is not isolated from usage data. This connected structure is one of the strongest outcomes of the project.
+
+The presence of contextual data also changes the quality of interpretation. If a patient performs poorly on one day, the system is not forced to treat that score as a standalone truth. Sleep, fatigue, readiness, and medication timing can all help explain the result. That is a more realistic model of cognitive monitoring in multiple sclerosis.
+
+There are, however, clear limits to what can be claimed from the present chapter. The current results show implementation maturity, workflow coherence, and analytics readiness. They do not yet establish clinical efficacy in the strict research sense. A future deployment with formal participant recruitment, longitudinal follow-up, and clinician-rated outcome comparison would be needed for that. Even so, the present implementation results are still meaningful because they show that the software foundation required for such a study is already in place.
+
+\section{Objective Achieved}
+The objectives stated in Chapter I were substantially achieved through the implemented system. The following summary maps each objective to the completed platform behavior.
+
+\begin{enumerate}[leftmargin=0.6in]
+\item \textbf{Patient-facing assessment and training system achieved:} The platform includes dashboard access, baseline assessment, training plan generation, live task execution, and result presentation.
+\item \textbf{Adaptive session-planning objective achieved:} Training plans are generated from baseline performance and support domain-oriented task selection and difficulty management.
+\item \textbf{Context capture objective achieved:} Pre-task contextual data such as fatigue, sleep, medication timing, stress, pain, and readiness are integrated into the workflow.
+\item \textbf{Analytical indicator objective achieved:} Trend summaries, fatigue-aware views, variability-related analysis, and recent performance charts are available in the implemented system.
+\item \textbf{Doctor-facing workflow objective achieved:} Doctor dashboard, patient-detail review, cohort analytics, and intervention-related support have been implemented.
+\item \textbf{Administrative oversight objective achieved:} Admin dashboard and analytics layers provide system-level visibility and monitoring support.
+\item \textbf{Bilingual accessibility objective achieved:} Bangla interface examples exist for patient task interaction and result viewing.
+\item \textbf{Reusable framework objective achieved:} The system is modular, database-backed, role-based, and ready for further research-oriented expansion.
+\end{enumerate}
+
+It is fair to say that the project objectives were not only theoretically addressed but materially reflected in the working software. Some objectives were achieved at a stronger level than others. The most strongly achieved objectives are the multi-role workflow, adaptive training structure, and analytics integration. The next natural step is formal validation in a wider user setting.
+
+\section{Conclusion}
+This chapter demonstrated that NeuroBloom has been implemented as a working, multi-role digital platform rather than only a conceptual design. The patient module supports repeated cognitive training and immediate feedback. The doctor module supports patient review and cohort-level interpretation. The admin module supports system-wide observation and governance. Context-aware analytics tie these layers together.
+
+The quantitative results show that the platform already manages a meaningful volume of structured records. The qualitative results show that the workflow is coherent and usable. Most importantly, the objectives defined at the beginning of the project are reflected in actual implemented functionality.
+
+For these reasons, the Chapter IV results support the conclusion that NeuroBloom is a credible software foundation for long-term cognitive monitoring and clinician-guided rehabilitation support in multiple sclerosis. The system is not the end of the research journey. But it is a strong and practical beginning.
+
+\chapter{Societal, Health, Environment, Safety, Ethical, Legal and Cultural Issues}
+
+\section{Intellectual Property Considerations}
+NeuroBloom was developed as an original software engineering project that combines known cognitive task ideas with a new system-level implementation. This distinction is important. The project does not claim ownership over the underlying scientific concepts of working-memory testing, attention testing, planning tasks, or reaction-time measurement. Those ideas are well established in cognitive science and neuropsychology. The intellectual contribution of this project lies in the design and implementation of a modular, role-based digital platform that integrates those concepts with contextual questionnaires, adaptive planning, doctor review workflows, and administrative monitoring.
+
+From a software perspective, the project codebase is distributed under the MIT License. That license permits reuse, modification, and redistribution of the software under relatively open conditions, provided the copyright notice and license terms are preserved. This is a practical choice for an academic project because it encourages extension, experimentation, and future research use. At the same time, open licensing does not remove the responsibility to acknowledge sources properly. If future developers extend NeuroBloom, they should preserve attribution and clearly document what parts were newly added.
+
+There is also a more careful issue here. Even when software is original, the visual design of a task, the wording of instructions, the arrangement of screens, and the structure of reports can still raise intellectual-property concerns if they are copied too closely from commercial or institutional tools. For that reason, NeuroBloom should continue to use custom interface design, custom code, and properly attributed research inspiration rather than imitate proprietary medical software.
+
+In short, the project is best understood as a new implementation built upon established academic ideas. That is normal in engineering. Very few useful systems appear from nowhere. What matters is whether prior work is used honestly, transformed meaningfully, and documented responsibly. NeuroBloom satisfies that expectation when its code, design decisions, and scientific inspirations are presented transparently.
+
+\section{Ethical Considerations}
+Ethical responsibility is central to a project like NeuroBloom because the system deals with human cognitive performance, health-related context, and clinician-guided interpretation. Even when the platform is used only as an academic prototype or research-oriented system, it still operates in a sensitive domain. The ethical question is therefore not only whether the code works, but whether the system treats users fairly, respectfully, and safely.
+
+The first ethical issue is informed participation. If real patients use the platform, they should understand what kind of data are being collected, why those data are being collected, who may view them, and what the limits of the system are. A patient may be willing to share scores with a doctor but may not want those data used for unrelated purposes. This means clear consent and understandable disclosure are more than formal requirements. They are part of respectful system design.
+
+The second ethical issue is interpretation risk. NeuroBloom can present trends, decline signals, fatigue-linked changes, and baseline comparisons. These are useful features, but they can also be misunderstood if presented without context. A patient may assume that a lower score means definite deterioration. A doctor may overvalue a short-term fluctuation if the system interface is not interpreted carefully. Because of this, NeuroBloom should be treated as a support system, not as an autonomous decision-maker. Human oversight remains essential.
+
+Another ethical concern is data sensitivity. Fatigue, sleep quality, medication timing, pain, stress, and readiness may look simple on the surface, but together they reveal personal health patterns. That makes privacy an ethical matter even before it becomes a legal one. The system should avoid collecting unnecessary information and should store only what serves a clear monitoring or clinical purpose.
+
+There is also the issue of fairness and accessibility. If the system is intended for people living with neurological conditions, then the interface should not punish slower response speed, reading difficulty, temporary fatigue, or language barriers. Ethical design here means patience in interface flow, clarity in feedback, and support for local language use. The Bangla interface is therefore not just a usability feature. It is also an ethical improvement because it reduces exclusion.
+
+Finally, the project should avoid exaggerated claims. It would be ethically wrong to present NeuroBloom as a replacement for diagnosis, MRI-based assessment, or expert neurological judgment. The responsible position is simpler and more honest: the platform helps organize repeated digital interaction and supports observation over time, but it does not replace clinical expertise.
+
+\section{Safety Considerations}
+Safety in NeuroBloom does not primarily mean physical danger in the same way it would in a mechanical or industrial system. Here, safety is mostly cognitive, informational, and operational. The system should not create harm through misleading outputs, poor workflow design, insecure data handling, or inappropriate reliance on automated summaries.
+
+One immediate safety concern is user fatigue. Since the project is designed for individuals who may already experience cognitive fatigue, sessions should remain structured, limited, and understandable. The use of short task sessions, contextual questionnaires, and doctor review features helps reduce the risk of treating every low-performance event as a failure. In practical use, a patient who is overly tired should not feel forced to complete a demanding session simply because the system expects it.
+
+Another safety issue is emotional effect. Repeated exposure to poor scores, low comparisons, or decline indicators can discourage a patient. If such feedback is presented bluntly, the platform may reduce motivation instead of supporting rehabilitation. Therefore, feedback should remain informative without becoming punitive. Clinical review should also help distinguish between temporary low readiness and broader cognitive concern.
+
+Operational safety matters as well. If the doctor sees incomplete data, outdated data, or wrongly linked patient data, then the resulting judgment can be affected. For that reason, reliable storage, correct patient-doctor linking, and clear auditability are all part of system safety. In digital health systems, a wrong chart can be as dangerous as a wrong measurement.
+
+The project should also account for interrupted sessions, unstable internet access, or unexpected browser behavior. A user should not lose trust in the platform because a task closes, a result fails to save, or a page becomes inconsistent. Safe software is not only software that avoids crashing. It is software that behaves predictably under normal and abnormal conditions.
+
+From a broader perspective, the safest way to position NeuroBloom is as a monitored support platform. It helps with repeated assessment, structured training, and organized review. It should not be allowed to create the impression that the software alone can decide whether a patient is improving or declining in a medically conclusive way.
+
+\section{Legal Considerations}
+The legal dimension of NeuroBloom becomes important as soon as the system moves from academic demonstration to real-world use. Several legal concerns arise immediately: data protection, software liability, medical interpretation, user consent, and intellectual-property compliance.
+
+The first legal issue is personal data handling. NeuroBloom stores account information, session history, questionnaire responses, and potentially clinically relevant trends. In any real deployment, these data would need to be managed under applicable privacy and data-protection rules. Even if the project is currently used in a university or prototype setting, the design should still follow the spirit of proper data governance: controlled access, least-necessary data sharing, secure credential handling, and role-based visibility.
+
+The second legal issue concerns medical status. If software appears to offer health-related interpretation, it may enter a regulated area depending on jurisdiction. NeuroBloom should therefore be clearly described as a support and monitoring platform unless it undergoes the formal validation and regulatory processes required for certified medical-device software. Without that distinction, there is a risk of both legal confusion and unsafe use.
+
+Liability is another concern. A clinician may use the system to review trends, and a patient may use it to understand progress. But if an error occurs in data display, interpretation logic, or record linkage, responsibility cannot simply be shifted onto the user. Real deployment would require clear usage terms, audit mechanisms, access control, and documented limitations so that the software is not misrepresented as infallible.
+
+There is also a legal aspect to open-source use. Since the project is released under the MIT License, downstream users are allowed to adapt and redistribute it. However, they are still responsible for using it lawfully, preserving the copyright notice, and complying with any privacy or sector-specific legal obligations in their own environment.
+
+In summary, the current academic implementation is legally manageable as a project and research platform. A hospital-scale or public deployment, however, would require a much more formal compliance framework covering privacy, consent, storage, professional use boundaries, and software accountability.
+
+\section{Impact of the Project on Societal, Health, and Cultural Issues}
+NeuroBloom contributes a research-oriented software environment for cognitive monitoring and rehabilitation-related data collection in multiple sclerosis. By combining repeated task execution, contextual self-report capture, and persistent session history inside one unified platform, the system supports structured investigation of behavioral change across sessions rather than isolated one-time measurement. This makes the software useful not only for day-to-day follow-up, but also for research on digital behavioral indicators, repeated cognitive interaction, and the influence of contextual factors such as fatigue or sleep quality on performance \cite{insel2017,coravos2019}.
+
+The societal and health impact of that design is substantial. In many real situations, MS-oriented follow-up happens between formal clinical encounters, not only during them. NeuroBloom helps close the gap between patient activity and clinician response by linking repeated task performance to doctor-facing review tools, summary analytics, progress reporting, and rehabilitation adjustment. This creates a supervision-oriented workflow rather than a disconnected self-tracking tool. It is especially relevant in resource-constrained settings, where repeated specialist review and regular access to costly diagnostic resources such as MRI or laboratory testing may be limited.
+
+This is also important because disease progression does not always appear through overt relapse activity. Some changes are subtle. They emerge gradually in attention, speed, consistency, fatigue tolerance, or day-to-day performance stability. A platform like NeuroBloom can help preserve those smaller patterns over time by storing repeated task outcomes together with contextual information. That does not make the system a diagnostic substitute, but it does make it a practical support tool for more continuous observation than routine episodic assessment usually allows.
+
+There is a cultural dimension as well. Health technology is often less effective when it feels linguistically distant or socially unfamiliar. NeuroBloom's bilingual support, especially its Bangla patient-facing interface, improves accessibility for local users and helps reduce one common barrier to digital engagement. This matters not only for usability, but also for trust. A system that speaks to users in a familiar language is more likely to feel usable, less intimidating, and more relevant to everyday care.
+
+From a broader software perspective, the project also has impact because it offers a modular and extensible architecture that integrates cognitive task delivery, contextual data capture, analytics, adaptive session planning, and multi-role workflow management in one environment. That makes the platform reusable as both a research framework and a deployment foundation. New task modules, analytics components, or reporting workflows can be added later without restructuring the entire system. Because the analytical layer is based on interpretable statistical indicators and the session-planning workflow is explicitly defined, NeuroBloom also supports transparent, reproducible, and extensible digital monitoring research.
+
+\section{Impact of Project on the Environment and Sustainability}
+The direct environmental footprint of NeuroBloom is relatively modest because it is a web-based software platform running on general-purpose computing infrastructure rather than a hardware-intensive system. It does not depend on specialized devices, dedicated laboratory installations, or repeated paper-heavy workflow for ordinary use. Even so, digital systems are not environmentally neutral. Servers, databases, networking, local devices, and long-term storage all consume energy, and that cost grows when software is poorly managed.
+
+In practical terms, NeuroBloom can support more sustainable follow-up in small but meaningful ways. Because it stores persistent digital session history and supports doctor-facing review remotely, it can reduce dependence on repeated paper records, fragmented manual tracking, and some unnecessary travel for monitoring-oriented follow-up. In resource-constrained settings, where access to specialist centers may already be difficult, a low-cost digital workflow can therefore have both operational and environmental value.
+
+Sustainability in this project is also linked to software architecture. NeuroBloom was built as a modular and extensible system rather than as a short-lived prototype that must be discarded whenever a new feature is needed. Cognitive tasks, contextual capture, analytics, reporting, and role-based workflows are integrated through a reusable architecture that can be extended over time. This matters environmentally because maintainable software reduces redevelopment waste. If future researchers or developers can add new task modules, analytics components, or reporting features without rebuilding the entire platform, the useful life of the system becomes longer and the total engineering resource cost becomes lower.
+
+The same idea applies to research sustainability. Because the platform supports transparent and reproducible digital monitoring workflows, it can be reused for further studies instead of forcing each new investigation to start from zero. Reusability is not only an academic advantage. It is also a sustainability advantage, because it encourages careful extension of an existing system rather than repeated duplication of effort and infrastructure.
+
+Of course, that benefit depends on responsible operational practice. NeuroBloom should still avoid uncontrolled data retention, inefficient analytics queries, unnecessary asset growth, and wasteful deployment choices. The responsible conclusion is therefore balanced: the platform has a relatively low environmental burden compared with many traditional or hardware-heavy alternatives, but its long-term sustainability depends on efficient infrastructure use, thoughtful data governance, and continued emphasis on maintainable software design.
+
+\section{Conclusion}
+The issues discussed in this chapter show that a project like NeuroBloom cannot be judged only by technical success. Once software enters the domain of health, cognition, and clinician-guided interpretation, broader responsibilities appear immediately. Intellectual-property clarity, ethical care, safe interaction design, legal awareness, cultural accessibility, and environmental responsibility all become part of the engineering task.
+
+NeuroBloom performs well in several of these areas already. It follows a clear software-licensing model, supports bilingual access, uses role-based visibility, and is positioned as a supportive rather than fully autonomous system. At the same time, this chapter also makes it clear that real-world deployment would require stronger formal processes for consent, compliance, privacy protection, and operational governance.
+
+For that reason, the most responsible conclusion is not that NeuroBloom is finished in every sense, but that it has been developed on a thoughtful foundation. The project is technically meaningful, socially relevant, and extensible. Its future value will depend on how carefully that foundation is carried into further research and real-world use.
+
+\chapter{Addressing Complex Engineering Problems and Activities}
+
+\section{Complex Engineering Problems Associated with the Current Project}
+NeuroBloom is not a small single-purpose program. It is a multi-role digital health platform that connects patients, doctors, administrators, cognitive tasks, contextual questionnaires, longitudinal analytics, and database-backed review workflows inside one system. Because of that, the engineering problems in this project are complex in both technical and practical terms. The difficulty does not come from one algorithm alone. It comes from making many interdependent parts behave correctly at the same time.
+
+The first complex engineering problem was requirement integration. The platform was expected to support repeated cognitive training, baseline assessment, doctor-guided review, administrative supervision, bilingual presentation, and interpretable analytics. These goals do not naturally fit together unless the system is designed very carefully. A patient needs a simple and low-stress interaction flow. A doctor needs deeper summaries and clinically meaningful context. An administrator needs high-level observability rather than case-level overload. Building one backend that could serve all three roles without turning into a confusing or fragile structure was a major systems-design problem.
+
+Another major problem was longitudinal data modeling. NeuroBloom is not based on one-time test results. It depends on repeated sessions, historical comparisons, domain-wise progression, and contextual state such as fatigue, sleep quality, medication timing, pain, stress, and readiness. That means the database had to preserve not only final scores, but also the relationships between users, plans, task definitions, training sessions, session context, doctor review features, and analytics summaries. If those relationships were modeled poorly, the project would still look functional on the surface, but it would fail where it mattered most: over time.
+
+The challenge became even more complex because the same patient data had to support different interpretations in different views. The patient should see progress in an understandable form. The doctor should see clinically useful trends and comparisons. The administrator should see aggregated operational patterns. This is not just a presentation problem. It is an information-design problem tied directly to data contracts, access control, and analytics logic.
+
+One of the strongest examples of engineering complexity in this project is personalized training and pacing. After baseline assessment, the system has to identify weaker and stronger domains, generate a training plan, rotate tasks to avoid repetition, adjust difficulty levels over time, and still respect practical pacing limits such as tasks per session, daily session caps, and cooldown periods. That means the logic cannot be random and cannot be purely static either. It has to respond to past performance while remaining stable enough that the patient experience does not feel chaotic. In other words, the engineering problem here was to balance adaptation with predictability.
+
+There was also a complex problem in analytics design. NeuroBloom deliberately avoids treating its analytics layer as a black-box prediction engine. Instead, it uses interpretable indicators such as trend tracking, fatigue-related change, and baseline-versus-current comparison. That sounds simpler than machine learning, but in many ways it creates a stricter engineering obligation. If a metric is interpretable, its meaning must remain stable from backend calculation to frontend display. A mismatch in time windows, score definitions, or aggregation rules can make the system misleading even if the code technically runs. For example, recent-monitoring metrics, lifetime summaries, and longitudinal charts cannot be mixed casually. The project therefore had to manage different analytic windows carefully so that the doctor dashboard and analytics screens would remain truthful rather than visually impressive but conceptually inconsistent.
+
+Another difficult engineering issue was data flow consistency across multiple submission paths. In a project like this, it is easy to assume that every task result passes through one shared API helper. In practice, different task pages may submit data through different mechanisms. Some use shared clients, while others use direct request paths. That creates a real systems problem: biomarker-related raw data, contextual questionnaire values, and task results must still arrive in a consistent form regardless of where they were submitted from. If even one path omits critical fields, the analytics layer becomes uneven and the interpretation quality drops. Solving this problem requires more than patching one endpoint. It requires understanding the real flow of data across the application.
+
+The interface layer introduced another form of complexity. NeuroBloom is bilingual and patient-facing in a health context. That means interface quality cannot be treated as a cosmetic concern. Task instructions, result interpretation, progression messages, and dashboard summaries must remain understandable in more than one language and for users with different levels of energy, attention, and technical comfort. Designing such an interface is a human-centered engineering problem. A page can be technically complete and still fail if it overloads the patient or confuses the doctor.
+
+The project also had to solve the problem of cross-layer synchronization. The backend may calculate correct analytics, but the frontend still needs to render them at the correct time and in the correct state. A practical example from this project is the rendering of analytics charts. Even when the underlying data existed, the visual layer could still appear blank if the canvas elements were not present in the DOM when chart rendering was triggered. This kind of bug is subtle because it is not a failure of business logic or database correctness. It emerges from timing, UI state, and component lifecycle. Yet from the user perspective, it looks like the analytics feature is broken. This is why modern engineering complexity often lives in the boundaries between layers rather than inside one file.
+
+Another important engineering problem was generating believable system behavior for evaluation. Since the project operates in a health-related setting, real patient data cannot simply be invented carelessly or exposed for demonstration. At the same time, analytics dashboards become unconvincing if they show empty states everywhere. The project therefore needed structured seeded data that matched the logic of recent activity windows, contextual records, training sessions, and longitudinal summaries. This is more difficult than filling tables with random values. Seed data in a system like NeuroBloom must be internally consistent. Otherwise, the dashboards may display information that exists numerically but does not make sense operationally.
+
+Security and governance also add to the complexity of the engineering problem. NeuroBloom handles accounts, role-specific visibility, patient progress, and doctor-related review workflows. That means the system has to separate access correctly. A patient should not see administrative views. A doctor should not be given arbitrary system-level control. An administrator should have oversight without necessarily interacting with clinical detail in the same way as a doctor. In this context, access control is not merely a login feature. It is part of the core architecture.
+
+Finally, the project qualifies as a complex engineering work because it combines uncertainty from several sources at once: health-domain sensitivity, multi-role workflow design, long-term data retention, adaptive behavior, interpretable analytics, bilingual accessibility, and full-stack synchronization. Any one of these would be manageable alone. The real challenge is that they are coupled. A change in one place can affect many others. That is the clearest sign that the project belongs to the category of complex engineering rather than routine software development.
+
+\section{Complex Engineering Activities Associated with the Current Project}
+Because the problems described above were tightly connected, the engineering activities required to complete NeuroBloom also had to be broad, iterative, and disciplined. The project was not built by writing isolated screens one after another. It required repeated movement between analysis, architecture, implementation, integration, testing, correction, and documentation.
+
+One major engineering activity was architectural decomposition. Early in the project, the system had to be divided into stable layers so that complexity would remain manageable. This led to a role-based structure with a Svelte frontend, a FastAPI backend, SQLModel-based domain models, and PostgreSQL persistence. That decomposition was not just a matter of framework preference. It was an engineering activity aimed at controlling coupling. The frontend could focus on interaction and visualization. The backend could focus on authentication, planning, messaging, and analytics access. The data layer could preserve long-term state in a structured way. Without this separation, the project would have become difficult to extend and even harder to debug.
+
+Another major activity was domain modeling. The project needed explicit representations for users, doctors, administrators, training plans, cognitive tasks, training sessions, and session-context records. These models had to support both operational use and later analysis. In engineering terms, this required careful schema design, relationship planning, and incremental migration work. It also required discipline in naming, linking, and preserving meaning across the model layer. When a project depends on longitudinal interpretation, a schema mistake made early can damage the usefulness of every later feature.
+
+The design and implementation of the training engine was also a distinctly complex engineering activity. NeuroBloom had to transform baseline assessment into personalized session planning. That meant mapping domain performance to difficulty, selecting tasks according to focus areas, rotating tasks to reduce repetition, and preserving pacing guidance so that sessions remained practical rather than exhausting. Activities like daily caps, cooldown handling, and per-patient training-plan adjustment are not minor refinements. They show that the engineering work extended beyond task delivery into controlled behavioral workflow design.
+
+Another major activity involved building the contextual capture and biomarker pipeline. This required linking pre-task questionnaire data with later session results in a way that remained usable for analysis. In practice, that meant ensuring that contextual values were collected before task execution, saved reliably, associated with the correct training session, and then made available to downstream analytics. This is the kind of work that often remains invisible in screenshots, but it is central to the integrity of the platform. If context and performance are not linked correctly, then many of the project's most meaningful interpretations become weaker.
+
+The engineering work also included the design of role-specific analytics contracts. Doctor-facing analytics, patient-facing summaries, and administrator-facing trend views were not copies of one another. They had different purposes and therefore needed different aggregation logic, time windows, and presentation styles. Creating those analytics required careful backend design and equally careful frontend explanation. This is why the project separated recent monitoring, lifetime summary, and longitudinal trend views instead of merging them into one misleading set of numbers. Good engineering activity here meant protecting meaning, not only producing charts.
+
+Frontend-backend integration was another continuous engineering activity throughout the project. Every meaningful feature crossed the boundary between user interaction and server logic. Login, baseline assessment, training-plan loading, task submission, contextual questionnaires, messaging, doctor review, and admin analytics all depended on correct API contracts. In a smaller system, a mismatch between client and server may affect one button. In NeuroBloom, the same kind of mismatch could affect long-term data trust. For that reason, integration work involved much more than connecting endpoints. It involved checking payload structure, timing, route naming, role scoping, and failure handling.
+
+Debugging and validation formed another large part of the engineering activity. In complex systems, many failures are not obvious syntax errors. They are state errors, windowing errors, lifecycle errors, or contract mismatches. For example, recent analytics pages can appear empty either because the backend has no recent records, because the data were seeded incorrectly, because an endpoint returns the wrong shape, or because the frontend renders before the target element exists. These failures look similar to the user but have very different causes. Distinguishing among them is a genuine engineering task that requires systematic checking rather than guesswork.
+
+The preparation of synthetic but realistic demonstration data was itself a significant engineering activity. The purpose was not simply to populate the database, but to produce behavior that matched the assumptions of the analytics layer. Recent activity counts, completed sessions, linked context records, and progress patterns had to make sense together. This allowed the admin and doctor analytics views to be validated under realistic recent windows. It also strengthened the credibility of implementation evaluation in Chapter IV.
+
+Another important engineering activity was usability-oriented refinement. Because the platform is intended for patients with possible fatigue and cognitive variation, the workflow had to remain guided and not overly demanding. This required attention to session length, task grouping, result feedback, dashboard clarity, and the presence of Bangla-language support. On the doctor side, the activity took a different form: making information denser but still interpretable. On the admin side, it meant emphasizing observability rather than unnecessary detail. Designing these role-specific experiences was not a decorative effort. It was part of turning technical capability into practical functionality.
+
+Testing activity in this project also had multiple layers. Some tests were functional, such as whether task submission or plan generation worked. Some were analytical, such as whether stored results could produce expected biomarker-related outputs. Some were workflow-oriented, such as whether data created by one role became visible in the correct form for another role. This layered testing approach is important in a project like NeuroBloom because correctness cannot be judged from a single perspective. A feature may pass a local test and still fail at the workflow level.
+
+Documentation and report preparation should also be recognized as engineering activities in this project, not as separate afterthoughts. Because NeuroBloom includes multiple roles, multiple datasets, interpretable analytics, and several implementation surfaces, the system needed structured explanation. Architecture diagrams, workflow diagrams, quantitative tables, chapter-level interpretation, and figure-based presentation were all necessary to communicate how the system actually works. In professional engineering, a system that cannot be explained clearly is also harder to maintain, evaluate, or extend.
+
+Finally, one of the most important engineering activities in the project was iterative correction. Features were not treated as permanently complete after first implementation. They were revised when inconsistencies appeared, when seeded data did not support expected recent windows, when analytics views needed clearer separation of timeframes, or when frontend behavior failed to reflect backend correctness. This iterative refinement process is one of the strongest signs that the work belongs to complex engineering. Real systems rarely become reliable in one pass. They improve through disciplined revision.
+
+Overall, the engineering activities associated with NeuroBloom span architecture, schema design, adaptive planning logic, analytics construction, integration, seeded-data preparation, validation, usability refinement, and documentation. The project therefore demonstrates not only the presence of complex engineering problems, but also the sustained engineering effort required to address them responsibly.
+
+\section{Conclusion}
+This chapter has shown that the complexity of NeuroBloom is not accidental or superficial. It arises from the real nature of the problem being addressed: long-term cognitive monitoring in a multi-role digital health environment. The project had to integrate adaptive task delivery, contextual capture, longitudinal analytics, bilingual accessibility, role-based workflows, and administrative oversight within one coherent platform.
+
+For that reason, both the engineering problems and the engineering activities of the project were substantial. The problems involved uncertainty, interdependence, and sensitivity. The activities required architectural planning, iterative implementation, repeated validation, and careful coordination across layers. That combination is exactly what makes NeuroBloom a strong example of complex engineering work in contemporary software systems.
+
+\chapter{Conclusions}
+
+\section{Summary}
+NeuroBloom establishes a modular, web-based framework for longitudinal cognitive monitoring and clinician-supervised rehabilitation in multiple sclerosis. The main contribution of the project is not a single isolated test or a single dashboard. It is the creation of a connected environment in which baseline assessment, repeated task-based interaction, contextual self-report capture, adaptive session planning, doctor-facing review, and administrative oversight work together inside one system. By unifying these elements, the platform makes it easier to preserve behavioral patterns that are often missed during traditional episodic clinical encounters. The implemented result shows that repeated digital monitoring can be organized in a structured, interpretable, and clinically relevant way. Its decoupled architecture, bilingual patient-facing support, and reusable analytics-oriented design also make it a practical foundation for digital health research and low-cost follow-up, especially in resource-constrained settings where continuous specialist review may not always be available.
+
+\section{Limitations}
+Although the project achieved its main software objectives, several limitations remain. The first limitation is that the current work is primarily an engineering and implementation study rather than a formal clinical validation study. The system has been developed, integrated, and tested as a working multi-role platform, but it has not yet been evaluated through large-scale longitudinal deployment with real participants under a controlled clinical protocol. For that reason, the present report can reasonably claim workflow readiness, analytics readiness, and implementation maturity, but it should not claim established clinical efficacy.
+
+Another limitation is dataset scope. The implementation was demonstrated using a mixture of stored operational data and structured synthetic seeded data. This was useful for validating dashboards, time-windowed analytics, and longitudinal views without exposing sensitive patient information. However, seeded data are still seeded data. They help test whether the system behaves correctly, but they do not replace evidence collected from a broader real-world population across longer follow-up periods.
+
+There is also a limitation in the present range of analytics. NeuroBloom intentionally emphasizes interpretable indicators rather than opaque automated decision-making. That is a strength, but it also means the current analytics layer is still conservative. The platform can show meaningful trends, variability patterns, and context-linked changes, yet more advanced predictive or risk-stratification capability has not been fully developed or clinically evaluated. In its present form, the system supports interpretation. It does not automate clinical judgment.
+
+From a deployment perspective, the platform also depends on digital access, device availability, and user familiarity with web-based interaction. Bilingual support reduces one barrier, but it does not remove all barriers. Some patients may still find repeated digital tasks tiring, unfamiliar, or difficult to complete regularly, especially if fatigue, visual issues, or connectivity problems interfere with use. This means adoption in practice will depend not only on system quality, but also on support, onboarding, and real-world accessibility conditions.
+
+Finally, the current task library, while already substantial, is not exhaustive. The platform supports multiple domains and a meaningful set of task variants, but future extensions could broaden both task diversity and the depth of domain-specific evaluation. In the same way, doctor-facing and administrator-facing tools are functional and useful, but they can still be refined further through field feedback, richer reports, and better long-term deployment experience.
+
+\section{Recommendations and Future Works}
+The most important next step for NeuroBloom is large-scale deployment with real users over an extended time period. That would allow the project to move beyond implementation validation and into stronger evidence about longitudinal user engagement, practical adherence, clinician acceptance, and the real usefulness of repeated digital cognitive follow-up. A wider deployment would also help reveal how the system behaves outside a controlled development environment, where interruptions, inconsistent usage patterns, and diverse user needs are more common.
+
+Future work should also expand the task library. At present, NeuroBloom already supports multiple cognitive domains and task variants, but adding more task forms would improve variety, reduce repetition effects, and create richer domain-level profiles. This is especially important in long-term systems. If a platform is intended for repeated use over weeks or months, task diversity becomes part of both scientific quality and patient engagement.
+
+Another strong direction for future work is the refinement of the analytics layer. The current platform focuses on interpretable statistical indicators, which is appropriate for a clinician-guided system. Still, the analytical framework can be extended. Future versions may include stronger longitudinal forecasting, better personalization of risk signals, richer adherence analysis, and more sensitive detection of context-linked performance fluctuation. Any such extension should remain transparent and should continue to support clinician-led interpretation rather than replacing it.
+
+The doctor-facing workflow can also be extended further. Future development may improve intervention logging, progress-report generation, longitudinal comparison tools, and patient-specific rehabilitation recommendation support. In practice, the value of a monitoring platform increases when the data it collects can lead more directly to structured clinical action. Strengthening that bridge between observation and intervention would make the system more useful in real rehabilitation settings.
+
+There is also room for infrastructure and deployment refinement. Future work may include stronger audit support, more formal privacy and governance tooling, better offline or unstable-network tolerance, and more streamlined onboarding for different user groups. These improvements would not change the core idea of NeuroBloom, but they would make the system more robust and more realistic for wider institutional use.
+
+Finally, the project can be extended as a research framework. Because the architecture is modular and the workflows are explicitly structured, NeuroBloom can support future studies on digital biomarkers, contextual influences on performance, adaptive rehabilitation, and patient-doctor coordination in chronic neurological conditions. In that sense, the platform should not be seen only as the end product of one project report. It should be seen as a base that can grow.
+
+Taken together, these future directions suggest that NeuroBloom has moved past the level of a simple prototype. It already provides a credible and working foundation. The next stage is not to redefine the idea, but to deepen it through deployment, evaluation, extension, and careful clinical collaboration.
+
+\clearpage
+\addcontentsline{toc}{chapter}{References}
+\begin{thebibliography}{99}
+
+\bibitem{chiaravalloti2008}
+N.D. Chiaravalloti and J. DeLuca,
+``Cognitive impairment in multiple sclerosis,''
+\textit{Lancet Neurology}, vol. 7, no. 12, pp. 1139--1151, 2008.
+
+\bibitem{amato2006}
+M.P. Amato, V. Zipoli, and E. Portaccio,
+``Multiple sclerosis-related cognitive changes: A review of cross-sectional and longitudinal studies,''
+\textit{Journal of the Neurological Sciences}, vol. 245, no. 1--2, pp. 41--46, 2006.
+
+\bibitem{rocca2015}
+M.A. Rocca, M.P. Amato, N. De Stefano, et al.,
+``Clinical and imaging assessment of cognitive dysfunction in multiple sclerosis,''
+\textit{Lancet Neurology}, vol. 14, no. 3, pp. 302--317, 2015.
+
+\bibitem{kalb2018}
+R. Kalb, T. Beier, R.H.B. Benedict, et al.,
+``Recommendations for cognitive screening and management in multiple sclerosis care,''
+\textit{Multiple Sclerosis Journal}, vol. 24, no. 13, pp. 1665--1680, 2018.
+
+\bibitem{benedict2012}
+R.H.B. Benedict, M.P. Amato, J. Boringa, et al.,
+``Brief International Cognitive Assessment for Multiple Sclerosis (BICAMS): International standards for validation,''
+\textit{BMC Neurology}, vol. 12, p. 55, 2012.
+
+\bibitem{insel2017}
+T.R. Insel,
+``Digital phenotyping: Technology for a new science of behavior,''
+\textit{JAMA}, vol. 318, no. 13, pp. 1215--1216, 2017.
+
+\bibitem{coravos2019}
+A. Coravos, S. Khozin, and K.D. Mandl,
+``Developing and adopting safe and effective digital biomarkers to improve patient outcomes,''
+\textit{npj Digital Medicine}, vol. 2, p. 14, 2019.
+
+\bibitem{dorsey2017}
+E.R. Dorsey, S. Papapetropoulos, M. Xiong, and K. Kieburtz,
+``The first frontier: Digital biomarkers for neurodegenerative disorders,''
+\textit{Digital Biomarkers}, vol. 1, no. 1, pp. 6--13, 2017.
+
+\end{thebibliography}
+
+\end{document}
