@@ -13,7 +13,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
-	const API_BASE_URL = 'http://127.0.0.1:8000';
+	import { API_BASE_URL } from '$lib/api';
 
 	let currentUser = null;
 	let sessionData = null;

@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -179,7 +180,7 @@
 				return;
 			}
 
-			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
+			const planRes = await fetch(`${API_BASE_URL}/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
 			let userDifficulty = 5;
@@ -194,7 +195,7 @@
 			difficulty = userDifficulty;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/letter-number-sequencing/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
+				`${API_BASE_URL}/api/training/tasks/letter-number-sequencing/generate/${userId}?difficulty=${difficulty}&num_trials=8`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -360,7 +361,7 @@
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/letter-number-sequencing/submit/${userId}`,
+				`${API_BASE_URL}/api/training/tasks/letter-number-sequencing/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

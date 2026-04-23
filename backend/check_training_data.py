@@ -1,9 +1,6 @@
-import sys
-sys.path.append('app')
+from sqlalchemy import text
 
-from sqlalchemy import create_engine, text
-
-engine = create_engine('postgresql://postgres:2107118@localhost:5432/neurobloom_db')
+from app.core.config import engine
 
 with engine.connect() as conn:
     # Check training plan

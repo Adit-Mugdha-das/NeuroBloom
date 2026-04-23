@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - ./.env.local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - neurobloom
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./.env.local
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - neurobloom
+
+  frontend:
+    build:
+      context: ./frontend-svelte
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    networks:
+      - neurobloom
+
+networks:
+  neurobloom:
+    driver: bridge
+
+volumes:
+  postgres_data:

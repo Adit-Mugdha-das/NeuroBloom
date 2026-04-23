@@ -1,10 +1,9 @@
 """
 Migration script to add missing columns to baseline_assessments table
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-DATABASE_URL = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
-engine = create_engine(DATABASE_URL)
+from app.core.config import engine
 
 def add_missing_columns():
     """Add is_baseline and assessment_duration_minutes columns if they don't exist"""

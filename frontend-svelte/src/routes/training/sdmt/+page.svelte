@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -98,7 +99,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				return;
 			}
 
-			const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
+			const planRes = await fetch(`${API_BASE_URL}/api/training/training-plan/${userId}`);
 			const plan = await planRes.json();
 
 			let userDifficulty = 5;
@@ -115,7 +116,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			console.log('📊 SDMT - Final difficulty:', difficulty);
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/sdmt/generate/${userId}?difficulty=${difficulty}`,
+				`${API_BASE_URL}/api/training/tasks/sdmt/generate/${userId}?difficulty=${difficulty}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -274,7 +275,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/sdmt/submit/${userId}`,
+				`${API_BASE_URL}/api/training/tasks/sdmt/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

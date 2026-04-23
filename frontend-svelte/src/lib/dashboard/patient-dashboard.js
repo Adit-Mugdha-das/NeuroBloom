@@ -1,4 +1,4 @@
-﻿import { API_BASE_URL } from '$lib/api.js';
+import { apiUrl } from '$lib/api.js';
 import {
 	getPatientBadgeCopy,
 	getPatientCopy,
@@ -93,7 +93,7 @@ export function getDashboardContext() {
 }
 
 async function requestJson(fetchImpl, path) {
-	const response = await fetchImpl(`${API_BASE_URL}${path}`);
+	const response = await fetchImpl(apiUrl(path));
 	if (!response.ok) {
 		throw new Error(`Request failed: ${path}`);
 	}

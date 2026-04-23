@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-engine = create_engine('postgresql://postgres:postgres@localhost:5432/neurobloom_db')
+from app.core.config import engine
 
 with engine.connect() as conn:
     result = conn.execute(text('''

@@ -2,11 +2,9 @@
 Migration script to add streak tracking columns to training_plans table.
 Run this once to update your existing database.
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-# Database connection
-DATABASE_URL = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
-engine = create_engine(DATABASE_URL)
+from app.core.config import engine
 
 def migrate():
     """Add streak columns to training_plans table"""

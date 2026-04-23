@@ -9,26 +9,14 @@ from app.api.training import router as training_router
 from app.api.doctor import router as doctor_router
 from app.api.advanced_analytics import router as advanced_analytics_router  # Phase 1: MS Research
 from app.api.admin import router as admin_router
-from app.core.config import init_db
+from app.core.config import init_db, settings, wait_for_database
 
 app = FastAPI()
-
-ALLOWED_ORIGINS = [
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5175",
-    "http://127.0.0.1:5175",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,7 +32,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     """
     origin = request.headers.get("origin")
     headers = {}
-    if origin and (origin in ALLOWED_ORIGINS):
+    if origin and origin in settings.CORS_ALLOWED_ORIGINS:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
         headers["Vary"] = "Origin"
@@ -57,6 +45,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 def on_startup():
+    wait_for_database()
     init_db()
 
 app.include_router(auth_router, prefix="/api/auth")

@@ -1,13 +1,18 @@
 import axios from 'axios';
 import { queueLocalizationRefresh } from '$lib/i18n';
 
-const resolveApiBaseUrl = () => {
-	if (typeof window === 'undefined') return 'http://127.0.0.1:8000';
-	const host = window.location.hostname === 'localhost' ? 'localhost' : '127.0.0.1';
-	return `${window.location.protocol}//${host}:8000`;
-};
+const normalizeApiBaseUrl = (value = '') => value.trim().replace(/\/+$/, '');
 
-export const API_BASE_URL = resolveApiBaseUrl();
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
+
+export const apiUrl = (path = '') => {
+	if (!path) {
+		return API_BASE_URL;
+	}
+
+	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+	return `${API_BASE_URL}${normalizedPath}`;
+};
 
 const api = axios.create({
 	baseURL: API_BASE_URL,

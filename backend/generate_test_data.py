@@ -2,12 +2,11 @@
 Quick Test Data Generator for Development
 Run this to instantly populate your training plan with completed sessions
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from datetime import datetime, timedelta
 import random
 
-DATABASE_URL = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
-engine = create_engine(DATABASE_URL)
+from app.core.config import engine
 
 def generate_test_sessions(num_sessions=2, user_id=2, training_plan_id=1):
     """
