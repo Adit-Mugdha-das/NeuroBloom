@@ -12,6 +12,8 @@ from app.models.baseline_assessment import BaselineAssessment
 from app.models.badge import UserBadge, BadgeDefinition
 from app.models.user import User
 from app.services.badge_service import BadgeService
+from app.services.patient_journey import get_real_baseline, get_reference_data_status
+from app.services.task_keys import normalize_task_key
 from app.services.task_rotation import TaskRotationService
 from app.core.config import engine
 
@@ -25,6 +27,51 @@ DEV_COOLDOWN_MINUTES = 0
 def get_session():
     with Session(engine) as session:
         yield session
+
+
+def _empty_training_plan_response(message: str):
+    return {
+        "has_plan": False,
+        "message": message,
+        "primary_focus": [],
+        "secondary_focus": [],
+        "maintenance": [],
+        "recommended_tasks": {},
+        "initial_difficulty": {},
+        "current_difficulty": {},
+        "total_sessions": 0,
+        "last_session": None,
+        "session_constraints": None,
+        "session_pacing": None,
+    }
+
+
+def _empty_training_metrics(message: str):
+    return {
+        "has_data": False,
+        "message": message,
+        "total_sessions": 0,
+        "total_tasks": 0,
+        "metrics_by_domain": {},
+        "current_difficulty": {},
+        "recent_sessions": [],
+        "last_training_date": None,
+    }
+
+
+def _empty_next_tasks_response(message: str, has_plan: bool = False, system_ready: bool = True):
+    return {
+        "has_plan": has_plan,
+        "system_ready": system_ready,
+        "message": message,
+        "training_plan_id": None,
+        "session_number": 1,
+        "tasks": [],
+        "total_tasks": 0,
+        "completed_tasks": 0,
+        "session_complete": False,
+        "rotation_info": None,
+    }
 
 # Task type mapping for each cognitive domain
 DOMAIN_TASK_MAPPING = {
@@ -299,15 +346,11 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
     6. Calculate initial difficulty based on baseline scores
     """
     
-    # Get latest baseline assessment
-    baseline = session.exec(
-        select(BaselineAssessment)
-        .where(BaselineAssessment.user_id == user_id)
-        .order_by(desc(BaselineAssessment.created_at))
-    ).first()
-    
+    # Get latest real baseline assessment
+    baseline = get_real_baseline(session, user_id)
+
     if not baseline or baseline.id is None:
-        raise HTTPException(status_code=404, detail="No baseline assessment found. Complete baseline first.")
+        raise HTTPException(status_code=400, detail="Calculate a real baseline assessment before generating a training plan.")
     
     # Type guard: baseline is confirmed non-null after this point
     
@@ -409,11 +452,13 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan found. Generate one first.")
+        return _empty_training_plan_response("No active training plan found yet.")
 
     session_pacing = _build_session_pacing_status(plan, session, user_id)
     
     return {
+        "has_plan": True,
+        "message": "Training plan available.",
         "id": plan.id,
         "user_id": plan.user_id,
         "baseline_id": plan.baseline_assessment_id,
@@ -450,7 +495,18 @@ def get_streak_info(user_id: int, session: Session = Depends(get_session)):
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+        return {
+            "has_plan": False,
+            "message": "No active training plan",
+            "current_streak": 0,
+            "longest_streak": 0,
+            "total_training_days": 0,
+            "streak_freeze_available": True,
+            "days_until_streak_break": 0,
+            "streak_percentage": 0,
+            "last_session_date": None,
+            "last_streak_reset": None,
+        }
     
     # Calculate days until streak breaks
     if plan.last_session_date:
@@ -469,6 +525,8 @@ def get_streak_info(user_id: int, session: Session = Depends(get_session)):
         streak_percentage = (plan.current_streak / plan.longest_streak) * 100
     
     return {
+        "has_plan": True,
+        "message": "Streak information available.",
         "current_streak": plan.current_streak,
         "longest_streak": plan.longest_streak,
         "total_training_days": plan.total_training_days,
@@ -499,7 +557,15 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan. Generate one first.")
+        return _empty_next_tasks_response("No active training plan. Generate one first.")
+
+    reference_data = get_reference_data_status(session)
+    if not reference_data["cognitive_tasks_seeded"]:
+        return _empty_next_tasks_response(
+            "Training task catalog is missing. Seed the cognitive task reference data.",
+            has_plan=True,
+            system_ready=False,
+        )
     
     primary = plan.get_primary_focus()
     secondary = plan.get_secondary_focus()
@@ -521,14 +587,17 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
         if selected_task:
             # Create unique task identifier: domain_taskindex
             task_id = f"{domain}_{task_index}"
+            task_key = normalize_task_key(selected_task.task_code)
             next_tasks.append({
                 "domain": domain,
                 "task_id": task_id,  # Unique identifier for this specific task slot
-                "task_type": selected_task.task_code,  # e.g., 'digit_span', 'sdmt'
+                "task_type": task_key,
+                "task_key": task_key,
                 "task_name": selected_task.task_name,  # e.g., 'Digit Span Test'
                 "task_description": selected_task.description,
                 "difficulty": difficulty.get(domain, 5),
                 "priority": "primary",
+                "focus_reason_key": "weakest_area",
                 "focus_reason": "Weakest area - needs most attention",
                 "completed": task_id in completed_tasks,
                 "requires_audio": selected_task.requires_audio,
@@ -543,14 +612,17 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
         if selected_task:
             # Create unique task identifier: domain_taskindex
             task_id = f"{domain}_{task_index}"
+            task_key = normalize_task_key(selected_task.task_code)
             next_tasks.append({
                 "domain": domain,
                 "task_id": task_id,  # Unique identifier for this specific task slot
-                "task_type": selected_task.task_code,
+                "task_type": task_key,
+                "task_key": task_key,
                 "task_name": selected_task.task_name,
                 "task_description": selected_task.description,
                 "difficulty": difficulty.get(domain, 5),
                 "priority": "secondary",
+                "focus_reason_key": "growth_area",
                 "focus_reason": "Moderate area - room for improvement",
                 "completed": task_id in completed_tasks,
                 "requires_audio": selected_task.requires_audio,
@@ -562,6 +634,9 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
     all_completed = len(completed_tasks) >= 4
     
     return {
+        "has_plan": True,
+        "system_ready": True,
+        "message": "Recommended tasks available.",
         "training_plan_id": plan.id,
         "session_number": plan.current_session_number,
         "tasks": next_tasks,
@@ -625,7 +700,7 @@ def submit_training_session(
     current_difficulty = current_difficulty_map.get(domain, 5)
     
     # Use task_code if provided, otherwise fall back to task_type
-    final_task_code = task_code if task_code else task_type
+    final_task_code = normalize_task_key(task_code if task_code else task_type)
     
     # Create training session record (store current difficulty, will update after full session)
     training_session = TrainingSession(
@@ -744,6 +819,7 @@ def submit_training_session(
         if badge_def:
             badge_details.append({
                 "id": badge_id,
+                "badge_id": badge_id,
                 "name": badge_def["name"],
                 "description": badge_def["description"],
                 "icon": badge_def["icon"]
@@ -829,7 +905,7 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan found")
+        return _empty_training_metrics("No active training plan found.")
     
     # Get all training sessions
     all_sessions = session.exec(
@@ -838,10 +914,14 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
     
     if not all_sessions:
         return {
+            "has_data": False,
+            "message": "Training plan exists, but no training sessions have been completed yet.",
             "total_sessions": 0,
+            "total_tasks": 0,
             "metrics_by_domain": {},
             "current_difficulty": plan.get_current_difficulty(),
-            "recent_sessions": []
+            "recent_sessions": [],
+            "last_training_date": None,
         }
     
     # Calculate metrics per domain
@@ -887,6 +967,8 @@ def get_performance_metrics(user_id: int, session: Session = Depends(get_session
     ]
     
     return {
+        "has_data": True,
+        "message": "Performance metrics available.",
         "total_sessions": plan.total_sessions_completed,  # Use completed sessions count from plan (4 tasks = 1 session)
         "total_tasks": len(all_sessions),  # Total individual tasks completed
         "metrics_by_domain": metrics_by_domain,
@@ -1018,7 +1100,14 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+        return {
+            "has_data": False,
+            "message": "No active training plan.",
+            "comparison": {},
+            "total_sessions_completed": 0,
+            "baseline_date": None,
+            "last_training_date": None,
+        }
     
     # Get baseline scores
     baseline = session.exec(
@@ -1027,7 +1116,14 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
     ).first()
     
     if not baseline:
-        raise HTTPException(status_code=404, detail="Baseline assessment not found")
+        return {
+            "has_data": False,
+            "message": "No baseline assessment found for the active training plan.",
+            "comparison": {},
+            "total_sessions_completed": plan.total_sessions_completed,
+            "baseline_date": None,
+            "last_training_date": plan.last_session_date.isoformat() if plan.last_session_date else None,
+        }
     
     baseline_scores = {
         "working_memory": baseline.working_memory_score,
@@ -1078,6 +1174,8 @@ def get_performance_comparison(user_id: int, session: Session = Depends(get_sess
         }
     
     return {
+        "has_data": True,
+        "message": "Performance comparison available.",
         "user_id": user_id,
         "total_sessions_completed": plan.total_sessions_completed,
         "baseline_date": baseline.created_at.isoformat(),
@@ -2103,7 +2201,16 @@ def generate_sdmt_task(
     ).first()
     
     if not plan:
-        raise HTTPException(status_code=404, detail="No active training plan")
+        return {
+            "has_data": False,
+            "message": "No active training plan.",
+            "user_id": user_id,
+            "period_days": days,
+            "total_sessions": 0,
+            "trends_by_domain": {},
+            "overall_trend": [],
+            "domains": [],
+        }
     
     # Determine difficulty
     if difficulty is None:
@@ -4064,6 +4171,7 @@ def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
         if badge_def:
             badge_details.append({
                 "id": badge_id,
+                "badge_id": badge_id,
                 "name": badge_def["name"],
                 "description": badge_def["description"],
                 "icon": badge_def["icon"],
@@ -4164,6 +4272,8 @@ def get_performance_trends(
         })
     
     return {
+        "has_data": True,
+        "message": "Performance trends available.",
         "user_id": user_id,
         "period_days": days,
         "total_sessions": len(sessions),

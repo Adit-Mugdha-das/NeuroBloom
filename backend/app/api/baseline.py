@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from typing import List
 import json
 
 from app.models.baseline_assessment import BaselineAssessment
 from app.models.test_result import TestResult
 from app.schemas.baseline_assessment import BaselineAssessmentCreate, BaselineAssessmentRead
 from app.core.config import engine
+from app.services.patient_journey import BASELINE_DOMAINS, get_real_baseline
 from app.core.scoring import (
     calculate_working_memory_score,
     calculate_attention_score,
@@ -36,7 +36,7 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
     ).all()
     
     if not results:
-        raise HTTPException(status_code=404, detail="No test results found")
+        raise HTTPException(status_code=400, detail="Complete all 6 baseline tasks before calculating baseline")
     
     # Organize by task type
     domain_data = {}
@@ -98,6 +98,14 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         metrics = latest['details']
         domain_scores['visual_scanning'] = calculate_visual_scanning_score(metrics)
     
+    # Require all six baseline tasks for a real baseline calculation.
+    missing_domains = [domain for domain in BASELINE_DOMAINS if domain not in domain_data]
+    if missing_domains:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Complete all 6 baseline tasks before calculating baseline. Missing: {', '.join(missing_domains)}"
+        )
+
     # Calculate overall score
     overall = calculate_overall_score(domain_scores)
     
@@ -125,14 +133,6 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         session.commit()
         session.refresh(existing)
         
-        # AUTO-GENERATE TRAINING PLAN after baseline update
-        try:
-            from app.api.training import generate_training_plan
-            generate_training_plan(user_id, session)
-        except Exception as e:
-            # Log but don't fail baseline update if training plan fails
-            print(f"Warning: Could not auto-generate training plan: {e}")
-        
         return existing
     else:
         # Create new baseline
@@ -153,27 +153,38 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         session.commit()
         session.refresh(baseline)
         
-        # AUTO-GENERATE TRAINING PLAN after baseline creation
-        try:
-            from app.api.training import generate_training_plan
-            generate_training_plan(user_id, session)
-        except Exception as e:
-            # Log but don't fail baseline creation if training plan fails
-            print(f"Warning: Could not auto-generate training plan: {e}")
-        
         return baseline
 
 
-@router.get("/{user_id}", response_model=BaselineAssessmentRead)
+@router.get("/{user_id}")
 def get_baseline(user_id: int, session: Session = Depends(get_session)):
     """Get user's baseline assessment"""
-    baseline = session.exec(
-        select(BaselineAssessment)
-        .where(BaselineAssessment.user_id == user_id)
-        .where(BaselineAssessment.is_baseline == True)
-    ).first()
-    
+    baseline = get_real_baseline(session, user_id)
+
     if not baseline:
-        raise HTTPException(status_code=404, detail="No baseline assessment found")
-    
-    return baseline
+        return {
+            "has_data": False,
+            "message": "No calculated baseline assessment found yet.",
+            "assessment": None,
+        }
+
+    return {
+        "has_data": True,
+        "message": "Baseline assessment available.",
+        "assessment": {
+            "id": baseline.id,
+            "user_id": baseline.user_id,
+            "assessment_date": baseline.assessment_date.isoformat() if baseline.assessment_date else None,
+            "created_at": baseline.created_at.isoformat() if baseline.created_at else None,
+            "working_memory_score": baseline.working_memory_score,
+            "attention_score": baseline.attention_score,
+            "flexibility_score": baseline.flexibility_score,
+            "planning_score": baseline.planning_score,
+            "processing_speed_score": baseline.processing_speed_score,
+            "visual_scanning_score": baseline.visual_scanning_score,
+            "overall_score": baseline.overall_score,
+            "raw_metrics": baseline.raw_metrics,
+            "is_baseline": baseline.is_baseline,
+            "assessment_duration_minutes": baseline.assessment_duration_minutes,
+        },
+    }

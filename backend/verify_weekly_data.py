@@ -5,7 +5,9 @@ Run this after generating test data to verify the numbers match.
 import requests
 from datetime import datetime, timedelta
 
-BASE_URL = "http://localhost:8000/api/training"
+from app.core.config import build_api_url
+
+BASE_URL = build_api_url("/api/training")
 USER_ID = 1  # Change to your test user ID
 
 def generate_test_sessions(num_sessions=10):

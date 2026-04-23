@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -142,7 +143,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			loading = true;
 			error = null;
 			const baselineResponse = await fetch(
-				`http://localhost:8000/api/baseline/${currentUser.id}`
+				`${API_BASE_URL}/api/baseline/${currentUser.id}`
 			);
 			if (baselineResponse.ok) {
 				const baselineData = await baselineResponse.json();
@@ -160,7 +161,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				}
 			}
 			const response = await fetch(
-				`http://localhost:8000/api/tasks/plus-minus/generate?difficulty=${difficulty}`,
+				`${API_BASE_URL}/api/tasks/plus-minus/generate?difficulty=${difficulty}`,
 				{ method: 'POST', headers: { 'Content-Type': 'application/json' } }
 			);
 			if (!response.ok) throw new Error('Failed to load session');
@@ -340,7 +341,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			const totalTime = Date.now() - startTime;
 			taskId = $page.url.searchParams.get('taskId');
 			const submitResponse = await fetch(
-				`http://localhost:8000/api/training/tasks/plus-minus/submit/${currentUser.id}`,
+				`${API_BASE_URL}/api/training/tasks/plus-minus/submit/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

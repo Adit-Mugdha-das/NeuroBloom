@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -137,7 +138,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			loading = true;
 			error = null;
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/wcst/generate/${currentUser.id}`,
+				`${API_BASE_URL}/api/training/tasks/wcst/generate/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -305,7 +306,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			const totalTime = Date.now() - startTime;
 			taskId = $page.url.searchParams.get('taskId');
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/wcst/submit/${currentUser.id}`,
+				`${API_BASE_URL}/api/training/tasks/wcst/submit/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

@@ -3,6 +3,8 @@
 import requests
 import json
 
+from app.core.config import build_api_url
+
 # Doctor registration data
 doctor_data = {
     "email": "dr.smith@neurobloom.test",
@@ -14,7 +16,7 @@ doctor_data = {
 }
 
 # API endpoint
-url = "http://127.0.0.1:8000/api/auth/doctor/register"
+url = build_api_url("/api/auth/doctor/register")
 
 try:
     # Send registration request
@@ -50,6 +52,6 @@ try:
         
 except requests.exceptions.ConnectionError:
     print("✗ Error: Could not connect to the backend server.")
-    print("Make sure the server is running on http://127.0.0.1:8000")
+    print(f"Make sure the server is running on {build_api_url()}")
 except Exception as e:
     print(f"✗ Error: {str(e)}")

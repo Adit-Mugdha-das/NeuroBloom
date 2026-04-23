@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
+	import { locale, localeText } from '$lib/i18n';
 	import { formatDuration, formatShortDate, getDomainName, getScoreColor } from '$lib/progress';
 	import { user } from '$lib/stores';
 	import { downloadCSV } from '$lib/utils/chartDownload';
@@ -14,6 +15,8 @@
 	user.subscribe((value) => {
 		currentUser = value;
 	});
+
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -32,7 +35,7 @@
 			history = await training.getHistory(currentUser.id, 30);
 		} catch (loadError) {
 			console.error('Error loading training history:', loadError);
-			error = 'Complete more training sessions to review history.';
+			error = lt('Complete more training sessions to review history.', 'হিস্ট্রি দেখতে আরও কিছু ট্রেনিং সেশন সম্পন্ন করুন।');
 		} finally {
 			loading = false;
 		}
@@ -42,11 +45,11 @@
 		if (!history.length) return;
 
 		const exportRows = history.map((session) => ({
-			date: formatShortDate(session.created_at),
-			domain: getDomainName(session.domain),
+			date: formatShortDate(session.created_at, $locale),
+			domain: getDomainName(session.domain, $locale),
 			score: session.score.toFixed(1),
 			accuracy: session.accuracy.toFixed(1),
-			duration: formatDuration(session.duration)
+			duration: formatDuration(session.duration, $locale)
 		}));
 
 		downloadCSV(exportRows, `training-history-${new Date().toISOString().split('T')[0]}`);
@@ -59,11 +62,11 @@
 			.map(
 				(session) => `
 					<tr>
-						<td>${formatShortDate(session.created_at)}</td>
-						<td>${getDomainName(session.domain)}</td>
+						<td>${formatShortDate(session.created_at, $locale)}</td>
+						<td>${getDomainName(session.domain, $locale)}</td>
 						<td>${session.score.toFixed(1)}</td>
 						<td>${session.accuracy.toFixed(1)}%</td>
-						<td>${formatDuration(session.duration)}</td>
+						<td>${formatDuration(session.duration, $locale)}</td>
 					</tr>`
 			)
 			.join('');
@@ -74,7 +77,7 @@
 		reportWindow.document.write(`
 			<html>
 				<head>
-					<title>NeuroBloom Training History Report</title>
+					<title>${lt('NeuroBloom Training History Report', 'NeuroBloom ট্রেনিং হিস্ট্রি রিপোর্ট')}</title>
 					<style>
 						body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
 						h1 { margin-bottom: 8px; }
@@ -85,16 +88,16 @@
 					</style>
 				</head>
 				<body>
-					<h1>NeuroBloom Training History</h1>
-					<p>Generated on ${new Date().toLocaleString()}</p>
+					<h1>${lt('NeuroBloom Training History', 'NeuroBloom ট্রেনিং হিস্ট্রি')}</h1>
+					<p>${lt('Generated on', 'তৈরি হয়েছে')} ${new Date().toLocaleString()}</p>
 					<table>
 						<thead>
 							<tr>
-								<th>Date</th>
-								<th>Domain</th>
-								<th>Score</th>
-								<th>Accuracy</th>
-								<th>Duration</th>
+								<th>${lt('Date', 'তারিখ')}</th>
+								<th>${lt('Domain', 'ডোমেইন')}</th>
+								<th>${lt('Score', 'স্কোর')}</th>
+								<th>${lt('Accuracy', 'নির্ভুলতা')}</th>
+								<th>${lt('Duration', 'সময়')}</th>
 							</tr>
 						</thead>
 						<tbody>${reportRows}</tbody>
@@ -111,53 +114,53 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
-			<p>Loading training history...</p>
-		</section>
-	{:else if error}
-		<section class="state-panel glass-card">
-			<h2>Training history unavailable</h2>
-			<p>{error}</p>
-		</section>
-	{:else if history.length === 0}
-		<section class="state-panel glass-card">
-			<h2>No sessions yet</h2>
-			<p>Once you complete training sessions, they will appear here in a compact timeline.</p>
-		</section>
-	{:else}
-		<section class="glass-card list-shell">
-			<div class="list-head">
-				<div>
-					<p class="card-label">Training History</p>
-					<h2>Recent sessions</h2>
-				</div>
-				<div class="list-actions">
-					<p class="list-note">A compact record of your recent training sessions.</p>
-					<div class="action-row">
-						<button class="action-btn" on:click={handleDownloadPdf}>PDF Report</button>
-						<button class="action-btn" on:click={handleDownloadCsv}>CSV Export</button>
+				<p>{lt('Loading training history...', 'ট্রেনিং হিস্ট্রি লোড হচ্ছে...')}</p>
+			</section>
+		{:else if error}
+			<section class="state-panel glass-card">
+				<h2>{lt('Training history unavailable', 'ট্রেনিং হিস্ট্রি পাওয়া যাচ্ছে না')}</h2>
+				<p>{error}</p>
+			</section>
+		{:else if history.length === 0}
+			<section class="state-panel glass-card">
+				<h2>{lt('No sessions yet', 'এখনো কোনো সেশন নেই')}</h2>
+				<p>{lt('Once you complete training sessions, they will appear here in a compact timeline.', 'ট্রেনিং সেশন সম্পন্ন করলে সেগুলো এখানে একটি সংক্ষিপ্ত টাইমলাইনে দেখা যাবে।')}</p>
+			</section>
+		{:else}
+			<section class="glass-card list-shell">
+				<div class="list-head">
+					<div>
+						<p class="card-label">{lt('Training history', 'ট্রেনিং হিস্ট্রি')}</p>
+						<h2>{lt('Recent sessions', 'সাম্প্রতিক সেশন')}</h2>
+					</div>
+					<div class="list-actions">
+						<p class="list-note">{lt('A compact record of your recent training sessions.', 'আপনার সাম্প্রতিক ট্রেনিং সেশনগুলোর একটি সংক্ষিপ্ত রেকর্ড।')}</p>
+						<div class="action-row">
+							<button class="action-btn" on:click={handleDownloadPdf}>{lt('PDF report', 'PDF রিপোর্ট')}</button>
+							<button class="action-btn" on:click={handleDownloadCsv}>{lt('CSV export', 'CSV এক্সপোর্ট')}</button>
+						</div>
 					</div>
 				</div>
-			</div>
 
 			<div class="history-list">
 				{#each history as session}
 					<article class="history-row">
 						<div class="history-main">
-							<p class="row-domain">{getDomainName(session.domain)}</p>
-							<p class="row-date">{formatShortDate(session.created_at)}</p>
+							<p class="row-domain">{getDomainName(session.domain, $locale)}</p>
+							<p class="row-date">{formatShortDate(session.created_at, $locale)}</p>
 						</div>
 						<div class="history-metrics">
 							<div>
-								<p class="metric-label">Score</p>
+								<p class="metric-label">{lt('Score', 'স্কোর')}</p>
 								<p class="metric-value" style="color: {getScoreColor(session.score)}">{session.score.toFixed(1)}</p>
 							</div>
 							<div>
-								<p class="metric-label">Accuracy</p>
+								<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
 								<p class="metric-value">{session.accuracy.toFixed(1)}%</p>
 							</div>
 							<div>
-								<p class="metric-label">Duration</p>
-								<p class="metric-value">{formatDuration(session.duration)}</p>
+								<p class="metric-label">{lt('Duration', 'সময়')}</p>
+								<p class="metric-value">{formatDuration(session.duration, $locale)}</p>
 							</div>
 						</div>
 					</article>

@@ -7,13 +7,12 @@ Usage:
     python dev_tools.py complete                  - Complete current session instantly
     python dev_tools.py streak [days]             - Set streak to X days
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from datetime import datetime, timedelta
 import random
 import sys
 
-DATABASE_URL = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
-engine = create_engine(DATABASE_URL)
+from app.core.config import engine
 
 def generate_sessions(num_sessions=2):
     """Generate completed test sessions"""

@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -123,7 +124,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				console.log('🔧 Trail Making A - Using URL difficulty:', difficulty);
 			} else {
 				// Get user's training plan to determine difficulty
-				const planRes = await fetch(`http://localhost:8000/api/training/plan/${userId}`);
+				const planRes = await fetch(`${API_BASE_URL}/api/training/plan/${userId}`);
 
 				if (planRes.ok) {
 					const plan = await planRes.json();
@@ -147,7 +148,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			}
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/trail-making-a/generate/${userId}?difficulty=${difficulty}`,
+				`${API_BASE_URL}/api/training/tasks/trail-making-a/generate/${userId}?difficulty=${difficulty}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -441,7 +442,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/trail-making-a/submit/${userId}`,
+				`${API_BASE_URL}/api/training/tasks/trail-making-a/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

@@ -1,10 +1,17 @@
 <script>
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { training } from '$lib/api';
+	import { patientJourney, training } from '$lib/api';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
 	import PreTaskQuestionnaire from '$lib/components/PreTaskQuestionnaire.svelte';
 	import { formatNumber, locale } from '$lib/i18n';
+	import {
+		getPatientDifficultyLabel,
+		getPatientDomainLabel,
+		getPatientFocusReason,
+		getPatientPriorityLabel,
+		getPatientTaskLabel
+	} from '$lib/patient-copy.js';
 	import { user } from '$lib/stores';
 	import { buildTrainingTaskUrl } from '$lib/training-launch';
 	import { onMount } from 'svelte';
@@ -15,6 +22,8 @@
 	let nextTasks = null;
 	let metrics = null;
 	let error = null;
+	let journey = null;
+	let trainingState = 'loading';
 	let newlyEarnedBadges = [];
 	let showPreTaskQuestionnaire = false;
 	let pendingTaskRoute = null;
@@ -60,41 +69,69 @@
 		loading = true;
 		error = null;
 		pacingWarning = null;
+		trainingState = 'loading';
+		trainingPlan = null;
+		nextTasks = null;
+		metrics = null;
 
 		try {
+			journey = await patientJourney.get(currentUser.id);
+
+			if (journey.state === 'new_user' || journey.state === 'baseline_in_progress') {
+				trainingState = 'baseline_incomplete';
+				return;
+			}
+
+			if (journey.state === 'baseline_ready_to_calculate') {
+				trainingState = 'baseline_ready_to_calculate';
+				return;
+			}
+
+			if (journey.state === 'training_plan_missing') {
+				trainingState = 'plan_missing';
+				return;
+			}
+
+			if (journey.state === 'system_not_ready') {
+				trainingState = 'system_not_ready';
+				return;
+			}
+
 			trainingPlan = await training.getPlan(currentUser.id);
+			if (!trainingPlan?.has_plan) {
+				trainingState = 'plan_missing';
+				return;
+			}
 			nextTasks = await training.getNextTasks(currentUser.id);
+			if (!nextTasks?.system_ready) {
+				trainingState = 'system_not_ready';
+				return;
+			}
 
 			try {
 				metrics = await training.getMetrics(currentUser.id);
+				if (metrics?.has_data === false) {
+					metrics = null;
+				}
 			} catch (loadMetricsError) {
 				metrics = null;
 			}
+			trainingState = 'plan_ready';
 		} catch (loadError) {
 			console.error('Error loading training data:', loadError);
-			error = 'No training plan found. Please generate one from your baseline results.';
+			error = lt('We could not load your training workspace right now.', '?? ???????? ????? ??????? ??????????? ??? ??? ?????? ???');
+			trainingState = 'error';
 		} finally {
 			loading = false;
 		}
 	}
 
 	function getDomainName(domain) {
-		const names = {
-			working_memory: lt('Working Memory', 'ওয়ার্কিং মেমরি'),
-			attention: lt('Attention', 'মনোযোগ'),
-			flexibility: lt('Cognitive Flexibility', 'কগনিটিভ ফ্লেক্সিবিলিটি'),
-			planning: lt('Planning', 'পরিকল্পনা'),
-			processing_speed: lt('Processing Speed', 'প্রসেসিং স্পিড'),
-			visual_scanning: lt('Visual Scanning', 'ভিজুয়াল স্ক্যানিং')
-		};
-
-		return names[domain] || domain;
+		return getPatientDomainLabel(domain, $locale);
 	}
 
 	function getPriorityLabel(priority) {
-		if (priority === 'primary') return lt('Primary Focus', 'প্রধান ফোকাস');
-		if (priority === 'secondary') return lt('Secondary Focus', 'দ্বিতীয় ফোকাস');
-		return lt('Maintenance', 'রক্ষণাবেক্ষণ');
+		return getPatientPriorityLabel(priority, $locale);
 	}
 
 	function getPriorityTone(priority) {
@@ -104,10 +141,22 @@
 	}
 
 	function getDifficultyLabel(difficulty) {
-		if (difficulty <= 3) return lt('Gentle', 'সহজ');
-		if (difficulty <= 6) return lt('Steady', 'স্থিতিশীল');
-		if (difficulty <= 8) return lt('Focused', 'মনোযোগী');
-		return lt('Advanced', 'উন্নত');
+		return getPatientDifficultyLabel(difficulty, $locale);
+	}
+
+	function getTaskLabel(task) {
+		return getPatientTaskLabel(task?.task_key || task?.task_type || '', $locale, task?.domain);
+	}
+
+	function getTaskReason(task) {
+		const fallbackKey =
+			task?.priority === 'primary'
+				? 'weakest_area'
+				: task?.priority === 'secondary'
+					? 'growth_area'
+					: 'maintenance_area';
+
+		return getPatientFocusReason(task?.focus_reason_key || fallbackKey, $locale);
 	}
 
 	function formatClockTime(value) {
@@ -321,11 +370,35 @@
 			<section class="state-card">
 				<p>{lt('Loading your training plan...', 'আপনার ট্রেনিং পরিকল্পনা লোড হচ্ছে...')}</p>
 			</section>
+		{:else if trainingState === 'baseline_incomplete'}
+			<section class="state-card error-card">
+				<h3>{lt('Baseline still in progress', 'বেসলাইন এখনো চলছে')}</h3>
+				<p>{lt('Complete your six baseline tasks first. Training becomes available only after the baseline is complete.', 'আগে আপনার ছয়টি বেসলাইন টাস্ক সম্পন্ন করুন। বেসলাইন সম্পূর্ণ না হওয়া পর্যন্ত ট্রেনিং চালু হবে না।')}</p>
+				<button class="primary-btn" on:click={() => goto('/baseline')}>{lt('Open Baseline', 'বেসলাইন খুলুন')}</button>
+			</section>
+		{:else if trainingState === 'baseline_ready_to_calculate'}
+			<section class="state-card error-card">
+				<h3>{lt('Baseline ready to calculate', 'বেসলাইন ক্যালকুলেটের জন্য প্রস্তুত')}</h3>
+				<p>{lt('You have finished the six baseline tasks. Calculate the baseline first, then generate the training plan.', 'আপনি ছয়টি বেসলাইন টাস্ক শেষ করেছেন। আগে বেসলাইন ক্যালকুলেট করুন, তারপর ট্রেনিং প্ল্যান তৈরি করুন।')}</p>
+				<button class="primary-btn" on:click={() => goto('/baseline')}>{lt('Go to Baseline Workspace', 'বেসলাইন ওয়ার্কস্পেসে যান')}</button>
+			</section>
+		{:else if trainingState === 'plan_missing'}
+			<section class="state-card error-card">
+				<h3>{lt('Training plan not generated yet', 'ট্রেনিং প্ল্যান এখনো তৈরি হয়নি')}</h3>
+				<p>{lt('Your baseline is calculated, but you still need to generate the training plan before daily tasks can start.', 'আপনার বেসলাইন ক্যালকুলেট হয়েছে, কিন্তু দৈনিক টাস্ক শুরুর আগে ট্রেনিং প্ল্যান তৈরি করতে হবে।')}</p>
+				<button class="primary-btn" on:click={() => goto('/baseline/results')}>{lt('Open Baseline Results', 'বেসলাইন রেজাল্ট খুলুন')}</button>
+			</section>
+		{:else if trainingState === 'system_not_ready'}
+			<section class="state-card error-card">
+				<h3>{lt('Training system not ready', 'ট্রেনিং সিস্টেম প্রস্তুত নয়')}</h3>
+				<p>{journey?.blocking_reason || lt('The task catalog is missing, so today’s training session cannot be assembled yet.', 'টাস্ক ক্যাটালগ নেই, তাই আজকের ট্রেনিং সেশন তৈরি করা যাচ্ছে না।')}</p>
+				<button class="primary-btn" on:click={loadTrainingData}>{lt('Retry', 'পুনরায় চেষ্টা করুন')}</button>
+			</section>
 		{:else if error}
 			<section class="state-card error-card">
-				<h3>{lt('Training plan unavailable', 'ট্রেনিং পরিকল্পনা পাওয়া যাচ্ছে না')}</h3>
+				<h3>{lt('Training workspace unavailable', 'ট্রেনিং ওয়ার্কস্পেস পাওয়া যাচ্ছে না')}</h3>
 				<p>{error}</p>
-				<button class="primary-btn" on:click={() => goto('/baseline/results')}>{lt('Go to Baseline Results', 'বেসলাইন ফলাফলে যান')}</button>
+				<button class="primary-btn" on:click={loadTrainingData}>{lt('Retry', 'পুনরায় চেষ্টা করুন')}</button>
 			</section>
 		{:else if trainingPlan && nextTasks}
 			<header class="training-header glass-panel">
@@ -405,13 +478,14 @@
 						<article class="task-card {task.completed ? 'completed' : ''} {getPriorityTone(task.priority)}">
 							<div class="task-topline">
 								<p class="task-domain">{getDomainName(task.domain)}</p>
+							<h3 class="task-title">{getTaskLabel(task)}</h3>
 								<span class="priority-pill {getPriorityTone(task.priority)}">{getPriorityLabel(task.priority)}</span>
 							</div>
 							<div class="task-meta">
 								<span>{getDifficultyLabel(task.difficulty)}</span>
 								<span>{lt(`Level ${task.difficulty}/10`, `লেভেল ${n(task.difficulty)}/10`)}</span>
 							</div>
-							<p class="task-reason">{task.focus_reason}</p>
+							<p class="task-reason">{getTaskReason(task)}</p>
 							<button class="primary-btn task-btn" disabled={task.completed} on:click={() => startTask(task)}>
 								{task.completed ? lt('Completed', 'সম্পন্ন') : lt('Start Task', 'কাজ শুরু করুন')}
 							</button>

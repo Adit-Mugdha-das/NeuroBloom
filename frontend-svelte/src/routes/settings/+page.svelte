@@ -1,368 +1,291 @@
 <script>
 	import { goto } from '$app/navigation';
-	import api from '$lib/api.js';
+	import PatientShell from '$lib/components/patient-dashboard/PatientShell.svelte';
 	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
-	import { locale, translateText } from '$lib/i18n';
-	import { user } from '$lib/stores.js';
+	import api from '$lib/api.js';
+	import { locale, localeText } from '$lib/i18n';
+	import { clearUser, user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
-	let userData;
-	let profile = null;
+	let currentUser = null;
 	let loading = true;
 	let saving = false;
-	let message = '';
 	let error = '';
+	let message = '';
+	let consentToShare = false;
 
-	const unsubscribe = user.subscribe(value => {
-		userData = value;
+	user.subscribe((value) => {
+		currentUser = value;
 	});
 
-	onMount(() => {
-		if (!userData || userData.role !== 'patient') {
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	$: header = {
+		brand: 'NeuroBloom',
+		title: lt('Settings', 'সেটিংস'),
+		subtitle: currentUser?.full_name || currentUser?.email || lt('Patient', 'রোগী'),
+		description: lt(
+			'Manage language, privacy, and a few app-level preferences without mixing them into your profile.',
+			'প্রোফাইলের সঙ্গে না মিশিয়ে এখানে ভাষা, গোপনীয়তা ও অ্যাপ-সংক্রান্ত পছন্দগুলো নিয়ন্ত্রণ করুন।'
+		),
+		logoutLabel: lt('Logout', 'লগআউট')
+	};
+
+	$: headerActions = [
+		{ label: lt('Notifications', 'নোটিফিকেশন'), href: '/notifications' },
+		{ label: lt('Messages', 'বার্তা'), href: '/messages' },
+		{ label: lt('Profile', 'প্রোফাইল'), href: '/profile' },
+		{ type: 'logout', label: lt('Logout', 'লগআউট') }
+	];
+
+	onMount(async () => {
+		if (!currentUser || currentUser.role !== 'patient') {
 			goto('/login');
 			return;
 		}
 
-		loadProfile();
-
-		return () => {
-			unsubscribe();
-		};
-	});
-
-	async function loadProfile() {
 		try {
-			loading = true;
-			const response = await api.get(`/api/auth/patient/${userData.id}/profile`);
-			profile = response.data;
-		} catch (err) {
-			error = 'Failed to load profile';
-			console.error(err);
+			const response = await api.get(`/api/auth/patient/${currentUser.id}/profile`);
+			consentToShare = Boolean(response.data?.consent_to_share);
+		} catch (loadError) {
+			console.error('Failed to load settings:', loadError);
+			error = lt('We could not load your settings.', 'আপনার সেটিংস লোড করা যায়নি।');
 		} finally {
 			loading = false;
 		}
-	}
+	});
 
 	async function toggleConsent() {
-		try {
-			saving = true;
-			error = '';
-			message = '';
+		saving = true;
+		error = '';
+		message = '';
 
+		try {
 			const response = await api.patch(
-				`/api/auth/patient/${userData.id}/consent`,
+				`/api/auth/patient/${currentUser.id}/consent`,
 				null,
-				{ params: { consent: !profile.consent_to_share } }
+				{ params: { consent: !consentToShare } }
 			);
 
-			profile.consent_to_share = response.data.consent_to_share;
-			message = 'Consent settings updated successfully';
-
-			setTimeout(() => {
-				message = '';
-			}, 3000);
-		} catch (err) {
-			error = err.response?.data?.detail || 'Failed to update consent';
-			console.error(err);
+			consentToShare = Boolean(response.data?.consent_to_share);
+			message = lt('Privacy settings updated.', 'গোপনীয়তার সেটিংস হালনাগাদ হয়েছে।');
+		} catch (updateError) {
+			console.error('Failed to update consent:', updateError);
+			error =
+				updateError.response?.data?.detail ||
+				lt('We could not update your privacy settings.', 'আপনার গোপনীয়তার সেটিংস হালনাগাদ করা যায়নি।');
 		} finally {
 			saving = false;
 		}
 	}
+
+	function handleLogout() {
+		clearUser();
+		goto('/login');
+	}
 </script>
 
-<div class="settings-container">
-	<div class="header">
-		<button on:click={() => goto('/dashboard')} class="back-btn">
-			← Back to Dashboard
-		</button>
-		<h1>Settings</h1>
+<PatientShell {header} actions={headerActions} warnings={error ? [error] : []} on:logout={handleLogout}>
+	<div slot="main-top" class="page-stack">
+		<section class="panel-card">
+			<p class="eyebrow">{lt('Language', 'ভাষা')}</p>
+			<h2>{lt('Choose the language that feels most comfortable.', 'যে ভাষায় সবচেয়ে স্বাচ্ছন্দ্যবোধ করেন তা বেছে নিন।')}</h2>
+			<p class="description">{lt('This changes your patient-facing workspace, navigation, and supporting copy.', 'এটি আপনার রোগী-ওয়ার্কস্পেস, নেভিগেশন ও সহায়ক লেখাগুলো পরিবর্তন করবে।')}</p>
+
+			<div class="content-block">
+				<LanguagePreferencePanel />
+			</div>
+		</section>
 	</div>
 
-	{#if loading}
-		<div class="loading">Loading settings...</div>
-	{:else if profile}
-		<div class="settings-content">
-			<!-- Profile Information -->
-			<section class="settings-section">
-				<h2>Profile Information</h2>
-				<div class="info-grid">
-					<div class="info-item">
-						<p class="info-label">Email</p>
-						<p>{profile.email}</p>
-					</div>
-					<div class="info-item">
-						<p class="info-label">Full Name</p>
-						<p>{profile.full_name || 'Not provided'}</p>
-					</div>
-					<div class="info-item">
-						<p class="info-label">Date of Birth</p>
-						<p>{profile.date_of_birth || 'Not provided'}</p>
-					</div>
-					<div class="info-item">
-						<p class="info-label">Diagnosis</p>
-						<p>{profile.diagnosis || 'Not provided'}</p>
-					</div>
+	<div slot="rail" class="page-stack">
+		<section class="panel-card">
+			<p class="eyebrow">{lt('Account routes', 'অ্যাকাউন্ট রুট')}</p>
+			<div class="link-grid">
+				<a href="/profile">{lt('Open profile', 'প্রোফাইল খুলুন')}</a>
+				<a href="/dashboard">{lt('Back to dashboard', 'ড্যাশবোর্ডে ফিরুন')}</a>
+				<a href="/notifications">{lt('Notifications', 'নোটিফিকেশন')}</a>
+			</div>
+		</section>
+	</div>
+
+	<div slot="main-bottom" class="page-stack">
+		<section class="panel-card">
+			<div class="section-head">
+				<div>
+					<p class="eyebrow">{lt('Privacy', 'গোপনীয়তা')}</p>
+					<h3>{lt('Control care-team visibility', 'কেয়ার টিমের দৃশ্যমানতা নিয়ন্ত্রণ করুন')}</h3>
 				</div>
-			</section>
+				<button class="toggle-btn" on:click={toggleConsent} disabled={saving || loading}>
+					{#if saving}
+						{lt('Updating...', 'হালনাগাদ হচ্ছে...')}
+					{:else if consentToShare}
+						{lt('Disable sharing', 'শেয়ারিং বন্ধ করুন')}
+					{:else}
+						{lt('Enable sharing', 'শেয়ারিং চালু করুন')}
+					{/if}
+				</button>
+			</div>
 
-			<section class="settings-section">
-				<LanguagePreferencePanel />
-			</section>
-
-			<!-- Privacy Settings -->
-			<section class="settings-section">
-				<h2>Privacy & Data Sharing</h2>
-				<div class="consent-section">
-					<div class="consent-info">
-						<h3>Share Data with Healthcare Providers</h3>
-						<p>
-							{translateText(
-								'Allow your assigned doctor to view your training progress, test results, and performance metrics. This helps your healthcare provider monitor your cognitive health and adjust treatment plans accordingly.',
-								$locale
-							)}
-						</p>
-						{#if !profile.consent_to_share}
-							<p class="warning">
-								⚠️ {translateText(
-									'Without consent, doctors cannot view your data or provide personalized support.',
-									$locale
-								)}
-							</p>
-						{/if}
-					</div>
-
-					<div class="consent-toggle">
-						<label class="toggle-switch">
-							<input
-								type="checkbox"
-								checked={profile.consent_to_share}
-								on:change={toggleConsent}
-								disabled={saving}
-							/>
-							<span class="slider"></span>
-						</label>
-						<span class="consent-status">
-							{profile.consent_to_share
-								? translateText('Enabled', $locale)
-								: translateText('Disabled', $locale)}
-						</span>
-					</div>
+			<div class="privacy-state {consentToShare ? 'enabled' : 'disabled'}">
+				<div>
+					<p class="state-label">{lt('Current status', 'বর্তমান অবস্থা')}</p>
+					<strong>{consentToShare ? lt('Healthcare providers can review your progress.', 'স্বাস্থ্যসেবা প্রদানকারীরা আপনার অগ্রগতি দেখতে পারবেন।') : lt('Your training data stays private to you.', 'আপনার ট্রেনিং ডেটা আপাতত শুধু আপনার কাছেই থাকবে।')}</strong>
 				</div>
-			</section>
+				<p class="muted">
+					{consentToShare
+						? lt('Doctors can use your progress, baseline results, and care notes to support you more personally.', 'ডাক্তাররা আপনার অগ্রগতি, বেসলাইন ফলাফল ও কেয়ার নোট ব্যবহার করে আরও ব্যক্তিগত সহায়তা দিতে পারবেন।')
+						: lt('Without consent, doctors cannot review your patient data or provide guided monitoring.', 'কনসেন্ট ছাড়া ডাক্তাররা আপনার রোগী-সংক্রান্ত ডেটা দেখতে বা নির্দেশিত পর্যবেক্ষণ দিতে পারবেন না।')}
+				</p>
+			</div>
 
 			{#if message}
-				<div class="success-message">{message}</div>
+				<p class="success">{message}</p>
 			{/if}
-
-			{#if error}
-				<div class="error-message">{error}</div>
-			{/if}
-		</div>
-	{/if}
-</div>
+		</section>
+	</div>
+</PatientShell>
 
 <style>
-	.settings-container {
-		max-width: 900px;
-		margin: 0 auto;
-		padding: 2rem;
-	}
-
-	.header {
-		margin-bottom: 2rem;
-	}
-
-	.header h1 {
-		color: #333;
-		margin: 1rem 0;
-	}
-
-	.back-btn {
-		background: none;
-		border: none;
-		color: #667eea;
-		cursor: pointer;
-		font-size: 1rem;
-		padding: 0.5rem 0;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.back-btn:hover {
-		text-decoration: underline;
-	}
-
-	.loading {
-		text-align: center;
-		padding: 3rem;
-		color: #666;
-	}
-
-	.settings-content {
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
-	}
-
-	.settings-section {
-		background: white;
-		border-radius: 8px;
-		padding: 2rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	.settings-section h2 {
-		margin: 0 0 1.5rem 0;
-		color: #333;
-		font-size: 1.5rem;
-	}
-
-	.info-grid {
+	.page-stack {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: 1.5rem;
+		gap: 1rem;
 	}
 
-	.info-label {
-		display: block;
-		font-weight: 600;
-		color: #666;
-		margin-bottom: 0.5rem;
-		font-size: 0.9rem;
+	.panel-card {
+		padding: 1.25rem;
+		border-radius: 24px;
+		background: rgba(255, 255, 255, 0.9);
+		border: 1px solid rgba(203, 213, 225, 0.76);
+		box-shadow: 0 16px 32px rgba(15, 23, 42, 0.05);
 	}
 
-	.info-item p {
-		color: #333;
+	.eyebrow,
+	h2,
+	h3,
+	.description,
+	.muted,
+	.success,
+	.state-label {
 		margin: 0;
-		font-size: 1rem;
 	}
 
-	.consent-section {
+	.eyebrow {
+		font-size: 0.76rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #0369a1;
+	}
+
+	h2 {
+		margin-top: 0.3rem;
+		font-size: clamp(1.5rem, 3vw, 2rem);
+		line-height: 1.18;
+		color: #0f172a;
+		max-width: 28ch;
+	}
+
+	h3 {
+		margin-top: 0.25rem;
+		font-size: 1.22rem;
+		color: #0f172a;
+	}
+
+	.description,
+	.muted,
+	.success {
+		line-height: 1.6;
+		color: #64748b;
+	}
+
+	.description {
+		margin-top: 0.65rem;
+		max-width: 60ch;
+	}
+
+	.content-block {
+		margin-top: 1rem;
+	}
+
+	.section-head {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		gap: 2rem;
+		gap: 1rem;
+		align-items: flex-start;
+		margin-bottom: 1rem;
 	}
 
-	.consent-info {
-		flex: 1;
-	}
-
-	.consent-info h3 {
-		margin: 0 0 1rem 0;
-		color: #333;
-		font-size: 1.1rem;
-	}
-
-	.consent-info p {
-		margin: 0.5rem 0;
-		color: #666;
-		line-height: 1.6;
-	}
-
-	.consent-info .warning {
-		background: #fff3cd;
-		border-left: 4px solid #ffc107;
-		padding: 0.75rem;
-		margin-top: 1rem;
-		border-radius: 4px;
-		color: #856404;
-	}
-
-	.consent-toggle {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.toggle-switch {
-		position: relative;
-		display: inline-block;
-		width: 60px;
-		height: 34px;
-	}
-
-	.toggle-switch input {
-		opacity: 0;
-		width: 0;
-		height: 0;
-	}
-
-	.slider {
-		position: absolute;
+	.toggle-btn {
+		border: none;
+		border-radius: 999px;
+		padding: 0.85rem 1.1rem;
+		background: linear-gradient(135deg, #0f766e, #0ea5a4);
+		color: #fff;
+		font-weight: 800;
 		cursor: pointer;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: #ccc;
-		transition: 0.4s;
-		border-radius: 34px;
 	}
 
-	.slider:before {
-		position: absolute;
-		content: '';
-		height: 26px;
-		width: 26px;
-		left: 4px;
-		bottom: 4px;
-		background-color: white;
-		transition: 0.4s;
-		border-radius: 50%;
-	}
-
-	input:checked + .slider {
-		background-color: #667eea;
-	}
-
-	input:checked + .slider:before {
-		transform: translateX(26px);
-	}
-
-	input:disabled + .slider {
-		opacity: 0.5;
+	.toggle-btn:disabled {
+		opacity: 0.6;
 		cursor: not-allowed;
 	}
 
-	.consent-status {
-		font-weight: 600;
-		color: #333;
-		font-size: 0.9rem;
-	}
-
-	.success-message {
-		background: #d4edda;
-		color: #155724;
+	.privacy-state {
 		padding: 1rem;
-		border-radius: 4px;
-		border-left: 4px solid #28a745;
-		margin-top: 1rem;
+		border-radius: 18px;
+		border: 1px solid rgba(203, 213, 225, 0.76);
+		display: grid;
+		gap: 0.55rem;
 	}
 
-	.error-message {
-		background: #f8d7da;
-		color: #721c24;
-		padding: 1rem;
-		border-radius: 4px;
-		border-left: 4px solid #dc3545;
-		margin-top: 1rem;
+	.privacy-state.enabled {
+		background: rgba(236, 253, 245, 0.92);
+		border-color: rgba(52, 211, 153, 0.38);
 	}
 
-	@media (max-width: 768px) {
-		.settings-container {
-			padding: 1rem;
-		}
+	.privacy-state.disabled {
+		background: rgba(248, 250, 252, 0.9);
+	}
 
-		.consent-section {
+	.state-label {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: #64748b;
+	}
+
+	.privacy-state strong {
+		color: #0f172a;
+	}
+
+	.link-grid {
+		display: grid;
+		gap: 0.75rem;
+		margin-top: 0.8rem;
+	}
+
+	.link-grid a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.82rem 1rem;
+		border-radius: 999px;
+		text-decoration: none;
+		background: #f8fafc;
+		border: 1px solid rgba(203, 213, 225, 0.8);
+		color: #0f172a;
+		font-weight: 800;
+	}
+
+	.success {
+		margin-top: 0.9rem;
+		color: #047857;
+		font-weight: 700;
+	}
+
+	@media (max-width: 900px) {
+		.section-head {
 			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.info-grid {
-			grid-template-columns: 1fr;
 		}
 	}
 </style>

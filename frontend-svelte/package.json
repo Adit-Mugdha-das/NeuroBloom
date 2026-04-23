@@ -7,10 +7,11 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"audit:bangla-ui": "node ./scripts/audit-bangla-ui.mjs",
+		"audit:patient-i18n": "node ./scripts/audit-patient-native-i18n.mjs",
 		"report:bangla-ui": "node ./scripts/localization-verification-report.mjs"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
 		"svelte": "^5.0.0",

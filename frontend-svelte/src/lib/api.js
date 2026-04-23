@@ -1,13 +1,18 @@
 import axios from 'axios';
 import { queueLocalizationRefresh } from '$lib/i18n';
 
-const resolveApiBaseUrl = () => {
-	if (typeof window === 'undefined') return 'http://127.0.0.1:8000';
-	const host = window.location.hostname === 'localhost' ? 'localhost' : '127.0.0.1';
-	return `${window.location.protocol}//${host}:8000`;
-};
+const normalizeApiBaseUrl = (value = '') => value.trim().replace(/\/+$/, '');
 
-export const API_BASE_URL = resolveApiBaseUrl();
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL || '');
+
+export const apiUrl = (path = '') => {
+	if (!path) {
+		return API_BASE_URL;
+	}
+
+	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+	return `${API_BASE_URL}${normalizedPath}`;
+};
 
 const api = axios.create({
 	baseURL: API_BASE_URL,
@@ -82,7 +87,36 @@ export const baseline = {
 	}
 };
 
+export const patientJourney = {
+	get: async (userId) => {
+		const response = await api.get(`/api/patient-journey/${userId}?_t=${Date.now()}`);
+		return response.data;
+	}
+};
+
 export const training = {
+	createSessionContext: async (payload) => {
+		const response = await api.post('/api/training/session-context', payload);
+		return response.data;
+	},
+
+	getRecentContext: async (userId, limit = 10) => {
+		const response = await api.get(`/api/training/session-context/${userId}/recent`, {
+			params: { limit }
+		});
+		return response.data;
+	},
+
+	getLongitudinalAnalytics: async (userId, days = 30, domain = null) => {
+		const response = await api.get(`/api/training/advanced-analytics/${userId}/longitudinal`, {
+			params: {
+				days,
+				...(domain ? { domain } : {})
+			}
+		});
+		return response.data;
+	},
+
 	linkContextToSession: async (sessionId, contextId) => {
 		const response = await api.patch(`/api/training/training-session/${sessionId}/link-context`, null, {
 			params: { context_id: contextId }

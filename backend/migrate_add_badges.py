@@ -6,15 +6,14 @@ Run this script to add badge tracking to the database
 import psycopg2
 from psycopg2 import sql
 
-# Database connection string
-DATABASE_URL = "postgresql://postgres:2107118@localhost:5432/neurobloom_db"
+from app.core.config import settings
 
 def migrate():
     """Add user_badges table"""
     conn = None
     try:
         # Connect to database
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(settings.DATABASE_URL)
         cur = conn.cursor()
         
         print("Creating user_badges table...")

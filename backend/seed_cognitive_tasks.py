@@ -6,13 +6,12 @@ Run this script to populate the database with all available cognitive tasks.
 """
 
 from sqlmodel import Session, select
+
 from app.core.config import engine
 from app.models.cognitive_task import CognitiveTask
 
-def seed_cognitive_tasks():
-    """Populate cognitive_tasks table with all task variants"""
-    
-    tasks = [
+def get_cognitive_task_seed_data():
+    return [
         # ============================================
         # WORKING MEMORY DOMAIN
         # ============================================
@@ -562,10 +561,17 @@ def seed_cognitive_tasks():
             "instructions": "Identify the central target AND locate the peripheral target. Stimuli appear very briefly."
         }
     ]
-    
+
+
+def seed_cognitive_tasks(verbose: bool = True):
+    """Populate cognitive_tasks table with all task variants."""
+
+    tasks = get_cognitive_task_seed_data()
+
     with Session(engine) as session:
-        print("🌱 Seeding cognitive_tasks table...")
-        print(f"📊 Total tasks to seed: {len(tasks)}\n")
+        if verbose:
+            print("🌱 Seeding cognitive_tasks table...")
+            print(f"📊 Total tasks to seed: {len(tasks)}\n")
         
         added_count = 0
         skipped_count = 0
@@ -577,7 +583,8 @@ def seed_cognitive_tasks():
             ).first()
             
             if existing:
-                print(f"⏭️  Skipping {task_data['task_code']} (already exists)")
+                if verbose:
+                    print(f"⏭️  Skipping {task_data['task_code']} (already exists)")
                 skipped_count += 1
                 continue
             
@@ -586,27 +593,40 @@ def seed_cognitive_tasks():
             session.add(task)
             
             baseline_marker = "⭐ BASELINE" if task_data["is_baseline_task"] else ""
-            print(f"✅ Added: {task_data['task_code']} - {task_data['task_name']} {baseline_marker}")
+            if verbose:
+                print(f"✅ Added: {task_data['task_code']} - {task_data['task_name']} {baseline_marker}")
             added_count += 1
         
         session.commit()
-        
-        print(f"\n{'='*60}")
-        print(f"🎉 Seeding Complete!")
-        print(f"{'='*60}")
-        print(f"✅ Added: {added_count} tasks")
-        print(f"⏭️  Skipped: {skipped_count} tasks (already existed)")
-        print(f"📊 Total tasks in database: {added_count + skipped_count}")
-        print(f"\n📋 Task Distribution:")
-        
-        # Count by domain
+
+        distribution = {}
         with Session(engine) as count_session:
             domains = ["working_memory", "processing_speed", "attention", "flexibility", "planning", "visual_scanning"]
             for domain in domains:
                 count = len(count_session.exec(
                     select(CognitiveTask).where(CognitiveTask.domain == domain)
                 ).all())
+                distribution[domain] = count
+                if verbose:
+                    print(f"   {domain}: {count} tasks")
+
+        if verbose:
+            print(f"\n{'='*60}")
+            print("🎉 Seeding Complete!")
+            print(f"{'='*60}")
+            print(f"✅ Added: {added_count} tasks")
+            print(f"⏭️  Skipped: {skipped_count} tasks (already existed)")
+            print(f"📊 Total tasks in database: {added_count + skipped_count}")
+            print("\n📋 Task Distribution:")
+            for domain, count in distribution.items():
                 print(f"   {domain}: {count} tasks")
+
+        return {
+            "added": added_count,
+            "skipped": skipped_count,
+            "total": added_count + skipped_count,
+            "distribution": distribution,
+        }
 
 if __name__ == "__main__":
     seed_cognitive_tasks()

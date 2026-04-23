@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -70,7 +71,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				console.log('🛠️ Pattern Comparison - Dev Mode - Using URL difficulty:', userDifficulty);
 			} else {
 				// Normal mode - fetch from training plan
-				const planRes = await fetch(`http://localhost:8000/api/training/training-plan/${userId}`);
+				const planRes = await fetch(`${API_BASE_URL}/api/training/training-plan/${userId}`);
 				const plan = await planRes.json();
 
 				if (plan && plan.current_difficulty) {
@@ -86,7 +87,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			difficulty = userDifficulty;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/pattern-comparison/generate/${userId}?difficulty=${difficulty}`,
+				`${API_BASE_URL}/api/training/tasks/pattern-comparison/generate/${userId}?difficulty=${difficulty}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' }
@@ -192,7 +193,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			const userId = userData.id;
 
 			const response = await fetch(
-				`http://localhost:8000/api/training/tasks/pattern-comparison/submit/${userId}`,
+				`${API_BASE_URL}/api/training/tasks/pattern-comparison/submit/${userId}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

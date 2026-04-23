@@ -1,4 +1,5 @@
 <script>
+	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BadgeNotification from '$lib/components/BadgeNotification.svelte';
@@ -204,7 +205,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				difficulty = parseInt(urlDifficulty);
 			} else {
 				const baselineResponse = await fetch(
-					`http://localhost:8000/api/baseline/${currentUser.id}`
+					`${API_BASE_URL}/api/baseline/${currentUser.id}`
 				);
 				if (baselineResponse.ok) {
 					const baselineData = await baselineResponse.json();
@@ -224,7 +225,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			}
 
 			const response = await fetch(
-				`http://localhost:8000/api/tasks/dccs/generate?difficulty=${difficulty}`,
+				`${API_BASE_URL}/api/tasks/dccs/generate?difficulty=${difficulty}`,
 				{ method: 'POST', headers: { 'Content-Type': 'application/json' } }
 			);
 			if (!response.ok) throw new Error('Failed to load session');
@@ -364,7 +365,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			error = null;
 			taskId = $page.url.searchParams.get('taskId');
 			const submitResponse = await fetch(
-				`http://localhost:8000/api/training/tasks/dccs/submit/${currentUser.id}`,
+				`${API_BASE_URL}/api/training/tasks/dccs/submit/${currentUser.id}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

@@ -121,7 +121,7 @@ class TaskRotationService:
         available_tasks = self.get_available_tasks(domain, include_baseline=True)
         
         if not available_tasks:
-            raise ValueError(f"No tasks available for domain: {domain}")
+            return None
         
         # Get recent task history
         config = self.ROTATION_CONFIG.get(domain, {'strategy': 'random', 'exclude_last_n': 2})

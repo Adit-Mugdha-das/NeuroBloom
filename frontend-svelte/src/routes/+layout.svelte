@@ -1,10 +1,8 @@
 <script>
 	import { afterNavigate } from '$app/navigation';
-	import { dev } from '$app/environment';
 	import { page } from '$app/stores';
 	import { training } from '$lib/api';
 	import PublicLanguageSwitcher from '$lib/components/PublicLanguageSwitcher.svelte';
-	import DevPanel from '$lib/components/DevPanel.svelte';
 	import {
 		initializeLocale,
 		localize,
@@ -120,11 +118,6 @@
 	<div class="app-localization-root">
 		<slot />
 	</div>
-{/if}
-
-<!-- Dev Tools Panel (only shows in development) -->
-{#if dev}
-	<DevPanel />
 {/if}
 
 <style>
