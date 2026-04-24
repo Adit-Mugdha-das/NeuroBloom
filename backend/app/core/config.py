@@ -103,6 +103,9 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+if not settings.DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not configured")
+
 engine = create_engine(settings.DATABASE_URL, echo=settings.SQL_ECHO, pool_pre_ping=True)
 
 
