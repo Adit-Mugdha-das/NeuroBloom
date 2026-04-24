@@ -839,12 +839,17 @@
 	.concern-card,
 	.trend-card,
 	.improvement-card,
-	.modal-content,
 	.difficulty-card,
 	.focus-category {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+	}
+
+	.modal-content {
 		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 	}
 
 	.hero-card,
@@ -923,7 +928,7 @@
 	.difficulty-card {
 		border-radius: 20px;
 		padding: 1rem;
-		background: #f9fafb;
+		background: #eef2ff;
 	}
 
 	.hero-meta strong,
@@ -1061,7 +1066,7 @@
 	.adherence-score {
 		padding: 1rem;
 		border-radius: 24px;
-		background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%);
+		background: linear-gradient(160deg, #e0e7ff 0%, #ede9fe 100%);
 		text-align: center;
 	}
 
@@ -1190,7 +1195,7 @@
 	.form-group textarea {
 		width: 100%;
 		border: 1px solid #d1d5db;
-		border-radius: 18px;
+		border-radius: 10px;
 		padding: 0.9rem 1rem;
 		font: inherit;
 		background: #f9fafb;
@@ -1212,9 +1217,9 @@
 	.limit-card {
 		padding: 1rem;
 		border-radius: 20px;
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 		margin-bottom: 0;
 	}
 

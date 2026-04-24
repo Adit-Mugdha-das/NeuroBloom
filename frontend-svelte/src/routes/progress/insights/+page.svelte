@@ -198,87 +198,115 @@
 </div>
 
 <style>
-	.glass-card,
-	.state-panel {
-		background: rgba(248, 250, 252, 0.84);
-		backdrop-filter: blur(10px);
-		border: 1px solid rgba(255, 255, 255, 0.72);
-		border-radius: 22px;
-		padding: 1.25rem;
-		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
-	}
+	
 
-	.action-link {
-		display: inline-flex;
-		margin-top: 1rem;
-		padding: 0.8rem 1.1rem;
-		border-radius: 999px;
-		font-weight: 700;
-		text-decoration: none;
-		background: linear-gradient(135deg, #4f46e5, #6366f1);
-		color: white;
-	}
+	.progress-panel {
+	width: 100%;
+	max-width: none;
+}
 
-	.summary-shell,
-	.detail-grid {
-		margin-bottom: 1rem;
+.glass-card,
+.state-panel {
+	background: rgba(248, 250, 252, 0.84);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.72);
+	border-radius: 22px;
+	padding: 1.25rem;
+	box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+	box-sizing: border-box;
+}
+
+.action-link {
+	display: inline-flex;
+	margin-top: 1rem;
+	padding: 0.8rem 1.1rem;
+	border-radius: 999px;
+	font-weight: 700;
+	text-decoration: none;
+	background: linear-gradient(135deg, #4f46e5, #6366f1);
+	color: white;
+}
+
+/* ===== FIXED WIDTH SECTIONS ===== */
+
+.summary-shell,
+.detail-grid {
+	margin-bottom: 1rem;
+	width: 100%;
+}
+
+.summary-head,
+.section-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+/* 3-column areas stay same */
+.summary-grid,
+.correlation-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+/* 🔥 FIX: make last 2 boxes full width */
+.detail-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+	width: 100%;
+}
+
+.detail-card {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* ===== CONTENT STYLES ===== */
+
+.context-list {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.context-row,
+.summary-card,
+.correlation-card {
+	padding: 1rem;
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.65);
+}
+
+.card-label,
+.summary-label {
+	margin: 0;
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	font-weight: 800;
+	color: #64748b;
+}
+
+h2,
+h3,
+p {
+	margin-top: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 860px) {
+	.summary-grid,
+	.detail-grid,
+	.correlation-grid {
+		grid-template-columns: 1fr;
 	}
 
 	.summary-head,
 	.section-head {
-		display: flex;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 1rem;
+		flex-direction: column;
 	}
-
-	.summary-grid,
-	.detail-grid,
-	.correlation-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 1rem;
-	}
-
-	.context-list {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.context-row,
-	.summary-card,
-	.correlation-card {
-		padding: 1rem;
-		border-radius: 16px;
-		background: rgba(255, 255, 255, 0.65);
-	}
-
-	.card-label,
-	.summary-label {
-		margin: 0;
-		font-size: 0.78rem;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		font-weight: 800;
-		color: #64748b;
-	}
-
-	h2,
-	h3,
-	p {
-		margin-top: 0;
-	}
-
-	@media (max-width: 860px) {
-		.summary-grid,
-		.detail-grid,
-		.correlation-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.summary-head,
-		.section-head {
-			flex-direction: column;
-		}
-	}
+}
 </style>

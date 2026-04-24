@@ -88,13 +88,13 @@
 			<a class="action-link" href={actionHref}>{actionLabel}</a>
 		</section>
 	{:else}
-		<section class="glass-card intro-card">
-			<p class="card-label">{lt('Domains are analytics only', 'ডোমেইন শুধু অ্যানালিটিক্স')}</p>
-			<h2>{lt('Each card shows how one cognitive domain is responding to training.', 'প্রতিটি কার্ড দেখায় একটি কগনিটিভ ডোমেইন ট্রেনিংয়ে কেমন সাড়া দিচ্ছে।')}</h2>
-			<p>{lt('Use this page to review performance patterns, not to launch tasks.', 'এই পেজটি ব্যবহার করুন পারফরম্যান্স প্যাটার্ন দেখার জন্য, টাস্ক চালুর জন্য নয়।')}</p>
-		</section>
-
 		<section class="domains-grid">
+			<div class="glass-card intro-card">
+				<p class="card-label">{lt('Domains are analytics only', 'ডোমেইন শুধু অ্যানালিটিক্স')}</p>
+				<h2>{lt('Each card shows how one cognitive domain is responding to training.', 'প্রতিটি কার্ড দেখায় একটি কগনিটিভ ডোমেইন ট্রেনিংয়ে কেমন সাড়া দিচ্ছে।')}</h2>
+				<p>{lt('Use this page to review performance patterns, not to launch tasks.', 'এই পেজটি ব্যবহার করুন পারফরম্যান্স প্যাটার্ন দেখার জন্য, টাস্ক চালুর জন্য নয়।')}</p>
+			</div>
+
 			{#each domainCards as entry}
 				<article class="glass-card domain-card {getTrendTone(entry.data.improvement)}">
 					<div class="card-topline">
@@ -146,8 +146,20 @@
 		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 	}
 
+	/* Intro card is a normal grid item — same width as domain cards */
 	.intro-card {
-		margin-bottom: 1rem;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(79, 70, 229, 0.04) 100%);
+		border-color: rgba(99, 102, 241, 0.22);
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	/* If the total number of items is odd, the last domain card is alone.
+	   intro-card is child(1), so domain cards start at child(2).
+	   Even domain count → 1 + even = odd total → last card is nth-child(odd). */
+	.domain-card:last-child:nth-child(odd) {
+		grid-column: 1 / -1;
 	}
 
 	.action-link {
@@ -184,6 +196,13 @@
 		margin: 0.25rem 0 0;
 		font-size: 1.7rem;
 		color: #111827;
+	}
+
+	.domain-card {
+		min-height: 160px;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
 	}
 
 	.metric-row {

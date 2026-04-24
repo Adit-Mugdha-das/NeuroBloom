@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
-	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import api from '$lib/api.js';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -214,10 +214,10 @@
 	.table-card,
 	.state-card,
 	.empty-card {
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
 		border-radius: 24px;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 	}
 
 	.toolbar {

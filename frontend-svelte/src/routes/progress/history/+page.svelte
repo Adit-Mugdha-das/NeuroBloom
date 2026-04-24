@@ -114,63 +114,63 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
-				<p>{lt('Loading training history...', 'ট্রেনিং হিস্ট্রি লোড হচ্ছে...')}</p>
-			</section>
-		{:else if error}
-			<section class="state-panel glass-card">
-				<h2>{lt('Training history unavailable', 'ট্রেনিং হিস্ট্রি পাওয়া যাচ্ছে না')}</h2>
-				<p>{error}</p>
-			</section>
-		{:else if history.length === 0}
-			<section class="state-panel glass-card">
-				<h2>{lt('No sessions yet', 'এখনো কোনো সেশন নেই')}</h2>
-				<p>{lt('Once you complete training sessions, they will appear here in a compact timeline.', 'ট্রেনিং সেশন সম্পন্ন করলে সেগুলো এখানে একটি সংক্ষিপ্ত টাইমলাইনে দেখা যাবে।')}</p>
-			</section>
-		{:else}
-			<section class="glass-card list-shell">
-				<div class="list-head">
-					<div>
-						<p class="card-label">{lt('Training history', 'ট্রেনিং হিস্ট্রি')}</p>
-						<h2>{lt('Recent sessions', 'সাম্প্রতিক সেশন')}</h2>
-					</div>
-					<div class="list-actions">
-						<p class="list-note">{lt('A compact record of your recent training sessions.', 'আপনার সাম্প্রতিক ট্রেনিং সেশনগুলোর একটি সংক্ষিপ্ত রেকর্ড।')}</p>
-						<div class="action-row">
-							<button class="action-btn" on:click={handleDownloadPdf}>{lt('PDF report', 'PDF রিপোর্ট')}</button>
-							<button class="action-btn" on:click={handleDownloadCsv}>{lt('CSV export', 'CSV এক্সপোর্ট')}</button>
-						</div>
-					</div>
-				</div>
-
-			<div class="history-list">
-				{#each history as session}
-					<article class="history-row">
-						<div class="history-main">
-							<p class="row-domain">{getDomainName(session.domain, $locale)}</p>
-							<p class="row-date">{formatShortDate(session.created_at, $locale)}</p>
-						</div>
-						<div class="history-metrics">
-							<div>
-								<p class="metric-label">{lt('Score', 'স্কোর')}</p>
-								<p class="metric-value" style="color: {getScoreColor(session.score)}">{session.score.toFixed(1)}</p>
-							</div>
-							<div>
-								<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
-								<p class="metric-value">{session.accuracy.toFixed(1)}%</p>
-							</div>
-							<div>
-								<p class="metric-label">{lt('Duration', 'সময়')}</p>
-								<p class="metric-value">{formatDuration(session.duration, $locale)}</p>
-							</div>
-						</div>
-					</article>
-				{/each}
-			</div>
+			<p>{lt('Loading training history...', 'ট্রেনিং হিস্ট্রি লোড হচ্ছে...')}</p>
 		</section>
+	{:else if error}
+		<section class="state-panel glass-card">
+			<h2>{lt('Training history unavailable', 'ট্রেনিং হিস্ট্রি পাওয়া যাচ্ছে না')}</h2>
+			<p>{error}</p>
+		</section>
+	{:else if history.length === 0}
+		<section class="state-panel glass-card">
+			<h2>{lt('No sessions yet', 'এখনো কোনো সেশন নেই')}</h2>
+			<p>{lt('Once you complete training sessions, they will appear here in a compact timeline.', 'ট্রেনিং সেশন সম্পন্ন করলে সেগুলো এখানে একটি সংক্ষিপ্ত টাইমলাইনে দেখা যাবে।')}</p>
+		</section>
+	{:else}
+		<div class="history-panel">
+			<div class="glass-card history-header">
+				<div class="header-copy">
+					<p class="card-label">{lt('Training history', 'ট্রেনিং হিস্ট্রি')}</p>
+					<h2>{lt('Recent sessions', 'সাম্প্রতিক সেশন')}</h2>
+					<p class="header-note">{lt('A compact record of your recent training sessions.', 'আপনার সাম্প্রতিক ট্রেনিং সেশনগুলোর একটি সংক্ষিপ্ত রেকর্ড।')}</p>
+				</div>
+				<div class="action-row">
+					<button class="action-btn" on:click={handleDownloadPdf}>{lt('PDF report', 'PDF রিপোর্ট')}</button>
+					<button class="action-btn" on:click={handleDownloadCsv}>{lt('CSV export', 'CSV এক্সপোর্ট')}</button>
+				</div>
+			</div>
+
+			{#each history as session}
+				<article class="glass-card history-row">
+					<div class="history-main">
+						<p class="row-domain">{getDomainName(session.domain, $locale)}</p>
+						<p class="row-date">{formatShortDate(session.created_at, $locale)}</p>
+					</div>
+					<div class="history-metrics">
+						<div>
+							<p class="metric-label">{lt('Score', 'স্কোর')}</p>
+							<p class="metric-value" style="color: {getScoreColor(session.score)}">{session.score.toFixed(1)}</p>
+						</div>
+						<div>
+							<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
+							<p class="metric-value">{session.accuracy.toFixed(1)}%</p>
+						</div>
+						<div>
+							<p class="metric-label">{lt('Duration', 'সময়')}</p>
+							<p class="metric-value">{formatDuration(session.duration, $locale)}</p>
+						</div>
+					</div>
+				</article>
+			{/each}
+		</div>
 	{/if}
 </div>
 
 <style>
+	.progress-panel {
+		width: 100%;
+	}
+
 	.glass-card,
 	.state-panel {
 		background: rgba(248, 250, 252, 0.84);
@@ -179,14 +179,22 @@
 		border-radius: 22px;
 		padding: 1.25rem;
 		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+		box-sizing: border-box;
 	}
 
-	.list-head {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
-		gap: 1rem;
-		margin-bottom: 1rem;
+	.history-panel {
+	width: 100%;
+	margin: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.75rem;
+}
+
+	.history-header,
+	.history-row,
+	.state-panel {
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.card-label,
@@ -199,32 +207,39 @@
 		color: #64748b;
 	}
 
-	.list-head h2,
+	.history-header h2,
 	.state-panel h2 {
 		margin: 0.25rem 0 0;
 		font-size: 1.7rem;
 		color: #111827;
 	}
 
-	.list-note,
-	.state-panel p {
-		margin: 0;
-		line-height: 1.55;
-		color: #64748b;
-	}
-
-	.list-actions {
+	.history-header {
 		display: flex;
+		justify-content: space-between;
 		align-items: center;
 		gap: 1rem;
-		flex-wrap: wrap;
-		justify-content: flex-end;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(79, 70, 229, 0.04) 100%);
+		border-color: rgba(99, 102, 241, 0.22);
+	}
+
+	.header-copy {
+		min-width: 0;
+	}
+
+	.header-note,
+	.state-panel p {
+		margin: 0.4rem 0 0;
+		line-height: 1.55;
+		color: #64748b;
+		font-size: 0.9rem;
 	}
 
 	.action-row {
 		display: flex;
 		gap: 0.6rem;
 		flex-wrap: wrap;
+		flex-shrink: 0;
 	}
 
 	.action-btn {
@@ -237,26 +252,24 @@
 		color: #4338ca;
 	}
 
-	.history-list {
-		display: grid;
-		gap: 0.75rem;
-	}
-
 	.history-row {
 		display: flex;
 		justify-content: space-between;
 		gap: 1rem;
 		align-items: center;
-		padding: 1rem;
-		border-radius: 16px;
-		background: rgba(255, 255, 255, 0.72);
-		border: 1px solid rgba(255, 255, 255, 0.8);
+		min-height: 78px;
+	}
+
+	.history-main {
+		min-width: 0;
+		flex: 1;
 	}
 
 	.row-domain {
 		margin: 0;
 		font-weight: 700;
 		color: #111827;
+		text-transform: capitalize;
 	}
 
 	.row-date {
@@ -267,9 +280,9 @@
 
 	.history-metrics {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(90px, 1fr));
 		gap: 1rem;
-		min-width: 420px;
+		flex: 0 0 55%;
 	}
 
 	.metric-value {
@@ -279,19 +292,19 @@
 	}
 
 	@media (max-width: 860px) {
-		.list-head,
+		.history-panel {
+			width: 100%;
+		}
+
+		.history-header,
 		.history-row {
 			flex-direction: column;
 			align-items: flex-start;
 		}
 
-		.list-actions {
-			justify-content: flex-start;
-		}
-
 		.history-metrics {
 			grid-template-columns: 1fr;
-			min-width: 0;
+			flex: none;
 			width: 100%;
 		}
 	}

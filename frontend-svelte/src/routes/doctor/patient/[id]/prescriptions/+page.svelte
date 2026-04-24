@@ -659,10 +659,10 @@
 	.composer-panel,
 	.prescription-card,
 	.hero-metric {
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
 		border-radius: 24px;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 	}
 
 	.hero-card,
@@ -676,7 +676,7 @@
 		display: grid;
 		grid-template-columns: 1fr auto;
 		gap: 1rem;
-		background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+		background: linear-gradient(135deg, #e0e7ff 0%, #eff6ff 100%);
 	}
 
 	.eyebrow-copy,

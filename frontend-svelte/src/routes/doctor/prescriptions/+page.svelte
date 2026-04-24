@@ -148,23 +148,23 @@
 	.summary-card,
 	.patient-card,
 	.latest-card {
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
 		border-radius: 24px;
 		padding: 1.2rem;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 	}
 
 	.summary-card {
-		background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+		background: linear-gradient(160deg, #f0f4ff 0%, #f8fafc 100%);
 	}
 
 	.summary-card.teal {
-		background: linear-gradient(180deg, #ffffff 0%, #ecfeff 100%);
+		background: linear-gradient(160deg, #ccfbf1 0%, #f0fdfa 100%);
 	}
 
 	.summary-card.indigo {
-		background: linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+		background: linear-gradient(160deg, #e0e7ff 0%, #f0f4ff 100%);
 	}
 
 	.summary-card.cyan {

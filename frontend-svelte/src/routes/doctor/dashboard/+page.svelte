@@ -1,8 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
-	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
-	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
 	import api from '$lib/api.js';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -204,18 +203,6 @@
 	title="Dashboard"
 	subtitle="A compact clinician overview focused on attention, pending actions, and a quick cohort readout."
 >
-	<svelte:fragment slot="actions">
-		<button class="header-action" on:click={() => goto('/doctor/messages')}>
-			Messages
-		</button>
-		<button class="header-action notification" on:click={() => goto('/doctor/notifications')}>
-			Notifications
-			{#if unreadCount > 0}
-				<span class="action-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
-			{/if}
-		</button>
-	</svelte:fragment>
-
 	{#if notificationToast}
 		<div class="toast-shell" role="status" aria-live="polite">
 			<div class="notification-toast">
@@ -235,14 +222,6 @@
 			<p>{error}</p>
 		</section>
 	{:else}
-		<section class="panel-section">
-			<LanguagePreferencePanel
-				title="Language Preference"
-				description="Set the clinician workspace language for dashboards, notifications, and task-facing copy."
-				compact={true}
-			/>
-		</section>
-
 		<section class="snapshot-grid">
 			{#each snapshotCards as card}
 				<article class="snapshot-card tone-{card.tone}">
@@ -369,7 +348,6 @@
 </DoctorWorkspaceShell>
 
 <style>
-	.header-action,
 	.primary-btn,
 	.outline-btn {
 		border-radius: 999px;
@@ -379,7 +357,6 @@
 		transition: 180ms ease;
 	}
 
-	.header-action,
 	.outline-btn {
 		border: 1px solid #d1d5db;
 		background: #ffffff;
@@ -393,7 +370,6 @@
 		box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18);
 	}
 
-	.header-action:hover,
 	.outline-btn:hover {
 		background: #eef2ff;
 		border-color: #c7d2fe;
@@ -401,19 +377,6 @@
 
 	.primary-btn:hover {
 		background: #4338ca;
-	}
-
-	.notification {
-		position: relative;
-	}
-
-	.action-badge {
-		margin-left: 0.55rem;
-		padding: 0.2rem 0.45rem;
-		border-radius: 999px;
-		background: #ef4444;
-		color: #ffffff;
-		font-size: 0.75rem;
 	}
 
 	.toast-shell {
@@ -431,15 +394,17 @@
 	.cohort-card,
 	.state-card,
 	.empty-card {
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		box-shadow: 0 16px 30px rgba(15, 23, 42, 0.05);
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 	}
 
 	.notification-toast {
 		width: min(360px, calc(100vw - 2rem));
-		border-radius: 22px;
+		border-radius: 16px;
 		padding: 1rem 1.1rem;
+		background: #ffffff;
+		box-shadow: 0 8px 32px rgba(15, 23, 42, 0.14);
 	}
 
 	.toast-label {
@@ -520,12 +485,12 @@
 	}
 
 	.tone-primary {
-		background: linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+		background: linear-gradient(160deg, #e0e7ff 0%, #f0f4ff 100%);
 		border-color: #c7d2fe;
 	}
 
 	.tone-positive {
-		background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+		background: linear-gradient(160deg, #d1fae5 0%, #f0fdf4 100%);
 		border-color: #bbf7d0;
 	}
 
