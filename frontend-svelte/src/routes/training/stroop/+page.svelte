@@ -409,28 +409,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-num">1</span>
+						<span class="rule-num">{n(1)}</span>
 						<div class="rule-text">
 							<strong>{t('See the Stimulus')}</strong>
 							<span>{t('A color patch or a colored word appears on screen')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">2</span>
+						<span class="rule-num">{n(2)}</span>
 						<div class="rule-text">
 							<strong>{t('Identify Ink Color')}</strong>
 							<span>{t('Ignore the word meaning — focus only on the ink color')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">3</span>
+						<span class="rule-num">{n(3)}</span>
 						<div class="rule-text">
 							<strong>{t('Click the Button')}</strong>
 							<span>{t('Tap the color button that matches the ink color')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">4</span>
+						<span class="rule-num">{n(4)}</span>
 						<div class="rule-text">
 							<strong>{t('Respond Quickly')}</strong>
 							<span>{t('Accuracy first, then speed — both are measured')}</span>
@@ -519,22 +519,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="steps-grid">
 					<div class="step-card">
-						<span class="step-num">1</span>
+						<span class="step-num">{n(1)}</span>
 						<strong>{t('See the Stimulus')}</strong>
 						<span>{t('Color patch or colored word appears')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">2</span>
+						<span class="step-num">{n(2)}</span>
 						<strong>{t('Identify Ink Color')}</strong>
 						<span>{t('Ignore what the word says')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">3</span>
+						<span class="step-num">{n(3)}</span>
 						<strong>{t('Click the Button')}</strong>
 						<span>{t('Tap the matching color button')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">4</span>
+						<span class="step-num">{n(4)}</span>
 						<strong>{t('Respond Quickly')}</strong>
 						<span>{t('Speed and accuracy both measured')}</span>
 					</div>

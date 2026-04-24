@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatDateTime, formatNumber, formatPercent, locale, localeText } from '$lib/i18n';
 	import { formatDuration, formatShortDate, getDomainName, getScoreColor } from '$lib/progress';
 	import { user } from '$lib/stores';
 	import { downloadCSV } from '$lib/utils/chartDownload';
@@ -17,6 +17,9 @@
 	});
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
+	const oneDecimal = (value) =>
+		formatNumber(value, $locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	const pct = (value) => formatPercent(value, $locale, { maximumFractionDigits: 1 });
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -47,8 +50,8 @@
 		const exportRows = history.map((session) => ({
 			date: formatShortDate(session.created_at, $locale),
 			domain: getDomainName(session.domain, $locale),
-			score: session.score.toFixed(1),
-			accuracy: session.accuracy.toFixed(1),
+			score: oneDecimal(session.score),
+			accuracy: oneDecimal(session.accuracy),
 			duration: formatDuration(session.duration, $locale)
 		}));
 
@@ -64,8 +67,8 @@
 					<tr>
 						<td>${formatShortDate(session.created_at, $locale)}</td>
 						<td>${getDomainName(session.domain, $locale)}</td>
-						<td>${session.score.toFixed(1)}</td>
-						<td>${session.accuracy.toFixed(1)}%</td>
+						<td>${oneDecimal(session.score)}</td>
+						<td>${pct(session.accuracy)}</td>
 						<td>${formatDuration(session.duration, $locale)}</td>
 					</tr>`
 			)
@@ -89,7 +92,7 @@
 				</head>
 				<body>
 					<h1>${lt('NeuroBloom Training History', 'NeuroBloom ট্রেনিং হিস্ট্রি')}</h1>
-					<p>${lt('Generated on', 'তৈরি হয়েছে')} ${new Date().toLocaleString()}</p>
+					<p>${lt('Generated on', 'তৈরি হয়েছে')} ${formatDateTime(new Date(), $locale)}</p>
 					<table>
 						<thead>
 							<tr>
@@ -114,7 +117,62 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
+<<<<<<< HEAD
 			<p>{lt('Loading training history...', 'ট্রেনিং হিস্ট্রি লোড হচ্ছে...')}</p>
+=======
+				<p>{lt('Loading training history...', 'ট্রেনিং হিস্ট্রি লোড হচ্ছে...')}</p>
+			</section>
+		{:else if error}
+			<section class="state-panel glass-card">
+				<h2>{lt('Training history unavailable', 'ট্রেনিং হিস্ট্রি পাওয়া যাচ্ছে না')}</h2>
+				<p>{error}</p>
+			</section>
+		{:else if history.length === 0}
+			<section class="state-panel glass-card">
+				<h2>{lt('No sessions yet', 'এখনো কোনো সেশন নেই')}</h2>
+				<p>{lt('Once you complete training sessions, they will appear here in a compact timeline.', 'ট্রেনিং সেশন সম্পন্ন করলে সেগুলো এখানে একটি সংক্ষিপ্ত টাইমলাইনে দেখা যাবে।')}</p>
+			</section>
+		{:else}
+			<section class="glass-card list-shell">
+				<div class="list-head">
+					<div>
+						<p class="card-label">{lt('Training history', 'ট্রেনিং হিস্ট্রি')}</p>
+						<h2>{lt('Recent sessions', 'সাম্প্রতিক সেশন')}</h2>
+					</div>
+					<div class="list-actions">
+						<p class="list-note">{lt('A compact record of your recent training sessions.', 'আপনার সাম্প্রতিক ট্রেনিং সেশনগুলোর একটি সংক্ষিপ্ত রেকর্ড।')}</p>
+						<div class="action-row">
+							<button class="action-btn" on:click={handleDownloadPdf}>{lt('PDF report', 'PDF রিপোর্ট')}</button>
+							<button class="action-btn" on:click={handleDownloadCsv}>{lt('CSV export', 'CSV এক্সপোর্ট')}</button>
+						</div>
+					</div>
+				</div>
+
+			<div class="history-list">
+				{#each history as session}
+					<article class="history-row">
+						<div class="history-main">
+							<p class="row-domain">{getDomainName(session.domain, $locale)}</p>
+							<p class="row-date">{formatShortDate(session.created_at, $locale)}</p>
+						</div>
+						<div class="history-metrics">
+							<div>
+								<p class="metric-label">{lt('Score', 'স্কোর')}</p>
+								<p class="metric-value" style="color: {getScoreColor(session.score)}">{oneDecimal(session.score)}</p>
+							</div>
+							<div>
+								<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
+								<p class="metric-value">{pct(session.accuracy)}</p>
+							</div>
+							<div>
+								<p class="metric-label">{lt('Duration', 'সময়')}</p>
+								<p class="metric-value">{formatDuration(session.duration, $locale)}</p>
+							</div>
+						</div>
+					</article>
+				{/each}
+			</div>
+>>>>>>> 3bf3510 (bangla interface refactoring)
 		</section>
 	{:else if error}
 		<section class="state-panel glass-card">

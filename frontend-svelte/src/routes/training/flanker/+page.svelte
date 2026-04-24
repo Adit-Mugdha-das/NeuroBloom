@@ -503,7 +503,7 @@
 				<h2 class="section-title">{lt('Trial Types', 'ট্রায়ালের ধরন')}</h2>
 				<div class="rules-grid">
 					<div class="rule-item">
-						<div class="rule-num sky">1</div>
+						<div class="rule-num sky">{n(1)}</div>
 						<div class="rule-body">
 							<strong>{lt('Congruent', 'সঙ্গত')}</strong>
 							<div class="arrow-demo congruent-demo">&rarr; &rarr; &rarr; &rarr; &rarr;</div>
@@ -511,7 +511,7 @@
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num sky">2</div>
+						<div class="rule-num sky">{n(2)}</div>
 						<div class="rule-body">
 							<strong>{lt('Incongruent', 'অসঙ্গত')}</strong>
 							<div class="arrow-demo incongruent-demo">&larr; &larr; &rarr; &larr; &larr;</div>
@@ -519,7 +519,7 @@
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num sky">3</div>
+						<div class="rule-num sky">{n(3)}</div>
 						<div class="rule-body">
 							<strong>{lt('Press Left Key', 'বাম কী চাপুন')}</strong>
 							<div class="key-demo"><kbd>&larr;</kbd> {lt('or', 'অথবা')} <kbd>A</kbd></div>
@@ -527,7 +527,7 @@
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num sky">4</div>
+						<div class="rule-num sky">{n(4)}</div>
 						<div class="rule-body">
 							<strong>{lt('Press Right Key', 'ডান কী চাপুন')}</strong>
 							<div class="key-demo"><kbd>&rarr;</kbd> {lt('or', 'অথবা')} <kbd>D</kbd></div>
@@ -543,21 +543,21 @@
 					<h3 class="card-heading">{lt('What You Do', 'আপনি কী করবেন')}</h3>
 					<ol class="step-list">
 						<li>
-							<span class="step-num sky">1</span>
+							<span class="step-num sky">{n(1)}</span>
 							<div>
 								<strong>{lt('Watch for arrow row', 'তীরের সারি দেখুন')}</strong>
 								<p>{lt('Arrows appear briefly on screen', 'তীরচিহ্নগুলো অল্প সময়ের জন্য দেখা যায়')}</p>
 							</div>
 						</li>
 						<li>
-							<span class="step-num sky">2</span>
+							<span class="step-num sky">{n(2)}</span>
 							<div>
 								<strong>{lt('Identify CENTER only', 'শুধু মাঝেরটি চিহ্নিত করুন')}</strong>
 								<p>{lt('Ignore all surrounding flanker arrows', 'পাশের সব তীর উপেক্ষা করুন')}</p>
 							</div>
 						</li>
 						<li>
-							<span class="step-num sky">3</span>
+							<span class="step-num sky">{n(3)}</span>
 							<div>
 								<strong>{lt('Press matching key fast', 'দ্রুত সঠিক কী চাপুন')}</strong>
 								<p>{lt('Arrow keys or A / D keys work', 'তীর কী বা A / D কী ব্যবহার করুন')}</p>
@@ -606,17 +606,17 @@
 					<div class="norm-bar">
 						<span class="norm-label">{lt('Excellent', 'অসাধারণ')}</span>
 						<div class="norm-track"><div class="norm-fill sky" style="width:30%"></div></div>
-						<span class="norm-val">&lt; 100 ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '< ১০০ মি.সে.' : '< 100 ms'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{lt('Good', 'ভালো')}</span>
 						<div class="norm-track"><div class="norm-fill sky-mid" style="width:55%"></div></div>
-						<span class="norm-val">100–150 ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '১০০–১৫০ মি.সে.' : '100–150 ms'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{lt('Developing', 'উন্নয়নশীল')}</span>
 						<div class="norm-track"><div class="norm-fill sky-low" style="width:80%"></div></div>
-						<span class="norm-val">&gt; 150 ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '> ১৫০ মি.সে.' : '> 150 ms'}</span>
 					</div>
 				</div>
 			</div>
@@ -655,19 +655,19 @@
 
 				<div class="flow-row">
 					<div class="flow-step">
-						<div class="flow-num sky">1</div>
+						<div class="flow-num sky">{n(1)}</div>
 						<p class="flow-label">{lt('Arrows Appear', 'তীরচিহ্ন দেখা যায়')}</p>
 						<p class="flow-sub">{lt('5 arrows flash briefly', '৫টি তীর অল্প সময়ের জন্য')}</p>
 					</div>
 					<div class="flow-connector"></div>
 					<div class="flow-step">
-						<div class="flow-num sky">2</div>
+						<div class="flow-num sky">{n(2)}</div>
 						<p class="flow-label">{lt('Focus on Center', 'মাঝের তীরে মন দিন')}</p>
 						<p class="flow-sub">{lt('Ignore outer flankers', 'বাইরের তীর উপেক্ষা করুন')}</p>
 					</div>
 					<div class="flow-connector"></div>
 					<div class="flow-step">
-						<div class="flow-num sky">3</div>
+						<div class="flow-num sky">{n(3)}</div>
 						<p class="flow-label">{lt('Press Arrow Key', 'তীরের কী চাপুন')}</p>
 						<p class="flow-sub">{lt('Match center direction', 'মাঝের তীরের দিক মিলিয়ে')}</p>
 					</div>
@@ -909,14 +909,14 @@
 
 <!-- Help FAB -->
 {#if phase === 'intro' || phase === 'instructions'}
-	<button class="help-fab" on:click={() => (showHelp = true)} aria-label="Help">?</button>
+	<button class="help-fab" on:click={() => (showHelp = true)} aria-label={t('Help')}>?</button>
 {/if}
 
 {#if showHelp}
 	<div class="modal-overlay" on:click={() => (showHelp = false)} role="button" tabindex="0"
 		on:keydown={(e) => e.key === 'Escape' && (showHelp = false)}>
 		<div class="modal-content" on:click|stopPropagation role="dialog" aria-modal="true">
-			<button class="close-btn" on:click={() => (showHelp = false)} aria-label="Close">&times;</button>
+			<button class="close-btn" on:click={() => (showHelp = false)} aria-label={t('Close')}>&times;</button>
 			<h3>{lt('Quick Help', 'দ্রুত সহায়তা')}</h3>
 			<div class="strategy">
 				<p><strong>{lt('Goal:', 'লক্ষ্য:')}</strong> {lt('Identify the CENTER arrow direction and press matching key.', 'মাঝের তীরের দিক চিহ্নিত করে সঠিক কী চাপুন।')}</p>

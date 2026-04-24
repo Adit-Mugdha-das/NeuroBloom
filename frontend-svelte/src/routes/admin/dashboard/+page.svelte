@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import LanguagePreferencePanel from '$lib/components/LanguagePreferencePanel.svelte';
@@ -62,81 +63,81 @@
 					<path d="M12 5v14M5 12h14"/>
 				</svg>
 			</div>
-			<span class="brand-name">NeuroBloom Admin</span>
+			<span class="brand-name">{uiText("NeuroBloom Admin", $activeLocale)}</span>
 		</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item active">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
 				</svg>
-				Dashboard
+				{uiText("Dashboard", $activeLocale)}
 			</a>
 			<a href="/admin/analytics" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 				</svg>
-				System Analytics
+				{uiText("System Analytics", $activeLocale)}
 			</a>
 			<a href="/admin/doctors" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 				</svg>
-				Doctor Management
+				{uiText("Doctor Management", $activeLocale)}
 			</a>
 			<a href="/admin/patients" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
 				</svg>
-				Patient Management
+				{uiText("Patient Management", $activeLocale)}
 			</a>
 			<a href="/admin/departments" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
 				</svg>
-				Departments
+				{uiText("Departments", $activeLocale)}
 			</a>
 			<a href="/admin/interventions" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 				</svg>
-				Interventions
+				{uiText("Interventions", $activeLocale)}
 			</a>
 			<a href="/admin/messages" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 				</svg>
-				Message Audit
+				{uiText("Message Audit", $activeLocale)}
 			</a>
 			<a href="/admin/audit-logs" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 				</svg>
-				Audit Logs
+				{uiText("Audit Logs", $activeLocale)}
 			</a>
 			<a href="/admin/system-health" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 				</svg>
-				System Health
+				{uiText("System Health", $activeLocale)}
 			</a>
 			<a href="/admin/notifications" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
 				</svg>
-				Notification Centre
+				{uiText("Notification Centre", $activeLocale)}
 			</a>
 			<a href="/admin/research-data" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
 				</svg>
-				Research Data
+				{uiText("Research Data", $activeLocale)}
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 			</svg>
-			Sign Out
+			{uiText("Sign Out", $activeLocale)}
 		</button>
 	</aside>
 
@@ -144,8 +145,8 @@
 	<main class="main-content">
 		<header class="topbar">
 			<div class="topbar-left">
-				<h1 class="page-title">Overview</h1>
-				<span class="page-subtitle">System administration dashboard</span>
+				<h1 class="page-title">{uiText("Overview", $activeLocale)}</h1>
+				<span class="page-subtitle">{uiText("System administration dashboard", $activeLocale)}</span>
 			</div>
 			<div class="admin-info">
 				<div class="admin-avatar">
@@ -155,7 +156,7 @@
 				</div>
 				<div class="admin-details">
 					<span class="admin-name">{admin?.full_name || admin?.email}</span>
-					<span class="admin-role">Administrator</span>
+					<span class="admin-role">{uiText("Administrator", $activeLocale)}</span>
 				</div>
 			</div>
 		</header>
@@ -173,7 +174,7 @@
 		{:else}
 			<div class="language-block">
 				<LanguagePreferencePanel
-					title="Language Preference"
+					title={uiText("Language Preference", $activeLocale)}
 					description="Choose the admin workspace language for navigation, system dashboards, and visible metrics."
 				/>
 			</div>
@@ -186,7 +187,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Total Patients</p>
+						<p class="stat-label">{uiText("Total Patients", $activeLocale)}</p>
 						<p class="stat-value">{stats.total_patients}</p>
 					</div>
 				</div>
@@ -197,7 +198,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Active Patient Accounts</p>
+						<p class="stat-label">{uiText("Active Patient Accounts", $activeLocale)}</p>
 						<p class="stat-value">{stats.active_patients}</p>
 					</div>
 				</div>
@@ -208,7 +209,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Active Patients Today</p>
+						<p class="stat-label">{uiText("Active Patients Today", $activeLocale)}</p>
 						<p class="stat-value">{stats.active_patients_today}</p>
 					</div>
 				</div>
@@ -219,7 +220,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Total Doctors</p>
+						<p class="stat-label">{uiText("Total Doctors", $activeLocale)}</p>
 						<p class="stat-value">{stats.total_doctors}</p>
 					</div>
 				</div>
@@ -230,7 +231,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Pending Approvals</p>
+						<p class="stat-label">{uiText("Pending Approvals", $activeLocale)}</p>
 						<p class="stat-value">{stats.pending_doctors}</p>
 					</div>
 				</div>
@@ -241,7 +242,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Active Doctors</p>
+						<p class="stat-label">{uiText("Active Doctors", $activeLocale)}</p>
 						<p class="stat-value">{stats.active_doctors}</p>
 					</div>
 				</div>
@@ -252,7 +253,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Sessions Completed</p>
+						<p class="stat-label">{uiText("Sessions Completed", $activeLocale)}</p>
 						<p class="stat-value">{stats.completed_sessions}</p>
 					</div>
 				</div>
@@ -263,7 +264,7 @@
 						</svg>
 					</div>
 					<div class="stat-body">
-						<p class="stat-label">Departments</p>
+						<p class="stat-label">{uiText("Departments", $activeLocale)}</p>
 						<p class="stat-value">{stats.total_departments}</p>
 					</div>
 				</div>
@@ -271,9 +272,9 @@
 
 			<section class="overview-panel">
 				<div class="overview-copy">
-					<p class="panel-kicker">Admin Workspace</p>
-					<h2>System overview</h2>
-					<p class="panel-copy">Detailed system metrics, task usage, fatigue trends, and performance charts are available in the dedicated analytics module for a focused administrative view.</p>
+					<p class="panel-kicker">{uiText("Admin Workspace", $activeLocale)}</p>
+					<h2>{uiText("System overview", $activeLocale)}</h2>
+					<p class="panel-copy">{uiText("Detailed system metrics, task usage, fatigue trends, and performance charts are available in the dedicated analytics module for a focused administrative view.", $activeLocale)}</p>
 				</div>
 				<a href="/admin/analytics" class="analytics-link-card">
 					<div class="analytics-link-icon">
@@ -282,14 +283,14 @@
 						</svg>
 					</div>
 					<div>
-						<h3>Open System Analytics</h3>
-						<p>View system-wide metrics, high-risk patients, most-used tasks, and core trend charts.</p>
+						<h3>{uiText("Open System Analytics", $activeLocale)}</h3>
+						<p>{uiText("View system-wide metrics, high-risk patients, most-used tasks, and core trend charts.", $activeLocale)}</p>
 					</div>
 				</a>
 			</section>
 
 			<section class="quick-actions">
-				<h2>Quick Actions</h2>
+				<h2>{uiText("Quick Actions", $activeLocale)}</h2>
 				<div class="action-cards">
 					<a href="/admin/analytics" class="action-card">
 						<div class="action-icon blue">
@@ -298,8 +299,8 @@
 							</svg>
 						</div>
 						<div>
-							<h3>System Analytics</h3>
-							<p>Access the analytics module with system-wide charts and performance metrics.</p>
+							<h3>{uiText("System Analytics", $activeLocale)}</h3>
+							<p>{uiText("Access the analytics module with system-wide charts and performance metrics.", $activeLocale)}</p>
 						</div>
 					</a>
 					<a href="/admin/doctors" class="action-card">
@@ -309,10 +310,10 @@
 							</svg>
 						</div>
 						<div>
-							<h3>Manage Doctors</h3>
-							<p>Approve registrations, suspend or activate clinician accounts.</p>
+							<h3>{uiText("Manage Doctors", $activeLocale)}</h3>
+							<p>{uiText("Approve registrations, suspend or activate clinician accounts.", $activeLocale)}</p>
 							{#if stats.pending_doctors > 0}
-								<span class="badge amber">{stats.pending_doctors} pending</span>
+								<span class="badge amber">{stats.pending_doctors} {uiText("pending", $activeLocale)}</span>
 							{/if}
 						</div>
 					</a>
@@ -323,8 +324,8 @@
 							</svg>
 						</div>
 						<div>
-							<h3>Manage Patients</h3>
-							<p>Review and administer all patient accounts in the system.</p>
+							<h3>{uiText("Manage Patients", $activeLocale)}</h3>
+							<p>{uiText("Review and administer all patient accounts in the system.", $activeLocale)}</p>
 						</div>
 					</a>
 					<a href="/admin/departments" class="action-card">
@@ -334,8 +335,8 @@
 							</svg>
 						</div>
 						<div>
-							<h3>Manage Departments</h3>
-							<p>Create departments, assign clinicians, and review patient allocation.</p>
+							<h3>{uiText("Manage Departments", $activeLocale)}</h3>
+							<p>{uiText("Create departments, assign clinicians, and review patient allocation.", $activeLocale)}</p>
 						</div>
 					</a>
 				</div>

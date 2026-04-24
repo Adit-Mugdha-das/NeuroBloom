@@ -7,7 +7,15 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import {
+		locale,
+		localeText,
+		formatNumber,
+		formatPercent,
+		ruleOptionText,
+		taskPhraseText,
+		taskValueText
+	} from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -21,6 +29,51 @@
 		PLAYING: 'playing',
 		COMPLETE: 'complete'
 	};
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function fixed(value, digits = 1) {
+		return n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		});
+	}
+
+	function pct(value) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		});
+	}
+
+	function ms(value) {
+		return `${n(value, { maximumFractionDigits: 0 })} ${lt('ms', 'মি.সে.')}`;
+	}
+
+	function trialText(current, total) {
+		return lt(`Trial ${n(current)} of ${n(total)}`, `${n(total)}টির মধ্যে ${n(current)} নম্বর ট্রায়াল`);
+	}
+
+	function blockText(current, total) {
+		return lt(`Block ${n(current)} of ${n(total)}`, `${n(total)}টির মধ্যে ${n(current)} নম্বর ব্লক`);
+	}
+
+	function ruleText(rule) {
+		return taskValueText('rule', rule, $locale);
+	}
+
+	function optionText(rule, side) {
+		const value = optionMeta(rule, side);
+		return ruleOptionText(rule, value, $locale);
+	}
+
+	function adaptationReasonText(reason) {
+		if ($locale === 'en' && reason) return reason;
+		return taskPhraseText('no_adaptation_reason', $locale);
+	}
 
 	let state = STATE.LOADING;
 	let difficulty = 5;
@@ -88,7 +141,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Rule Shift session:', error);
-			alert('Failed to load Rule Shift');
+			alert(lt('Failed to load Rule Shift', 'নিয়ম-শিফট টাস্ক লোড করা যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -201,7 +254,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting Rule Shift results:', error);
-			alert('Failed to submit results');
+			alert(lt('Failed to submit results', 'ফলাফল জমা দেওয়া যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -235,8 +288,8 @@
 		<div class="page-content">
 			<div class="task-header">
 				<div class="header-center">
-					<h1 class="task-title">Rule Shift Task</h1>
-					<DifficultyBadge {difficulty} domain="Flexibility" />
+					<h1 class="task-title">{lt('Rule Shift Task', 'নিয়ম বদলের টাস্ক')}</h1>
+					<DifficultyBadge {difficulty} domain={lt('Flexibility', 'মানিয়ে নেওয়ার ক্ষমতা')} />
 				</div>
 			</div>
 
@@ -245,81 +298,81 @@
 			{/if}
 
 			<div class="concept-card">
-				<span class="concept-badge">Cognitive Flexibility · Set-Shifting</span>
-				<h2>The Core Mechanism</h2>
+				<span class="concept-badge">{lt('Cognitive Flexibility · Set-Shifting', 'মানসিক নমনীয়তা · নিয়ম বদল')}</span>
+				<h2>{lt('The Core Mechanism', 'মূল কাজটি')}</h2>
 				<p>
-					Each block uses a single classification rule applied to geometric shapes. When the block
-					ends, the rule changes — you must drop the previous mapping and immediately apply the new
-					one. The earliest trials after each switch reveal your true set-shifting speed.
+					{lt(
+						'Each block uses one rule for sorting shapes. When the block changes, the rule changes too. You need to let go of the old rule and use the new one right away.',
+						'প্রতিটি ব্লকে আকার বাছাইয়ের জন্য একটি নিয়ম থাকবে। ব্লক বদলালে নিয়মও বদলাবে। তখন আগের নিয়ম ছেড়ে সঙ্গে সঙ্গে নতুন নিয়ম ব্যবহার করতে হবে।'
+					)}
 				</p>
 			</div>
 
 			<div class="rules-card">
-				<h3>How to Respond</h3>
+				<h3>{lt('How to Respond', 'কীভাবে উত্তর দেবেন')}</h3>
 				<ol class="rules-list">
-					<li>A shape (circle or triangle) appears on screen, coloured teal or orange, in a count of one or two.</li>
-					<li>Read the <strong>Active Rule</strong> displayed above the stimulus to know which attribute to classify.</li>
-					<li>Press <strong>Left</strong> for the left-side category label, <strong>Right</strong> for the right-side label.</li>
-					<li>When the block changes, update your response mapping <em>before</em> the first stimulus of the new block.</li>
+					<li>{lt('A circle or triangle appears in teal or orange, once or twice.', 'বৃত্ত বা ত্রিভুজ দেখা যাবে; রং হতে পারে সবুজাভ নীল বা কমলা, সংখ্যা এক বা দুই।')}</li>
+					<li>{lt('Read the active rule to know whether to sort by color, shape, or count.', 'সক্রিয় নিয়ম দেখে বুঝুন রং, আকার, নাকি সংখ্যা দিয়ে বাছাই করতে হবে।')}</li>
+					<li>{lt('Choose the left or right category shown on the screen.', 'স্ক্রিনে দেখানো বাম বা ডান শ্রেণি বেছে নিন।')}</li>
+					<li>{lt('When a new block starts, update the rule before answering.', 'নতুন ব্লক শুরু হলে উত্তর দেওয়ার আগে নিয়ম বদলে নিন।')}</li>
 				</ol>
 				<p class="rules-note">
-					Accuracy on switch trials is the primary measure. Perseverative errors — applying the old rule after a switch — count against your flexibility index.
+					{lt('Accuracy just after a rule switch is the main measure. Using the old rule after a switch lowers the flexibility score.', 'নিয়ম বদলের ঠিক পরের সঠিকতাই প্রধান মাপ। বদলের পরও পুরনো নিয়ম ব্যবহার করলে নমনীয়তার স্কোর কমে।')}
 				</p>
 			</div>
 
 			<div class="info-grid">
 				<div class="info-card">
-					<div class="info-label">Block Length</div>
-					<div class="info-val">4–8</div>
-					<p>Trials per rule block</p>
+					<div class="info-label">{lt('Block Length', 'ব্লকের দৈর্ঘ্য')}</div>
+					<div class="info-val">{lt('4–8', '৪–৮')}</div>
+					<p>{lt('Trials per rule block', 'প্রতি নিয়ম-ব্লকে ট্রায়াল')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Total Trials</div>
-					<div class="info-val">{sessionData?.total_trials ?? '—'}</div>
-					<p>Across all rule blocks</p>
+					<div class="info-label">{lt('Total Trials', 'মোট ট্রায়াল')}</div>
+					<div class="info-val">{sessionData?.total_trials ? n(sessionData.total_trials) : '—'}</div>
+					<p>{lt('Across all rule blocks', 'সব নিয়ম-ব্লক মিলিয়ে')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Rules Active</div>
-					<div class="info-val">3</div>
-					<p>Color · Shape · Count</p>
+					<div class="info-label">{lt('Rules Active', 'সক্রিয় নিয়ম')}</div>
+					<div class="info-val">{n(3)}</div>
+					<p>{lt('Color · Shape · Count', 'রং · আকার · সংখ্যা')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Response</div>
-					<div class="info-val">L / R</div>
-					<p>Button click or arrow key</p>
+					<div class="info-label">{lt('Response', 'উত্তর')}</div>
+					<div class="info-val">{lt('L / R', 'L / R')}</div>
+					<p>{lt('Button click or arrow key', 'বোতাম বা তীর চাপে')}</p>
 				</div>
 			</div>
 
 			<div class="tip-card">
 				<div class="tip-row">
 					<div>
-						<p class="tip-title">Performance Tips</p>
+						<p class="tip-title">{lt('Performance Tips', 'ভালো করার টিপস')}</p>
 						<ul>
-							<li><strong>Name the new rule</strong> silently before the first trial of each block.</li>
-							<li><strong>Slow down slightly</strong> on the first two trials after a switch — accuracy matters more than speed here.</li>
-							<li><strong>Do not rely on momentum</strong> — the same stimulus can require a different response next block.</li>
+							<li><strong>{lt('Name the new rule', 'নতুন নিয়মটি মনে মনে বলুন')}</strong> {lt('before the first trial of each block.', 'প্রতিটি ব্লকের প্রথম ট্রায়ালের আগে।')}</li>
+							<li><strong>{lt('Slow down slightly', 'সামান্য ধীরে যান')}</strong> {lt('right after a switch, because accuracy matters here.', 'নিয়ম বদলের পরপরই, কারণ এখানে সঠিকতা বেশি জরুরি।')}</li>
+							<li><strong>{lt('Do not rely on momentum', 'গতানুগতিকভাবে চাপবেন না')}</strong> {lt('because the same shape may need a different answer in the next block.', 'কারণ একই আকার পরের ব্লকে ভিন্ন উত্তর চাইতে পারে।')}</li>
 						</ul>
 					</div>
 					<button class="show-more-btn" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Less' : 'More tips'}
+						{showHelp ? lt('Less', 'কম দেখান') : lt('More tips', 'আরও টিপস')}
 					</button>
 				</div>
 				{#if showHelp}
 					<ul style="margin-top: 0.75rem;">
-						<li>After an error on a switch trial, pause and re-read the rule label before the next response.</li>
-						<li>The mappings change every block — commit to re-reading the block intro screen each time.</li>
+						<li>{lt('After a switch-trial error, pause and read the rule again before the next answer.', 'নিয়ম বদলের ট্রায়ালে ভুল হলে একটু থেমে পরের উত্তরের আগে নিয়মটি আবার পড়ুন।')}</li>
+						<li>{lt('Mappings can change every block, so read each block intro carefully.', 'প্রতিটি ব্লকে মিল বদলাতে পারে, তাই ব্লকের শুরুটা মন দিয়ে পড়ুন।')}</li>
 					</ul>
 				{/if}
 			</div>
 
 			<div class="clinical-card">
-				<h3>Clinical Significance</h3>
+				<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
 				<p>
-					Set-shifting deficits are a sensitive marker of executive dysfunction in multiple sclerosis.
-					The Rule Shift Task isolates perseverative responding — using a previously correct rule after it
-					has changed — and the switch cost (slowing on first post-switch trial). Both metrics are used
-					in cognitive rehabilitation research to track frontal lobe integrity over time
-					(Chiaravalloti &amp; DeLuca, 2008).
+					{lt(
+						'Rule shifting helps measure executive flexibility: how quickly a person can stop using an old rule and apply a new one.',
+						'নিয়ম বদল নির্বাহী নমনীয়তা মাপতে সাহায্য করে: একজন কত দ্রুত পুরনো নিয়ম থামিয়ে নতুন নিয়ম প্রয়োগ করতে পারেন।'
+					)}
 				</p>
 			</div>
 
@@ -336,23 +389,23 @@
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
 				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
-			<p class="eyebrow">Block {currentBlock.block_index + 1} of {sessionData.blocks.length}</p>
-			<h2>{currentBlock.instruction}</h2>
+			<p class="eyebrow">{blockText(currentBlock.block_index + 1, sessionData.blocks.length)}</p>
+			<h2>{lt('Sort by', 'বাছাইয়ের নিয়ম')}: {ruleText(currentBlock.rule)}</h2>
 			<div class="rule-grid">
 				<div class="rule-card">
-					<span>Left</span>
-					<strong>{optionMeta(currentBlock.rule, 'left')}</strong>
+					<span>{lt('Left', 'বাম')}</span>
+					<strong>{optionText(currentBlock.rule, 'left')}</strong>
 				</div>
 				<div class="rule-card">
-					<span>Right</span>
-					<strong>{optionMeta(currentBlock.rule, 'right')}</strong>
+					<span>{lt('Right', 'ডান')}</span>
+					<strong>{optionText(currentBlock.rule, 'right')}</strong>
 				</div>
 			</div>
 			{#if currentBlock.block_index > 0}
-				<p class="subtitle center">The rule has changed. Drop the previous mapping before you continue.</p>
+				<p class="subtitle center">{taskPhraseText('rule_changed', $locale)}</p>
 			{/if}
 			<div class="actions center">
-				<button class="primary" on:click={beginBlock}>Begin Block</button>
+				<button class="primary" on:click={beginBlock}>{lt('Begin Block', 'ব্লক শুরু করুন')}</button>
 			</div>
 		</section>
 	{:else if state === STATE.PLAYING}
@@ -362,10 +415,10 @@
 			{/if}
 			<div class="play-header">
 				<div>
-					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>
-					<h2>Active Rule: {currentBlock.rule}</h2>
+					<p class="eyebrow">{trialText(currentTrialIndex + 1, sessionData.total_trials)}</p>
+					<h2>{lt('Active Rule', 'সক্রিয় নিয়ম')}: {ruleText(currentBlock.rule)}</h2>
 				</div>
-				<div class="rule-chip">Block {currentBlock.block_index + 1}</div>
+				<div class="rule-chip">{lt('Block', 'ব্লক')} {n(currentBlock.block_index + 1)}</div>
 			</div>
 
 			<div class="progress-track">
@@ -374,12 +427,12 @@
 
 			<div class="mapping-board">
 				<div class="mapping left">
-					<span>Left</span>
-					<strong>{optionMeta(currentBlock.rule, 'left')}</strong>
+					<span>{lt('Left', 'বাম')}</span>
+					<strong>{optionText(currentBlock.rule, 'left')}</strong>
 				</div>
 				<div class="mapping right">
-					<span>Right</span>
-					<strong>{optionMeta(currentBlock.rule, 'right')}</strong>
+					<span>{lt('Right', 'ডান')}</span>
+					<strong>{optionText(currentBlock.rule, 'right')}</strong>
 				</div>
 			</div>
 
@@ -387,34 +440,34 @@
 				<div class="stimulus-card">
 					{@html renderStimulus(currentTrial)}
 					<div class="stimulus-meta">
-						<span>{currentTrial.color}</span>
-						<span>{currentTrial.shape}</span>
-						<span>{currentTrial.count === 1 ? 'one item' : 'two items'}</span>
+						<span>{taskValueText('rule_value', currentTrial.color, $locale)}</span>
+						<span>{taskValueText('rule_value', currentTrial.shape, $locale)}</span>
+						<span>{taskValueText('rule_value', currentTrial.count, $locale)}</span>
 					</div>
 				</div>
 			</div>
 
 			<div class="response-panel">
 				<button class="response-btn" on:click={() => submitResponse('left')}>
-					Left
-					<small>{optionMeta(currentBlock.rule, 'left')}</small>
+					{lt('Left', 'বাম')}
+					<small>{optionText(currentBlock.rule, 'left')}</small>
 				</button>
 				<button class="response-btn" on:click={() => submitResponse('right')}>
-					Right
-					<small>{optionMeta(currentBlock.rule, 'right')}</small>
+					{lt('Right', 'ডান')}
+					<small>{optionText(currentBlock.rule, 'right')}</small>
 				</button>
 			</div>
 
-			<p class="hint">Keyboard: `A` or left arrow for left, `L` or right arrow for right.</p>
+			<p class="hint">{lt('Keyboard', 'কিবোর্ড')}: A {lt('or left arrow for left, L or right arrow for right.', 'বা বাম তীর বামের জন্য, L বা ডান তীর ডানের জন্য।')}</p>
 		</section>
 	{:else if state === STATE.COMPLETE}
 		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
 			<div class="header">
 				<div>
-					<p class="eyebrow">Session Complete</p>
-					<h1>Rule Shift Results</h1>
-					<p class="subtitle">Your flexibility metrics are now part of the executive profile.</p>
+					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>
+					<h1>{lt('Rule Shift Results', 'নিয়ম বদলের ফলাফল')}</h1>
+					<p class="subtitle">{lt('Your flexibility metrics are now part of the executive profile.', 'আপনার মানিয়ে নেওয়ার মেট্রিক এখন নির্বাহী প্রোফাইলে যুক্ত হয়েছে।')}</p>
 				</div>
 			</div>
 
@@ -424,49 +477,49 @@
 
 			<div class="results">
 				<div class="metric primary-metric">
-					<span>Overall score</span>
-					<strong>{sessionResults.metrics.score}</strong>
+					<span>{lt('Overall score', 'সামগ্রিক স্কোর')}</span>
+					<strong>{n(sessionResults.metrics.score)}</strong>
 				</div>
 				<div class="metric">
-					<span>Accuracy</span>
-					<strong>{sessionResults.metrics.accuracy.toFixed(1)}%</strong>
+					<span>{lt('Accuracy', 'সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Switch accuracy</span>
-					<strong>{sessionResults.metrics.switch_accuracy.toFixed(1)}%</strong>
+					<span>{lt('Switch accuracy', 'নিয়ম বদলের সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.switch_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Stay accuracy</span>
-					<strong>{sessionResults.metrics.stay_accuracy.toFixed(1)}%</strong>
+					<span>{lt('Stay accuracy', 'একই নিয়মে সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.stay_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Avg RT</span>
-					<strong>{sessionResults.metrics.average_reaction_time.toFixed(0)} ms</strong>
+					<span>{lt('Avg RT', 'গড় RT')}</span>
+					<strong>{ms(sessionResults.metrics.average_reaction_time)}</strong>
 				</div>
 				<div class="metric">
-					<span>Shift cost</span>
-					<strong>{sessionResults.metrics.shift_cost_ms.toFixed(0)} ms</strong>
+					<span>{lt('Shift cost', 'বদলের খরচ')}</span>
+					<strong>{ms(sessionResults.metrics.shift_cost_ms)}</strong>
 				</div>
 				<div class="metric">
-					<span>Perseverative errors</span>
-					<strong>{sessionResults.metrics.perseverative_errors}</strong>
+					<span>{lt('Perseverative errors', 'পুরনো নিয়মে ভুল')}</span>
+					<strong>{n(sessionResults.metrics.perseverative_errors)}</strong>
 				</div>
 				<div class="metric">
-					<span>Flexibility index</span>
-					<strong>{sessionResults.metrics.flexibility_index.toFixed(1)}</strong>
+					<span>{lt('Flexibility index', 'নমনীয়তা সূচক')}</span>
+					<strong>{fixed(sessionResults.metrics.flexibility_index, 1)}</strong>
 				</div>
 			</div>
 
 			<div class="difficulty">
-				<span>Level {sessionResults.difficulty_before}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_before)}</span>
 				<span class="arrow">-&gt;</span>
-				<span>Level {sessionResults.difficulty_after}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_after)}</span>
 			</div>
-			<p class="subtitle center">{sessionResults.adaptation_reason}</p>
+			<p class="subtitle center">{adaptationReasonText(sessionResults.adaptation_reason)}</p>
 
 			<div class="actions">
-				<button class="primary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
-				<button class="secondary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
+				<button class="primary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
+				<button class="secondary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
 			</div>
 		</section>
 	{/if}

@@ -490,11 +490,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>Trail Making Test — Part A</h1>
+						<h1>{localeText({ en: 'Trail Making Test - Part A', bn: 'ট্রেইল মেকিং টেস্ট - পার্ট A' }, $locale)}</h1>
 						<DifficultyBadge difficulty={difficulty} domain="Processing Speed" />
 					</div>
-					<p class="subtitle">Connect numbered circles in order — as fast as you can</p>
-					<div class="classic-badge">TMT-A · Halstead-Reitan Battery · MACFIMS Processing Speed</div>
+					<p class="subtitle">{localeText({ en: 'Connect numbered circles in order - as fast as you can', bn: 'সংখ্যাযুক্ত বৃত্তগুলো ক্রমানুসারে যুক্ত করুন - যত দ্রুত পারেন' }, $locale)}</p>
+					<div class="classic-badge">{localeText({ en: 'TMT-A - Halstead-Reitan Battery - MACFIMS Processing Speed', bn: 'TMT-A - হ্যালস্টেড-রেইটান ব্যাটারি - MACFIMS প্রসেসিং স্পিড' }, $locale)}</div>
 				</div>
 
 				{#if playMode === TASK_PLAY_MODE.PRACTICE && practiceStatusMessage}
@@ -502,18 +502,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{/if}
 
 				<div class="task-concept">
-					<h3>The Challenge</h3>
+					<h3>{localeText({ en: 'The Challenge', bn: 'চ্যালেঞ্জ' }, $locale)}</h3>
 					<p>
 						{$locale === 'bn'
 							? `${n(trial.circles.length)}টি সংখ্যাযুক্ত বৃত্ত এলোমেলোভাবে ছড়িয়ে আছে। যত দ্রুত সম্ভব ১→২→৩→...→${n(trial.circles.length)} ক্রমে ক্লিক করুন।`
 							: `${n(trial.circles.length)} numbered circles are scattered randomly. Click them in order 1 → 2 → 3 → ... → ${n(trial.circles.length)} as fast as possible!`}
 					</p>
 					<div class="demo-sequence">
-						<div class="demo-circle first">1</div>
+						<div class="demo-circle first">{n(1)}</div>
 						<div class="demo-arrow">→</div>
-						<div class="demo-circle">2</div>
+						<div class="demo-circle">{n(2)}</div>
 						<div class="demo-arrow">→</div>
-						<div class="demo-circle">3</div>
+						<div class="demo-circle">{n(3)}</div>
 						<div class="demo-arrow">→</div>
 						<div class="demo-dots">…{n(trial.circles.length)}</div>
 					</div>

@@ -1,9 +1,10 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	export let stats = [];
 </script>
 
 {#if stats.length > 0}
-	<section class="stats-row" aria-label="Dashboard summary">
+	<section class="stats-row" aria-label={uiText("Dashboard summary", $activeLocale)}>
 		{#each stats as stat}
 			<article class="stat-chip">
 				<p class="stat-label">{stat.label}</p>

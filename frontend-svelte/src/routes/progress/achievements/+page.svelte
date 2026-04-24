@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
 	import { getPatientBadgeCopy } from '$lib/patient-copy.js';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -16,6 +16,7 @@
 	});
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
+	const n = (value) => formatNumber(value, $locale);
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -52,7 +53,42 @@
 <div class="progress-panel">
 	{#if loading}
 		<section class="state-panel glass-card">
+<<<<<<< HEAD
 			<p>{lt('Loading achievements...', 'অর্জন লোড হচ্ছে...')}</p>
+=======
+				<p>{lt('Loading achievements...', 'অর্জন লোড হচ্ছে...')}</p>
+			</section>
+		{:else if error}
+			<section class="state-panel glass-card">
+				<h2>{lt('Achievements unavailable', 'অর্জন পাওয়া যাচ্ছে না')}</h2>
+				<p>{error}</p>
+			</section>
+		{:else if badgeData}
+			<section class="glass-card achievement-shell">
+				<div class="achievement-head">
+					<div>
+						<p class="card-label">{lt('Achievements', 'অর্জন')}</p>
+						<h2>{n(badgeData.earned_count)} {lt('of', 'মধ্যে')} {n(badgeData.total_badges)} {lt('earned', 'অর্জিত')}</h2>
+					</div>
+					<p class="achievement-copy">{lt('A separate view for badges keeps the main progress area focused on recovery and training.', 'ব্যাজের জন্য আলাদা ভিউ থাকায় মূল প্রগ্রেস এলাকা রিকভারি ও ট্রেনিংয়েই কেন্দ্রীভূত থাকে।')}</p>
+				</div>
+
+			<div class="achievement-grid">
+				{#each badgeData.all_badges as badge}
+					{@const badgeCopy = getBadgeDisplay(badge)}
+					<article class="badge-card {badge.earned ? 'earned' : 'locked'}">
+						<div class="badge-icon">{badge.icon}</div>
+						<p class="badge-name">{badgeCopy.name}</p>
+						<p class="badge-description">{badgeCopy.description}</p>
+						{#if badge.earned}
+							<p class="badge-status earned-status">{lt('Earned', 'অর্জিত')} {formatDate(badge.earned_at)}</p>
+						{:else}
+							<p class="badge-status locked-status">{lt('Locked', 'লকড')}</p>
+						{/if}
+					</article>
+				{/each}
+			</div>
+>>>>>>> 3bf3510 (bangla interface refactoring)
 		</section>
 	{:else if error}
 		<section class="state-panel glass-card">

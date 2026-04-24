@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { baseline, patientJourney } from '$lib/api';
 	import { BASELINE_MODULES, getNextBaselineModule } from '$lib/baseline-flow';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, locale as activeLocale, uiText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -94,7 +94,7 @@
 	{:else}
 		<header class="hero-card">
 			<div>
-				<p class="eyebrow">NeuroBloom Baseline</p>
+				<p class="eyebrow">{uiText("NeuroBloom Baseline", $activeLocale)}</p>
 				<h1>{lt('Your six-step baseline assessment', 'আপনার ছয়-ধাপের বেসলাইন মূল্যায়ন')}</h1>
 				<p class="hero-copy">
 					{lt(

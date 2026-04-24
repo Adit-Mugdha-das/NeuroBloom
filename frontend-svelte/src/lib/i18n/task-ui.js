@@ -1,4 +1,4 @@
-import { normalizeLocale } from './translator.js';
+import { normalizeLocale } from './locale-utils.js';
 
 const TASK_DIFFICULTY_DESCRIPTIONS = {
 	pasat: {

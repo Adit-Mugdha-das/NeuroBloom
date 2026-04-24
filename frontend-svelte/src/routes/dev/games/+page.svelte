@@ -2,7 +2,7 @@
 	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import DevPanel from '$lib/components/DevPanel.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, locale as activeLocale, uiText } from '$lib/i18n';
 	import { onMount } from 'svelte';
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
@@ -17,7 +17,7 @@
 {#if dev}
 	<div class="dev-games-page">
 		<section class="dev-shell">
-			<p class="eyebrow">NeuroBloom Dev</p>
+			<p class="eyebrow">{uiText("NeuroBloom Dev", $activeLocale)}</p>
 			<h1>{lt('Game Development Workspace', 'গেম ডেভেলপমেন্ট ওয়ার্কস্পেস')}</h1>
 			<p class="copy">
 				{lt(

@@ -1,4 +1,10 @@
 <script>
+<<<<<<< HEAD
+=======
+	import { locale as activeLocale, uiText } from '$lib/i18n';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
+	import api from '$lib/api.js';
+>>>>>>> 3bf3510 (bangla interface refactoring)
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -76,25 +82,25 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Notifications"
-	subtitle="Administrative updates and research notices collected in one quiet workspace so they do not compete with the clinical dashboard."
+	title={uiText("Notifications", $activeLocale)}
+	subtitle={uiText("Administrative updates and research notices collected in one quiet workspace so they do not compete with the clinical dashboard.", $activeLocale)}
 >
 	<section class="hero-card">
 		<div>
-			<p class="hero-kicker">Practice Updates</p>
-			<h2>{notifications.length} active notices</h2>
-			<p>Doctor-facing platform notices, feature updates, and invitations are stored here instead of interrupting patient review.</p>
+			<p class="hero-kicker">{uiText("Practice Updates", $activeLocale)}</p>
+			<h2>{notifications.length} {uiText("active notices", $activeLocale)}</h2>
+			<p>{uiText("Doctor-facing platform notices, feature updates, and invitations are stored here instead of interrupting patient review.", $activeLocale)}</p>
 		</div>
 	</section>
 
 	{#if loading}
-		<section class="state-card"><p>Loading notifications...</p></section>
+		<section class="state-card"><p>{uiText("Loading notifications...", $activeLocale)}</p></section>
 	{:else if error}
 		<section class="state-card error-state"><p>{error}</p></section>
 	{:else if notifications.length === 0}
 		<section class="state-card">
-			<h2>No notifications yet</h2>
-			<p>New doctor notices will appear here automatically.</p>
+			<h2>{uiText("No notifications yet", $activeLocale)}</h2>
+			<p>{uiText("New doctor notices will appear here automatically.", $activeLocale)}</p>
 		</section>
 	{:else}
 		<section class="notice-list">

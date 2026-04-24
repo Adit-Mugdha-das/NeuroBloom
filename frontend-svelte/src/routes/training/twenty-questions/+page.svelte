@@ -8,11 +8,15 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
 
 	let gamePhase = 'loading';
 	let gameData = null;
@@ -320,19 +324,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('Rules', 'নিয়মাবলী')}</h2>
 					<div class="rules-list">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">{lt('Type a yes/no question and press Enter to submit it', 'একটি হ্যাঁ/না প্রশ্ন টাইপ করুন এবং এন্টার চাপুন')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">{lt('Use broad constraint-seeking questions first — e.g., "Is it living?" not "Is it a dog?"', 'প্রথমে বিস্তৃত সীমানির্ধারণকারী প্রশ্ন করুন — যেমন "এটি কি জীবিত?" না "এটি কি কুকুর?"')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">{lt('When confident, submit your final guess in the guess box below', 'আত্মবিশ্বাসী হলে, নিচের অনুমান বাক্সে আপনার চূড়ান্ত উত্তর দিন')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">{lt('Fewer questions used = higher score. You have 20 questions maximum', 'কম প্রশ্ন = বেশি স্কোর। সর্বাধিক ২০টি প্রশ্ন')}</div>
 						</div>
 					</div>
@@ -1271,4 +1275,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.confirm-buttons { flex-direction: column; }
 	}
 </style>
-

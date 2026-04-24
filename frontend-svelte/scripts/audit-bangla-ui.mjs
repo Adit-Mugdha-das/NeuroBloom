@@ -7,37 +7,63 @@ import {
 	getGoNoGoStimulusPair,
 	getTaskDifficultyDescription
 } from '../src/lib/i18n/task-ui.js';
-import { translateText } from '../src/lib/i18n/translator.js';
+import { translateText, uiText } from '../src/lib/i18n/translator.js';
 
 const projectRoot = process.cwd();
 const routesRoot = path.join(projectRoot, 'src', 'routes');
+const componentsRoot = path.join(projectRoot, 'src', 'lib', 'components');
 const scanRoots = [
-	path.join(projectRoot, 'src', 'routes', 'training'),
-	path.join(projectRoot, 'src', 'routes', 'baseline', 'tasks')
+	routesRoot,
+	componentsRoot
 ];
-const userFacingAttributes = new Set(['placeholder', 'aria-label', 'title', 'alt']);
+const userFacingAttributes = new Set([
+	'placeholder',
+	'aria-label',
+	'title',
+	'alt',
+	'subtitle',
+	'message',
+	'actionText',
+	'tip'
+]);
 const allowedFragments = [
 	'NeuroBloom',
+	'Donepezil',
 	'MS',
 	'ADHD',
 	'WCST',
 	'DCCS',
 	'PASAT',
+	'PDF',
+	'API',
+	'CSV',
+	'JSON',
+	'GMC',
 	'CPT',
+	'COWAT',
 	'UFOV',
 	'AX',
 	'ANT',
 	'OSPAN',
 	'SDMT',
 	'RT',
+	'Enter',
+	'Shift',
+	'Ctrl',
+	'Alt',
+	'Tab',
+	'Backspace',
+	'Spacebar',
+	'SPACE',
 	'd-prime',
 	'Go/No-Go',
+	'N-back',
 	'GO',
 	'NO-GO',
 	'SPACEBAR'
 ];
 const longTranslationCallPattern =
-	/(?:\bt|translateText)\(\s*(['"`])((?:\\.|(?!\1)[\s\S])+?)\1(?:\s*,[\s\S]*?)?\)/g;
+	/\b(t|translateText|uiText)\(\s*(['"`])((?:\\.|(?!\2)[\s\S])+?)\2(?:\s*,[\s\S]*?)?\)/g;
 
 function collectFiles(dir, output = []) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -47,7 +73,7 @@ function collectFiles(dir, output = []) {
 			continue;
 		}
 
-		if (entry.isFile() && entry.name === '+page.svelte') {
+		if (entry.isFile() && entry.name.endsWith('.svelte')) {
 			output.push(fullPath);
 		}
 	}
@@ -56,6 +82,11 @@ function collectFiles(dir, output = []) {
 }
 
 function routePathFromFile(filePath) {
+	if (!filePath.startsWith(routesRoot)) {
+		const relativeComponentPath = path.relative(projectRoot, filePath).replace(/\\/g, '/');
+		return `component:${relativeComponentPath}`;
+	}
+
 	const relative = path.relative(routesRoot, path.dirname(filePath));
 	if (!relative) {
 		return '/';
@@ -79,7 +110,7 @@ function stripPreservedStimuli(text) {
 	return text
 		.replace(/"([A-Z])"/g, '""')
 		.replace(/\b[A-Z]\b/g, '')
-		.replace(/[→←]/g, ' ')
+		.replace(/[→←↑↓]/g, ' ')
 		.replace(/\s+/g, ' ')
 		.trim();
 }
@@ -88,6 +119,14 @@ function looksLikeEnglishUiText(text) {
 	const normalized = stripPreservedStimuli(stripAllowedFragments(normalizeText(text)));
 
 	if (!normalized || !/[A-Za-z]/.test(normalized)) {
+		return false;
+	}
+
+	if (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/iu.test(normalized)) {
+		return false;
+	}
+
+	if (/^[a-z]+(?:_[a-z]+)*(?:,\s*[a-z]+(?:_[a-z]+)*)+$/u.test(normalized)) {
 		return false;
 	}
 
@@ -217,6 +256,10 @@ function getChildNodes(block) {
 	return [];
 }
 
+function hasLocalizeSkip(attributes = []) {
+	return attributes.some((attribute) => attribute?.name === 'data-localize-skip');
+}
+
 function localizeForRoute(text, localizationMode) {
 	const options = localizationMode === 'observe' ? { aggressive: true } : {};
 	return translateText(text, 'bn', options);
@@ -309,6 +352,10 @@ function walkNodes(findings, filePath, routePath, localizationMode, locator, nod
 			case 'SvelteElement':
 			case 'Slot':
 			case 'Component': {
+				if (hasLocalizeSkip(node.attributes)) {
+					break;
+				}
+
 				inspectAttributes(
 					findings,
 					filePath,
@@ -374,12 +421,17 @@ function auditFile(filePath) {
 	walkNodes(findings, filePath, routePath, localizationMode, locator, getRootNodes(ast));
 
 	for (const match of source.matchAll(longTranslationCallPattern)) {
-		const literal = normalizeText(match[2] || '');
+		const helperName = match[1] || '';
+		const literal = normalizeText(match[3] || '');
 		if (literal.includes('${') || !looksLikeEnglishUiText(literal)) {
 			continue;
 		}
 
-		const localizedText = normalizeText(localizeForRoute(literal, localizationMode));
+		const localizedText = normalizeText(
+			helperName === 'uiText'
+				? uiText(literal, 'bn')
+				: localizeForRoute(literal, localizationMode)
+		);
 		if (!isResidualEnglish(localizedText)) {
 			continue;
 		}
@@ -412,13 +464,13 @@ const nativeRoutes = routeAudits.filter((audit) => audit.localizationMode === 'n
 
 if (findings.length === 0) {
 	console.log(
-		`Bangla UI audit passed. Scanned ${routeAudits.length} game routes with ${nativeRoutes} native and ${observedRoutes} observer-backed routes. No residual English UI text found after applying each route's localization path.`
+		`Bangla UI audit passed. Scanned ${routeAudits.length} Svelte routes/components with ${nativeRoutes} native and ${observedRoutes} observer-backed surfaces. No residual English UI text found after applying each surface's localization path.`
 	);
 	process.exit(0);
 }
 
 console.log(
-	`Bangla UI audit found ${findings.length} residual English issue(s) across ${routeAudits.length} game routes:`
+	`Bangla UI audit found ${findings.length} residual English issue(s) across ${routeAudits.length} Svelte routes/components:`
 );
 for (const finding of findings) {
 	const relativePath = path.relative(projectRoot, finding.filePath);

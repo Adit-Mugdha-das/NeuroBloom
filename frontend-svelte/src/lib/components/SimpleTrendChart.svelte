@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	export let points = [];
 	export let lineColor = '#4f46e5';
 
@@ -42,7 +43,7 @@
 			<span>{chartPoints[chartPoints.length - 1].label}</span>
 		</div>
 	{:else}
-		<p class="trend-empty">Complete more sessions to reveal your trend.</p>
+		<p class="trend-empty">{uiText("Complete more sessions to reveal your trend.", $activeLocale)}</p>
 	{/if}
 </div>
 

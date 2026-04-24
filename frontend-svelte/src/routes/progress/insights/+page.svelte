@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { patientJourney, training } from '$lib/api';
 	import BiomarkersPanel from '$lib/components/BiomarkersPanel.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, formatNumber } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
 
@@ -21,6 +21,31 @@
 	});
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function levelValue(value) {
+		return value === null || value === undefined ? '-' : n(value);
+	}
+
+	function journeyActionLabel(journeyData) {
+		const route = journeyData?.next_route || actionHref || '/training';
+		const normalizedLabel = String(journeyData?.next_label || '').toLowerCase();
+
+		if (route.includes('/baseline') || normalizedLabel.includes('baseline')) {
+			return lt('Start baseline', 'বেসলাইন শুরু করুন');
+		}
+		if (route.includes('/progress') || normalizedLabel.includes('progress')) {
+			return lt('Open progress', 'অগ্রগতি দেখুন');
+		}
+		if (normalizedLabel.includes('continue')) {
+			return lt('Continue training', 'ট্রেনিং চালিয়ে যান');
+		}
+
+		return lt('Open training', 'ট্রেনিং খুলুন');
+	}
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -46,7 +71,7 @@
 					'আপনার ট্রেনিং ইতিহাস জমতে শুরু করলে তবেই ইনসাইটস খুলবে।'
 				);
 				actionHref = journey?.next_route || '/training';
-				actionLabel = journey?.next_label || lt('Open training', 'ট্রেনিং খুলুন');
+				actionLabel = journeyActionLabel(journey);
 				return;
 			}
 
@@ -75,7 +100,7 @@
 				'এই মুহূর্তে আপনার ইনসাইটস লোড করা যাচ্ছে না।'
 			);
 			actionHref = journey?.next_route || '/training';
-			actionLabel = journey?.next_label || lt('Open training', 'ট্রেনিং খুলুন');
+			actionLabel = journeyActionLabel(journey);
 		} finally {
 			loading = false;
 		}
@@ -100,14 +125,22 @@
 		return lt('Weak relationship', 'দুর্বল সম্পর্ক');
 	}
 
+	function trendDirectionLabel(value) {
+		const key = String(value || '').toLowerCase();
+		if (key === 'improving') return lt('Improving', 'উন্নতির দিকে');
+		if (key === 'declining') return lt('Declining', 'কমতির দিকে');
+		if (key === 'stable') return lt('Stable', 'স্থিতিশীল');
+		return lt('Unavailable', 'পাওয়া যায়নি');
+	}
+
 	$: report = longitudinal?.report || null;
 	$: summaryCards = [
-		{ label: lt('Sessions analysed', 'বিশ্লেষিত সেশন'), value: report?.summary?.total_sessions ?? 0 },
+		{ label: lt('Sessions analysed', 'বিশ্লেষিত সেশন'), value: n(report?.summary?.total_sessions ?? 0) },
 		{
 			label: lt('Score trend', 'স্কোর ট্রেন্ড'),
-			value: report?.trends?.score_trend?.trend_direction || lt('Unavailable', 'পাওয়া যায়নি')
+			value: trendDirectionLabel(report?.trends?.score_trend?.trend_direction)
 		},
-		{ label: lt('Recent check-ins', 'সাম্প্রতিক চেক-ইন'), value: recentContext.length }
+		{ label: lt('Recent check-ins', 'সাম্প্রতিক চেক-ইন'), value: n(recentContext.length) }
 	];
 </script>
 
@@ -161,9 +194,12 @@
 							<div class="context-row">
 								<div>
 									<p class="context-date">{formatDate(item.created_at)}</p>
-									<p class="context-meta">{lt('Energy', 'শক্তি')} {item.fatigue_level ?? '-'} / 10 · {lt('Readiness', 'প্রস্তুতি')} {item.readiness_level ?? '-'} / 10</p>
+									<p class="context-meta">
+										{lt('Energy', 'শক্তি')} {levelValue(item.fatigue_level)} / {n(10)} ·
+										{lt('Readiness', 'প্রস্তুতি')} {levelValue(item.readiness_level)} / {n(10)}
+									</p>
 								</div>
-								<p class="context-note">{lt('Sleep', 'ঘুম')} {item.sleep_quality ?? '-'} / 10</p>
+								<p class="context-note">{lt('Sleep', 'ঘুম')} {levelValue(item.sleep_quality)} / {n(10)}</p>
 							</div>
 						{/each}
 					</div>

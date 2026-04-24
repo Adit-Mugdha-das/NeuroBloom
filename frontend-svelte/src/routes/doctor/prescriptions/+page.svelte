@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -59,11 +60,11 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Prescriptions"
-	subtitle="Issue, track, and revise structured digital prescriptions with PDF output and patient delivery from one clinical workspace."
+	title={uiText("Prescriptions", $activeLocale)}
+	subtitle={uiText("Issue, track, and revise structured digital prescriptions with PDF output and patient delivery from one clinical workspace.", $activeLocale)}
 >
 	{#if loading}
-		<section class="state-card"><p>Loading prescription directory...</p></section>
+		<section class="state-card"><p>{uiText("Loading prescription directory...", $activeLocale)}</p></section>
 	{:else if error}
 		<section class="state-card error-state"><p>{error}</p></section>
 	{:else}
@@ -79,45 +80,45 @@
 		<section class="directory-grid">
 			{#if !directory?.patients?.length}
 				<div class="empty-card">
-					<h2>No assigned patients yet</h2>
-					<p>Once patients are assigned, their prescription history and issuing workspace will appear here.</p>
+					<h2>{uiText("No assigned patients yet", $activeLocale)}</h2>
+					<p>{uiText("Once patients are assigned, their prescription history and issuing workspace will appear here.", $activeLocale)}</p>
 				</div>
 			{:else}
 				{#each directory.patients as patient}
 					<article class="patient-card">
 						<div class="patient-head">
 							<div>
-								<p class="card-kicker">Prescription Record</p>
+								<p class="card-kicker">{uiText("Prescription Record", $activeLocale)}</p>
 								<h2>{patient.full_name}</h2>
 								<p class="card-subtitle" data-localize-skip>{patient.diagnosis || patient.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
 							</div>
 							<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/prescriptions`)}>
-								Open Workspace
+								{uiText("Open Workspace", $activeLocale)}
 							</button>
 						</div>
 
 						<div class="meta-grid">
-							<div><span>Total prescriptions</span><strong>{patient.prescription_count}</strong></div>
-							<div><span>Active</span><strong>{patient.active_prescription_count}</strong></div>
-							<div><span>Latest issued</span><strong>{formatDate(patient.last_prescribed_at)}</strong></div>
-							<div><span>Treatment goal</span><strong data-localize-skip>{patient.treatment_goal || 'Not recorded'}</strong></div>
+							<div><span>{uiText("Total prescriptions", $activeLocale)}</span><strong>{patient.prescription_count}</strong></div>
+							<div><span>{uiText("Active", $activeLocale)}</span><strong>{patient.active_prescription_count}</strong></div>
+							<div><span>{uiText("Latest issued", $activeLocale)}</span><strong>{formatDate(patient.last_prescribed_at)}</strong></div>
+							<div><span>{uiText("Treatment goal", $activeLocale)}</span><strong data-localize-skip>{patient.treatment_goal || 'Not recorded'}</strong></div>
 						</div>
 
 						{#if patient.latest_prescription}
 							<div class="latest-card">
 								<div>
-									<p class="latest-kicker">Latest Prescription</p>
+									<p class="latest-kicker">{uiText("Latest Prescription", $activeLocale)}</p>
 									<h3 data-localize-skip>{patient.latest_prescription.title}</h3>
 									<p data-localize-skip>{patient.latest_prescription.summary || patient.latest_prescription.patient_instructions}</p>
 								</div>
 								<div class="latest-meta">
-									<span>Version {patient.latest_prescription.version_number}</span>
+									<span>{uiText("Version", $activeLocale)} {patient.latest_prescription.version_number}</span>
 									<span class="status-pill status-{patient.latest_prescription.status}">{patient.latest_prescription.status.replaceAll('_', ' ')}</span>
 								</div>
 							</div>
 						{:else}
 							<div class="latest-card empty">
-								<p>No prescription has been issued to this patient yet.</p>
+								<p>{uiText("No prescription has been issued to this patient yet.", $activeLocale)}</p>
 							</div>
 						{/if}
 					</article>

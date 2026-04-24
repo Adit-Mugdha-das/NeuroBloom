@@ -346,12 +346,12 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="key-preview-section">
 				<h3>{t('Example Symbol–Digit Key')}</h3>
 				<div class="key-preview-grid">
-					<div class="kp-pair"><span class="kp-sym">★</span><span class="kp-arrow">→</span><span class="kp-num">1</span></div>
-					<div class="kp-pair"><span class="kp-sym">●</span><span class="kp-arrow">→</span><span class="kp-num">2</span></div>
-					<div class="kp-pair"><span class="kp-sym">■</span><span class="kp-arrow">→</span><span class="kp-num">3</span></div>
-					<div class="kp-pair"><span class="kp-sym">▲</span><span class="kp-arrow">→</span><span class="kp-num">4</span></div>
-					<div class="kp-pair"><span class="kp-sym">◆</span><span class="kp-arrow">→</span><span class="kp-num">5</span></div>
-					<div class="kp-pair"><span class="kp-sym">♦</span><span class="kp-arrow">→</span><span class="kp-num">6</span></div>
+					<div class="kp-pair"><span class="kp-sym">★</span><span class="kp-arrow">→</span><span class="kp-num">{n(1)}</span></div>
+					<div class="kp-pair"><span class="kp-sym">●</span><span class="kp-arrow">→</span><span class="kp-num">{n(2)}</span></div>
+					<div class="kp-pair"><span class="kp-sym">■</span><span class="kp-arrow">→</span><span class="kp-num">{n(3)}</span></div>
+					<div class="kp-pair"><span class="kp-sym">▲</span><span class="kp-arrow">→</span><span class="kp-num">{n(4)}</span></div>
+					<div class="kp-pair"><span class="kp-sym">◆</span><span class="kp-arrow">→</span><span class="kp-num">{n(5)}</span></div>
+					<div class="kp-pair"><span class="kp-sym">♦</span><span class="kp-arrow">→</span><span class="kp-num">{n(6)}</span></div>
 				</div>
 				<p class="key-note">{t('Your actual key will be shown before the test begins. Study it carefully!')}</p>
 			</div>

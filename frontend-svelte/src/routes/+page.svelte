@@ -1,6 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { locale, setLocale, translateText } from '$lib/i18n';
+	import { locale, localeText, setLocale } from '$lib/i18n/runtime.js';
 	import { user } from '$lib/stores';
 
 	let currentUser = null;
@@ -13,36 +13,67 @@
 		goto('/dashboard');
 	}
 
+	const copy = {
+		banglaShort: { en: 'BN', bn: 'বাংলা' },
+		backgroundAlt: { en: 'NeuroBloom background', bn: 'NeuroBloom পটভূমি' },
+		badge: { en: 'Clinically Validated · MS Cognitive Care', bn: 'ক্লিনিক্যালভাবে যাচাইকৃত · MS কগনিটিভ কেয়ার' },
+		subtitle: {
+			en: 'A professional platform for cognitive rehabilitation, patient monitoring, and multiple sclerosis support.',
+			bn: 'কগনিটিভ পুনর্বাসন, রোগী পর্যবেক্ষণ এবং মাল্টিপল স্ক্লেরোসিস সহায়তার জন্য পেশাদার প্ল্যাটফর্ম।'
+		},
+		training: { en: 'Adaptive cognitive training', bn: 'অভিযোজিত কগনিটিভ ট্রেনিং' },
+		progress: { en: 'Progress monitoring', bn: 'অগ্রগতি পর্যবেক্ষণ' },
+		workflows: { en: 'MS-focused care workflows', bn: 'MS-কেন্দ্রিক কেয়ার ওয়ার্কফ্লো' },
+		welcome: { en: 'Welcome', bn: 'স্বাগতম' },
+		secureAccess: {
+			en: 'Secure access to your NeuroBloom workspace',
+			bn: 'আপনার NeuroBloom ওয়ার্কস্পেসে নিরাপদ প্রবেশ'
+		},
+		continue: { en: 'Continue to Dashboard', bn: 'ড্যাশবোর্ডে যান' },
+		switchAccount: { en: 'Switch account', bn: 'অন্য অ্যাকাউন্ট ব্যবহার করুন' },
+		signIn: { en: 'Sign In', bn: 'সাইন ইন' },
+		createAccount: { en: 'Create Account', bn: 'অ্যাকাউন্ট তৈরি করুন' },
+		note: {
+			en: 'Built for a calm, clear, and patient-friendly experience.',
+			bn: 'শান্ত, পরিষ্কার ও রোগীবান্ধব ব্যবহারের অভিজ্ঞতার জন্য তৈরি।'
+		}
+	};
+
 	$: welcomeMessage = currentUser
-		? translateText(`Welcome back, ${currentUser.email}!`, $locale)
+		? localeText(
+				{
+					en: `Welcome back, ${currentUser.email}!`,
+					bn: `আবার স্বাগতম, ${currentUser.email}!`
+				},
+				$locale
+			)
 		: '';
 </script>
 
 <div class="page-shell">
 	<div class="language-switcher">
 		<button class:active={$locale === 'en'} on:click={() => setLocale('en')}>EN</button>
-		<button class:active={$locale === 'bn'} on:click={() => setLocale('bn')}>বাং</button>
+		<button class:active={$locale === 'bn'} on:click={() => setLocale('bn')}>{localeText(copy.banglaShort, $locale)}</button>
 	</div>
 
 	<div class="page-grid">
 		<section class="visual-panel">
 			<div class="visual-overlay"></div>
-			<img src="/background.png" alt="NeuroBloom background" class="visual-image" />
+			<img src="/background.png" alt={localeText(copy.backgroundAlt, $locale)} class="visual-image" />
 
 			<div class="visual-content">
-				<div class="brand-badge">Clinically Validated · MS Cognitive Care</div>
+				<div class="brand-badge">{localeText(copy.badge, $locale)}</div>
 
 				<h1>NeuroBloom</h1>
 
 				<p class="visual-subtitle">
-					A professional platform for cognitive rehabilitation, patient monitoring, and
-					multiple sclerosis support.
+					{localeText(copy.subtitle, $locale)}
 				</p>
 
 				<div class="info-list">
-					<div>Adaptive cognitive training</div>
-					<div>Progress monitoring</div>
-					<div>MS-focused care workflows</div>
+					<div>{localeText(copy.training, $locale)}</div>
+					<div>{localeText(copy.progress, $locale)}</div>
+					<div>{localeText(copy.workflows, $locale)}</div>
 				</div>
 			</div>
 		</section>
@@ -50,8 +81,8 @@
 		<section class="auth-panel">
 			<div class="auth-card">
 				<div class="auth-header">
-					<h2>Welcome</h2>
-					<p>Secure access to your NeuroBloom workspace</p>
+					<h2>{localeText(copy.welcome, $locale)}</h2>
+					<p>{localeText(copy.secureAccess, $locale)}</p>
 				</div>
 
 				{#if currentUser}
@@ -63,20 +94,20 @@
 						<p class="welcome-msg">{welcomeMessage}</p>
 
 						<button class="primary-btn" on:click={continueToDashboard}>
-							Continue to Dashboard
+							{localeText(copy.continue, $locale)}
 						</button>
 
-						<a href="/login?reset=1" class="text-link">Switch account</a>
+						<a href="/login?reset=1" class="text-link">{localeText(copy.switchAccount, $locale)}</a>
 					</div>
 				{:else}
 					<div class="action-block">
-						<a href="/login" class="primary-btn">Sign In</a>
-						<a href="/register" class="secondary-btn">Create Account</a>
+						<a href="/login" class="primary-btn">{localeText(copy.signIn, $locale)}</a>
+						<a href="/register" class="secondary-btn">{localeText(copy.createAccount, $locale)}</a>
 					</div>
 				{/if}
 
 				<div class="bottom-note">
-					<p>Built for a calm, clear, and patient-friendly experience.</p>
+					<p>{localeText(copy.note, $locale)}</p>
 				</div>
 			</div>
 		</section>

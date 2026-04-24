@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 	import { API_BASE_URL } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -8,10 +8,14 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
 
 	// Task states
 	const STATE = {
@@ -40,6 +44,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	let practiceStatusMessage = '';
 	let recordedSessionData = null;
 	let countdownHandle = null;
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	$: currentTrial = sessionData?.trials?.[currentTrialIndex];
 	$: progress = sessionData ? ((currentTrialIndex + 1) / sessionData.total_trials * 100) : 0;
@@ -244,11 +249,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>Pattern Comparison</h1>
+						<h1>{lt('Pattern Comparison', 'প্যাটার্ন তুলনা')}</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || difficulty} domain="Processing Speed" />
 					</div>
-					<p class="subtitle">Same or different? Decide as fast as you can</p>
-					<div class="classic-badge">Pattern Comparison · Woodcock-Johnson Tests · Salthouse (1996)</div>
+					<p class="subtitle">{lt('Same or different? Decide as fast as you can', 'একই নাকি ভিন্ন? যত দ্রুত পারেন সিদ্ধান্ত নিন')}</p>
+					<div class="classic-badge">{lt('Pattern Comparison - Woodcock-Johnson Tests - Salthouse (1996)', 'প্যাটার্ন তুলনা - উডকক-জনসন টেস্ট - সালথাউস (১৯৯৬)')}</div>
 				</div>
 
 				{#if practiceStatusMessage}
@@ -256,20 +261,20 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{/if}
 
 				<div class="task-concept">
-					<h3>The Challenge</h3>
-					<p>Two patterns appear side by side. Your job: decide if they are <strong>identical</strong> or <strong>different</strong> — as quickly and accurately as possible.</p>
+					<h3>{lt('The Challenge', 'চ্যালেঞ্জ')}</h3>
+					<p>{lt('Two patterns appear side by side. Your job: decide if they are', 'দুটি প্যাটার্ন পাশাপাশি দেখা যাবে। আপনার কাজ: এগুলো')} <strong>{lt('identical', 'একই')}</strong> {lt('or', 'নাকি')} <strong>{lt('different', 'ভিন্ন')}</strong> {lt('as quickly and accurately as possible.', 'যত দ্রুত ও নির্ভুলভাবে সম্ভব ঠিক করা।')}</p>
 					<div class="demo-patterns">
 						<div class="demo-pattern-box">
-							<div class="demo-plabel">Pattern A</div>
+							<div class="demo-plabel">{lt('Pattern A', 'প্যাটার্ন ক')}</div>
 							<div class="demo-grid">
 								<div class="demo-row"><span>■</span><span>●</span><span>▲</span></div>
 								<div class="demo-row"><span>●</span><span>▲</span><span>■</span></div>
 								<div class="demo-row"><span>▲</span><span>■</span><span>●</span></div>
 							</div>
 						</div>
-						<div class="demo-vs">VS</div>
+						<div class="demo-vs">{lt('VS', 'বনাম')}</div>
 						<div class="demo-pattern-box">
-							<div class="demo-plabel">Pattern B</div>
+							<div class="demo-plabel">{lt('Pattern B', 'প্যাটার্ন খ')}</div>
 							<div class="demo-grid">
 								<div class="demo-row"><span>■</span><span>●</span><span>▲</span></div>
 								<div class="demo-row"><span>●</span><span>▲</span><span>■</span></div>
@@ -278,110 +283,110 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						</div>
 					</div>
 					<div class="demo-answer-row">
-						<span class="demo-ans-same">✓ SAME</span>
-						<span class="demo-ans-label">← correct answer here</span>
+						<span class="demo-ans-same">✓ {lt('SAME', 'একই')}</span>
+						<span class="demo-ans-label">{lt('correct answer here', 'এখানেই সঠিক উত্তর')}</span>
 					</div>
 				</div>
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">Look</span>
+						<span class="rule-icon">{lt('Look', 'দেখুন')}</span>
 						<div class="rule-text">
-							<strong>Step 1: Look</strong>
-							<span>Two patterns appear — scan both quickly</span>
+							<strong>{lt('Step 1: Look', 'ধাপ ১: দেখুন')}</strong>
+							<span>{lt('Two patterns appear - scan both quickly', 'দুটি প্যাটার্ন দেখা যাবে - দ্রুত দুটিই দেখুন')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">⊕</span>
 						<div class="rule-text">
-							<strong>Step 2: Compare</strong>
-							<span>Are they identical or different?</span>
+							<strong>{lt('Step 2: Compare', 'ধাপ ২: মিলিয়ে দেখুন')}</strong>
+							<span>{lt('Are they identical or different?', 'এগুলো একই নাকি ভিন্ন?')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">▷</span>
 						<div class="rule-text">
-							<strong>Step 3: Decide</strong>
-							<span>Click SAME or DIFFERENT fast</span>
+							<strong>{lt('Step 3: Decide', 'ধাপ ৩: সিদ্ধান্ত নিন')}</strong>
+							<span>{lt('Click SAME or DIFFERENT fast', 'দ্রুত একই অথবা ভিন্ন চাপুন')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">×n</span>
 						<div class="rule-text">
-							<strong>Step 4: Repeat</strong>
-							<span>Keep going for all {sessionData?.total_trials || 25} trials</span>
+							<strong>{lt('Step 4: Repeat', 'ধাপ ৪: চালিয়ে যান')}</strong>
+							<span>{lt('Keep going for all', 'মোট')} {n(sessionData?.total_trials || 25)} {lt('trials', 'ট্রায়াল শেষ করুন')}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>Speed Tips</h4>
+						<h4>{lt('Speed Tips', 'দ্রুততার পরামর্শ')}</h4>
 						<ul class="tips-list">
-							<li><strong>First glance:</strong> Trust your initial impression — it's usually right</li>
-							<li><strong>Scan systematically:</strong> Row by row if unsure</li>
-							<li><strong>Peripheral vision:</strong> With practice, differences pop out</li>
-							<li><strong>Don't overthink:</strong> Quick decisions score higher</li>
+							<li><strong>{lt('First glance:', 'প্রথম দেখায়:')}</strong> {lt("Trust your initial impression - it's usually right", 'প্রথম ধারণাকে গুরুত্ব দিন - বেশিরভাগ সময় সেটাই ঠিক হয়')}</li>
+							<li><strong>{lt('Scan systematically:', 'পদ্ধতিগতভাবে দেখুন:')}</strong> {lt('Row by row if unsure', 'নিশ্চিত না হলে সারি ধরে দেখুন')}</li>
+							<li><strong>{lt('Peripheral vision:', 'পার্শ্বদৃষ্টি:')}</strong> {lt('With practice, differences pop out', 'অনুশীলনে ভিন্নতা সহজে চোখে পড়বে')}</li>
+							<li><strong>{lt("Don't overthink:", 'অতিরিক্ত ভাববেন না:')}</strong> {lt('Quick decisions score higher', 'দ্রুত সিদ্ধান্তে স্কোর ভালো হয়')}</li>
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>Test Format</h4>
+						<h4>{lt('Test Format', 'টেস্টের ধরন')}</h4>
 						<ul class="structure-list">
-							<li><span class="struct-key">Trials</span><span class="struct-val">{sessionData?.total_trials || 25}</span></li>
-							<li><span class="struct-key">Time per trial</span><span class="struct-val">{sessionData?.config?.time_per_trial || 2}s</span></li>
-							<li><span class="struct-key">Pattern types</span><span class="struct-val">geometric → abstract</span></li>
-							<li><span class="struct-key">Measures</span><span class="struct-val">speed + accuracy</span></li>
+							<li><span class="struct-key">{lt('Trials', 'ট্রায়াল')}</span><span class="struct-val">{n(sessionData?.total_trials || 25)}</span></li>
+							<li><span class="struct-key">{lt('Time per trial', 'প্রতি ট্রায়ালের সময়')}</span><span class="struct-val">{n(sessionData?.config?.time_per_trial || 2)}{lt('s', 'সে.')}</span></li>
+							<li><span class="struct-key">{lt('Pattern types', 'প্যাটার্নের ধরন')}</span><span class="struct-val">{lt('geometric to abstract', 'জ্যামিতিক থেকে বিমূর্ত')}</span></li>
+							<li><span class="struct-key">{lt('Measures', 'যা মাপে')}</span><span class="struct-val">{lt('speed + accuracy', 'গতি + নির্ভুলতা')}</span></li>
 						</ul>
 					</div>
 				</div>
 
 				<div class="clinical-info">
-					<h4>Clinical Significance</h4>
+					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>Pure Speed</strong>
-							<span>Measures processing speed with minimal motor demands</span>
+							<strong>{lt('Pure Speed', 'শুধু গতি')}</strong>
+							<span>{lt('Measures processing speed with minimal motor demands', 'খুব কম মোটর চাহিদায় প্রসেসিং স্পিড মাপে')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>MS Friendly</strong>
-							<span>Low motor requirements — ideal for MS assessment</span>
+							<strong>{lt('MS Friendly', 'MS-বান্ধব')}</strong>
+							<span>{lt('Low motor requirements - ideal for MS assessment', 'মোটর চাহিদা কম - MS মূল্যায়নের জন্য উপযোগী')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>Validated</strong>
-							<span>Woodcock-Johnson Tests of Cognitive Abilities</span>
+							<strong>{lt('Validated', 'যাচাইকৃত')}</strong>
+							<span>{lt('Woodcock-Johnson Tests of Cognitive Abilities', 'উডকক-জনসন কগনিটিভ অ্যাবিলিটিজ টেস্ট')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>Research Based</strong>
-							<span>Sensitive to cognitive processing efficiency (Salthouse, 1996)</span>
+							<strong>{lt('Research Based', 'গবেষণাভিত্তিক')}</strong>
+							<span>{lt('Sensitive to cognitive processing efficiency (Salthouse, 1996)', 'কগনিটিভ প্রসেসিং দক্ষতার পরিবর্তন ধরতে সংবেদনশীল (সালথাউস, ১৯৯৬)')}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="perf-guide">
-					<h4>Performance Targets</h4>
+					<h4>{lt('Performance Targets', 'পারফরম্যান্স লক্ষ্য')}</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
-							<span class="norm-label">Excellent</span>
-							<span class="norm-val">35+ correct/min</span>
+							<span class="norm-label">{lt('Excellent', 'চমৎকার')}</span>
+							<span class="norm-val">{lt('35+ correct/min', '৩৫+ সঠিক/মিনিট')}</span>
 						</div>
 						<div class="norm-bar norm-good">
-							<span class="norm-label">Good</span>
-							<span class="norm-val">25–34 correct/min</span>
+							<span class="norm-label">{lt('Good', 'ভালো')}</span>
+							<span class="norm-val">{lt('25-34 correct/min', '২৫-৩৪ সঠিক/মিনিট')}</span>
 						</div>
 						<div class="norm-bar norm-avg">
-							<span class="norm-label">Average</span>
-							<span class="norm-val">15–24 correct/min</span>
+							<span class="norm-label">{lt('Average', 'গড়')}</span>
+							<span class="norm-val">{lt('15-24 correct/min', '১৫-২৪ সঠিক/মিনিট')}</span>
 						</div>
 						<div class="norm-bar norm-fair">
-							<span class="norm-label">Fair</span>
-							<span class="norm-val">10–14 correct/min</span>
+							<span class="norm-label">{lt('Fair', 'মাঝারি')}</span>
+							<span class="norm-val">{lt('10-14 correct/min', '১০-১৪ সঠিক/মিনিট')}</span>
 						</div>
 						<div class="norm-bar norm-needs">
-							<span class="norm-label">Needs Practice</span>
-							<span class="norm-val">&lt;10 correct/min</span>
+							<span class="norm-label">{lt('Needs Practice', 'আরও অনুশীলন দরকার')}</span>
+							<span class="norm-val">{lt('<10 correct/min', '<১০ সঠিক/মিনিট')}</span>
 						</div>
 					</div>
-					<p class="norm-note">*Based on Salthouse (1996) processing speed research</p>
+					<p class="norm-note">{lt('*Based on Salthouse (1996) processing speed research', '*সালথাউস (১৯৯৬) প্রসেসিং স্পিড গবেষণার ভিত্তিতে')}</p>
 				</div>
 
 				<div class="button-group">
@@ -401,18 +406,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{#if playMode === TASK_PLAY_MODE.PRACTICE}
 					<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 				{/if}
-				<h2>Get Ready!</h2>
-				<p class="ready-message">Compare patterns and decide: SAME or DIFFERENT</p>
+				<h2>{lt('Get Ready!', 'প্রস্তুত হন!')}</h2>
+				<p class="ready-message">{lt('Compare patterns and decide: SAME or DIFFERENT', 'প্যাটার্ন মিলিয়ে সিদ্ধান্ত নিন: একই না ভিন্ন')}</p>
 				<div class="ready-demo">
-					<div class="rdy-pattern-box">Pattern A</div>
-					<div class="rdy-vs">vs</div>
-					<div class="rdy-pattern-box">Pattern B</div>
+					<div class="rdy-pattern-box">{lt('Pattern A', 'প্যাটার্ন ক')}</div>
+					<div class="rdy-vs">{lt('vs', 'বনাম')}</div>
+					<div class="rdy-pattern-box">{lt('Pattern B', 'প্যাটার্ন খ')}</div>
 				</div>
 				<div class="rdy-buttons">
-					<div class="rdy-btn rdy-same">✓ SAME</div>
-					<div class="rdy-btn rdy-diff">✗ DIFFERENT</div>
+					<div class="rdy-btn rdy-same">✓ {lt('SAME', 'একই')}</div>
+					<div class="rdy-btn rdy-diff">✕ {lt('DIFFERENT', 'ভিন্ন')}</div>
 				</div>
-				<div class="countdown">{countdown}</div>
+				<div class="countdown">{n(countdown)}</div>
 			</div>
 
 		{:else if state === STATE.TESTING}
@@ -422,14 +427,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{/if}
 				<div class="test-header">
 					<div class="test-badges">
-						<span class="count-badge">Trial {currentTrialIndex + 1} / {sessionData.total_trials}</span>
+						<span class="count-badge">{lt('Trial', 'ট্রায়াল')} {n(currentTrialIndex + 1)} / {n(sessionData.total_trials)}</span>
 						{#if currentTrial}
 							<span class="type-badge">
-								{#if currentTrial.pattern_type === 'simple_geometric'}Simple
-								{:else if currentTrial.pattern_type === 'complex'}Complex
-								{:else}Abstract{/if}
+								{#if currentTrial.pattern_type === 'simple_geometric'}{lt('Simple', 'সহজ')}
+								{:else if currentTrial.pattern_type === 'complex'}{lt('Complex', 'জটিল')}
+								{:else}{lt('Abstract', 'বিমূর্ত')}{/if}
 							</span>
-							<span class="grid-badge">{currentTrial.pattern_size}×{currentTrial.pattern_size}</span>
+							<span class="grid-badge">{n(currentTrial.pattern_size)}×{n(currentTrial.pattern_size)}</span>
 						{/if}
 					</div>
 					<div class="progress-track">
@@ -441,7 +446,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{#if currentTrial}
 					<div class="patterns-display">
 						<div class="pattern-panel">
-							<div class="p-label">Pattern A</div>
+							<div class="p-label">{lt('Pattern A', 'প্যাটার্ন ক')}</div>
 							<div class="pattern-grid size-{currentTrial.pattern_size}">
 								{#each currentTrial.pattern_a as row}
 									<div class="pattern-row">
@@ -453,10 +458,10 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							</div>
 						</div>
 
-						<div class="vs-divider"><span>VS</span></div>
+						<div class="vs-divider"><span>{lt('VS', 'বনাম')}</span></div>
 
 						<div class="pattern-panel">
-							<div class="p-label">Pattern B</div>
+							<div class="p-label">{lt('Pattern B', 'প্যাটার্ন খ')}</div>
 							<div class="pattern-grid size-{currentTrial.pattern_size}">
 								{#each currentTrial.pattern_b as row}
 									<div class="pattern-row">
@@ -470,18 +475,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					</div>
 
 					<div class="decision-area">
-						<p class="decision-question">Are these patterns the same or different?</p>
+						<p class="decision-question">{lt('Are these patterns the same or different?', 'এই প্যাটার্নগুলো একই নাকি ভিন্ন?')}</p>
 						<div class="decision-buttons">
 							<button class="decision-btn same-btn" on:click={() => submitAnswer('SAME')}>
 								<span class="dbtn-icon">✓</span>
-								<span class="dbtn-text">SAME</span>
+								<span class="dbtn-text">{lt('SAME', 'একই')}</span>
 							</button>
 							<button class="decision-btn diff-btn" on:click={() => submitAnswer('DIFFERENT')}>
-								<span class="dbtn-icon">✗</span>
-								<span class="dbtn-text">DIFFERENT</span>
+								<span class="dbtn-icon">✕</span>
+								<span class="dbtn-text">{lt('DIFFERENT', 'ভিন্ন')}</span>
 							</button>
 						</div>
-						<p class="time-hint">Time limit: {currentTrial.time_limit}s per trial</p>
+						<p class="time-hint">{lt('Time limit:', 'সময় সীমা:')} {n(currentTrial.time_limit)}{lt('s', 'সে.')} {lt('per trial', 'প্রতি ট্রায়াল')}</p>
 					</div>
 				{/if}
 			</div>
@@ -493,84 +498,84 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{@const perfColor = getPerformanceColor(sessionResults.metrics.performance_level)}
 					<div class="perf-banner" style="--perf-color: {perfColor}">
 						<div class="perf-level">{sessionResults.metrics.performance_level}</div>
-						<div class="perf-subtitle">{sessionResults.metrics.processing_speed} correct/min · Pattern Comparison Complete!</div>
+						<div class="perf-subtitle">{n(sessionResults.metrics.processing_speed)} {lt('correct/min - Pattern Comparison Complete!', 'সঠিক/মিনিট - প্যাটার্ন তুলনা সম্পন্ন!')}</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
 							<div class="metric-icon">→</div>
-							<div class="metric-value">{sessionResults.metrics.processing_speed}</div>
-							<div class="metric-label">Processing Speed</div>
-							<div class="metric-sub">correct responses/min</div>
+							<div class="metric-value">{n(sessionResults.metrics.processing_speed)}</div>
+							<div class="metric-label">{lt('Processing Speed', 'প্রসেসিং স্পিড')}</div>
+							<div class="metric-sub">{lt('correct responses/min', 'সঠিক উত্তর/মিনিট')}</div>
 						</div>
 						<div class="metric-card">
-							<div class="metric-icon">◎</div>
-							<div class="metric-value">{sessionResults.metrics.score}</div>
-							<div class="metric-label">Score</div>
-							<div class="metric-sub">out of 100</div>
+							<div class="metric-icon">●</div>
+							<div class="metric-value">{n(sessionResults.metrics.score)}</div>
+							<div class="metric-label">{lt('Score', 'স্কোর')}</div>
+							<div class="metric-sub">{lt('out of 100', '১০০-এর মধ্যে')}</div>
 						</div>
 						<div class="metric-card">
 							<div class="metric-icon">✓</div>
-							<div class="metric-value">{sessionResults.metrics.accuracy}%</div>
-							<div class="metric-label">Accuracy</div>
-							<div class="metric-sub">{sessionResults.metrics.correct_count}/{sessionResults.metrics.total_trials} correct</div>
+							<div class="metric-value">{n(sessionResults.metrics.accuracy)}{lt('%', '%')}</div>
+							<div class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</div>
+							<div class="metric-sub">{n(sessionResults.metrics.correct_count)}/{n(sessionResults.metrics.total_trials)} {lt('correct', 'সঠিক')}</div>
 						</div>
 						<div class="metric-card">
 							<div class="metric-icon">⏱️</div>
-							<div class="metric-value">{sessionResults.metrics.average_reaction_time}s</div>
-							<div class="metric-label">Avg Response Time</div>
-							<div class="metric-sub">per trial</div>
+							<div class="metric-value">{n(sessionResults.metrics.average_reaction_time)}{lt('s', 'সে.')}</div>
+							<div class="metric-label">{lt('Avg Response Time', 'গড় উত্তর সময়')}</div>
+							<div class="metric-sub">{lt('per trial', 'প্রতি ট্রায়াল')}</div>
 						</div>
 					</div>
 
 					<div class="breakdown">
-						<h3>Detailed Analysis</h3>
+						<h3>{lt('Detailed Analysis', 'বিস্তারিত বিশ্লেষণ')}</h3>
 						<div class="breakdown-row">
-							<span class="bd-label">Total Trials</span>
-							<span class="bd-val">{sessionResults.metrics.total_trials}</span>
+							<span class="bd-label">{lt('Total Trials', 'মোট ট্রায়াল')}</span>
+							<span class="bd-val">{n(sessionResults.metrics.total_trials)}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Correct Answers</span>
-							<span class="bd-val bd-success">{sessionResults.metrics.correct_count}</span>
+							<span class="bd-label">{lt('Correct Answers', 'সঠিক উত্তর')}</span>
+							<span class="bd-val bd-success">{n(sessionResults.metrics.correct_count)}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Timeouts</span>
+							<span class="bd-label">{lt('Timeouts', 'সময় শেষ')}</span>
 							<span class="bd-val" class:bd-error={sessionResults.metrics.timeout_count > 0} class:bd-success={sessionResults.metrics.timeout_count === 0}>
-								{sessionResults.metrics.timeout_count}
+								{n(sessionResults.metrics.timeout_count)}
 							</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Consistency</span>
-							<span class="bd-val">{sessionResults.metrics.consistency}%</span>
+							<span class="bd-label">{lt('Consistency', 'ধারাবাহিকতা')}</span>
+							<span class="bd-val">{n(sessionResults.metrics.consistency)}{lt('%', '%')}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Total Time</span>
-							<span class="bd-val">{sessionResults.metrics.total_time}s</span>
+							<span class="bd-label">{lt('Total Time', 'মোট সময়')}</span>
+							<span class="bd-val">{n(sessionResults.metrics.total_time)}{lt('s', 'সে.')}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Performance Level</span>
+							<span class="bd-label">{lt('Performance Level', 'পারফরম্যান্স স্তর')}</span>
 							<span class="bd-val" style="color: {perfColor}">{sessionResults.metrics.performance_level}</span>
 						</div>
 					</div>
 
 					<div class="clinical-note">
-						<h4>Clinical Context</h4>
+						<h4>{lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h4>
 						<p>
 							{#if sessionResults.metrics.performance_level === 'Excellent'}
-								Outstanding processing speed! Your performance of <strong>{sessionResults.metrics.processing_speed} correct/min</strong> is well above average, indicating excellent cognitive efficiency and visual processing.
+								{lt('Outstanding processing speed! Your performance of', 'অসাধারণ প্রসেসিং স্পিড! আপনার পারফরম্যান্স')} <strong>{n(sessionResults.metrics.processing_speed)} {lt('correct/min', 'সঠিক/মিনিট')}</strong> {lt('is well above average, indicating excellent cognitive efficiency and visual processing.', 'গড়ের অনেক ওপরে, যা চমৎকার কগনিটিভ দক্ষতা ও ভিজ্যুয়াল প্রসেসিং বোঝায়।')}
 							{:else if sessionResults.metrics.performance_level === 'Good'}
-								Great performance! Your speed of <strong>{sessionResults.metrics.processing_speed} correct/min</strong> is above average, showing strong pattern recognition and quick decision-making.
+								{lt('Great performance! Your speed of', 'দারুণ পারফরম্যান্স! আপনার গতি')} <strong>{n(sessionResults.metrics.processing_speed)} {lt('correct/min', 'সঠিক/মিনিট')}</strong> {lt('is above average, showing strong pattern recognition and quick decision-making.', 'গড়ের ওপরে, যা শক্তিশালী প্যাটার্ন চেনা ও দ্রুত সিদ্ধান্ত নেওয়ার ক্ষমতা দেখায়।')}
 							{:else if sessionResults.metrics.performance_level === 'Average'}
-								Good work! Your speed of <strong>{sessionResults.metrics.processing_speed} correct/min</strong> is in the normal range. Regular practice can help improve your pattern recognition speed.
+								{lt('Good work! Your speed of', 'ভালো করেছেন! আপনার গতি')} <strong>{n(sessionResults.metrics.processing_speed)} {lt('correct/min', 'সঠিক/মিনিট')}</strong> {lt('is in the normal range. Regular practice can help improve your pattern recognition speed.', 'স্বাভাবিক সীমায় আছে। নিয়মিত অনুশীলনে প্যাটার্ন চেনার গতি আরও উন্নত হতে পারে।')}
 							{:else}
-								Keep practicing! Processing speed improves significantly with regular training. Pattern comparison builds quick visual processing and decision-making skills.
+								{lt('Keep practicing! Processing speed improves significantly with regular training. Pattern comparison builds quick visual processing and decision-making skills.', 'অনুশীলন চালিয়ে যান! নিয়মিত ট্রেনিংয়ে প্রসেসিং স্পিড উল্লেখযোগ্যভাবে উন্নত হয়। প্যাটার্ন তুলনা দ্রুত ভিজ্যুয়াল প্রসেসিং ও সিদ্ধান্ত নেওয়ার দক্ষতা গড়ে তোলে।')}
 							{/if}
 						</p>
-						<p class="why-matters"><strong>Why this matters for MS:</strong> Pattern comparison requires minimal motor skill — just clicking — making it an excellent measure of pure cognitive processing speed unaffected by physical limitations.</p>
+						<p class="why-matters"><strong>{lt('Why this matters for MS:', 'MS-এর ক্ষেত্রে কেন গুরুত্বপূর্ণ:')}</strong> {lt('Pattern comparison requires minimal motor skill - just clicking - making it an excellent measure of pure cognitive processing speed unaffected by physical limitations.', 'প্যাটার্ন তুলনায় খুব কম মোটর দক্ষতা লাগে - শুধু ক্লিক করা - তাই শারীরিক সীমাবদ্ধতার প্রভাব ছাড়াই কগনিটিভ প্রসেসিং স্পিড মাপার ভালো উপায়।')}</p>
 					</div>
 
 					<div class="difficulty-info">
-						<span>Difficulty: <strong>{sessionResults.difficulty_before}</strong> → <strong>{sessionResults.difficulty_after}</strong></span>
+						<span>{lt('Difficulty:', 'কঠিনতা:')} <strong>{n(sessionResults.difficulty_before)}</strong> → <strong>{n(sessionResults.difficulty_after)}</strong></span>
 						<span class="adapt-reason">{sessionResults.adaptation_reason}</span>
 					</div>
 
@@ -579,8 +584,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{/if}
 
 					<div class="button-group">
-						<button class="start-button" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
-						<button class="btn-secondary" on:click={() => goto('/dashboard')}>View Dashboard</button>
+						<button class="start-button" on:click={() => goto('/dashboard')}>{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
+						<button class="btn-secondary" on:click={() => goto('/dashboard')}>{lt('View Dashboard', 'ড্যাশবোর্ড দেখুন')}</button>
 					</div>
 				{/if}
 			</div>
@@ -593,37 +598,37 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="modal-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
 			<button class="close-btn" on:click={toggleHelp}>×</button>
-			<h2>Pattern Comparison Strategies</h2>
+			<h2>{lt('Pattern Comparison Strategies', 'প্যাটার্ন তুলনার কৌশল')}</h2>
 			<div class="strategy">
-				<h3>Quick Visual Scan</h3>
-				<p>Your first impression is often correct. Scan both patterns simultaneously rather than examining each in detail.</p>
+				<h3>{lt('Quick Visual Scan', 'দ্রুত চোখ বুলান')}</h3>
+				<p>{lt('Your first impression is often correct. Scan both patterns simultaneously rather than examining each in detail.', 'প্রথম ধারণা অনেক সময় সঠিক হয়। প্রতিটি খুঁটিয়ে না দেখে দুই প্যাটার্ন একসঙ্গে চোখ বুলিয়ে দেখুন।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Systematic Approach</h3>
-				<p>If unsure, scan row by row (top to bottom) or column by column. This ensures you don't miss differences.</p>
+				<h3>{lt('Systematic Approach', 'নিয়ম করে দেখুন')}</h3>
+				<p>{lt('If unsure, scan row by row or column by column so you do not miss differences.', 'নিশ্চিত না হলে সারি ধরে বা কলাম ধরে দেখুন, তাহলে পার্থক্য চোখ এড়াবে না।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Speed vs Accuracy</h3>
-				<p>The "correct/min" metric rewards both speed and accuracy. Fast but wrong is worse than slightly slow but accurate.</p>
+				<h3>{lt('Speed vs Accuracy', 'গতি বনাম সঠিকতা')}</h3>
+				<p>{lt('The correct-per-minute metric rewards both speed and accuracy. Fast but wrong is worse than slightly slow but accurate.', 'প্রতি মিনিটে সঠিকতার মেট্রিক গতি ও সঠিকতা দুটোই দেখে। খুব দ্রুত কিন্তু ভুল হওয়া, সামান্য ধীর কিন্তু সঠিক হওয়ার চেয়ে খারাপ।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Peripheral Vision</h3>
-				<p>With practice, look at the centre and let peripheral vision catch differences automatically.</p>
+				<h3>{lt('Peripheral Vision', 'পার্শ্বদৃষ্টি')}</h3>
+				<p>{lt('With practice, look at the centre and let peripheral vision catch differences automatically.', 'অনুশীলনের সঙ্গে মাঝখানে তাকিয়ে পার্শ্বদৃষ্টিকে পার্থক্য ধরতে দিন।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Pattern Recognition</h3>
-				<p>Your brain improves at this with repetition. Trust your pattern recognition — don't overthink it.</p>
+				<h3>{lt('Pattern Recognition', 'প্যাটার্ন চেনা')}</h3>
+				<p>{lt('Your brain improves at this with repetition. Trust your pattern recognition - do not overthink it.', 'পুনরাবৃত্তির সঙ্গে মস্তিষ্ক এতে ভালো হয়। প্যাটার্ন চেনার ক্ষমতাকে বিশ্বাস করুন - বেশি ভাববেন না।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Why This Matters</h3>
-				<p>This test measures pure cognitive processing speed without complex motor demands — ideal for assessing MS-related cognitive changes.</p>
+				<h3>{lt('Why This Matters', 'কেন গুরুত্বপূর্ণ')}</h3>
+				<p>{lt('This test measures cognitive processing speed without complex motor demands, which helps assess MS-related cognitive changes.', 'জটিল হাতের কাজ ছাড়াই এই পরীক্ষা কগনিটিভ প্রক্রিয়াকরণের গতি মাপে, যা MS-সম্পর্কিত পরিবর্তন বুঝতে সাহায্য করে।')}</p>
 			</div>
 		</div>
 	</div>
 {/if}
 
 <style>
-	/* ── Container ─────────────────────────────────────────── */
+	/* â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.pc-container {
 		min-height: 100vh;
 		background: #C8DEFA;
@@ -635,7 +640,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		margin: 0 auto;
 	}
 
-	/* ── Instructions card ─────────────────────────────────── */
+	/* â”€â”€ Instructions card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.instructions-card {
 		background: white;
 		border-radius: 16px;
@@ -691,7 +696,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		text-align: center;
 	}
 
-	/* ── Task concept (teal for visual matching) ───────────── */
+	/* â”€â”€ Task concept (teal for visual matching) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.task-concept {
 		background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
 		border: 1px solid #99f6e4;
@@ -785,7 +790,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		font-style: italic;
 	}
 
-	/* ── Rules grid ────────────────────────────────────────── */
+	/* â”€â”€ Rules grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.rules-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -810,7 +815,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.rule-text span { font-size: 0.82rem; color: #64748b; line-height: 1.4; }
 
-	/* ── Info grid ─────────────────────────────────────────── */
+	/* â”€â”€ Info grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 	.info-section { background: #f8fafc; border-radius: 10px; padding: 1.2rem; }
@@ -833,7 +838,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	.struct-key { color: #64748b; }
 	.struct-val { font-weight: 600; color: #1e293b; }
 
-	/* ── Clinical info ─────────────────────────────────────── */
+	/* â”€â”€ Clinical info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.clinical-info {
 		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
 		border: 1px solid #bbf7d0;
@@ -849,7 +854,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	.clinical-item strong { font-size: 0.82rem; color: #166534; }
 	.clinical-item span { font-size: 0.8rem; color: #15803d; }
 
-	/* ── Performance guide ─────────────────────────────────── */
+	/* â”€â”€ Performance guide â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.perf-guide { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
 
 	.perf-guide h4 { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
@@ -872,7 +877,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.norm-note { font-size: 0.78rem; color: #94a3b8; font-style: italic; margin: 0.5rem 0 0; text-align: center; }
 
-	/* ── Button group ──────────────────────────────────────── */
+	/* â”€â”€ Button group â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.button-group {
 		display: flex; justify-content: center; gap: 1rem;
 		flex-wrap: wrap; padding-top: 0.5rem;
@@ -900,13 +905,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.btn-secondary:hover { background: rgba(102, 126, 234, 0.08); }
 
-	/* ── Screen card ───────────────────────────────────────── */
+	/* â”€â”€ Screen card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.screen-card {
 		background: white; border-radius: 16px; padding: 2.5rem;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 	}
 
-	/* ── Ready screen ──────────────────────────────────────── */
+	/* â”€â”€ Ready screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.ready-screen { text-align: center; }
 
 	.ready-screen h2 { font-size: 1.8rem; font-weight: 700; color: #1e293b; margin: 0 0 0.5rem; }
@@ -949,7 +954,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		50% { transform: scale(1.08); opacity: 0.75; }
 	}
 
-	/* ── Testing screen ────────────────────────────────────── */
+	/* â”€â”€ Testing screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.testing-screen { padding: 1.25rem; }
 
 	.test-header {
@@ -989,7 +994,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.help-btn-sm:hover { background: #667eea; color: white; }
 
-	/* ── Patterns display ──────────────────────────────────── */
+	/* â”€â”€ Patterns display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.patterns-display {
 		display: flex; align-items: center; justify-content: center;
 		gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap;
@@ -1026,7 +1031,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		background: #f1f5f9; padding: 0.5rem 0.9rem; border-radius: 8px;
 	}
 
-	/* ── Decision area ─────────────────────────────────────── */
+	/* â”€â”€ Decision area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.decision-area { text-align: center; margin-top: 1.5rem; }
 
 	.decision-question {
@@ -1061,7 +1066,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.time-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.8rem; }
 
-	/* ── Complete screen ───────────────────────────────────── */
+	/* â”€â”€ Complete screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.complete-screen { display: flex; flex-direction: column; gap: 1.5rem; }
 
 	.perf-banner {
@@ -1099,7 +1104,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	.metric-label { font-size: 0.82rem; font-weight: 600; color: #64748b; }
 	.metric-sub   { font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem; }
 
-	/* ── Breakdown ─────────────────────────────────────────── */
+	/* â”€â”€ Breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.breakdown { background: #f8fafc; border-radius: 12px; padding: 1.2rem; }
 
 	.breakdown h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 0.8rem; }
@@ -1116,7 +1121,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	.bd-error   { color: #dc2626; }
 	.bd-success { color: #16a34a; }
 
-	/* ── Clinical note ─────────────────────────────────────── */
+	/* â”€â”€ Clinical note â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.clinical-note {
 		background: linear-gradient(135deg, #f0fdf4, #dcfce7);
 		border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.2rem;
@@ -1129,7 +1134,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.why-matters { font-style: italic; }
 
-	/* ── Difficulty info ───────────────────────────────────── */
+	/* â”€â”€ Difficulty info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.difficulty-info {
 		background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px;
 		padding: 0.9rem 1.2rem; display: flex; justify-content: space-between;
@@ -1139,7 +1144,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.adapt-reason { color: #14b8a6; font-weight: 400; font-style: italic; }
 
-	/* ── Help modal ────────────────────────────────────────── */
+	/* â”€â”€ Help modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	.modal-overlay {
 		position: fixed; inset: 0; background: rgba(0,0,0,0.55);
 		display: flex; align-items: center; justify-content: center;
@@ -1174,7 +1179,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	.strategy h3 { font-size: 0.88rem; font-weight: 700; color: #1e293b; margin: 0 0 0.3rem; }
 	.strategy p  { font-size: 0.84rem; color: #64748b; margin: 0; line-height: 1.5; }
 
-	/* ── Responsive ────────────────────────────────────────── */
+	/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 	@media (max-width: 640px) {
 		.instructions-card { padding: 1.5rem; gap: 1.2rem; }
 		.rules-grid { grid-template-columns: 1fr; }

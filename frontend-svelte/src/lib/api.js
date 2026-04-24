@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { queueLocalizationRefresh } from '$lib/i18n';
 
 const normalizeApiBaseUrl = (value = '') => value.trim().replace(/\/+$/, '');
 
@@ -23,11 +22,9 @@ const api = axios.create({
 
 api.interceptors.response.use(
 	(response) => {
-		queueLocalizationRefresh('pulse');
 		return response;
 	},
 	(error) => {
-		queueLocalizationRefresh('pulse');
 		return Promise.reject(error);
 	}
 );

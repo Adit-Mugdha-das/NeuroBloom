@@ -469,21 +469,21 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<h2 class="section-title">{t('Three-Phase Structure')}</h2>
 				<div class="phases-row">
 					<div class="phase-block phase1">
-						<div class="phase-num">1</div>
+						<div class="phase-num">{n(1)}</div>
 						<p class="phase-label">{t('Pre-Switch')}</p>
 						<p class="phase-rule">{cueInstruction(phaseRule(1))}</p>
 						<p class="phase-eg">{ruleExample(phaseRule(1))}</p>
 					</div>
-					<div class="phase-arrow">\u2192</div>
+					<div class="phase-arrow">→</div>
 					<div class="phase-block phase2">
-						<div class="phase-num">2</div>
+						<div class="phase-num">{n(2)}</div>
 						<p class="phase-label">{t('Post-Switch')}</p>
 						<p class="phase-rule">{cueInstruction(phaseRule(2))}</p>
 						<p class="phase-eg">{ruleExample(phaseRule(2))}</p>
 					</div>
-					<div class="phase-arrow">\u2192</div>
+					<div class="phase-arrow">→</div>
 					<div class="phase-block phase3">
-						<div class="phase-num">3</div>
+						<div class="phase-num">{n(3)}</div>
 						<p class="phase-label">{t('Mixed')}</p>
 						<p class="phase-rule">{t('Per-trial cue')}</p>
 						<p class="phase-eg">{$locale === 'bn' ? 'কখনো রঙ, কখনো আকৃতি' : 'Color or Shape — cue tells you'}</p>
@@ -496,28 +496,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<h2 class="section-title">{t('How It Works')}</h2>
 				<div class="rules-grid">
 					<div class="rule-item">
-						<div class="rule-num fuchsia">1</div>
+						<div class="rule-num fuchsia">{n(1)}</div>
 						<div class="rule-body">
 							<strong>{t('Cards Have Two Features')}</strong>
 							<span>{t('Each card has a color (red or blue) and a shape (circle or star)')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num fuchsia">2</div>
+						<div class="rule-num fuchsia">{n(2)}</div>
 						<div class="rule-body">
 							<strong>{t('Click the Matching Target')}</strong>
 							<span>{t('Two target cards are shown. Click the one that matches the rule.')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num fuchsia">3</div>
+						<div class="rule-num fuchsia">{n(3)}</div>
 						<div class="rule-body">
 							<strong>{t('Rules Switch Between Phases')}</strong>
 							<span>{t('Phase 1 uses one rule; Phase 2 switches to a new rule. Ignore your old response pattern.')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num fuchsia">4</div>
+						<div class="rule-num fuchsia">{n(4)}</div>
 						<div class="rule-body">
 							<strong>{t('Watch the Cue in Phase 3')}</strong>
 							<span>{t('In the mixed phase, a brief cue flashes before each card. It tells you which rule to use.')}</span>
@@ -574,7 +574,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<div class="clinical-grid">
 					<div class="clinical-item">
 						<span class="ci-label">{t('Validated By')}</span>
-						<span>Zelazo (2006); {t('developmental and clinical research')}</span>
+						<span>{t('Zelazo 2006 developmental and clinical research')}</span>
 					</div>
 					<div class="clinical-item">
 						<span class="ci-label">{t('MS Relevance')}</span>
@@ -598,17 +598,17 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<div class="norm-bar">
 						<span class="norm-label">{t('Excellent')}</span>
 						<div class="norm-track"><div class="norm-fill fuchsia-fill" style="width:25%"></div></div>
-						<span class="norm-val">&lt; 100ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '< ১০০ মি.সে.' : '< 100ms'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{t('Good')}</span>
 						<div class="norm-track"><div class="norm-fill fuchsia-mid" style="width:50%"></div></div>
-						<span class="norm-val">100–200ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '১০০–২০০ মি.সে.' : '100–200ms'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{t('Developing')}</span>
 						<div class="norm-track"><div class="norm-fill fuchsia-low" style="width:75%"></div></div>
-						<span class="norm-val">&gt; 200ms</span>
+						<span class="norm-val">{$locale === 'bn' ? '> ২০০ মি.সে.' : '> 200ms'}</span>
 					</div>
 				</div>
 			</div>
@@ -1501,4 +1501,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.targets-row { flex-direction: column; align-items: center; }
 	}
 </style>
-

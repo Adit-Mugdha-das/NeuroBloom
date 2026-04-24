@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores';
@@ -222,89 +223,89 @@
 				<path d="M12 5v14M5 12h14"/>
 			</svg>
 		</div>
-		<span class="brand-name">NeuroBloom Admin</span>
+		<span class="brand-name">{uiText("NeuroBloom Admin", $activeLocale)}</span>
 	</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
 			</svg>
-			Dashboard
+			{uiText("Dashboard", $activeLocale)}
 		</a>
 			<a href="/admin/analytics" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 			</svg>
-			System Analytics
+			{uiText("System Analytics", $activeLocale)}
 		</a>
 			<a href="/admin/doctors" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 			</svg>
-			Doctor Management
+			{uiText("Doctor Management", $activeLocale)}
 		</a>
 			<a href="/admin/patients" class="nav-item active">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
 			</svg>
-			Patient Management
+			{uiText("Patient Management", $activeLocale)}
 		</a>
 			<a href="/admin/departments" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
 			</svg>
-			Departments
+			{uiText("Departments", $activeLocale)}
 		</a>
 			<a href="/admin/interventions" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 			</svg>
-			Interventions
+			{uiText("Interventions", $activeLocale)}
 		</a>
 			<a href="/admin/messages" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 			</svg>
-			Message Audit
+			{uiText("Message Audit", $activeLocale)}
 		</a>
 			<a href="/admin/audit-logs" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 			</svg>
-			Audit Logs
+			{uiText("Audit Logs", $activeLocale)}
 		</a>
 			<a href="/admin/system-health" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 			</svg>
-			System Health
+			{uiText("System Health", $activeLocale)}
 		</a>
 			<a href="/admin/notifications" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
 			</svg>
-			Notification Center
+			{uiText("Notification Center", $activeLocale)}
 		</a>
 			<a href="/admin/research-data" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
 			</svg>
-			Research Data
+			{uiText("Research Data", $activeLocale)}
 		</a>
 		</nav>
 		<button class="logout-btn" on:click={() => { user.set(null); goto('/login'); }}>
 		<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 			<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 		</svg>
-		Sign Out
+		{uiText("Sign Out", $activeLocale)}
 	</button>
 	</aside>
 
 	<main class="main-content">
 		<header class="topbar">
 			<div>
-				<h1 class="page-title">Patient Management</h1>
-				<p class="page-sub">View and control all patient accounts</p>
+				<h1 class="page-title">{uiText("Patient Management", $activeLocale)}</h1>
+				<p class="page-sub">{uiText("View and control all patient accounts", $activeLocale)}</p>
 			</div>
 			<div class="admin-info">
 				<div class="admin-avatar">
@@ -314,7 +315,7 @@
 				</div>
 				<div class="admin-details">
 					<span class="admin-name">{admin?.full_name || admin?.email}</span>
-					<span class="admin-role">Administrator</span>
+					<span class="admin-role">{uiText("Administrator", $activeLocale)}</span>
 				</div>
 			</div>
 		</header>
@@ -323,34 +324,34 @@
 			{#if error}
 				<div class="alert error" role="alert">
 					<span>{error}</span>
-					<button class="close-btn" on:click={clearMessages} aria-label="Close error">x</button>
+					<button class="close-btn" on:click={clearMessages} aria-label={uiText("Close error", $activeLocale)}>x</button>
 				</div>
 			{/if}
 
 			{#if successMsg}
 				<div class="alert success" role="status">
 					<span>{successMsg}</span>
-					<button class="close-btn" on:click={clearMessages} aria-label="Close success">x</button>
+					<button class="close-btn" on:click={clearMessages} aria-label={uiText("Close success", $activeLocale)}>x</button>
 				</div>
 			{/if}
 
 			<div class="stats-strip">
 				<div class="stat-chip">
 					<p class="chip-val">{patients.length}</p>
-					<p class="chip-lbl">Total</p>
+					<p class="chip-lbl">{uiText("Total", $activeLocale)}</p>
 				</div>
 				<div class="stat-chip">
 					<p class="chip-val">{totalActive}</p>
-					<p class="chip-lbl">Active</p>
+					<p class="chip-lbl">{uiText("Active", $activeLocale)}</p>
 				</div>
 				<div class="stat-chip">
 					<p class="chip-val">{totalInactive}</p>
-					<p class="chip-lbl">Inactive</p>
+					<p class="chip-lbl">{uiText("Inactive", $activeLocale)}</p>
 				</div>
 			</div>
 
 			<div class="toolbar">
-				<input class="search-input" type="text" placeholder="Search by name, email or diagnosis..." bind:value={searchQuery} />
+				<input class="search-input" type="text" placeholder={uiText("Search by name, email or diagnosis...", $activeLocale)} bind:value={searchQuery} />
 				<div class="filter-tabs">
 					{#each [['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive']] as [value, label]}
 						<button type="button" class="tab-btn {filter === value ? 'active' : ''}" on:click={() => filter = value}>{label}</button>
@@ -359,24 +360,24 @@
 			</div>
 
 			{#if loading}
-				<div class="loading-msg">Loading patients...</div>
+				<div class="loading-msg">{uiText("Loading patients...", $activeLocale)}</div>
 			{:else if filtered.length === 0}
 				<div class="empty-state">
-					<p class="empty-title">No patients found</p>
-					<p class="empty-sub">Try adjusting your search or filter.</p>
+					<p class="empty-title">{uiText("No patients found", $activeLocale)}</p>
+					<p class="empty-sub">{uiText("Try adjusting your search or filter.", $activeLocale)}</p>
 				</div>
 			{:else}
-				<div class="results-bar">{filtered.length} patient{filtered.length !== 1 ? 's' : ''}</div>
+				<div class="results-bar">{filtered.length} {uiText("patient", $activeLocale)}{filtered.length !== 1 ? 's' : ''}</div>
 				<div class="table-card">
 					<table>
 						<thead>
 							<tr>
-								<th>Patient</th>
-								<th>Email</th>
-								<th>Diagnosis</th>
-								<th>Data Sharing</th>
-								<th>Status</th>
-								<th>Actions</th>
+								<th>{uiText("Patient", $activeLocale)}</th>
+								<th>{uiText("Email", $activeLocale)}</th>
+								<th>{uiText("Diagnosis", $activeLocale)}</th>
+								<th>{uiText("Data Sharing", $activeLocale)}</th>
+								<th>{uiText("Status", $activeLocale)}</th>
+								<th>{uiText("Actions", $activeLocale)}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -388,7 +389,7 @@
 											<div>
 												<p class="patient-name">{patient.full_name || '(no name)'}</p>
 												{#if patient.date_of_birth}
-													<p class="patient-dob">DOB: {patient.date_of_birth}</p>
+													<p class="patient-dob">{uiText("DOB:", $activeLocale)} {patient.date_of_birth}</p>
 												{/if}
 											</div>
 										</div>
@@ -399,14 +400,14 @@
 									<td><span class="badge {patient.is_active ? 'badge-blue' : 'badge-red'}">{patient.is_active ? 'Active' : 'Inactive'}</span></td>
 									<td>
 										<div class="actions-cell">
-											<button type="button" class="btn-sm teal" on:click={() => viewProfile(patient.id)}>View Profile</button>
+											<button type="button" class="btn-sm teal" on:click={() => viewProfile(patient.id)}>{uiText("View Profile", $activeLocale)}</button>
 											{#if patient.is_active}
-												<button type="button" class="btn-sm red" on:click={() => deactivatePatient(patient.id)}>Deactivate</button>
+												<button type="button" class="btn-sm red" on:click={() => deactivatePatient(patient.id)}>{uiText("Deactivate", $activeLocale)}</button>
 											{:else}
-												<button type="button" class="btn-sm green" on:click={() => activatePatient(patient.id)}>Activate</button>
+												<button type="button" class="btn-sm green" on:click={() => activatePatient(patient.id)}>{uiText("Activate", $activeLocale)}</button>
 											{/if}
-											<button type="button" class="btn-sm blue" on:click={() => openResetModal(patient.id, patient.full_name || patient.email)}>Reset Password</button>
-											<button type="button" class="btn-sm purple" on:click={() => openTransferModal(patient.id, patient.full_name || patient.email)}>Transfer Patient</button>
+											<button type="button" class="btn-sm blue" on:click={() => openResetModal(patient.id, patient.full_name || patient.email)}>{uiText("Reset Password", $activeLocale)}</button>
+											<button type="button" class="btn-sm purple" on:click={() => openTransferModal(patient.id, patient.full_name || patient.email)}>{uiText("Transfer Patient", $activeLocale)}</button>
 										</div>
 									</td>
 								</tr>
@@ -421,18 +422,18 @@
 
 {#if profileModal}
 	<div class="modal-overlay" role="presentation" on:click|self={closeProfileModal}>
-		<div class="modal profile-modal" role="dialog" aria-modal="true" aria-label="Patient profile">
+		<div class="modal profile-modal" role="dialog" aria-modal="true" aria-label={uiText("Patient profile", $activeLocale)}>
 			<!-- Modal Header -->
 			<div class="profile-modal-header">
 				<div class="profile-modal-title-row">
-					<h2 class="profile-modal-title">Patient Profile</h2>
-					<p class="profile-modal-sub">Read-only oversight view — no medical data is modified</p>
+					<h2 class="profile-modal-title">{uiText("Patient Profile", $activeLocale)}</h2>
+					<p class="profile-modal-sub">{uiText("Read-only oversight view — no medical data is modified", $activeLocale)}</p>
 				</div>
-				<button class="modal-close" on:click={closeProfileModal} aria-label="Close profile">✕</button>
+				<button class="modal-close" on:click={closeProfileModal} aria-label={uiText("Close profile", $activeLocale)}>✕</button>
 			</div>
 
 			{#if profileLoading}
-				<div class="profile-loading">Loading patient data...</div>
+				<div class="profile-loading">{uiText("Loading patient data...", $activeLocale)}</div>
 			{:else if profileError}
 				<div class="profile-error">{profileError}</div>
 			{:else if patientDetail}
@@ -457,24 +458,24 @@
 				<!-- Key Metrics Strip -->
 				<div class="overview-metrics">
 					<div class="ov-metric">
-						<p class="ov-label">Doctor</p>
+						<p class="ov-label">{uiText("Doctor", $activeLocale)}</p>
 						<p class="ov-value">{patientDetail.doctor ? `Dr. ${patientDetail.doctor.full_name}` : 'Unassigned'}</p>
 						{#if patientDetail.doctor?.specialization}
 							<p class="ov-sub">{patientDetail.doctor.specialization}</p>
 						{/if}
 					</div>
 					<div class="ov-metric">
-						<p class="ov-label">Sessions</p>
+						<p class="ov-label">{uiText("Sessions", $activeLocale)}</p>
 						<p class="ov-value">{patientDetail.training_summary.total_sessions}</p>
-						<p class="ov-sub">total completed</p>
+						<p class="ov-sub">{uiText("total completed", $activeLocale)}</p>
 					</div>
 					<div class="ov-metric">
-						<p class="ov-label">Risk Level</p>
+						<p class="ov-label">{uiText("Risk Level", $activeLocale)}</p>
 						<p class="ov-value ov-risk-{patientDetail.risk.level}">{patientDetail.risk.level.charAt(0).toUpperCase() + patientDetail.risk.level.slice(1)}</p>
-						<p class="ov-sub">score: {patientDetail.risk.score}</p>
+						<p class="ov-sub">{uiText("score:", $activeLocale)} {patientDetail.risk.score}</p>
 					</div>
 					<div class="ov-metric">
-						<p class="ov-label">Last Activity</p>
+						<p class="ov-label">{uiText("Last Activity", $activeLocale)}</p>
 						<p class="ov-value">{lastActivityLabel(patientDetail.training_summary.days_since_last_activity)}</p>
 						{#if patientDetail.training_summary.last_activity}
 							<p class="ov-sub">{formatDate(patientDetail.training_summary.last_activity)}</p>
@@ -482,7 +483,7 @@
 					</div>
 					{#if patientDetail.profile.date_of_birth}
 						<div class="ov-metric">
-							<p class="ov-label">Date of Birth</p>
+							<p class="ov-label">{uiText("Date of Birth", $activeLocale)}</p>
 							<p class="ov-value">{patientDetail.profile.date_of_birth}</p>
 						</div>
 					{/if}
@@ -491,14 +492,14 @@
 				<!-- Doctor & Assignment Info -->
 				{#if patientDetail.doctor}
 					<div class="info-section">
-						<h3 class="section-heading">Assigned Doctor</h3>
+						<h3 class="section-heading">{uiText("Assigned Doctor", $activeLocale)}</h3>
 						<div class="doctor-info-row">
 							<div class="doctor-info-avatar">{patientDetail.doctor.full_name[0].toUpperCase()}</div>
 							<div>
-								<p class="doctor-info-name">Dr. {patientDetail.doctor.full_name}</p>
+								<p class="doctor-info-name">{uiText("Dr.", $activeLocale)} {patientDetail.doctor.full_name}</p>
 								{#if patientDetail.doctor.specialization}<p class="doctor-info-meta">{patientDetail.doctor.specialization}{patientDetail.doctor.institution ? ` · ${patientDetail.doctor.institution}` : ''}</p>{/if}
-								{#if patientDetail.assignment?.assigned_at}<p class="doctor-info-meta muted">Assigned {formatDate(patientDetail.assignment.assigned_at)}</p>{/if}
-								{#if patientDetail.assignment?.treatment_goal}<p class="doctor-info-meta">Goal: <span data-localize-skip>{patientDetail.assignment.treatment_goal}</span></p>{/if}
+								{#if patientDetail.assignment?.assigned_at}<p class="doctor-info-meta muted">{uiText("Assigned", $activeLocale)} {formatDate(patientDetail.assignment.assigned_at)}</p>{/if}
+								{#if patientDetail.assignment?.treatment_goal}<p class="doctor-info-meta">{uiText("Goal:", $activeLocale)} <span data-localize-skip>{patientDetail.assignment.treatment_goal}</span></p>{/if}
 							</div>
 						</div>
 					</div>
@@ -507,12 +508,12 @@
 				<!-- Domain Summary -->
 				{#if patientDetail.training_summary.domain_summary?.length > 0}
 					<div class="info-section">
-						<h3 class="section-heading">Training Domains</h3>
+						<h3 class="section-heading">{uiText("Training Domains", $activeLocale)}</h3>
 						<div class="domain-grid">
 							{#each patientDetail.training_summary.domain_summary as d}
 								<div class="domain-chip">
 									<p class="domain-name">{formatDomain(d.domain)}</p>
-									<p class="domain-stat">{d.sessions} sessions · avg {d.avg_score}</p>
+									<p class="domain-stat">{d.sessions} {uiText("sessions · avg", $activeLocale)} {d.avg_score}</p>
 								</div>
 							{/each}
 						</div>
@@ -522,26 +523,26 @@
 				<!-- Tabs: Training History / Reports -->
 				<div class="info-section">
 					<div class="tab-nav">
-						<button type="button" class="tab-btn {profileTab === 'sessions' ? 'active' : ''}" on:click={() => profileTab = 'sessions'}>Training History</button>
-						<button type="button" class="tab-btn {profileTab === 'reports' ? 'active' : ''}" on:click={() => profileTab = 'reports'}>Progress Reports</button>
+						<button type="button" class="tab-btn {profileTab === 'sessions' ? 'active' : ''}" on:click={() => profileTab = 'sessions'}>{uiText("Training History", $activeLocale)}</button>
+						<button type="button" class="tab-btn {profileTab === 'reports' ? 'active' : ''}" on:click={() => profileTab = 'reports'}>{uiText("Progress Reports", $activeLocale)}</button>
 					</div>
 
 					{#if profileTab === 'sessions'}
 						{#if patientDetail.recent_sessions.length === 0}
-							<p class="empty-tab">No training sessions recorded yet.</p>
+							<p class="empty-tab">{uiText("No training sessions recorded yet.", $activeLocale)}</p>
 						{:else}
-							<p class="tab-note">Showing the {patientDetail.recent_sessions.length} most recent sessions.</p>
+							<p class="tab-note">{uiText("Showing the", $activeLocale)} {patientDetail.recent_sessions.length} {uiText("most recent sessions.", $activeLocale)}</p>
 							<div class="session-table-wrap">
 								<table class="session-table">
 									<thead>
 										<tr>
-											<th>Domain</th>
-											<th>Task</th>
-											<th>Score</th>
-											<th>Accuracy</th>
-											<th>Duration</th>
-											<th>Difficulty</th>
-											<th>Date</th>
+											<th>{uiText("Domain", $activeLocale)}</th>
+											<th>{uiText("Task", $activeLocale)}</th>
+											<th>{uiText("Score", $activeLocale)}</th>
+											<th>{uiText("Accuracy", $activeLocale)}</th>
+											<th>{uiText("Duration", $activeLocale)}</th>
+											<th>{uiText("Difficulty", $activeLocale)}</th>
+											<th>{uiText("Date", $activeLocale)}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -552,7 +553,7 @@
 												<td><span class="score-chip {s.score >= 70 ? 'score-good' : s.score >= 45 ? 'score-mid' : 'score-low'}">  {s.score}</span></td>
 												<td>{s.accuracy}%</td>
 												<td>{Math.round(s.duration_s / 60)}m {s.duration_s % 60}s</td>
-												<td>Lvl {s.difficulty}</td>
+												<td>{uiText("Lvl", $activeLocale)} {s.difficulty}</td>
 												<td class="date-cell">{formatDate(s.date)}</td>
 											</tr>
 										{/each}
@@ -562,7 +563,7 @@
 						{/if}
 					{:else}
 						{#if patientDetail.reports.length === 0}
-							<p class="empty-tab">No progress reports have been generated yet.</p>
+							<p class="empty-tab">{uiText("No progress reports have been generated yet.", $activeLocale)}</p>
 						{:else}
 							<div class="reports-list">
 								{#each patientDetail.reports as r}
@@ -570,12 +571,12 @@
 										<div class="report-card-header">
 											<span class="report-period-badge">{r.period_type === 'weekly' ? 'Weekly' : 'Monthly'}</span>
 											<span class="report-range">{formatDate(r.period_start)} – {formatDate(r.period_end)}</span>
-											<span class="report-generated">Generated {formatDate(r.generated_at)}</span>
+											<span class="report-generated">{uiText("Generated", $activeLocale)} {formatDate(r.generated_at)}</span>
 										</div>
 										{#if r.doctor_commentary}
 											<p class="report-commentary">{r.doctor_commentary}</p>
 										{:else}
-											<p class="report-commentary muted">No doctor commentary recorded.</p>
+											<p class="report-commentary muted">{uiText("No doctor commentary recorded.", $activeLocale)}</p>
 										{/if}
 									</div>
 								{/each}
@@ -593,17 +594,17 @@
 		<div class="modal" role="dialog" aria-modal="true" tabindex="-1">
 			<div class="modal-header">
 				<div>
-					<h2 class="modal-title">Reset Password</h2>
-					<p class="modal-sub">For {resetModal.name}</p>
+					<h2 class="modal-title">{uiText("Reset Password", $activeLocale)}</h2>
+					<p class="modal-sub">{uiText("For", $activeLocale)} {resetModal.name}</p>
 				</div>
-				<button class="modal-close" on:click={closeResetModal} aria-label="Close reset password modal">x</button>
+				<button class="modal-close" on:click={closeResetModal} aria-label={uiText("Close reset password modal", $activeLocale)}>x</button>
 			</div>
 			<div class="modal-body">
-				<label class="field-label" for="reset-password-input">New Password</label>
-				<input id="reset-password-input" class="field-input" type="password" placeholder="Minimum 6 characters" bind:value={resetNewPassword} />
+				<label class="field-label" for="reset-password-input">{uiText("New Password", $activeLocale)}</label>
+				<input id="reset-password-input" class="field-input" type="password" placeholder={uiText("Minimum 6 characters", $activeLocale)} bind:value={resetNewPassword} />
 			</div>
 			<div class="modal-footer">
-				<button class="btn-outline" on:click={closeResetModal} disabled={resetLoading}>Cancel</button>
+				<button class="btn-outline" on:click={closeResetModal} disabled={resetLoading}>{uiText("Cancel", $activeLocale)}</button>
 				<button class="btn-primary" on:click={submitResetPassword} disabled={resetLoading}>{resetLoading ? 'Saving...' : 'Reset Password'}</button>
 			</div>
 		</div>
@@ -615,26 +616,26 @@
 		<div class="modal" role="dialog" aria-modal="true" tabindex="-1">
 			<div class="modal-header">
 				<div>
-					<h2 class="modal-title">Transfer Patient</h2>
-					<p class="modal-sub">Reassign {transferModal.patientName}</p>
+					<h2 class="modal-title">{uiText("Transfer Patient", $activeLocale)}</h2>
+					<p class="modal-sub">{uiText("Reassign", $activeLocale)} {transferModal.patientName}</p>
 				</div>
-				<button class="modal-close" on:click={closeTransferModal} aria-label="Close transfer modal">x</button>
+				<button class="modal-close" on:click={closeTransferModal} aria-label={uiText("Close transfer modal", $activeLocale)}>x</button>
 			</div>
 			<div class="modal-body">
-				<label class="field-label" for="transfer-doctor-select">Transfer to Doctor</label>
+				<label class="field-label" for="transfer-doctor-select">{uiText("Transfer to Doctor", $activeLocale)}</label>
 				{#if doctors.length === 0}
-					<p class="muted">No active verified doctors available.</p>
+					<p class="muted">{uiText("No active verified doctors available.", $activeLocale)}</p>
 				{:else}
 					<select id="transfer-doctor-select" class="field-input" bind:value={transferDoctorId}>
-						<option value="">Select a doctor</option>
+						<option value="">{uiText("Select a doctor", $activeLocale)}</option>
 						{#each doctors as doctor (doctor.id)}
-							<option value={doctor.id}>Dr. {doctor.full_name}{doctor.specialization ? ` - ${doctor.specialization}` : ''}{doctor.institution ? ` (${doctor.institution})` : ''}</option>
+							<option value={doctor.id}>{uiText("Dr.", $activeLocale)} {doctor.full_name}{doctor.specialization ? ` - ${doctor.specialization}` : ''}{doctor.institution ? ` (${doctor.institution})` : ''}</option>
 						{/each}
 					</select>
 				{/if}
 			</div>
 			<div class="modal-footer">
-				<button class="btn-outline" on:click={closeTransferModal} disabled={transferLoading}>Cancel</button>
+				<button class="btn-outline" on:click={closeTransferModal} disabled={transferLoading}>{uiText("Cancel", $activeLocale)}</button>
 				<button class="btn-primary" on:click={submitTransfer} disabled={transferLoading || !transferDoctorId}>{transferLoading ? 'Transferring...' : 'Confirm Transfer'}</button>
 			</div>
 		</div>

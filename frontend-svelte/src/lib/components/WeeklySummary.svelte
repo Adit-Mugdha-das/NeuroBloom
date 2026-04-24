@@ -1,4 +1,5 @@
 <script>
+	import { formatDate, formatNumber, formatPercent, locale as activeLocale, uiText } from '$lib/i18n';
 	import { downloadCSV, downloadJSON } from '$lib/utils/chartDownload';
 	import EmptyState from './EmptyState.svelte';
 	
@@ -23,10 +24,20 @@
 		visual_scanning: '🔍'
 	};
 	
+	function n(value, options = {}) {
+		return formatNumber(value, $activeLocale, options);
+	}
+
+	function oneDecimal(value) {
+		return n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	}
+
+	function percent(value) {
+		return formatPercent(value, $activeLocale, { maximumFractionDigits: 1 });
+	}
+
 	function getDayName(dateStr) {
-		const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-		const date = new Date(dateStr);
-		return days[date.getDay()];
+		return formatDate(dateStr, $activeLocale, { weekday: 'short' });
 	}
 	
 	function getScoreColor(score) {
@@ -72,17 +83,17 @@
 	<div class="weekly-summary">
 		<div class="summary-header">
 			<div class="header-left">
-				<h3>📅 This Week's Summary</h3>
+				<h3>{uiText("📅 This Week's Summary", $activeLocale)}</h3>
 				<p class="week-range">
-					{new Date(summaryData.week_start).toLocaleDateString()} - {new Date(summaryData.week_end).toLocaleDateString()}
+					{formatDate(summaryData.week_start, $activeLocale)} - {formatDate(summaryData.week_end, $activeLocale)}
 				</p>
 			</div>
 			<div class="header-actions">
-				<button class="download-btn" on:click={handleDownloadCSV} title="Download summary as CSV">
-					📋 CSV
+				<button class="download-btn" on:click={handleDownloadCSV} title={uiText("Download summary as CSV", $activeLocale)}>
+					{uiText("📋 CSV", $activeLocale)}
 				</button>
-				<button class="download-btn" on:click={handleDownloadSummary} title="Download summary as JSON">
-					📊 JSON
+				<button class="download-btn" on:click={handleDownloadSummary} title={uiText("Download summary as JSON", $activeLocale)}>
+					{uiText("📊 JSON", $activeLocale)}
 				</button>
 			</div>
 		</div>
@@ -92,9 +103,9 @@
 			<div class="summary-card sessions">
 				<div class="card-icon">🎯</div>
 				<div class="card-content">
-					<div class="card-value">{summaryData.total_sessions}</div>
-					<div class="card-label">Sessions Completed</div>
-					<div class="card-subtext">{summaryData.active_days}/7 active days</div>
+					<div class="card-value">{n(summaryData.total_sessions)}</div>
+					<div class="card-label">{uiText("Sessions Completed", $activeLocale)}</div>
+					<div class="card-subtext">{n(summaryData.active_days)}{uiText("/7 active days", $activeLocale)}</div>
 				</div>
 			</div>
 			
@@ -103,13 +114,13 @@
 				<div class="card-icon">⭐</div>
 				<div class="card-content">
 					<div class="card-value" style="color: {getScoreColor(summaryData.avg_score)}">
-						{summaryData.avg_score}
+						{n(summaryData.avg_score)}
 					</div>
-					<div class="card-label">Average Score</div>
+					<div class="card-label">{uiText("Average Score", $activeLocale)}</div>
 					{#if summaryData.score_change_from_last_week !== 0}
 						<div class="card-subtext change">
 							{getChangeIcon(summaryData.score_change_from_last_week)}
-							{Math.abs(summaryData.score_change_from_last_week).toFixed(1)} from last week
+							{oneDecimal(Math.abs(summaryData.score_change_from_last_week))} {uiText("from last week", $activeLocale)}
 						</div>
 					{/if}
 				</div>
@@ -119,8 +130,8 @@
 			<div class="summary-card accuracy">
 				<div class="card-icon">🎪</div>
 				<div class="card-content">
-					<div class="card-value">{summaryData.avg_accuracy}%</div>
-					<div class="card-label">Average Accuracy</div>
+					<div class="card-value">{percent(summaryData.avg_accuracy)}</div>
+					<div class="card-label">{uiText("Average Accuracy", $activeLocale)}</div>
 				</div>
 			</div>
 			
@@ -128,8 +139,8 @@
 			<div class="summary-card time">
 				<div class="card-icon">⏱️</div>
 				<div class="card-content">
-					<div class="card-value">{summaryData.total_time_minutes} min</div>
-					<div class="card-label">Total Training Time</div>
+					<div class="card-value">{n(summaryData.total_time_minutes)} {uiText("min", $activeLocale)}</div>
+					<div class="card-label">{uiText("Total Training Time", $activeLocale)}</div>
 				</div>
 			</div>
 			
@@ -137,9 +148,9 @@
 			<div class="summary-card streak">
 				<div class="card-icon">🔥</div>
 				<div class="card-content">
-					<div class="card-value">{summaryData.current_streak}</div>
-					<div class="card-label">Current Streak</div>
-					<div class="card-subtext">Keep it going!</div>
+					<div class="card-value">{n(summaryData.current_streak)}</div>
+					<div class="card-label">{uiText("Current Streak", $activeLocale)}</div>
+					<div class="card-subtext">{uiText("Keep it going!", $activeLocale)}</div>
 				</div>
 			</div>
 			
@@ -148,9 +159,9 @@
 				<div class="summary-card improved">
 					<div class="card-icon">{domainIcons[summaryData.most_improved.domain]}</div>
 					<div class="card-content">
-						<div class="card-value">+{summaryData.most_improved.improvement.toFixed(1)}</div>
-						<div class="card-label">Most Improved</div>
-						<div class="card-subtext">{domainNames[summaryData.most_improved.domain]}</div>
+						<div class="card-value">+{oneDecimal(summaryData.most_improved.improvement)}</div>
+						<div class="card-label">{uiText("Most Improved", $activeLocale)}</div>
+						<div class="card-subtext">{uiText(domainNames[summaryData.most_improved.domain], $activeLocale)}</div>
 					</div>
 				</div>
 			{/if}
@@ -158,7 +169,7 @@
 		
 		<!-- Daily Activity Chart -->
 		<div class="daily-activity">
-			<h4>Daily Activity</h4>
+			<h4>{uiText("Daily Activity", $activeLocale)}</h4>
 			<div class="activity-bars">
 				{#each Object.entries(summaryData.daily_counts) as [date, count]}
 					<div class="day-bar">
@@ -169,7 +180,7 @@
 								style="height: {Math.min(count * 30, 100)}%"
 							>
 								{#if count > 0}
-									<span class="bar-label">{count}</span>
+									<span class="bar-label">{n(count)}</span>
 								{/if}
 							</div>
 						</div>
@@ -181,12 +192,12 @@
 		
 		<!-- Domains Trained -->
 		<div class="domains-section">
-			<h4>Domains Trained This Week</h4>
+			<h4>{uiText("Domains Trained This Week", $activeLocale)}</h4>
 			<div class="domain-tags">
 				{#each summaryData.domains_trained as domain}
 					<div class="domain-tag">
 						<span class="tag-icon">{domainIcons[domain]}</span>
-						<span class="tag-name">{domainNames[domain]}</span>
+						<span class="tag-name">{uiText(domainNames[domain], $activeLocale)}</span>
 					</div>
 				{/each}
 			</div>
@@ -195,11 +206,11 @@
 {:else}
 	<EmptyState 
 		icon="📅"
-		title="Build Your Weekly Streak"
-		message="Train for 7 days to unlock your weekly summary with insights and progress tracking!"
-		actionText="Start Training"
+		title={uiText("Build Your Weekly Streak", $activeLocale)}
+		message={uiText("Train for 7 days to unlock your weekly summary with insights and progress tracking!", $activeLocale)}
+		actionText={uiText("Start Training", $activeLocale)}
 		actionLink="/training"
-		tip="Training multiple days per week shows better cognitive improvements"
+		tip={uiText("Training multiple days per week shows better cognitive improvements", $activeLocale)}
 		variant="compact"
 	/>
 {/if}

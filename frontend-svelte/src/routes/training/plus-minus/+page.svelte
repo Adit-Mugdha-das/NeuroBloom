@@ -8,7 +8,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText, translateText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -52,6 +52,10 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	function n(value, options = {}) {
 		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
 	}
 
 	function pct(value) {
@@ -460,28 +464,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<h2 class="section-title">{lt('How to Play', 'কীভাবে খেলবেন')}</h2>
 				<div class="rules-grid">
 					<div class="rule-item">
-						<div class="rule-num">1</div>
+						<div class="rule-num">{n(1)}</div>
 						<div class="rule-text">
 							<strong>{lt('See the number', 'সংখ্যাটি দেখুন')}</strong>
 							<span>{lt('A number appears on screen in each trial.', 'প্রতিটি ট্রায়ালে স্ক্রিনে একটি সংখ্যা দেখা যাবে।')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num">2</div>
+						<div class="rule-num">{n(2)}</div>
 						<div class="rule-text">
 							<strong>{lt('Apply the operation', 'অপারেশন প্রয়োগ করুন')}</strong>
 							<span>{lt('Add or subtract 3 as directed by the current block rule.', 'বর্তমান ব্লকের নিয়ম অনুযায়ী ৩ যোগ বা বিয়োগ করুন।')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num">3</div>
+						<div class="rule-num">{n(3)}</div>
 						<div class="rule-text">
 							<strong>{lt('Type your answer', 'আপনার উত্তর টাইপ করুন')}</strong>
 							<span>{lt('Enter the result and press Enter or click Submit.', 'ফলাফল লিখুন এবং Enter চাপুন বা Submit বাটনে ক্লিক করুন।')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num">4</div>
+						<div class="rule-num">{n(4)}</div>
 						<div class="rule-text">
 							<strong>{lt('Watch the cue in Block C', 'ব্লক C-তে সংকেতে মনোযোগ দিন')}</strong>
 							<span>{lt('A brief +3 or -3 cue flashes before each number. React quickly.', 'প্রতিটি সংখ্যার আগে +৩ বা -৩ সংকেত ঝলকাবে। দ্রুত সাড়া দিন।')}</span>
@@ -643,7 +647,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							<span class="pill pill-trial">{trialProgressLabel(trialNum, totalTrials)}</span>
 						</div>
 						<div class="timer-pill">
-							{n(elapsedTime.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}s
+							{sec(elapsedTime.toFixed(1), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
 						</div>
 					</div>
 

@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { locale, setLocale, translateText } from '$lib/i18n';
+	import { locale, localeText } from '$lib/i18n/runtime.js';
 	import { user } from '$lib/stores.js';
 
 	export let title = '';
@@ -17,6 +17,16 @@
 		{ href: '/doctor/messages', label: 'Messages' },
 		{ href: '/doctor/notifications', label: 'Notifications' }
 	];
+	const shellCopy = {
+		'Doctor Workspace': { en: 'Doctor Workspace', bn: 'ডাক্তার ওয়ার্কস্পেস' },
+		Logout: { en: 'Logout', bn: 'লগ আউট' },
+		Dashboard: { en: 'Dashboard', bn: 'ড্যাশবোর্ড' },
+		Patients: { en: 'Patients', bn: 'রোগী' },
+		Analytics: { en: 'Analytics', bn: 'অ্যানালিটিক্স' },
+		Reports: { en: 'Reports', bn: 'রিপোর্ট' },
+		Messages: { en: 'Messages', bn: 'বার্তা' },
+		Notifications: { en: 'Notifications', bn: 'নোটিফিকেশন' }
+	};
 
 	// ── Settings dropdown state ──
 	let settingsOpen = false;
@@ -71,7 +81,7 @@
 	}
 
 	function t(text) {
-		return translateText(text ?? '', $locale);
+		return localeText(shellCopy[text] ?? text ?? '', $locale);
 	}
 </script>
 

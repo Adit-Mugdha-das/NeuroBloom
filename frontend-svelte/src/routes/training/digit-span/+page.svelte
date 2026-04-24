@@ -708,9 +708,9 @@
 			</div>
 			<div class="strategy">
 				<h3>{t('Relaxation')}</h3>
-				<p>{t("Anxiety narrows working memory capacity. Take a slow breath between trials \u2014 you'll remember more.")}</p>
+				<p>{t("Anxiety narrows working memory capacity. Take a slow breath between trials — you'll remember more.")}</p>
 			</div>
-			<p class="help-note">{t("This test adapts automatically to your level \u2014 don't worry about mistakes!")}</p>
+			<p class="help-note">{t("This test adapts automatically to your level — don't worry about mistakes!")}</p>
 		</div>
 	</div>
 {/if}

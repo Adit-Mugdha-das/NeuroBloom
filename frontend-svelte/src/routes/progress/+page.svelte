@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { patientJourney, training } from '$lib/api';
 	import SimpleTrendChart from '$lib/components/SimpleTrendChart.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
 	import {
 		calculateBaselineDifficulty,
 		calculateOverallScore,
@@ -34,6 +34,8 @@
 	});
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
+	const n = (value, options = {}) => formatNumber(value, $locale, options);
+	const oneDecimal = (value) => n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -167,20 +169,20 @@
 			<section class="summary-grid">
 				<article class="glass-card stat-card compact-card">
 					<p class="card-label">{lt('Weekly summary', 'সাপ্তাহিক সারাংশ')}</p>
-					<h2>{weeklySummary?.total_sessions || 0} {lt('sessions', 'সেশন')}</h2>
-					<p class="card-copy">{weeklySummary?.active_days || 0} {lt('active days and', 'সক্রিয় দিন এবং')} {weeklySummary?.total_time_minutes || 0} {lt('minutes this week.', 'মিনিট এই সপ্তাহে।')}</p>
+					<h2>{n(weeklySummary?.total_sessions || 0)} {lt('sessions', 'সেশন')}</h2>
+					<p class="card-copy">{n(weeklySummary?.active_days || 0)} {lt('active days and', 'সক্রিয় দিন এবং')} {n(weeklySummary?.total_time_minutes || 0)} {lt('minutes this week.', 'মিনিট এই সপ্তাহে।')}</p>
 				</article>
 
 				<article class="glass-card stat-card compact-card">
 					<p class="card-label">{lt('Overall score', 'সামগ্রিক স্কোর')}</p>
-					<h2>{overallScore}</h2>
+					<h2>{oneDecimal(overallScore)}</h2>
 					<p class="card-copy">{lt('A simplified average across your active cognitive domains.', 'আপনার সক্রিয় মানসিক ডোমেইনগুলোর একটি সরল গড়।')}</p>
 				</article>
 
 				<article class="glass-card stat-card compact-card">
 					<p class="card-label">{lt('Training streak', 'ট্রেনিং ধারাবাহিকতা')}</p>
-					<h2>{streakData?.current_streak || 0} {lt('days', 'দিন')}</h2>
-					<p class="card-copy">{lt('Longest streak:', 'সবচেয়ে বড় ধারাবাহিকতা:')} {streakData?.longest_streak || 0} {lt('days.', 'দিন।')}</p>
+					<h2>{n(streakData?.current_streak || 0)} {lt('days', 'দিন')}</h2>
+					<p class="card-copy">{lt('Longest streak:', 'সবচেয়ে বড় ধারাবাহিকতা:')} {n(streakData?.longest_streak || 0)} {lt('days.', 'দিন।')}</p>
 				</article>
 
 				<article class="glass-card trend-card compact-card {trendTone}">
@@ -189,7 +191,7 @@
 							<p class="card-label">{lt('Trend', 'ট্রেন্ড')}</p>
 							<h2>{getTrendLabel(trendDelta, $locale)}</h2>
 						</div>
-						<p class="trend-delta">{trendDelta > 0 ? '+' : ''}{trendDelta}</p>
+						<p class="trend-delta">{trendDelta > 0 ? '+' : ''}{oneDecimal(trendDelta)}</p>
 					</div>
 					<SimpleTrendChart points={trendsData?.overall_trend || []} />
 				</article>

@@ -7,7 +7,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, formatNumber, formatPercent, taskPhraseText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -21,6 +21,38 @@
 		PLAYING: 'playing',
 		COMPLETE: 'complete'
 	};
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function fixed(value, digits = 1) {
+		return n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		});
+	}
+
+	function pct(value) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		});
+	}
+
+	function ms(value) {
+		return `${n(value, { maximumFractionDigits: 0 })} ${lt('ms', 'মি.সে.')}`;
+	}
+
+	function trialText(current, total) {
+		return lt(`Trial ${n(current)} of ${n(total)}`, `${n(total)}টির মধ্যে ${n(current)} নম্বর ট্রায়াল`);
+	}
+
+	function adaptationReasonText(reason) {
+		if ($locale === 'en' && reason) return reason;
+		return taskPhraseText('no_adaptation_reason', $locale);
+	}
 
 	let state = STATE.LOADING;
 	let difficulty = 5;
@@ -95,7 +127,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading SART session:', error);
-			alert('Failed to load SART');
+			alert(lt('Failed to load SART', 'SART লোড করা যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -236,7 +268,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting SART results:', error);
-			alert('Failed to submit results');
+			alert(lt('Failed to submit results', 'ফলাফল জমা দেওয়া যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -254,71 +286,71 @@
 			<!-- Header -->
 			<div class="task-header">
 				<div class="header-center">
-					<h1 class="task-title">SART</h1>
-					<DifficultyBadge {difficulty} domain="Attention" />
+					<h1 class="task-title">{lt('SART', 'SART')}</h1>
+					<DifficultyBadge {difficulty} domain={lt('Attention', 'মনোযোগ')} />
 				</div>
 			</div>
 
 			<div class="concept-card">
-				<div class="concept-badge">Attention · Vigilance Training</div>
-				<h2>What Is SART?</h2>
-				<p>Press <strong>SPACE</strong> for every digit except the rare target digit. This captures vigilance, fatigue-sensitive lapses, and inhibitory control under repetitive pressure.</p>
+				<div class="concept-badge">{lt('Attention · Vigilance Training', 'মনোযোগ · সতর্কতা অনুশীলন')}</div>
+				<h2>{lt('What Is SART?', 'SART কী?')}</h2>
+				<p>{lt('Press', 'প্রতিটি সংখ্যায়')} <strong>SPACE</strong> {lt('for every digit except the rare target digit. This measures vigilance and impulse control under repetition.', 'চাপুন, তবে বিরল লক্ষ্য সংখ্যাটি দেখলে চাপবেন না। এতে বারবার একই কাজে সতর্কতা ও তাড়না নিয়ন্ত্রণ বোঝা যায়।')}</p>
 			</div>
 
 			<div class="rules-card">
-				<h3>How to Respond</h3>
+				<h3>{lt('How to Respond', 'কীভাবে উত্তর দেবেন')}</h3>
 				<ol class="rules-list">
-					<li>A stream of digits appears rapidly, one at a time.</li>
-					<li>Press <strong>SPACE</strong> (or the on-screen button) for every digit you see.</li>
-					<li>When you see the target digit <strong>{sessionData.target_digit}</strong>, do <strong>NOT</strong> press — keep your hands still.</li>
-					<li>Try to maintain a steady rhythm — speed and accuracy both matter.</li>
+					<li>{lt('Digits appear one at a time.', 'সংখ্যাগুলো একটির পর একটি দেখা যাবে।')}</li>
+					<li>{lt('Press', 'প্রতিটি সংখ্যায়')} <strong>SPACE</strong> {lt('or the on-screen button for every digit.', 'বা স্ক্রিনের বোতাম চাপুন।')}</li>
+					<li>{lt('When you see target digit', 'লক্ষ্য সংখ্যা')} <strong>{n(sessionData.target_digit)}</strong> {lt('do NOT press.', 'দেখলে চাপবেন না।')}</li>
+					<li>{lt('Keep a steady rhythm. Speed and accuracy both matter.', 'ছন্দ স্থির রাখুন। গতি ও সঠিকতা দুটোই গুরুত্বপূর্ণ।')}</li>
 				</ol>
-				<p class="rules-note">The target digit <strong>{sessionData.target_digit}</strong> appears rarely (~12–16% of trials). Stay alert throughout.</p>
+				<p class="rules-note">{lt('The target digit', 'লক্ষ্য সংখ্যা')} <strong>{n(sessionData.target_digit)}</strong> {lt('appears rarely, so stay alert throughout.', 'খুব কম আসে, তাই পুরো সময় সতর্ক থাকুন।')}</p>
 			</div>
 
 			<div class="info-grid">
 				<div class="info-card">
-					<div class="info-label">Trials</div>
-					<div class="info-val">{sessionData.total_trials}</div>
-					<p>Total digit stimuli presented in this session.</p>
+					<div class="info-label">{lt('Trials', 'ট্রায়াল')}</div>
+					<div class="info-val">{n(sessionData.total_trials)}</div>
+					<p>{lt('Total digit stimuli presented in this session.', 'এই সেশনে মোট কতটি সংখ্যা দেখানো হবে।')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Target Digit</div>
-					<div class="info-val">{sessionData.target_digit}</div>
-					<p>The only digit you must withhold your response to.</p>
+					<div class="info-label">{lt('Target Digit', 'লক্ষ্য সংখ্যা')}</div>
+					<div class="info-val">{n(sessionData.target_digit)}</div>
+					<p>{lt('The only digit you must withhold your response to.', 'একমাত্র এই সংখ্যাটি দেখলে উত্তর আটকে রাখতে হবে।')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Scoring</div>
-					<div class="info-val">Dual</div>
-					<p>Commission errors (pressing on target) and omission errors (missing non-targets) both reduce your score.</p>
+					<div class="info-label">{lt('Scoring', 'স্কোরিং')}</div>
+					<div class="info-val">{lt('Dual', 'দুই দিক')}</div>
+					<p>{lt('Pressing on the target and missing non-target digits both reduce your score.', 'লক্ষ্য সংখ্যায় চাপা এবং অন্য সংখ্যায় না চাপা, দুটোই স্কোর কমায়।')}</p>
 				</div>
 			</div>
 
 			{#if showHelp}
 				<div class="tip-card">
-					<div class="tip-title">Advanced Tips</div>
+					<div class="tip-title">{lt('Advanced Tips', 'আরও টিপস')}</div>
 					<ul>
-						<li><strong>Steady rhythm:</strong> respond to each digit at the same pace instead of reacting emotionally.</li>
-						<li><strong>Reset after targets:</strong> after correctly withholding, fully re-engage for the next digit so you don't miss an immediate non-target.</li>
-						<li><strong>Don't rush:</strong> if you start pressing impulsively, slow your internal pace rather than trying to go faster.</li>
-						<li><strong>Both errors count:</strong> pressing on the target and missing a non-target both lower your vigilance score equally.</li>
+						<li><strong>{lt('Steady rhythm:', 'স্থির ছন্দ:')}</strong> {lt('respond at the same pace instead of reacting impulsively.', 'হঠাৎ তাড়াহুড়ো না করে একই ছন্দে উত্তর দিন।')}</li>
+						<li><strong>{lt('Reset after targets:', 'লক্ষ্য সংখ্যার পর নিজেকে গুছিয়ে নিন:')}</strong> {lt('re-engage for the next digit.', 'পরের সংখ্যার জন্য আবার মনোযোগ দিন।')}</li>
+						<li><strong>{lt('Do not rush:', 'তাড়াহুড়ো নয়:')}</strong> {lt('slow your internal pace if you start pressing too fast.', 'খুব দ্রুত চাপতে শুরু করলে নিজের ছন্দ একটু ধীর করুন।')}</li>
+						<li><strong>{lt('Both errors count:', 'দুই ধরনের ভুলই ধরা হয়:')}</strong> {lt('target presses and missed non-targets both matter.', 'লক্ষ্য সংখ্যায় চাপা ও অন্য সংখ্যা মিস করা দুটোই গুরুত্বপূর্ণ।')}</li>
 					</ul>
 				</div>
 			{:else}
 				<div class="tip-card minimal">
 					<div class="tip-row">
 						<div>
-							<div class="tip-title">Strategy</div>
-							<p>Keep a steady mental rhythm rather than reacting to each digit. Only withhold when you see {sessionData.target_digit} — stay consistent throughout.</p>
+							<div class="tip-title">{lt('Strategy', 'কৌশল')}</div>
+							<p>{lt('Keep a steady mental rhythm. Only withhold when you see', 'মনে একটি স্থির ছন্দ রাখুন। শুধু')} {n(sessionData.target_digit)} {lt('and stay consistent throughout.', 'দেখলে চাপবেন না এবং পুরো সময় একইভাবে চালিয়ে যান।')}</p>
 						</div>
-						<button class="show-more-btn" on:click={() => (showHelp = true)}>More tips</button>
+						<button class="show-more-btn" on:click={() => (showHelp = true)}>{lt('More tips', 'আরও টিপস')}</button>
 					</div>
 				</div>
 			{/if}
 
 			<div class="clinical-card">
-				<h3>Clinical Basis</h3>
-				<p>SART is a widely used sustained-attention paradigm that captures vigilance decrements characteristic of MS-related fatigue. Unlike typical Go/No-Go tasks, SART builds a strong prepotent response habit through high-frequency Go trials, making inhibitory failures under fatigue directly measurable. In multiple sclerosis, attention lapses and inhibitory control deficits affect approximately 50–60% of patients and are strongly correlated with lesion load in frontal white-matter tracts. SART scores distinguish commission errors (inhibitory failure) from omission errors (sustained-attention lapse), providing two clinically meaningful markers within a single brief test.</p>
+				<h3>{lt('Clinical Basis', 'ক্লিনিক্যাল ভিত্তি')}</h3>
+				<p>{lt('SART is widely used to measure sustained attention, lapses from fatigue, and inhibitory control during repetitive tasks.', 'দীর্ঘসময় মনোযোগ ধরে রাখা, ক্লান্তিতে মনোযোগের ফাঁক, এবং পুনরাবৃত্ত কাজের মধ্যে তাড়না নিয়ন্ত্রণ বোঝার জন্য SART ব্যবহৃত হয়।')}</p>
 			</div>
 
 			<TaskPracticeActions
@@ -334,9 +366,9 @@
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
 				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
-			<p class="eyebrow">Get Ready</p>
-			<h2>{countdown}</h2>
-			<p>Remember: press for every digit except {sessionData.target_digit}.</p>
+			<p class="eyebrow">{lt('Get Ready', 'প্রস্তুত হোন')}</p>
+			<h2>{n(countdown)}</h2>
+			<p>{lt('Remember: press for every digit except', 'মনে রাখুন: শুধু')} {n(sessionData.target_digit)} {lt('the target digit.', 'ছাড়া প্রতিটি সংখ্যায় চাপুন।')}</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
@@ -345,10 +377,10 @@
 			{/if}
 			<div class="play-header">
 				<div>
-					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>
-					<h2>Stay steady</h2>
+					<p class="eyebrow">{trialText(currentTrialIndex + 1, sessionData.total_trials)}</p>
+					<h2>{lt('Stay steady', 'স্থির থাকুন')}</h2>
 				</div>
-				<div class="rule-chip">No press on {sessionData.target_digit}</div>
+				<div class="rule-chip">{lt('No press on', 'চাপবেন না')} {n(sessionData.target_digit)}</div>
 			</div>
 
 			<div class="progress-track">
@@ -365,9 +397,9 @@
 
 			<div class="response-panel">
 				<button class="primary large" on:click={() => finishTrial(true)} disabled={!waitingForResponse}>
-					Press Space
+					{lt('Press Space', 'Space চাপুন')}
 				</button>
-				<p class="hint">Ignore only the rare target digit.</p>
+				<p class="hint">{lt('Ignore only the rare target digit.', 'শুধু বিরল লক্ষ্য সংখ্যাটি এড়িয়ে যান।')}</p>
 			</div>
 		</section>
 	{:else if state === STATE.COMPLETE}
@@ -375,9 +407,9 @@
 		<section class="panel hero">
 			<div class="header">
 				<div>
-					<p class="eyebrow">Session Complete</p>
-					<h1>SART Results</h1>
-					<p class="subtitle">Your vigilance and inhibition scores are now part of the attention profile.</p>
+					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>
+					<h1>{lt('SART Results', 'SART ফলাফল')}</h1>
+					<p class="subtitle">{lt('Your vigilance and inhibition scores are now part of the attention profile.', 'আপনার সতর্কতা ও নিয়ন্ত্রণের স্কোর এখন মনোযোগ প্রোফাইলে যুক্ত হয়েছে।')}</p>
 				</div>
 			</div>
 
@@ -387,49 +419,49 @@
 
 			<div class="results">
 				<div class="metric primary">
-					<span>Overall score</span>
-					<strong>{sessionResults.metrics.score}</strong>
+					<span>{lt('Overall score', 'সামগ্রিক স্কোর')}</span>
+					<strong>{n(sessionResults.metrics.score)}</strong>
 				</div>
 				<div class="metric">
-					<span>Accuracy</span>
-					<strong>{sessionResults.metrics.accuracy.toFixed(1)}%</strong>
+					<span>{lt('Accuracy', 'সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Go accuracy</span>
-					<strong>{sessionResults.metrics.go_accuracy.toFixed(1)}%</strong>
+					<span>{lt('Go accuracy', 'চাপার সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.go_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>No-go accuracy</span>
-					<strong>{sessionResults.metrics.nogo_accuracy.toFixed(1)}%</strong>
+					<span>{lt('No-go accuracy', 'না-চাপার সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.nogo_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Avg RT</span>
-					<strong>{sessionResults.metrics.average_reaction_time.toFixed(0)} ms</strong>
+					<span>{lt('Avg RT', 'গড় RT')}</span>
+					<strong>{ms(sessionResults.metrics.average_reaction_time)}</strong>
 				</div>
 				<div class="metric">
-					<span>Commission errors</span>
-					<strong>{sessionResults.metrics.commission_errors}</strong>
+					<span>{lt('Commission errors', 'ভুল চাপা')}</span>
+					<strong>{n(sessionResults.metrics.commission_errors)}</strong>
 				</div>
 				<div class="metric">
-					<span>Omission errors</span>
-					<strong>{sessionResults.metrics.omission_errors}</strong>
+					<span>{lt('Omission errors', 'মিস করা')}</span>
+					<strong>{n(sessionResults.metrics.omission_errors)}</strong>
 				</div>
 				<div class="metric">
-					<span>Vigilance index</span>
-					<strong>{sessionResults.metrics.vigilance_index.toFixed(1)}</strong>
+					<span>{lt('Vigilance index', 'সতর্কতা সূচক')}</span>
+					<strong>{fixed(sessionResults.metrics.vigilance_index, 1)}</strong>
 				</div>
 			</div>
 
 			<div class="difficulty">
-				<span>Level {sessionResults.difficulty_before}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_before)}</span>
 				<span class="arrow">-&gt;</span>
-				<span>Level {sessionResults.difficulty_after}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_after)}</span>
 			</div>
-			<p class="subtitle center">{sessionResults.adaptation_reason}</p>
+			<p class="subtitle center">{adaptationReasonText(sessionResults.adaptation_reason)}</p>
 
 			<div class="actions">
-				<button class="primary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
-				<button class="secondary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
+				<button class="primary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
+				<button class="secondary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
 			</div>
 		</section>
 	{/if}

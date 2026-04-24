@@ -4,11 +4,6 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<style>
-			html[data-locale-pending='true'] body {
-				visibility: hidden;
-			}
-		</style>
 		<script>
 			(() => {
 				const DEFAULT_LOCALE = 'en';
@@ -34,15 +29,7 @@
 				root.lang = locale === 'bn' ? 'bn-BD' : 'en';
 				root.dataset.locale = locale;
 				root.dataset.localeBoot = locale;
-
-				if (locale === 'bn') {
-					root.dataset.localePending = 'true';
-					window.setTimeout(() => {
-						if (root.dataset.localePending === 'true') {
-							root.dataset.localePending = 'false';
-						}
-					}, 4000);
-				}
+				root.dataset.localePending = 'false';
 
 				window.__NB_LOCALE__ = locale;
 			})();

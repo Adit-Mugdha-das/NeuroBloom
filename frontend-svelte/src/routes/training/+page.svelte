@@ -119,7 +119,10 @@
 			trainingState = 'plan_ready';
 		} catch (loadError) {
 			console.error('Error loading training data:', loadError);
-			error = lt('We could not load your training workspace right now.', '?? ???????? ????? ??????? ??????????? ??? ??? ?????? ???');
+			error = lt(
+				'We could not load your training workspace right now.',
+				'এই মুহূর্তে আপনার ট্রেনিং ওয়ার্কস্পেস লোড করা যাচ্ছে না।'
+			);
 			trainingState = 'error';
 		} finally {
 			loading = false;

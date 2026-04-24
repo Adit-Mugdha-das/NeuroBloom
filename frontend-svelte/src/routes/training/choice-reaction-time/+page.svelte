@@ -8,7 +8,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, formatNumber, formatPercent, taskPhraseText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -50,6 +50,34 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		'3': '3',
 		'4': '4'
 	};
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function pct(value) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		});
+	}
+
+	function fixed(value, digits = 1) {
+		return n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		});
+	}
+
+	function ms(value) {
+		return `${n(value, { maximumFractionDigits: 0 })} ${lt('ms', 'মি.সে.')}`;
+	}
+
+	function adaptationReasonText(reason) {
+		if ($locale === 'en' && reason) return reason;
+		return taskPhraseText('no_adaptation_reason', $locale);
+	}
 
 	onMount(async () => {
 		taskId = $page.url.searchParams.get('taskId');
@@ -103,7 +131,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Choice Reaction Time:', error);
-			alert('Failed to load task session');
+			alert(lt('Failed to load task session', 'টাস্ক সেশন লোড করা যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -240,7 +268,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting results:', error);
-			alert('Failed to submit results');
+			alert(lt('Failed to submit results', 'ফলাফল জমা দেওয়া যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -260,26 +288,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<section class="panel hero">
 			<div class="header">
 				<div>
-					<p class="eyebrow">Processing Speed Training</p>
-					<h1>Choice Reaction Time</h1>
+					<p class="eyebrow">{lt('Processing Speed Training', 'প্রক্রিয়াকরণের গতি অনুশীলন')}</p>
+					<h1>{lt('Choice Reaction Time', 'পছন্দভিত্তিক প্রতিক্রিয়ার সময়')}</h1>
 					<p class="subtitle">
-						A target appears in the center. Identify it and press the matching key or button as quickly
-						as you can. This trains decision speed, not just simple tapping speed.
+						{lt(
+							'A target appears in the center. Identify it and press the matching key or button as quickly as you can. This trains decision speed, not just simple tapping speed.',
+							'মাঝখানে একটি লক্ষ্য দেখা যাবে। সেটি চিনে যত দ্রুত পারেন মেলা কী বা বোতাম চাপুন। এতে শুধু চাপার গতি নয়, সিদ্ধান্ত নেওয়ার গতিও অনুশীলন হয়।'
+						)}
 					</p>
 				</div>
-				<DifficultyBadge {difficulty} domain="Processing Speed" />
+				<DifficultyBadge {difficulty} domain={lt('Processing Speed', 'প্রক্রিয়াকরণের গতি')} />
 			</div>
 
 			<div class="layout">
 				<div class="card mapping">
-					<h2>Response Map</h2>
+					<h2>{lt('Response Map', 'উত্তরের মানচিত্র')}</h2>
 					<div class="mapping-grid">
 						{#each activeStimuli as stimulus}
 							<div class="mapping-item">
 								<div class={shapeClass(stimulus.shape)} style={`background:${stimulus.color}`}></div>
 								<div class="mapping-text">
 									<strong>{stimulus.label}</strong>
-									<span>Press {stimulus.key}</span>
+									<span>{lt('Press', 'চাপুন')} {stimulus.key}</span>
 								</div>
 							</div>
 						{/each}
@@ -287,22 +317,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="card details">
-					<h2>How It Works</h2>
+					<h2>{lt('How It Works', 'কীভাবে করবেন')}</h2>
 					<ul>
-						<li>You will complete {sessionData.total_trials} rapid identification trials.</li>
-						<li>Respond inside the time window or the trial counts as a timeout.</li>
-						<li>Accuracy matters first. Fast but wrong decisions lower your score quickly.</li>
+						<li>{lt('You will complete', 'আপনি শেষ করবেন')} {n(sessionData.total_trials)} {lt('rapid identification trials.', 'দ্রুত শনাক্তকরণ ট্রায়াল।')}</li>
+						<li>{lt('Respond inside the time window or the trial counts as a timeout.', 'নির্ধারিত সময়ের মধ্যে উত্তর দিন, না হলে সেটি টাইমআউট ধরা হবে।')}</li>
+						<li>{lt('Accuracy matters first. Fast but wrong decisions lower your score quickly.', 'আগে সঠিকতা গুরুত্বপূর্ণ। দ্রুত কিন্তু ভুল সিদ্ধান্ত স্কোর দ্রুত কমিয়ে দেয়।')}</li>
 					</ul>
 
 					<button class="ghost" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Hide tips' : 'Show tips'}
+						{showHelp ? lt('Hide tips', 'টিপস লুকান') : lt('Show tips', 'টিপস দেখান')}
 					</button>
 
 					{#if showHelp}
 						<div class="help">
-							<p>Keep your fingers resting near the response keys before the cue appears.</p>
-							<p>Use the same hand position throughout the block to reduce movement cost.</p>
-							<p>If accuracy slips, slow down slightly rather than guessing.</p>
+							<p>{lt('Keep your fingers resting near the response keys before the cue appears.', 'সংকেত আসার আগে আঙুল উত্তর কী-এর কাছে রাখুন।')}</p>
+							<p>{lt('Use the same hand position throughout the block to reduce movement cost.', 'পুরো ব্লকে একই হাতের অবস্থান রাখলে নড়াচড়ার সময় কমে।')}</p>
+							<p>{lt('If accuracy slips, slow down slightly rather than guessing.', 'সঠিকতা কমে গেলে আন্দাজ না করে সামান্য ধীরে যান।')}</p>
 						</div>
 					{/if}
 				</div>
@@ -322,9 +352,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			{#if playMode === TASK_PLAY_MODE.PRACTICE}
 				<PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
 			{/if}
-			<p class="eyebrow">Get Ready</p>
-			<h2>{countdown}</h2>
-			<p>Keep your eyes on the center and your fingers near the mapped keys.</p>
+			<p class="eyebrow">{lt('Get Ready', 'প্রস্তুত হোন')}</p>
+			<h2>{n(countdown)}</h2>
+			<p>{lt('Keep your eyes on the center and your fingers near the mapped keys.', 'চোখ মাঝখানে রাখুন এবং আঙুল নির্ধারিত কী-এর কাছে রাখুন।')}</p>
 		</section>
 	{:else if state === STATE.PLAYING}
 		<section class="panel play">
@@ -333,8 +363,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			{/if}
 			<div class="play-header">
 				<div>
-					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>
-					<h2>Identify And Respond</h2>
+					<p class="eyebrow">{lt(`Trial ${n(currentTrialIndex + 1)} of ${n(sessionData.total_trials)}`, `${n(sessionData.total_trials)}টির মধ্যে ${n(currentTrialIndex + 1)} নম্বর ট্রায়াল`)}</p>
+					<h2>{lt('Identify And Respond', 'চিনুন এবং উত্তর দিন')}</h2>
 				</div>
 				<div class="mini-map">
 					{#each activeStimuli as stimulus}
@@ -378,9 +408,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<section class="panel hero">
 			<div class="header">
 				<div>
-					<p class="eyebrow">Session Complete</p>
-					<h1>Choice Reaction Time Results</h1>
-					<p class="subtitle">Decision speed and accuracy were recorded for your processing-speed profile.</p>
+					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>
+					<h1>{lt('Choice Reaction Time Results', 'পছন্দভিত্তিক প্রতিক্রিয়ার ফলাফল')}</h1>
+					<p class="subtitle">{lt('Decision speed and accuracy were recorded for your processing-speed profile.', 'সিদ্ধান্তের গতি ও সঠিকতা আপনার প্রক্রিয়াকরণ-গতির প্রোফাইলে যুক্ত হয়েছে।')}</p>
 				</div>
 			</div>
 
@@ -390,41 +420,41 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 			<div class="results">
 				<div class="metric primary">
-					<span>Overall score</span>
-					<strong>{sessionResults.metrics.score}</strong>
+					<span>{lt('Overall score', 'সামগ্রিক স্কোর')}</span>
+					<strong>{n(sessionResults.metrics.score)}</strong>
 				</div>
 				<div class="metric">
-					<span>Accuracy</span>
-					<strong>{sessionResults.metrics.accuracy.toFixed(1)}%</strong>
+					<span>{lt('Accuracy', 'সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Average RT</span>
-					<strong>{sessionResults.metrics.average_reaction_time.toFixed(0)} ms</strong>
+					<span>{lt('Average RT', 'গড় RT')}</span>
+					<strong>{ms(sessionResults.metrics.average_reaction_time)}</strong>
 				</div>
 				<div class="metric">
-					<span>Decision efficiency</span>
-					<strong>{sessionResults.metrics.decision_efficiency.toFixed(1)}</strong>
+					<span>{lt('Decision efficiency', 'সিদ্ধান্ত দক্ষতা')}</span>
+					<strong>{fixed(sessionResults.metrics.decision_efficiency, 1)}</strong>
 				</div>
 				<div class="metric">
-					<span>Consistency</span>
-					<strong>{sessionResults.metrics.consistency.toFixed(1)}%</strong>
+					<span>{lt('Consistency', 'ধারাবাহিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.consistency)}</strong>
 				</div>
 				<div class="metric">
-					<span>Timeouts</span>
-					<strong>{sessionResults.metrics.timeout_count}</strong>
+					<span>{lt('Timeouts', 'টাইমআউট')}</span>
+					<strong>{n(sessionResults.metrics.timeout_count)}</strong>
 				</div>
 			</div>
 
 			<div class="difficulty">
-				<span>Level {sessionResults.difficulty_before}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_before)}</span>
 				<span class="arrow">→</span>
-				<span>Level {sessionResults.difficulty_after}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_after)}</span>
 			</div>
-			<p class="subtitle center">{sessionResults.adaptation_reason}</p>
+			<p class="subtitle center">{adaptationReasonText(sessionResults.adaptation_reason)}</p>
 
 			<div class="actions">
-				<button class="primary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
-				<button class="secondary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
+				<button class="primary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
+				<button class="secondary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
 			</div>
 		</section>
 	{/if}

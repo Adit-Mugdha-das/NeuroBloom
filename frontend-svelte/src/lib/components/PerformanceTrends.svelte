@@ -1,4 +1,5 @@
 <script>
+	import { formatDate, formatNumber, locale as activeLocale, uiText } from '$lib/i18n';
 	import { downloadCanvasAsPNG, downloadCSV } from '$lib/utils/chartDownload';
 	import { onMount } from 'svelte';
 	import EmptyState from './EmptyState.svelte';
@@ -28,6 +29,18 @@
 		visual_scanning: 'Visual Scanning'
 	};
 
+	function n(value, options = {}) {
+		return formatNumber(value, $activeLocale, options);
+	}
+
+	function oneDecimal(value) {
+		return n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	}
+
+	function shortDate(value) {
+		return formatDate(value, $activeLocale, { month: 'short', day: 'numeric' });
+	}
+
 	$: availableDomains = Object.keys(trendsData?.trends_by_domain || {});
 	$: hasTrendSessions = (trendsData?.total_sessions || 0) > 0;
 	
@@ -51,7 +64,7 @@
 			// Show overall trend
 			const overallTrend = trendsData.overall_trend || [];
 			const data = overallTrend.map(point => ({
-				x: point.date,
+				x: shortDate(point.date),
 				y: selectedMetric === 'score' ? point.avg_score :
 				   selectedMetric === 'accuracy' ? point.avg_accuracy :
 				   point.avg_difficulty
@@ -71,9 +84,9 @@
 			// Show specific domain
 			const domainData = trendsData.trends_by_domain?.[selectedDomain];
 			if (domainData) {
-				const dataPoints = domainData.data_points || [];
-				const data = dataPoints.map(point => ({
-					x: new Date(point.date).toLocaleDateString(),
+			const dataPoints = domainData.data_points || [];
+			const data = dataPoints.map(point => ({
+					x: shortDate(point.date),
 					y: selectedMetric === 'score' ? point.score :
 					   selectedMetric === 'accuracy' ? point.accuracy :
 					   point.difficulty
@@ -110,7 +123,7 @@
 			ctx.fillStyle = '#999';
 			ctx.font = '14px sans-serif';
 			ctx.textAlign = 'center';
-			ctx.fillText('No data available', width / 2, height / 2);
+			ctx.fillText(uiText('No data available', $activeLocale), width / 2, height / 2);
 			return { destroy: () => {} };
 		}
 		
@@ -138,7 +151,7 @@
 			ctx.fillStyle = '#666';
 			ctx.font = '12px sans-serif';
 			ctx.textAlign = 'right';
-			ctx.fillText(value.toFixed(1), padding.left - 10, y + 4);
+			ctx.fillText(oneDecimal(value), padding.left - 10, y + 4);
 		}
 		
 		// Draw line
@@ -237,17 +250,17 @@
 <div class="trends-card">
 	<div class="trends-header">
 		<div class="header-left">
-			<h3>📈 Performance Trends</h3>
-			<p class="subtitle">Track your progress over time</p>
+			<h3>{uiText("📈 Performance Trends", $activeLocale)}</h3>
+			<p class="subtitle">{uiText("Track your progress over time", $activeLocale)}</p>
 		</div>
 		
 		<div class="header-actions">
 			{#if hasTrendSessions}
-				<button class="download-btn" on:click={handleDownloadChart} title="Download chart as image">
-					📊 Chart
+				<button class="download-btn" on:click={handleDownloadChart} title={uiText("Download chart as image", $activeLocale)}>
+					{uiText("📊 Chart", $activeLocale)}
 				</button>
-				<button class="download-btn" on:click={handleDownloadData} title="Download data as CSV">
-					📋 Data
+				<button class="download-btn" on:click={handleDownloadData} title={uiText("Download data as CSV", $activeLocale)}>
+					{uiText("📋 Data", $activeLocale)}
 				</button>
 			{/if}
 		</div>
@@ -255,22 +268,22 @@
 		<div class="controls">
 			<!-- Metric Selector -->
 			<div class="selector">
-				<label for={metricSelectId}>Metric:</label>
+				<label for={metricSelectId}>{uiText("Metric:", $activeLocale)}</label>
 				<select id={metricSelectId} bind:value={selectedMetric} on:change={updateChart}>
-					<option value="score">Score</option>
-					<option value="accuracy">Accuracy</option>
-					<option value="difficulty">Difficulty</option>
+					<option value="score">{uiText("Score", $activeLocale)}</option>
+					<option value="accuracy">{uiText("Accuracy", $activeLocale)}</option>
+					<option value="difficulty">{uiText("Difficulty", $activeLocale)}</option>
 				</select>
 			</div>
 			
 			<!-- Domain Selector -->
 			<div class="selector">
-				<label for={domainSelectId}>Domain:</label>
+				<label for={domainSelectId}>{uiText("Domain:", $activeLocale)}</label>
 				<select id={domainSelectId} bind:value={selectedDomain} on:change={updateChart}>
-					<option value="all">Overall</option>
+					<option value="all">{uiText("Overall", $activeLocale)}</option>
 					{#if availableDomains.length > 0}
 						{#each availableDomains as domain}
-							<option value={domain}>{domainNames[domain]}</option>
+							<option value={domain}>{uiText(domainNames[domain], $activeLocale)}</option>
 						{/each}
 					{/if}
 				</select>
@@ -284,11 +297,11 @@
 		{:else}
 			<EmptyState 
 				icon="📈"
-				title="Track Your Progress"
-				message="Complete multiple training sessions to unlock your performance trends graph and see how you improve over time!"
-				actionText="Start Training"
+				title={uiText("Track Your Progress", $activeLocale)}
+				message={uiText("Complete multiple training sessions to unlock your performance trends graph and see how you improve over time!", $activeLocale)}
+				actionText={uiText("Start Training", $activeLocale)}
 				actionLink="/training"
-				tip="Trends become visible after 3+ training sessions"
+				tip={uiText("Trends become visible after 3+ training sessions", $activeLocale)}
 				variant="compact"
 			/>
 		{/if}
@@ -297,16 +310,16 @@
 	{#if hasTrendSessions}
 		<div class="stats-summary">
 			<div class="stat-item">
-				<span class="stat-label">Total Sessions</span>
-				<span class="stat-value">{trendsData.total_sessions}</span>
+				<span class="stat-label">{uiText("Total Sessions", $activeLocale)}</span>
+				<span class="stat-value">{n(trendsData.total_sessions)}</span>
 			</div>
 			<div class="stat-item">
-				<span class="stat-label">Period</span>
-				<span class="stat-value">{trendsData.period_days} days</span>
+				<span class="stat-label">{uiText("Period", $activeLocale)}</span>
+				<span class="stat-value">{n(trendsData.period_days)} {uiText("days", $activeLocale)}</span>
 			</div>
 			<div class="stat-item">
-				<span class="stat-label">Active Domains</span>
-				<span class="stat-value">{availableDomains.length}</span>
+				<span class="stat-label">{uiText("Active Domains", $activeLocale)}</span>
+				<span class="stat-value">{n(availableDomains.length)}</span>
 			</div>
 		</div>
 	{/if}

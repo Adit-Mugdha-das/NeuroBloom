@@ -8,11 +8,19 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores.js';
 	import { onDestroy, onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
+	}
 
 	let userId;
 	let baselineScore = 0;
@@ -438,28 +446,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('How to Play', 'কীভাবে খেলবেন')}</h2>
 					<div class="rules-grid">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">
 								<strong>{lt('Study the planning screen', 'পরিকল্পনার স্ক্রিন পর্যবেক্ষণ করুন')}</strong>
 								<span>{lt('The start and goal disk positions are shown side by side during the planning phase.', 'পরিকল্পনা পর্যায়ে শুরু এবং লক্ষ্যের অবস্থান পাশাপাশি দেখানো হয়।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">
 								<strong>{lt('Plan before moving', 'চলার আগে পরিকল্পনা করুন')}</strong>
 								<span>{lt('Work out the minimum number of moves mentally before starting execution.', 'চালু করার আগে মানসিকভাবে সর্বনিম্ন পদক্ষেপের সংখ্যা নির্ধারণ করুন।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">
 								<strong>{lt('Click disk then click peg', 'ডিস্ক ক্লিক করুন তারপর পেগ ক্লিক করুন')}</strong>
 								<span>{lt('Select the top disk on any peg, then click the destination peg to move it.', 'যেকোনো পেগের উপরের ডিস্ক নির্বাচন করুন, তারপর গন্তব্য পেগে ক্লিক করুন।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">
 								<strong>{lt('Respect capacity limits', 'ধারণক্ষমতার সীমা মানুন')}</strong>
 								<span>{lt('Peg 1 holds 3 disks, Peg 2 holds 2, Peg 3 holds only 1. You cannot overfill a peg.', 'পেগ ১ — ৩টি, পেগ ২ — ২টি, পেগ ৩ — ১টি ডিস্ক ধারণ করে। পেগ অতিরিক্ত পূর্ণ করা যাবে না।')}</span>
@@ -473,19 +481,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('Peg Capacities', 'পেগের ধারণক্ষমতা')}</h2>
 					<div class="peg-cap-row">
 						<div class="peg-cap-item">
-							<div class="cap-circle cap-1">3</div>
+							<div class="cap-circle cap-1">{n(3)}</div>
 							<div class="cap-label">{lt('Peg 1', 'পেগ ১')}</div>
 							<div class="cap-sub">{lt('3 disks max', 'সর্বোচ্চ ৩টি')}</div>
 						</div>
 						<div class="cap-arrow">&#8594;</div>
 						<div class="peg-cap-item">
-							<div class="cap-circle cap-2">2</div>
+							<div class="cap-circle cap-2">{n(2)}</div>
 							<div class="cap-label">{lt('Peg 2', 'পেগ ২')}</div>
 							<div class="cap-sub">{lt('2 disks max', 'সর্বোচ্চ ২টি')}</div>
 						</div>
 						<div class="cap-arrow">&#8594;</div>
 						<div class="peg-cap-item">
-							<div class="cap-circle cap-3">1</div>
+							<div class="cap-circle cap-3">{n(1)}</div>
 							<div class="cap-label">{lt('Peg 3', 'পেগ ৩')}</div>
 							<div class="cap-sub">{lt('1 disk max', 'সর্বোচ্চ ১টি')}</div>
 						</div>
@@ -605,7 +613,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<span class="pill pill-phase">{lt('Planning', 'পরিকল্পনা')}</span>
 					</div>
 					<div class="planning-timer" class:timer-urgent={planningTimeRemaining <= 5}>
-						{planningTimeRemaining}s
+						{sec(planningTimeRemaining)}
 					</div>
 				</div>
 
@@ -1787,4 +1795,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.peg-cap-row    { flex-wrap: wrap; justify-content: center; }
 	}
 </style>
-

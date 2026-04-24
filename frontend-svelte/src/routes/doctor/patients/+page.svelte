@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -121,12 +122,12 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Patients"
-	subtitle="A dedicated patient management view for searching, filtering, and opening detailed records without crowding the dashboard."
+	title={uiText("Patients", $activeLocale)}
+	subtitle={uiText("A dedicated patient management view for searching, filtering, and opening detailed records without crowding the dashboard.", $activeLocale)}
 >
 	{#if loading}
 		<section class="state-card">
-			<p>Loading patient list...</p>
+			<p>{uiText("Loading patient list...", $activeLocale)}</p>
 		</section>
 	{:else if error}
 		<section class="state-card error-state">
@@ -135,16 +136,16 @@
 	{:else}
 		<section class="toolbar">
 			<div class="field-group search-field">
-				<label for="patientSearch">Search</label>
-				<input id="patientSearch" bind:value={searchTerm} placeholder="Search by patient, email, or diagnosis" />
+				<label for="patientSearch">{uiText("Search", $activeLocale)}</label>
+				<input id="patientSearch" bind:value={searchTerm} placeholder={uiText("Search by patient, email, or diagnosis", $activeLocale)} />
 			</div>
 			<div class="field-group">
-				<label for="riskFilter">Risk</label>
+				<label for="riskFilter">{uiText("Risk", $activeLocale)}</label>
 				<select id="riskFilter" bind:value={riskFilter}>
-					<option value="all">All risk levels</option>
-					<option value="high">High</option>
-					<option value="medium">Medium</option>
-					<option value="low">Low</option>
+					<option value="all">{uiText("All risk levels", $activeLocale)}</option>
+					<option value="high">{uiText("High", $activeLocale)}</option>
+					<option value="medium">{uiText("Medium", $activeLocale)}</option>
+					<option value="low">{uiText("Low", $activeLocale)}</option>
 				</select>
 			</div>
 		</section>
@@ -152,30 +153,30 @@
 		<section class="table-card">
 			<div class="table-header">
 				<div>
-					<p class="table-kicker">Patient Directory</p>
-					<h2>{filteredPatients.length} patients in view</h2>
+					<p class="table-kicker">{uiText("Patient Directory", $activeLocale)}</p>
+					<h2>{filteredPatients.length} {uiText("patients in view", $activeLocale)}</h2>
 				</div>
 			</div>
 
 			{#if filteredPatients.length === 0}
 				<div class="empty-card">
-					<h3>No patients match the current filters</h3>
-					<p>Adjust the search or risk filter to broaden the list.</p>
+					<h3>{uiText("No patients match the current filters", $activeLocale)}</h3>
+					<p>{uiText("Adjust the search or risk filter to broaden the list.", $activeLocale)}</p>
 				</div>
 			{:else}
 				<div class="table-wrap">
 					<table>
 						<thead>
 							<tr>
-								<th><button on:click={() => sortPatients('name')}>Patient</button></th>
-								<th>Diagnosis</th>
-								<th><button on:click={() => sortPatients('risk_level')}>Risk</button></th>
-								<th><button on:click={() => sortPatients('adherence_rate')}>Adherence</button></th>
-								<th><button on:click={() => sortPatients('total_sessions')}>Sessions</button></th>
-								<th><button on:click={() => sortPatients('avg_score')}>Score</button></th>
-								<th><button on:click={() => sortPatients('avg_accuracy')}>Accuracy</button></th>
-								<th><button on:click={() => sortPatients('last_activity')}>Last Activity</button></th>
-								<th>Actions</th>
+								<th><button on:click={() => sortPatients('name')}>{uiText("Patient", $activeLocale)}</button></th>
+								<th>{uiText("Diagnosis", $activeLocale)}</th>
+								<th><button on:click={() => sortPatients('risk_level')}>{uiText("Risk", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('adherence_rate')}>{uiText("Adherence", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('total_sessions')}>{uiText("Sessions", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('avg_score')}>{uiText("Score", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('avg_accuracy')}>{uiText("Accuracy", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('last_activity')}>{uiText("Last Activity", $activeLocale)}</button></th>
+								<th>{uiText("Actions", $activeLocale)}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -194,9 +195,9 @@
 									<td>{formatDate(patient.last_activity)}</td>
 									<td>
 										<div class="action-row">
-											<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}`)}>Open</button>
-											<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/reports`)}>Reports</button>
-											<button class="ghost-btn" on:click={() => unassignPatient(patient.patient_id, patient.name)}>Unassign</button>
+											<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}`)}>{uiText("Open", $activeLocale)}</button>
+											<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/reports`)}>{uiText("Reports", $activeLocale)}</button>
+											<button class="ghost-btn" on:click={() => unassignPatient(patient.patient_id, patient.name)}>{uiText("Unassign", $activeLocale)}</button>
 										</div>
 									</td>
 								</tr>

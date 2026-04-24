@@ -1,4 +1,5 @@
 <script>
+	import { formatDate, formatNumber, locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { baseline, patientJourney, training } from '$lib/api';
 	import { user } from '$lib/stores';
@@ -133,7 +134,19 @@
 			processing_speed: 'Processing Speed',
 			visual_scanning: 'Visual Scanning'
 		};
-		return names[domain] || domain;
+		return uiText(names[domain] || domain, $activeLocale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $activeLocale, options);
+	}
+
+	function scoreNumber(value) {
+		return n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	}
+
+	function displayDate(value) {
+		return formatDate(value, $activeLocale);
 	}
 	
 	function getScoreColor(score) {
@@ -143,11 +156,11 @@
 	}
 	
 	function getScoreLabel(score) {
-		if (score >= 80) return 'Excellent';
-		if (score >= 70) return 'Good';
-		if (score >= 60) return 'Average';
-		if (score >= 50) return 'Below Average';
-		return 'Needs Improvement';
+		if (score >= 80) return uiText('Excellent', $activeLocale);
+		if (score >= 70) return uiText('Good', $activeLocale);
+		if (score >= 60) return uiText('Average', $activeLocale);
+		if (score >= 50) return uiText('Below Average', $activeLocale);
+		return uiText('Needs Improvement', $activeLocale);
 	}
 	
 	function getBaselineScores() {
@@ -256,18 +269,18 @@
 <div class="container">
 	{#if loading}
 		<div class="loading-card">
-			<p>Loading baseline data...</p>
+			<p>{uiText("Loading baseline data...", $activeLocale)}</p>
 		</div>
 	{:else if error}
 		<div class="error-card">
-			<h3>Error</h3>
+			<h3>{uiText("Error", $activeLocale)}</h3>
 			<p>{error}</p>
-			<button class="btn-primary" on:click={loadBaseline}>Retry</button>
+			<button class="btn-primary" on:click={loadBaseline}>{uiText("Retry", $activeLocale)}</button>
 		</div>
 	{:else if !baselineStatus?.all_completed}
 		<div class="incomplete-card">
-			<h2>Complete All Tasks First</h2>
-			<p>You've completed {baselineStatus?.completed_count || 0} out of 6 baseline tasks.</p>
+			<h2>{uiText("Complete All Tasks First", $activeLocale)}</h2>
+			<p>{uiText("You've completed", $activeLocale)} {n(baselineStatus?.completed_count || 0)} {uiText("out of 6 baseline tasks.", $activeLocale)}</p>
 			
 			<div class="task-checklist">
 				{#each Object.entries(baselineStatus?.tasks || {}) as [task, completed]}
@@ -279,14 +292,14 @@
 			</div>
 			
 			<button class="btn-primary" on:click={backToDashboard} style="margin-top: 2rem;">
-				Go to Dashboard
+				{uiText("Go to Dashboard", $activeLocale)}
 			</button>
 		</div>
 	{:else if !baselineData}
 		<div class="ready-card">
-			<h2>All Tasks Complete!</h2>
-			<p>You've completed all 6 cognitive assessment tasks.</p>
-			<p style="color: #666; margin-top: 1rem;">Click below to calculate your baseline cognitive profile.</p>
+			<h2>{uiText("All Tasks Complete!", $activeLocale)}</h2>
+			<p>{uiText("You've completed all 6 cognitive assessment tasks.", $activeLocale)}</p>
+			<p style="color: #666; margin-top: 1rem;">{uiText("Click below to calculate your baseline cognitive profile.", $activeLocale)}</p>
 			
 			<button 
 				class="btn-calculate" 
@@ -303,10 +316,10 @@
 			<div class="results-header">
 				<div class="header-content">
 					<div class="header-text">
-						<h1>Cognitive Baseline Assessment</h1>
-						<p class="subtitle">Comprehensive evaluation of cognitive performance across 6 key domains</p>
+						<h1>{uiText("Cognitive Baseline Assessment", $activeLocale)}</h1>
+						<p class="subtitle">{uiText("Comprehensive evaluation of cognitive performance across 6 key domains", $activeLocale)}</p>
 					</div>
-					<button class="btn-back" on:click={backToDashboard}>← Back to Dashboard</button>
+					<button class="btn-back" on:click={backToDashboard}>{uiText("← Back to Dashboard", $activeLocale)}</button>
 				</div>
 			</div>
 			
@@ -315,27 +328,27 @@
 				<!-- Show both baseline and current scores side by side -->
 				<div class="scores-comparison">
 					<div class="score-card half">
-						<h3>Baseline Score</h3>
+						<h3>{uiText("Baseline Score", $activeLocale)}</h3>
 						<div class="medium-score" style="color: {getScoreColor(baselineData.overall_score)}">
-							{baselineData.overall_score.toFixed(1)}
+							{scoreNumber(baselineData.overall_score)}
 						</div>
 						<div class="score-label-small">{getScoreLabel(baselineData.overall_score)}</div>
-						<p class="date-small">Initial: {new Date(baselineData.assessment_date).toLocaleDateString()}</p>
+						<p class="date-small">{uiText("Initial:", $activeLocale)} {displayDate(baselineData.assessment_date)}</p>
 					</div>
 					
 					<div class="score-card half current">
-						<h3>Current Score</h3>
+						<h3>{uiText("Current Score", $activeLocale)}</h3>
 						<div class="medium-score" style="color: {getScoreColor(currentOverallScore)}">
-							{currentOverallScore.toFixed(1)}
+							{scoreNumber(currentOverallScore)}
 						</div>
 						<div class="score-label-small">{getScoreLabel(currentOverallScore)}</div>
 						<div class="improvement">
 							{#if currentOverallScore > baselineData.overall_score}
-								<span class="improvement-positive">↑ {(currentOverallScore - baselineData.overall_score).toFixed(1)} improvement</span>
+								<span class="improvement-positive">↑ {scoreNumber(currentOverallScore - baselineData.overall_score)} {uiText("improvement", $activeLocale)}</span>
 							{:else if currentOverallScore < baselineData.overall_score}
-								<span class="improvement-negative">↓ {(baselineData.overall_score - currentOverallScore).toFixed(1)} decrease</span>
+								<span class="improvement-negative">↓ {scoreNumber(baselineData.overall_score - currentOverallScore)} {uiText("decrease", $activeLocale)}</span>
 							{:else}
-								<span class="improvement-neutral">No change</span>
+								<span class="improvement-neutral">{uiText("No change", $activeLocale)}</span>
 							{/if}
 						</div>
 					</div>
@@ -343,25 +356,25 @@
 			{:else}
 				<!-- Show only baseline score -->
 				<div class="score-card overall">
-					<h2>Overall Cognitive Score</h2>
+					<h2>{uiText("Overall Cognitive Score", $activeLocale)}</h2>
 					<div class="big-score" style="color: {getScoreColor(baselineData.overall_score)}">
-						{baselineData.overall_score.toFixed(1)}
+						{scoreNumber(baselineData.overall_score)}
 					</div>
 					<div class="score-label">{getScoreLabel(baselineData.overall_score)}</div>
-					<p class="date">Assessed on {new Date(baselineData.assessment_date).toLocaleDateString()}</p>
+					<p class="date">{uiText("Assessed on", $activeLocale)} {displayDate(baselineData.assessment_date)}</p>
 				</div>
 			{/if}
 			
 			<!-- Radar Chart -->
 			<div class="chart-card">
 				<div class="chart-header">
-					<h3>Cognitive Profile {comparisonData ? '(Baseline vs Current)' : ''}</h3>
+					<h3>{uiText("Cognitive Profile", $activeLocale)} {comparisonData ? '(Baseline vs Current)' : ''}</h3>
 					<div class="chart-actions">
-						<button class="download-btn-small" on:click={handleDownloadChart} title="Download chart as image">
-							📊 Chart
+						<button class="download-btn-small" on:click={handleDownloadChart} title={uiText("Download chart as image", $activeLocale)}>
+							{uiText("📊 Chart", $activeLocale)}
 						</button>
-						<button class="download-btn-small" on:click={handleDownloadData} title="Download data as CSV">
-							📋 Data
+						<button class="download-btn-small" on:click={handleDownloadData} title={uiText("Download data as CSV", $activeLocale)}>
+							{uiText("📋 Data", $activeLocale)}
 						</button>
 					</div>
 				</div>
@@ -400,12 +413,12 @@
 					{/if}
 					
 					<!-- Labels -->
-					<text x="250" y="60" text-anchor="middle" class="chart-label">Working Memory</text>
-					<text x="385" y="145" text-anchor="start" class="chart-label">Attention</text>
-					<text x="385" y="265" text-anchor="start" class="chart-label">Cognitive Flexibility</text>
-					<text x="250" y="350" text-anchor="middle" class="chart-label">Planning</text>
-					<text x="115" y="265" text-anchor="end" class="chart-label">Processing Speed</text>
-					<text x="115" y="145" text-anchor="end" class="chart-label">Visual Scanning</text>
+					<text x="250" y="60" text-anchor="middle" class="chart-label">{uiText("Working Memory", $activeLocale)}</text>
+					<text x="385" y="145" text-anchor="start" class="chart-label">{uiText("Attention", $activeLocale)}</text>
+					<text x="385" y="265" text-anchor="start" class="chart-label">{uiText("Cognitive Flexibility", $activeLocale)}</text>
+					<text x="250" y="350" text-anchor="middle" class="chart-label">{uiText("Planning", $activeLocale)}</text>
+					<text x="115" y="265" text-anchor="end" class="chart-label">{uiText("Processing Speed", $activeLocale)}</text>
+					<text x="115" y="145" text-anchor="end" class="chart-label">{uiText("Visual Scanning", $activeLocale)}</text>
 				</svg>
 				
 				<!-- Legend (only show if comparison data exists) -->
@@ -415,13 +428,13 @@
 						<svg width="30" height="3">
 							<line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#667eea" stroke-width="2" stroke-dasharray="5,5"/>
 						</svg>
-						<span>Baseline</span>
+						<span>{uiText("Baseline", $activeLocale)}</span>
 					</div>
 					<div style="display: flex; align-items: center; gap: 0.5rem;">
 						<svg width="30" height="3">
 							<line x1="0" y1="1.5" x2="30" y2="1.5" stroke="#4caf50" stroke-width="3"/>
 						</svg>
-						<span>Current</span>
+						<span>{uiText("Current", $activeLocale)}</span>
 					</div>
 				</div>
 				{/if}
@@ -431,26 +444,26 @@
 			<div class="domains-grid">
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Working Memory</h4>
+						<h4>{uiText("Working Memory", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.working_memory_score)}">
-									{baselineData.working_memory_score.toFixed(1)}
+									{scoreNumber(baselineData.working_memory_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.working_memory?.current || 0)}">
-									{(comparisonData.comparison.working_memory?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.working_memory?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.working_memory_score)}">
-							{baselineData.working_memory_score.toFixed(1)}
+							{scoreNumber(baselineData.working_memory_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.working_memory_score}%; background: {getScoreColor(baselineData.working_memory_score)}"></div>
@@ -460,26 +473,26 @@
 				
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Attention</h4>
+						<h4>{uiText("Attention", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.attention_score)}">
-									{baselineData.attention_score.toFixed(1)}
+									{scoreNumber(baselineData.attention_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.attention?.current || 0)}">
-									{(comparisonData.comparison.attention?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.attention?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.attention_score)}">
-							{baselineData.attention_score.toFixed(1)}
+							{scoreNumber(baselineData.attention_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.attention_score}%; background: {getScoreColor(baselineData.attention_score)}"></div>
@@ -489,26 +502,26 @@
 				
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Cognitive Flexibility</h4>
+						<h4>{uiText("Cognitive Flexibility", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.flexibility_score)}">
-									{baselineData.flexibility_score.toFixed(1)}
+									{scoreNumber(baselineData.flexibility_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.flexibility?.current || 0)}">
-									{(comparisonData.comparison.flexibility?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.flexibility?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.flexibility_score)}">
-							{baselineData.flexibility_score.toFixed(1)}
+							{scoreNumber(baselineData.flexibility_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.flexibility_score}%; background: {getScoreColor(baselineData.flexibility_score)}"></div>
@@ -518,26 +531,26 @@
 				
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Planning</h4>
+						<h4>{uiText("Planning", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.planning_score)}">
-									{baselineData.planning_score.toFixed(1)}
+									{scoreNumber(baselineData.planning_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.planning?.current || 0)}">
-									{(comparisonData.comparison.planning?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.planning?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.planning_score)}">
-							{baselineData.planning_score.toFixed(1)}
+							{scoreNumber(baselineData.planning_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.planning_score}%; background: {getScoreColor(baselineData.planning_score)}"></div>
@@ -547,26 +560,26 @@
 				
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Processing Speed</h4>
+						<h4>{uiText("Processing Speed", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.processing_speed_score)}">
-									{baselineData.processing_speed_score.toFixed(1)}
+									{scoreNumber(baselineData.processing_speed_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.processing_speed?.current || 0)}">
-									{(comparisonData.comparison.processing_speed?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.processing_speed?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.processing_speed_score)}">
-							{baselineData.processing_speed_score.toFixed(1)}
+							{scoreNumber(baselineData.processing_speed_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.processing_speed_score}%; background: {getScoreColor(baselineData.processing_speed_score)}"></div>
@@ -576,26 +589,26 @@
 				
 				<div class="domain-card">
 					<div class="domain-header">
-						<h4>Visual Scanning</h4>
+						<h4>{uiText("Visual Scanning", $activeLocale)}</h4>
 					</div>
 					{#if comparisonData}
 						<div class="domain-scores-row">
 							<div class="baseline-score">
 								<div class="score-mini" style="color: {getScoreColor(baselineData.visual_scanning_score)}">
-									{baselineData.visual_scanning_score.toFixed(1)}
+									{scoreNumber(baselineData.visual_scanning_score)}
 								</div>
-								<div class="score-type">Baseline</div>
+								<div class="score-type">{uiText("Baseline", $activeLocale)}</div>
 							</div>
 							<div class="current-score-mini">
 								<div class="score-mini" style="color: {getScoreColor(comparisonData.comparison.visual_scanning?.current || 0)}">
-									{(comparisonData.comparison.visual_scanning?.current || 0).toFixed(1)}
+									{scoreNumber(comparisonData.comparison.visual_scanning?.current || 0)}
 								</div>
-								<div class="score-type">Current</div>
+								<div class="score-type">{uiText("Current", $activeLocale)}</div>
 							</div>
 						</div>
 					{:else}
 						<div class="domain-score" style="color: {getScoreColor(baselineData.visual_scanning_score)}">
-							{baselineData.visual_scanning_score.toFixed(1)}
+							{scoreNumber(baselineData.visual_scanning_score)}
 						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" style="width: {baselineData.visual_scanning_score}%; background: {getScoreColor(baselineData.visual_scanning_score)}"></div>
@@ -606,29 +619,29 @@
 			
 			<!-- Insights -->
 			<div class="insights-card">
-				<h3>Insights & Recommendations</h3>
+				<h3>{uiText("Insights & Recommendations", $activeLocale)}</h3>
 				<div class="insights-content">
 					{#if comparisonData && currentOverallScore !== null}
 						<!-- Show insights based on current performance -->
 						{#if currentOverallScore >= 80}
-							<p><strong>Excellent cognitive performance!</strong> Your scores are above average across all domains.</p>
+							<p><strong>{uiText("Excellent cognitive performance!", $activeLocale)}</strong> {uiText("Your scores are above average across all domains.", $activeLocale)}</p>
 							{#if currentOverallScore > baselineData.overall_score}
-								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline! Keep up the great work.</p>
+								<p style="margin-top: 0.5rem;">{uiText("You've improved by", $activeLocale)} <strong>{scoreNumber(currentOverallScore - baselineData.overall_score)} {uiText("points", $activeLocale)}</strong> {uiText("from your baseline! Keep up the great work.", $activeLocale)}</p>
 							{/if}
 						{:else if currentOverallScore >= 60}
-							<p><strong>Good cognitive performance.</strong> You have a solid foundation with room for targeted improvement.</p>
+							<p><strong>{uiText("Good cognitive performance.", $activeLocale)}</strong> {uiText("You have a solid foundation with room for targeted improvement.", $activeLocale)}</p>
 							{#if currentOverallScore > baselineData.overall_score}
-								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline! Continue your training to reach excellence.</p>
+								<p style="margin-top: 0.5rem;">{uiText("You've improved by", $activeLocale)} <strong>{scoreNumber(currentOverallScore - baselineData.overall_score)} {uiText("points", $activeLocale)}</strong> {uiText("from your baseline! Continue your training to reach excellence.", $activeLocale)}</p>
 							{/if}
 						{:else}
-							<p><strong>Keep training!</strong> Regular practice will help improve your cognitive performance.</p>
+							<p><strong>{uiText("Keep training!", $activeLocale)}</strong> {uiText("Regular practice will help improve your cognitive performance.", $activeLocale)}</p>
 							{#if currentOverallScore > baselineData.overall_score}
-								<p style="margin-top: 0.5rem;">You've improved by <strong>{(currentOverallScore - baselineData.overall_score).toFixed(1)} points</strong> from your baseline. You're making progress!</p>
+								<p style="margin-top: 0.5rem;">{uiText("You've improved by", $activeLocale)} <strong>{scoreNumber(currentOverallScore - baselineData.overall_score)} {uiText("points", $activeLocale)}</strong> {uiText("from your baseline. You're making progress!", $activeLocale)}</p>
 							{/if}
 						{/if}
 						
 						<div class="recommendation">
-							<h4>Current Focus Areas:</h4>
+							<h4>{uiText("Current Focus Areas:", $activeLocale)}</h4>
 							<ul>
 								{#each Object.entries({
 									working_memory: comparisonData.comparison.working_memory?.current || 0,
@@ -639,7 +652,7 @@
 									visual_scanning: comparisonData.comparison.visual_scanning?.current || 0
 								}).sort((a, b) => a[1] - b[1]).slice(0, 3) as [domain, score]}
 									{#if score < 70}
-									<li><strong>{getDomainName(domain)}</strong> - Current: {score.toFixed(1)}</li>
+									<li><strong>{getDomainName(domain)}</strong> {uiText("- Current:", $activeLocale)} {scoreNumber(score)}</li>
 									{/if}
 								{/each}
 							</ul>
@@ -647,15 +660,15 @@
 					{:else}
 						<!-- Show baseline insights -->
 						{#if baselineData.overall_score >= 80}
-							<p><strong>Excellent cognitive performance!</strong> Your scores are above average across all domains.</p>
+							<p><strong>{uiText("Excellent cognitive performance!", $activeLocale)}</strong> {uiText("Your scores are above average across all domains.", $activeLocale)}</p>
 						{:else if baselineData.overall_score >= 60}
-							<p><strong>Good cognitive performance.</strong> You have a solid foundation with room for targeted improvement.</p>
+							<p><strong>{uiText("Good cognitive performance.", $activeLocale)}</strong> {uiText("You have a solid foundation with room for targeted improvement.", $activeLocale)}</p>
 						{:else}
-							<p><strong>Baseline established.</strong> Regular training will help improve your cognitive performance.</p>
+							<p><strong>{uiText("Baseline established.", $activeLocale)}</strong> {uiText("Regular training will help improve your cognitive performance.", $activeLocale)}</p>
 						{/if}
 						
 						<div class="recommendation">
-							<h4>Focus Areas:</h4>
+							<h4>{uiText("Focus Areas:", $activeLocale)}</h4>
 							<ul>
 								{#each Object.entries({
 									working_memory: baselineData.working_memory_score,
@@ -666,7 +679,7 @@
 									visual_scanning: baselineData.visual_scanning_score
 								}).sort((a, b) => a[1] - b[1]).slice(0, 3) as [domain, score]}
 									{#if score < 70}
-									<li><strong>{getDomainName(domain)}</strong> - Score: {score.toFixed(1)}</li>
+									<li><strong>{getDomainName(domain)}</strong> {uiText("- Score:", $activeLocale)} {scoreNumber(score)}</li>
 									{/if}
 								{/each}
 							</ul>
@@ -677,7 +690,7 @@
 			
 			<div style="text-align: center; margin-top: 2rem;">
 				<button class="btn-primary" on:click={backToDashboard}>
-					Continue to Dashboard
+					{uiText("Continue to Dashboard", $activeLocale)}
 				</button>
 				<button 
 					class="btn-secondary" 
@@ -702,7 +715,7 @@
 						on:click={() => goto('/dashboard')}
 						style="margin-left: 1rem;"
 					>
-						View Training Plan
+						{uiText("View Training Plan", $activeLocale)}
 					</button>
 				{/if}
 			</div>

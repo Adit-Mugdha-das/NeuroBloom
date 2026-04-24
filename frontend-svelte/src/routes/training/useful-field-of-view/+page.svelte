@@ -8,7 +8,17 @@
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-    import { locale, localeText } from '$lib/i18n';
+    import {
+        locale,
+        localeText,
+        formatNumber,
+        formatPercent,
+        performanceText,
+        taskPhraseText,
+        taskValueText,
+        ufovInstructionText,
+        ufovSubtestText
+    } from '$lib/i18n';
     import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onDestroy, onMount } from 'svelte';
@@ -39,6 +49,71 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     let trialsCompleted = 0;
     const TRIALS_PER_SESSION = 10;
+    const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+    function n(value, options = {}) {
+        return formatNumber(value, $locale, options);
+    }
+
+    function pct(value) {
+        return formatPercent(value, $locale, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+
+    function fixed(value, digits = 2) {
+        return n(value, {
+            minimumFractionDigits: digits,
+            maximumFractionDigits: digits
+        });
+    }
+
+    function ms(value) {
+        return `${n(value)}${lt('ms', 'মি.সে.')}`;
+    }
+
+    function trialCountText(current, total) {
+        return lt(`Trial ${n(current)} of ${n(total)}`, `${n(total)}টির মধ্যে ${n(current)} নম্বর ট্রায়াল`);
+    }
+
+    function clockLabel(label) {
+        const map = {
+            "3 o'clock": { en: "3 o'clock", bn: '৩টা' },
+            '1:30': { en: '1:30', bn: '১:৩০' },
+            "12 o'clock": { en: "12 o'clock", bn: '১২টা' },
+            '10:30': { en: '10:30', bn: '১০:৩০' },
+            "9 o'clock": { en: "9 o'clock", bn: '৯টা' },
+            '7:30': { en: '7:30', bn: '৭:৩০' },
+            "6 o'clock": { en: "6 o'clock", bn: '৬টা' },
+            '4:30': { en: '4:30', bn: '৪:৩০' }
+        };
+        return localeText(map[label] || { en: label, bn: label }, $locale);
+    }
+
+    function feedbackText(performance) {
+        if (performance === 'perfect') {
+            return lt(
+                'Excellent. You identified both the central and peripheral information quickly.',
+                'চমৎকার। আপনি মাঝখানের ও চারপাশের তথ্য দ্রুত ধরতে পেরেছেন।'
+            );
+        }
+        if (performance === 'partial') {
+            return lt(
+                'Good effort. Keep your gaze centered and answer from your first impression.',
+                'ভালো চেষ্টা। চোখ মাঝখানে রেখে প্রথম যে ধারণা আসে সেটি দিয়ে উত্তর দিন।'
+            );
+        }
+        return lt(
+            'This trial was difficult. Stay relaxed and keep practicing the quick glance strategy.',
+            'এই ট্রায়ালটি কঠিন ছিল। শান্ত থাকুন এবং এক ঝলকে দেখার কৌশল অনুশীলন করুন।'
+        );
+    }
+
+    function adaptationReasonText(reason) {
+        if ($locale === 'en' && reason) return reason;
+        return taskPhraseText('no_adaptation_reason', $locale);
+    }
 
     onMount(() => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -94,7 +169,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 showStimulusPhase();
             }, 1500);
         } catch (err) {
-            error = 'Failed to load trial. Please try again.';
+            error = lt('Failed to load trial. Please try again.', 'ট্রায়াল লোড করা যায়নি। আবার চেষ্টা করুন।');
             loading = false;
             gamePhase = 'intro';
         }
@@ -176,7 +251,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             trialsCompleted++;
             gamePhase = 'results';
         } catch (err) {
-            error = 'Failed to submit response. Please try again.';
+            error = lt('Failed to submit response. Please try again.', 'উত্তর জমা দেওয়া যায়নি। আবার চেষ্টা করুন।');
         } finally {
             loading = false;
         }
@@ -213,8 +288,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
 
     function performanceLabel(perf) {
-        const map = { perfect: 'Perfect!', partial: 'Good Try', incorrect: 'Keep Practicing' };
-        return map[perf] || 'Keep Practicing';
+        return performanceText(perf, $locale);
     }
 
     function perfColor(perf) {
@@ -227,8 +301,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- Header -->
     <div class="task-header">        <div class="header-center">
-            <h1 class="task-title">Useful Field of View</h1>
-            <DifficultyBadge {difficulty} domain="Visual Scanning" />
+            <h1 class="task-title">{lt('Useful Field of View', 'ব্যবহারযোগ্য দৃশ্যক্ষেত্র')}</h1>
+            <DifficultyBadge {difficulty} domain={lt('Visual Scanning', 'দৃশ্য খোঁজা')} />
         </div>
     </div>
 
@@ -236,7 +310,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     {#if error}
         <div class="error-banner">
             <p>{error}</p>
-            <button on:click={() => { error = null; gamePhase = 'intro'; }}>Dismiss</button>
+            <button on:click={() => { error = null; gamePhase = 'intro'; }}>{lt('Dismiss', 'বন্ধ করুন')}</button>
         </div>
     {/if}
 
@@ -252,51 +326,51 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         <div class="page-content">
 
             <div class="concept-card">
-                <div class="concept-badge">Visual Scanning · Divided Attention</div>
-                <h2>Useful Field of View (UFOV)</h2>
-                <p>Images flash at the center and periphery of your visual field for extremely brief durations — as short as 17ms at the highest level. Your task is to identify the central vehicle and locate peripheral shapes before the display disappears. This tests how quickly and broadly you can process visual information in a single glance.</p>
+                <div class="concept-badge">{lt('Visual Scanning · Divided Attention', 'দৃশ্য খোঁজা · ভাগ করা মনোযোগ')}</div>
+                <h2>{lt('Useful Field of View (UFOV)', 'ব্যবহারযোগ্য দৃশ্যক্ষেত্র (UFOV)')}</h2>
+                <p>{lt('Images flash at the center and edge of your visual field for a very short time. Your task is to identify the center vehicle and, in harder rounds, where the outside shape appeared. It checks how much visual information you can catch in one quick glance.', 'স্ক্রিনের মাঝখানে ও চারপাশে খুব অল্প সময়ের জন্য ছবি দেখা যাবে। আপনার কাজ হলো মাঝখানের গাড়িটি চিনে নেওয়া এবং কঠিন রাউন্ডে চারপাশের আকারটি কোথায় ছিল তা বলা। এতে বোঝা যায় এক ঝলকে আপনি কতটা দৃশ্যত তথ্য ধরতে পারছেন।')}</p>
             </div>
 
             <div class="rules-card">
-                <h3>How It Works</h3>
+                <h3>{lt('How It Works', 'কীভাবে করবেন')}</h3>
                 <ol class="rules-list">
-                    <li><strong>Fix your gaze on the center cross (+)</strong> — keep your eyes perfectly still during the flash.</li>
-                    <li><strong>A brief stimulus appears</strong> — a vehicle at center and possibly a shape in the periphery. Duration ranges from 500ms (Level 1) down to 17ms (Level 10).</li>
-                    <li><strong>Respond immediately</strong> — report the central vehicle type (car or truck), and for harder subtests, the position of the peripheral shape.</li>
+                    <li><strong>{lt('Keep your eyes on the center cross (+)', 'চোখ মাঝখানের ক্রস (+)-এ রাখুন')}</strong> {lt('during the flash.', 'ছবি ঝলকানোর সময় চোখ সরাবেন না।')}</li>
+                    <li><strong>{lt('A very brief stimulus appears', 'খুব অল্প সময়ের জন্য ছবি দেখা যাবে')}</strong> {lt('with a vehicle in the center and sometimes a shape around it.', 'মাঝখানে একটি গাড়ি থাকবে, কখনও চারপাশে একটি আকারও থাকবে।')}</li>
+                    <li><strong>{lt('Respond right away', 'দ্রুত উত্তর দিন')}</strong> {lt('by choosing the vehicle and, when asked, the outside location.', 'গাড়ির ধরন এবং প্রয়োজন হলে চারপাশের অবস্থান বেছে নিন।')}</li>
                 </ol>
             </div>
 
             <div class="info-grid">
                 <div class="info-card">
-                    <div class="info-label">Subtest 1</div>
-                    <div class="info-title">Central Only</div>
-                    <p>Identify the vehicle in the center of the display. Measures pure visual processing speed with no distractions.</p>
+                    <div class="info-label">{lt('Subtest 1', 'সাবটেস্ট ১')}</div>
+                    <div class="info-title">{lt('Central Only', 'শুধু কেন্দ্র')}</div>
+                    <p>{lt('Identify the vehicle in the center. This measures simple visual processing speed.', 'মাঝখানের গাড়িটি চিনুন। এতে সরল দৃশ্য-প্রক্রিয়াকরণের গতি বোঝা যায়।')}</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-label">Subtest 2</div>
-                    <div class="info-title">Central + Peripheral</div>
-                    <p>Identify the center vehicle and locate the peripheral shape simultaneously. Measures divided visual attention.</p>
+                    <div class="info-label">{lt('Subtest 2', 'সাবটেস্ট ২')}</div>
+                    <div class="info-title">{lt('Central + Peripheral', 'কেন্দ্র ও চারপাশ')}</div>
+                    <p>{lt('Identify the center vehicle and the outside shape location together. This measures divided visual attention.', 'মাঝখানের গাড়ি ও চারপাশের আকারের অবস্থান একসঙ্গে ধরুন। এতে ভাগ করা দৃশ্য-মনোযোগ বোঝা যায়।')}</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-label">Subtest 3</div>
-                    <div class="info-title">With Distractors</div>
-                    <p>Same as Subtest 2 but with surrounding visual noise. Measures selective visual attention under clutter.</p>
+                    <div class="info-label">{lt('Subtest 3', 'সাবটেস্ট ৩')}</div>
+                    <div class="info-title">{lt('With Distractors', 'বিভ্রান্তিকর বস্তুসহ')}</div>
+                    <p>{lt('The same task with extra visual clutter. This measures selective visual attention.', 'একই কাজ, তবে বাড়তি দৃশ্যগত ভিড় থাকবে। এতে নির্বাচিত দৃশ্য-মনোযোগ বোঝা যায়।')}</p>
                 </div>
             </div>
 
             <div class="tip-card">
-                <div class="tip-title">Strategy</div>
-                <p>Do not try to consciously analyze — respond with your immediate impression. At higher levels the flash is too brief for deliberation. Trust what you sensed, even if uncertain, and answer as quickly as possible.</p>
+                <div class="tip-title">{lt('Strategy', 'কৌশল')}</div>
+                <p>{lt('Do not over-analyze. Use your first impression and answer as quickly as you can.', 'বেশি বিশ্লেষণ করবেন না। প্রথম যে ধারণা আসে সেটি ধরে যত দ্রুত পারেন উত্তর দিন।')}</p>
                 <div class="timing-scale">
-                    <span class="ts-start">Level 1 · 500ms</span>
+                    <span class="ts-start">{lt(`Level ${n(1)} · ${ms(500)}`, `লেভেল ${n(1)} · ${ms(500)}`)}</span>
                     <div class="ts-bar"></div>
-                    <span class="ts-end">Level 10 · 17ms</span>
+                    <span class="ts-end">{lt(`Level ${n(10)} · ${ms(17)}`, `লেভেল ${n(10)} · ${ms(17)}`)}</span>
                 </div>
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>Ball et al. (1993) demonstrated that UFOV reduction is the strongest predictor of at-fault driving crashes, outperforming visual acuity, reaction time, and cognitive test scores. In multiple sclerosis, UFOV impairment correlates with white matter lesion volume and predicts difficulty with driving and other complex real-world tasks. It is a key measure of visual processing speed and divided attention in MS rehabilitation programmes.</p>
+                <h3>{lt('Clinical Basis', 'ক্লিনিক্যাল ভিত্তি')}</h3>
+                <p>{lt('UFOV is used in rehabilitation research to understand visual processing speed and divided attention, both of which matter for complex daily tasks.', 'দৃশ্য-প্রক্রিয়াকরণের গতি ও ভাগ করা মনোযোগ বোঝার জন্য পুনর্বাসন গবেষণায় UFOV ব্যবহার করা হয়। জটিল দৈনন্দিন কাজে এই দুই দক্ষতাই গুরুত্বপূর্ণ।')}</p>
             </div>
 
             <TaskPracticeActions
@@ -316,14 +390,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="phase-card">
-                <div class="trial-counter">Trial {trialsCompleted + 1} of {TRIALS_PER_SESSION}</div>
-                <div class="subtest-tag">{trialData?.description}</div>
-                <div class="instructions-box">{trialData?.instructions}</div>
+                <div class="trial-counter">{trialCountText(trialsCompleted + 1, TRIALS_PER_SESSION)}</div>
+                <div class="subtest-tag">{ufovSubtestText(trialData?.subtest, $locale, trialData?.description)}</div>
+                <div class="instructions-box">{ufovInstructionText(trialData, $locale)}</div>
                 <div class="fixation-area">
                     <div class="fixation-cross">+</div>
-                    <p class="fixation-hint">Keep your eyes on this cross</p>
+                    <p class="fixation-hint">{lt('Keep your eyes on this cross', 'চোখ এই ক্রসে রাখুন')}</p>
                 </div>
-                <div class="timing-tag">Display time: <strong>{trialData?.presentation_time_ms}ms</strong></div>
+                <div class="timing-tag">{lt('Display time', 'দেখানোর সময়')}: <strong>{ms(trialData?.presentation_time_ms)}</strong></div>
             </div>
         </div>
 
@@ -339,7 +413,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 {#if showStimulus}
                     <div class="central-target">
                         <div class="vehicle-tag v-{trialData.central_target}">
-                            {trialData.central_target === 'car' ? 'CAR' : 'TRUCK'}
+                            {taskValueText('vehicle', trialData.central_target, $locale)}
                         </div>
                     </div>
 
@@ -373,33 +447,33 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 <PracticeModeBanner locale={$locale} showExit on:exit={() => leavePractice()} />
             {/if}
             <div class="phase-card">
-                <h2>What Did You See?</h2>
-                <p class="response-sub">{trialData?.instructions}</p>
+                <h2>{lt('What Did You See?', 'আপনি কী দেখেছেন?')}</h2>
+                <p class="response-sub">{ufovInstructionText(trialData, $locale)}</p>
 
                 <div class="response-group">
-                    <h3>Central Vehicle</h3>
+                    <h3>{lt('Central Vehicle', 'মাঝখানের গাড়ি')}</h3>
                     <div class="vehicle-choices">
                         <button
                             class="vehicle-btn {centralResponse === 'car' ? 'v-active' : ''}"
                             on:click={() => selectCentralTarget('car')}
                             disabled={loading}
                         >
-                            <div class="v-chip v-car">CAR</div>
+                            <div class="v-chip v-car">{taskValueText('vehicle', 'car', $locale)}</div>
                         </button>
                         <button
                             class="vehicle-btn {centralResponse === 'truck' ? 'v-active' : ''}"
                             on:click={() => selectCentralTarget('truck')}
                             disabled={loading}
                         >
-                            <div class="v-chip v-truck">TRUCK</div>
+                            <div class="v-chip v-truck">{taskValueText('vehicle', 'truck', $locale)}</div>
                         </button>
                     </div>
                 </div>
 
                 {#if trialData?.subtest !== 'central_only'}
                     <div class="response-group">
-                        <h3>Peripheral Shape Location</h3>
-                        <p class="response-hint">Where was the <strong>{trialData.peripheral_target}</strong>?</p>
+                        <h3>{lt('Peripheral Shape Location', 'চারপাশের আকারের অবস্থান')}</h3>
+                        <p class="response-hint">{lt('Where was the', 'কোথায় ছিল')} <strong>{taskValueText('shape', trialData.peripheral_target, $locale)}</strong>?</p>
                         <div class="clock-dial">
                             {#each getPeripheralPositions() as pos}
                                 <button
@@ -407,18 +481,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                                     style="left: {50 + pos.x * 40}%; top: {50 + pos.y * 40}%;"
                                     on:click={() => selectPeripheralPosition(pos.label)}
                                     disabled={!centralResponse || loading}
-                                >{pos.label}</button>
+                                >{clockLabel(pos.label)}</button>
                             {/each}
                             <div class="clock-fix">+</div>
                         </div>
                         {#if !centralResponse}
-                            <p class="select-note">Select the central vehicle first</p>
+                            <p class="select-note">{lt('Select the central vehicle first', 'আগে মাঝখানের গাড়ি বেছে নিন')}</p>
                         {/if}
                     </div>
                 {/if}
 
                 {#if loading}
-                    <div class="submitting">Evaluating response...</div>
+                    <div class="submitting">{lt('Evaluating response...', 'উত্তর যাচাই হচ্ছে...')}</div>
                 {/if}
             </div>
         </div>
@@ -430,81 +504,81 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             <div class="results-card">
                 <div class="perf-header" style="background: {perfColor(results.performance)}">
                     <h2>{performanceLabel(results.performance)}</h2>
-                    <p class="perf-sub">Trial {trialsCompleted} of {TRIALS_PER_SESSION} complete</p>
+                    <p class="perf-sub">{lt(`Trial ${n(trialsCompleted)} of ${n(TRIALS_PER_SESSION)} complete`, `${n(TRIALS_PER_SESSION)}টির মধ্যে ${n(trialsCompleted)}টি ট্রায়াল শেষ`)}</p>
                 </div>
 
                 <div class="results-body">
 
                     <div class="metrics-grid">
                         <div class="metric-cell">
-                            <div class="mc-val">{((results.accuracy || 0) * 100).toFixed(0)}%</div>
-                            <div class="mc-lbl">Accuracy</div>
+                            <div class="mc-val">{pct((results.accuracy || 0) * 100)}</div>
+                            <div class="mc-lbl">{lt('Accuracy', 'সঠিকতা')}</div>
                         </div>
                         <div class="metric-cell">
-                            <div class="mc-val">{results.response_time}ms</div>
-                            <div class="mc-lbl">Response Time</div>
+                            <div class="mc-val">{ms(results.response_time)}</div>
+                            <div class="mc-lbl">{lt('Response Time', 'প্রতিক্রিয়ার সময়')}</div>
                         </div>
                         <div class="metric-cell">
-                            <div class="mc-val">{results.processing_speed_score.toFixed(2)}</div>
-                            <div class="mc-lbl">Processing Speed</div>
+                            <div class="mc-val">{fixed(results.processing_speed_score, 2)}</div>
+                            <div class="mc-lbl">{lt('Processing Speed', 'প্রক্রিয়াকরণের গতি')}</div>
                         </div>
                         <div class="metric-cell">
-                            <div class="mc-val">{results.presentation_time_ms}ms</div>
-                            <div class="mc-lbl">Display Time</div>
+                            <div class="mc-val">{ms(results.presentation_time_ms)}</div>
+                            <div class="mc-lbl">{lt('Display Time', 'দেখানোর সময়')}</div>
                         </div>
                     </div>
 
                     <div class="breakdown-card">
-                        <h3>Trial Breakdown</h3>
+                        <h3>{lt('Trial Breakdown', 'ট্রায়ালের বিশ্লেষণ')}</h3>
                         <div class="breakdown-rows">
                             <div class="br-row">
-                                <span class="br-label">Central Vehicle</span>
+                                <span class="br-label">{lt('Central Vehicle', 'মাঝখানের গাড়ি')}</span>
                                 <span class="br-tag {results.central_correct ? 'tag-ok' : 'tag-err'}">
-                                    {results.central_correct ? 'Correct' : 'Incorrect'}
+                                    {results.central_correct ? lt('Correct', 'সঠিক') : lt('Incorrect', 'ভুল')}
                                 </span>
                             </div>
                             {#if results.subtest !== 'central_only'}
                                 <div class="br-row">
-                                    <span class="br-label">Peripheral Location</span>
+                                    <span class="br-label">{lt('Peripheral Location', 'চারপাশের অবস্থান')}</span>
                                     <span class="br-tag {results.peripheral_correct ? 'tag-ok' : 'tag-err'}">
-                                        {results.peripheral_correct ? 'Correct' : 'Incorrect'}
+                                        {results.peripheral_correct ? lt('Correct', 'সঠিক') : lt('Incorrect', 'ভুল')}
                                     </span>
                                 </div>
                             {/if}
                             <div class="br-row">
-                                <span class="br-label">Subtest</span>
-                                <span class="br-tag tag-info">{results.subtest.replace(/_/g, ' ')}</span>
+                                <span class="br-label">{lt('Subtest', 'সাবটেস্ট')}</span>
+                                <span class="br-tag tag-info">{ufovSubtestText(results.subtest, $locale)}</span>
                             </div>
                         </div>
                     </div>
 
                     {#if results.user_central_response}
                         <div class="answer-card">
-                            <h3>Answer Review</h3>
+                            <h3>{lt('Answer Review', 'উত্তর পর্যালোচনা')}</h3>
                             <div class="answer-group">
-                                <div class="ag-label">Central Vehicle</div>
+                                <div class="ag-label">{lt('Central Vehicle', 'মাঝখানের গাড়ি')}</div>
                                 <div class="ag-row">
-                                    <span class="ag-prompt">Your answer</span>
-                                    <span class="ag-val {results.central_correct ? 'av-ok' : 'av-err'}">{results.user_central_response.toUpperCase()}</span>
+                                    <span class="ag-prompt">{lt('Your answer', 'আপনার উত্তর')}</span>
+                                    <span class="ag-val {results.central_correct ? 'av-ok' : 'av-err'}">{taskValueText('vehicle', results.user_central_response, $locale)}</span>
                                 </div>
                                 {#if !results.central_correct}
                                     <div class="ag-row">
-                                        <span class="ag-prompt">Correct answer</span>
-                                        <span class="ag-val av-ok">{results.correct_central_target.toUpperCase()}</span>
+                                        <span class="ag-prompt">{lt('Correct answer', 'সঠিক উত্তর')}</span>
+                                        <span class="ag-val av-ok">{taskValueText('vehicle', results.correct_central_target, $locale)}</span>
                                     </div>
                                 {/if}
                             </div>
                             {#if (results.subtest === 'central_peripheral' || results.subtest === 'central_peripheral_distractors') && results.correct_peripheral_position}
                                 <div class="answer-group">
-                                    <div class="ag-label">Peripheral Shape ({results.correct_peripheral_target})</div>
+                                    <div class="ag-label">{lt('Peripheral Shape', 'চারপাশের আকার')} ({taskValueText('shape', results.correct_peripheral_target, $locale)})</div>
                                     <div class="ag-row">
-                                        <span class="ag-prompt">Your location</span>
-                                        <span class="ag-val {results.peripheral_correct ? 'av-ok' : 'av-err'}">{results.user_peripheral_response || 'Not selected'}</span>
+                                        <span class="ag-prompt">{lt('Your location', 'আপনার বেছে নেওয়া অবস্থান')}</span>
+                                        <span class="ag-val {results.peripheral_correct ? 'av-ok' : 'av-err'}">{results.user_peripheral_response ? clockLabel(results.user_peripheral_response) : lt('Not selected', 'নির্বাচন করা হয়নি')}</span>
                                     </div>
                                     {#if !results.peripheral_correct}
                                         <div class="ag-row">
-                                            <span class="ag-prompt">Correct location</span>
-                                            <span class="ag-val av-ok">{results.correct_peripheral_position}</span>
+                                            <span class="ag-prompt">{lt('Correct location', 'সঠিক অবস্থান')}</span>
+                                            <span class="ag-val av-ok">{clockLabel(results.correct_peripheral_position)}</span>
                                         </div>
                                     {/if}
                                 </div>
@@ -513,22 +587,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                     {/if}
 
                     <div class="feedback-card">
-                        <p>{results.feedback_message}</p>
+                        <p>{feedbackText(results.performance)}</p>
                     </div>
 
                     <div class="adapt-card">
                         {#if results.new_difficulty > results.old_difficulty}
-                            <p>Level {results.old_difficulty} <span class="arr">&#8594;</span> <strong>Level {results.new_difficulty}</strong> — advancing to a shorter display time</p>
+                            <p>{lt('Level', 'লেভেল')} {n(results.old_difficulty)} <span class="arr">&#8594;</span> <strong>{lt('Level', 'লেভেল')} {n(results.new_difficulty)}</strong> {lt('— advancing to a shorter display time', '— আরও কম সময়ের ঝলকে এগোচ্ছে')}</p>
                         {:else if results.new_difficulty < results.old_difficulty}
-                            <p>Adjusting to <strong>Level {results.new_difficulty}</strong> for better calibration</p>
+                            <p>{lt('Adjusting to', 'ভালোভাবে মানিয়ে নিতে')} <strong>{lt('Level', 'লেভেল')} {n(results.new_difficulty)}</strong> {lt('for better calibration', 'এ আনা হচ্ছে')}</p>
                         {:else}
-                            <p>Staying at <strong>Level {results.new_difficulty}</strong></p>
+                            <p>{lt('Staying at', 'থাকছে')} <strong>{lt('Level', 'লেভেল')} {n(results.new_difficulty)}</strong></p>
                         {/if}
-                        <p class="adapt-reason">{results.adaptation_reason}</p>
+                        <p class="adapt-reason">{adaptationReasonText(results.adaptation_reason)}</p>
                     </div>
 
                     <div class="progress-row">
-                        <span class="prog-label">{trialsCompleted} / {TRIALS_PER_SESSION} trials complete</span>
+                        <span class="prog-label">{lt(`${n(trialsCompleted)} / ${n(TRIALS_PER_SESSION)} trials complete`, `${n(TRIALS_PER_SESSION)}টির মধ্যে ${n(trialsCompleted)}টি ট্রায়াল শেষ`)}</span>
                         <div class="prog-bar">
                             <div class="prog-fill" style="width: {(trialsCompleted / TRIALS_PER_SESSION) * 100}%"></div>
                         </div>
@@ -536,13 +610,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
                     <div class="action-row">
                         {#if playMode === TASK_PLAY_MODE.PRACTICE}
-                            <button class="start-button" on:click={nextTrial}>Finish Practice</button>
+                            <button class="start-button" on:click={nextTrial}>{lt('Finish Practice', 'অনুশীলন শেষ করুন')}</button>
                         {:else if trialsCompleted < TRIALS_PER_SESSION}
                             <button class="start-button" on:click={nextTrial}>
-                                Next Trial ({TRIALS_PER_SESSION - trialsCompleted} remaining)
+                                {lt(`Next Trial (${n(TRIALS_PER_SESSION - trialsCompleted)} remaining)`, `পরের ট্রায়াল (${n(TRIALS_PER_SESSION - trialsCompleted)} বাকি)`)}
                             </button>
                         {:else}
-                            <button class="start-button" on:click={exitTask}>Complete Session</button>
+                            <button class="start-button" on:click={exitTask}>{lt('Complete Session', 'সেশন শেষ করুন')}</button>
                         {/if}                    </div>
 
                 </div>

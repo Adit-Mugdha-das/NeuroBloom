@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -141,8 +142,8 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Messages"
-	subtitle="Patient conversations in a calmer clinical workspace, with the conversation list and thread separated clearly."
+	title={uiText("Messages", $activeLocale)}
+	subtitle={uiText("Patient conversations in a calmer clinical workspace, with the conversation list and thread separated clearly.", $activeLocale)}
 	maxWidth="1360px"
 >
 	<svelte:fragment slot="actions">
@@ -152,14 +153,14 @@
 	<section class="messaging-shell">
 		<aside class="conversation-list">
 			<div class="panel-head">
-				<p class="panel-kicker">Inbox</p>
-				<h2>Patient Conversations</h2>
+				<p class="panel-kicker">{uiText("Inbox", $activeLocale)}</p>
+				<h2>{uiText("Patient Conversations", $activeLocale)}</h2>
 			</div>
 
 			{#if loading}
-				<p class="state-copy">Loading messages...</p>
+				<p class="state-copy">{uiText("Loading messages...", $activeLocale)}</p>
 			{:else if getUniquePatients().length === 0}
-				<p class="state-copy">No patient conversations yet.</p>
+				<p class="state-copy">{uiText("No patient conversations yet.", $activeLocale)}</p>
 			{:else}
 				<div class="patient-list">
 					{#each getUniquePatients() as patient}
@@ -188,16 +189,16 @@
 		<section class="conversation-panel">
 			{#if !selectedPatient}
 				<div class="empty-thread">
-					<h2>Select a patient</h2>
-					<p>Open a conversation from the left panel to review history and send a message.</p>
+					<h2>{uiText("Select a patient", $activeLocale)}</h2>
+					<p>{uiText("Open a conversation from the left panel to review history and send a message.", $activeLocale)}</p>
 				</div>
 			{:else}
 				<div class="thread-head">
 					<div>
-						<p class="panel-kicker">Active Thread</p>
+						<p class="panel-kicker">{uiText("Active Thread", $activeLocale)}</p>
 						<h2>{selectedPatient.name}</h2>
 					</div>
-					<button class="outline-btn" on:click={() => goto(`/doctor/patient/${selectedPatient.id}`)}>Open Patient</button>
+					<button class="outline-btn" on:click={() => goto(`/doctor/patient/${selectedPatient.id}`)}>{uiText("Open Patient", $activeLocale)}</button>
 				</div>
 
 				<div class="message-stream">
@@ -210,7 +211,7 @@
 							<p class="message-time">
 								{new Date(message.created_at).toLocaleString()}
 								{#if message.sender_type === 'doctor' && message.is_read}
-									<span class="read-state">Read</span>
+									<span class="read-state">{uiText("Read", $activeLocale)}</span>
 								{/if}
 							</p>
 						</article>
@@ -218,11 +219,11 @@
 				</div>
 
 				<div class="composer">
-					<input class="subject-input" bind:value={newSubject} placeholder="Subject (optional)" />
+					<input class="subject-input" bind:value={newSubject} placeholder={uiText("Subject (optional)", $activeLocale)} />
 					<textarea
 						bind:value={newMessage}
 						rows="4"
-						placeholder="Write a message to the patient"
+						placeholder={uiText("Write a message to the patient", $activeLocale)}
 						on:keydown={(event) => {
 							if (event.key === 'Enter' && !event.shiftKey) {
 								event.preventDefault();

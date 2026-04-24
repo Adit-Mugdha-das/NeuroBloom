@@ -8,11 +8,19 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores.js';
 	import { onDestroy, onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
+	}
 
 	let userId;
 	let baselineScore = 0;
@@ -458,28 +466,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('How to Play', 'কীভাবে খেলবেন')}</h2>
 					<div class="rules-grid">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">
 								<strong>{lt('Study start and goal', 'শুরু এবং লক্ষ্য পর্যবেক্ষণ করুন')}</strong>
 								<span>{lt('Both stocking configurations are shown during the planning phase. Memorise the goal layout.', 'পরিকল্পনা পর্যায়ে উভয় বিন্যাস দেখানো হয়। লক্ষ্য বিন্যাস মনে রাখুন।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">
 								<strong>{lt('Plan before moving', 'চলার আগে পরিকল্পনা করুন')}</strong>
 								<span>{lt('Work out the full move sequence in your head before touching any ball.', 'কোনো বল স্পর্শ করার আগে সম্পূর্ণ পদক্ষেপের ক্রম মাথায় নির্ধারণ করুন।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">
 								<strong>{lt('Click ball, then click stocking', 'বল ক্লিক করুন তারপর স্টকিং ক্লিক করুন')}</strong>
 								<span>{lt('Select the top ball in any stocking, then click the destination stocking to place it.', 'যেকোনো স্টকিংয়ের সবচেয়ে উপরের বলটি নির্বাচন করুন, তারপর গন্তব্য স্টকিংয়ে ক্লিক করুন।')}</span>
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">
 								<strong>{lt('Respect capacity limits', 'ধারণক্ষমতার সীমা মানুন')}</strong>
 								<span>{lt('Stocking 1 holds 3 balls, Stocking 2 holds 2, Stocking 3 holds only 1. Full stockings refuse new balls.', 'স্টকিং ১ — ৩টি, স্টকিং ২ — ২টি, স্টকিং ৩ — ১টি বল ধারণ করে। পূর্ণ স্টকিং নতুন বল গ্রহণ করে না।')}</span>
@@ -493,19 +501,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('Stocking Capacities', 'স্টকিংয়ের ধারণক্ষমতা')}</h2>
 					<div class="cap-row">
 						<div class="cap-item">
-							<div class="cap-circle cap-1">3</div>
+							<div class="cap-circle cap-1">{n(3)}</div>
 							<div class="cap-label">{lt('Stocking 1', 'স্টকিং ১')}</div>
 							<div class="cap-sub">{lt('3 balls max', 'সর্বোচ্চ ৩টি')}</div>
 						</div>
 						<div class="cap-arrow">&#8594;</div>
 						<div class="cap-item">
-							<div class="cap-circle cap-2">2</div>
+							<div class="cap-circle cap-2">{n(2)}</div>
 							<div class="cap-label">{lt('Stocking 2', 'স্টকিং ২')}</div>
 							<div class="cap-sub">{lt('2 balls max', 'সর্বোচ্চ ২টি')}</div>
 						</div>
 						<div class="cap-arrow">&#8594;</div>
 						<div class="cap-item">
-							<div class="cap-circle cap-3">1</div>
+							<div class="cap-circle cap-3">{n(1)}</div>
 							<div class="cap-label">{lt('Stocking 3', 'স্টকিং ৩')}</div>
 							<div class="cap-sub">{lt('1 ball max', 'সর্বোচ্চ ১টি')}</div>
 						</div>
@@ -625,7 +633,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<span class="pill pill-phase">{lt('Planning', 'পরিকল্পনা')}</span>
 					</div>
 					<div class="planning-timer" class:timer-urgent={planningTimeRemaining <= 5}>
-						{planningTimeRemaining}s
+						{sec(planningTimeRemaining)}
 					</div>
 				</div>
 
@@ -1822,4 +1830,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.cap-row       { flex-wrap: wrap; justify-content: center; }
 	}
 </style>
-

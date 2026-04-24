@@ -606,28 +606,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-num">1</span>
+						<span class="rule-num">{n(1)}</span>
 						<div class="rule-text">
 							<strong>{lt('Watch the Screen', 'স্ক্রিনে নজর রাখুন')}</strong>
 							<span>{lt('A stimulus appears briefly on screen', 'স্ক্রিনে অল্প সময়ের জন্য একটি উদ্দীপক দেখা যাবে')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">2</span>
+						<span class="rule-num">{n(2)}</span>
 						<div class="rule-text">
 							<strong>{lt('Identify Quickly', 'দ্রুত চিহ্নিত করুন')}</strong>
 							<span>{lt('Is it a GO or NO-GO stimulus?', 'এটি গো নাকি নো-গো উদ্দীপক?')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">3</span>
+						<span class="rule-num">{n(3)}</span>
 						<div class="rule-text">
 							<strong>{lt('Respond or Withhold', 'সাড়া দিন বা থামুন')}</strong>
 							<span>{lt('Press SPACEBAR for GO, do nothing for NO-GO', 'গো-তে স্পেসবার চাপুন, নো-গো-তে কিছু করবেন না')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
-						<span class="rule-num">4</span>
+						<span class="rule-num">{n(4)}</span>
 						<div class="rule-text">
 							<strong>{lt('Stay Consistent', 'ধারাবাহিক থাকুন')}</strong>
 							<span>{lt('Speed and accuracy both measured throughout', 'পুরো টাস্ক জুড়ে গতি ও নির্ভুলতা উভয়ই মূল্যায়ন করা হয়')}</span>
@@ -727,22 +727,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="steps-grid">
 					<div class="step-card">
-						<span class="step-num">1</span>
+						<span class="step-num">{n(1)}</span>
 						<strong>{lt('Stimulus Appears', 'উদ্দীপক দেখা যায়')}</strong>
 						<span>{lt('A symbol flashes briefly on screen', 'একটি চিহ্ন অল্প সময়ের জন্য দেখা যায়')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">2</span>
+						<span class="step-num">{n(2)}</span>
 						<strong>{lt('Identify It', 'চিনে নিন')}</strong>
 						<span>{lt('GO or NO-GO?', 'গো নাকি নো-গো?')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">3</span>
+						<span class="step-num">{n(3)}</span>
 						<strong>{lt('Respond or Wait', 'সাড়া দিন বা অপেক্ষা')}</strong>
 						<span>{lt('Press SPACEBAR or stay still', 'স্পেসবার চাপুন বা থামুন')}</span>
 					</div>
 					<div class="step-card">
-						<span class="step-num">4</span>
+						<span class="step-num">{n(4)}</span>
 						<strong>{lt('Stay Consistent', 'ধারাবাহিক থাকুন')}</strong>
 						<span>{lt('Maintain focus until the end', 'শেষ পর্যন্ত মনোযোগ ধরে রাখুন')}</span>
 					</div>

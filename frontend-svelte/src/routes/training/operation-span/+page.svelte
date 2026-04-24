@@ -742,7 +742,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 {#if showHelp}
 	<div class="help-modal" on:click={toggleHelp} role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()}>
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-		<div class="help-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()} aria-modal="true" aria-label="Help">
+		<div class="help-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && toggleHelp()} aria-modal="true" aria-label={t('Help')}>
 			<button class="close-button" on:click={toggleHelp}>×</button>
 			<h2>{t('Success Strategies')}</h2>
 			
@@ -1579,4 +1579,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		line-height: 1.6;
 	}
 </style>
-

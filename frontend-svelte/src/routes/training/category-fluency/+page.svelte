@@ -8,7 +8,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -65,7 +65,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	function compactSeconds(value) {
-		return $locale === 'bn' ? `${n(value)}স` : `${value}s`;
+		return formatSeconds(value, $locale);
 	}
 
 	function performanceLabel(rating) {
@@ -323,7 +323,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Task Concept -->
 				<div class="card task-concept">
 					<div class="concept-badge">
-						<span class="badge-icon">Semantic</span>
+						<span class="badge-icon">{localeText({ en: 'Semantic', bn: 'অর্থভিত্তিক' }, $locale)}</span>
 						<span>{t('Executive Planning')}</span>
 					</div>
 					<p class="concept-desc">
@@ -336,21 +336,21 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{t('Rules')}</h2>
 					<div class="rules-list">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">
 								{t('Type each word and press')} <strong>{$locale === 'bn' ? 'এন্টার' : 'Enter'}</strong> {t('to submit it')}
 							</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">{t('Submit as many words as you can in the time allowed')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">{t('Duplicate words are automatically filtered — only unique items are counted')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">
 								{t('You can remove a word before the timer ends by clicking the')} <strong>×</strong> {t('on its chip')}
 							</div>
@@ -376,7 +376,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<div class="details-list">
 							<div class="detail-row">
 								<span>{t('Primary Metric')}</span>
-								<strong>{t('Unique words / 60s')}</strong>
+								<strong>{localeText({ en: 'Unique words / 60s', bn: `ভিন্ন শব্দ / ${compactSeconds(60)}` }, $locale)}</strong>
 							</div>
 							<div class="detail-row">
 								<span>{t('Cognitive Domain')}</span>
@@ -384,7 +384,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							</div>
 							<div class="detail-row">
 								<span>{t('Time Limit')}</span>
-								<strong>{trialData.time_limit_seconds || 60}s</strong>
+								<strong>{compactSeconds(trialData.time_limit_seconds || 60)}</strong>
 							</div>
 							<div class="detail-row">
 								<span>{t('Difficulty')}</span>
@@ -396,7 +396,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<!-- Strategy Tip -->
 				<div class="tip-card">
-					<div class="tip-icon">TIP</div>
+					<div class="tip-icon">!</div>
 					<div class="tip-body">
 						<div class="tip-title">{t('Subcategory Strategy')}</div>
 						<p class="tip-text">{categoryTipText()}</p>
@@ -418,23 +418,23 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<!-- Performance Guide -->
 				<div class="card perf-guide">
-					<h3 class="card-title">{t('Performance Norms (unique words / 60s)')}</h3>
+					<h3 class="card-title">{localeText({ en: 'Performance Norms (unique words / 60s)', bn: `পারফরম্যান্স মানদণ্ড (ভিন্ন শব্দ / ${compactSeconds(60)})` }, $locale)}</h3>
 					<p class="perf-subtitle">{t('Based on MS patient reference data')}</p>
 					<div class="norm-bars">
 						<div class="norm-bar">
 							<div class="norm-label">{t('Excellent')}</div>
 							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-							<div class="norm-range">&gt; 18</div>
+							<div class="norm-range">&gt; {n(18)}</div>
 						</div>
 						<div class="norm-bar">
 							<div class="norm-label">{t('Normal (MS)')}</div>
 							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-							<div class="norm-range">12–18</div>
+							<div class="norm-range">{n(12)}-{n(18)}</div>
 						</div>
 						<div class="norm-bar">
 							<div class="norm-label">{t('Impaired')}</div>
 							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
-							<div class="norm-range">&lt; 12</div>
+							<div class="norm-range">&lt; {n(12)}</div>
 						</div>
 					</div>
 				</div>

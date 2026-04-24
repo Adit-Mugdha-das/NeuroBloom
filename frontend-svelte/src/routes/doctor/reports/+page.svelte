@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -50,36 +51,36 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Reports"
-	subtitle="A report entry page that routes clinicians into the existing patient-specific report workspace without cluttering the dashboard."
+	title={uiText("Reports", $activeLocale)}
+	subtitle={uiText("A report entry page that routes clinicians into the existing patient-specific report workspace without cluttering the dashboard.", $activeLocale)}
 >
 	{#if loading}
-		<section class="state-card"><p>Loading reports directory...</p></section>
+		<section class="state-card"><p>{uiText("Loading reports directory...", $activeLocale)}</p></section>
 	{:else if error}
 		<section class="state-card error-state"><p>{error}</p></section>
 	{:else}
 		<section class="report-grid">
 			{#if patients.length === 0}
 				<div class="empty-card">
-					<h2>No assigned patients yet</h2>
-					<p>Once patients are assigned, their report workspace will appear here.</p>
+					<h2>{uiText("No assigned patients yet", $activeLocale)}</h2>
+					<p>{uiText("Once patients are assigned, their report workspace will appear here.", $activeLocale)}</p>
 				</div>
 			{:else}
 				{#each patients as patient}
 					<article class="report-card">
 						<div>
-							<p class="card-kicker">Patient Reports</p>
+							<p class="card-kicker">{uiText("Patient Reports", $activeLocale)}</p>
 							<h2>{patient.full_name}</h2>
 							<p class="card-subtitle" data-localize-skip>{patient.diagnosis || 'Diagnosis not recorded'}</p>
 						</div>
 						<div class="report-meta">
-							<div><span>Baseline</span><strong>{patient.baseline_completed ? 'Complete' : 'Pending'}</strong></div>
-							<div><span>Last Activity</span><strong>{formatDate(patient.last_activity)}</strong></div>
+							<div><span>{uiText("Baseline", $activeLocale)}</span><strong>{patient.baseline_completed ? 'Complete' : 'Pending'}</strong></div>
+							<div><span>{uiText("Last Activity", $activeLocale)}</span><strong>{formatDate(patient.last_activity)}</strong></div>
 						</div>
 						<div class="report-actions">
-							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}`)}>Open Patient</button>
-							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/prescriptions`)}>Prescriptions</button>
-							<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/reports`)}>Open Reports</button>
+							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}`)}>{uiText("Open Patient", $activeLocale)}</button>
+							<button class="outline-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/prescriptions`)}>{uiText("Prescriptions", $activeLocale)}</button>
+							<button class="primary-btn" on:click={() => goto(`/doctor/patient/${patient.patient_id}/reports`)}>{uiText("Open Reports", $activeLocale)}</button>
 						</div>
 					</article>
 				{/each}

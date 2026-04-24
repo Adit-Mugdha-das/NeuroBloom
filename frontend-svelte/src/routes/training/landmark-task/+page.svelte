@@ -7,7 +7,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, formatNumber, formatPercent, taskPhraseText, taskValueText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -20,6 +20,42 @@
 		PLAYING: 'playing',
 		COMPLETE: 'complete'
 	};
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function fixed(value, digits = 1) {
+		return n(value, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits
+		});
+	}
+
+	function pct(value) {
+		return formatPercent(value, $locale, {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1
+		});
+	}
+
+	function ms(value) {
+		return `${n(value, { maximumFractionDigits: 0 })} ${lt('ms', 'মি.সে.')}`;
+	}
+
+	function trialText(current, total) {
+		return lt(`Trial ${n(current)} of ${n(total)}`, `${n(total)}টির মধ্যে ${n(current)} নম্বর ট্রায়াল`);
+	}
+
+	function landmarkResponse(value) {
+		return taskValueText('landmark_response', value, $locale);
+	}
+
+	function adaptationReasonText(reason) {
+		if ($locale === 'en' && reason) return reason;
+		return taskPhraseText('no_adaptation_reason', $locale);
+	}
 
 	let state = STATE.LOADING;
 	let difficulty = 5;
@@ -85,7 +121,7 @@
 			state = STATE.INSTRUCTIONS;
 		} catch (error) {
 			console.error('Error loading Landmark Task:', error);
-			alert('Failed to load Landmark Task');
+			alert(lt('Failed to load Landmark Task', 'ল্যান্ডমার্ক টাস্ক লোড করা যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -184,7 +220,7 @@
 			state = STATE.COMPLETE;
 		} catch (error) {
 			console.error('Error submitting Landmark Task:', error);
-			alert('Failed to submit results');
+			alert(lt('Failed to submit results', 'ফলাফল জমা দেওয়া যায়নি'));
 			goto('/dashboard');
 		}
 	}
@@ -217,11 +253,11 @@
 			<div class="hero-banner">
 				<div class="hero-inner">
 					<div class="hero-text">
-						<span class="hero-badge">Visual Scanning · Spatial Attention</span>
-						<h1 class="hero-title">Landmark Task</h1>
-						<p class="hero-desc">Pure perceptual spatial judgment — no drawing required</p>
+						<span class="hero-badge">{lt('Visual Scanning · Spatial Attention', 'দৃশ্য খোঁজা · স্থানিক মনোযোগ')}</span>
+						<h1 class="hero-title">{lt('Landmark Task', 'ল্যান্ডমার্ক টাস্ক')}</h1>
+						<p class="hero-desc">{lt('Pure perceptual spatial judgment, no drawing required', 'শুধু চোখে দেখে স্থানিক বিচার, আঁকতে হবে না')}</p>
 					</div>
-					<DifficultyBadge {difficulty} domain="Visual Scanning" />
+					<DifficultyBadge {difficulty} domain={lt('Visual Scanning', 'দৃশ্য খোঁজা')} />
 				</div>
 			</div>
 
@@ -230,82 +266,83 @@
 			{/if}
 
 			<div class="concept-card">
-				<span class="concept-badge">Visual Scanning · Spatial Attention</span>
-				<h2>The Core Principle</h2>
+				<span class="concept-badge">{lt('Visual Scanning · Spatial Attention', 'দৃশ্য খোঁজা · স্থানিক মনোযোগ')}</span>
+				<h2>{lt('The Core Principle', 'মূল ধারণা')}</h2>
 				<p>
-					Each trial shows a horizontal line with a vertical tick mark already drawn on it. Your task
-					is to judge whether the tick divides the line exactly at its midpoint, or whether the left or
-					right segment appears longer. No drawing — pure perceptual judgment. This isolates spatial
-					attention balance from motor skill entirely.
+					{lt(
+						'Each trial shows a horizontal line with a vertical mark. Judge whether the mark divides the line exactly in the middle, or whether the left or right side looks longer. No drawing is needed.',
+						'প্রতিটি ট্রায়ালে একটি অনুভূমিক রেখা ও তার ওপর একটি উল্লম্ব দাগ দেখা যাবে। দাগটি ঠিক মাঝখানে আছে কি না, নাকি বাম বা ডান অংশ বেশি লম্বা দেখাচ্ছে, সেটি বিচার করুন। কিছু আঁকতে হবে না।'
+					)}
 				</p>
 			</div>
 
 			<div class="rules-card">
-				<h3>Reading the Line</h3>
+				<h3>{lt('Reading the Line', 'রেখাটি কীভাবে পড়বেন')}</h3>
 				<ol class="rules-list">
-					<li>The tick mark on the line is the bisection point — judge the two resulting segments.</li>
-					<li>If the <strong>left segment looks longer</strong>, the tick is shifted right → choose <strong>Left Longer</strong>.</li>
-					<li>If the <strong>right segment looks longer</strong>, the tick is shifted left → choose <strong>Right Longer</strong>.</li>
-					<li>If both segments appear equal, choose <strong>Equal</strong>. Equal trials make up ~20% of the session.</li>
+					<li>{lt('The mark on the line is the dividing point. Compare the two sides.', 'রেখার ওপরের দাগটাই ভাগ করার জায়গা। দুই পাশ তুলনা করুন।')}</li>
+					<li>{lt('If the left segment looks longer, choose', 'বাম পাশ লম্বা দেখালে বেছে নিন')} <strong>{landmarkResponse('left')}</strong>.</li>
+					<li>{lt('If the right segment looks longer, choose', 'ডান পাশ লম্বা দেখালে বেছে নিন')} <strong>{landmarkResponse('right')}</strong>.</li>
+					<li>{lt('If both sides look equal, choose', 'দুই পাশ সমান দেখালে বেছে নিন')} <strong>{landmarkResponse('equal')}</strong>.</li>
 				</ol>
 				<p class="rules-note">
-					Keyboard: <strong>A</strong> or ← for Left Longer · <strong>S</strong> or ↓ for Equal · <strong>L</strong> or → for Right Longer
+					{lt('Keyboard', 'কিবোর্ড')}: <strong>A</strong> {lt('or', 'বা')} ← {lt('for', 'এর জন্য')} {landmarkResponse('left')} ·
+					<strong>S</strong> {lt('or', 'বা')} ↓ {lt('for', 'এর জন্য')} {landmarkResponse('equal')} ·
+					<strong>L</strong> {lt('or', 'বা')} → {lt('for', 'এর জন্য')} {landmarkResponse('right')}
 				</p>
 			</div>
 
 			<div class="info-grid">
 				<div class="info-card">
-					<div class="info-label">Total Trials</div>
-					<div class="info-val">{sessionData?.total_trials ?? '—'}</div>
-					<p>Increases with difficulty</p>
+					<div class="info-label">{lt('Total Trials', 'মোট ট্রায়াল')}</div>
+					<div class="info-val">{sessionData?.total_trials ? n(sessionData.total_trials) : '—'}</div>
+					<p>{lt('Increases with difficulty', 'কঠিনতা বাড়লে ট্রায়ালও বাড়ে')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Line Length</div>
-					<div class="info-val">360–540px</div>
-					<p>Longer lines at higher levels</p>
+					<div class="info-label">{lt('Line Length', 'রেখার দৈর্ঘ্য')}</div>
+					<div class="info-val">{lt('360–540px', '৩৬০–৫৪০px')}</div>
+					<p>{lt('Longer lines at higher levels', 'উচ্চ লেভেলে রেখা দীর্ঘ হয়')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Offset Range</div>
-					<div class="info-val">±10–30px</div>
-					<p>Smaller at harder levels</p>
+					<div class="info-label">{lt('Offset Range', 'সরার পরিসর')}</div>
+					<div class="info-val">{lt('±10–30px', '±১০–৩০px')}</div>
+					<p>{lt('Smaller at harder levels', 'কঠিন লেভেলে পার্থক্য ছোট হয়')}</p>
 				</div>
 				<div class="info-card">
-					<div class="info-label">Equal Trials</div>
-					<div class="info-val">~20%</div>
-					<p>Per session</p>
+					<div class="info-label">{lt('Equal Trials', 'সমান ট্রায়াল')}</div>
+					<div class="info-val">{lt('~20%', '~২০%')}</div>
+					<p>{lt('Per session', 'প্রতি সেশনে')}</p>
 				</div>
 			</div>
 
 			<div class="tip-card">
 				<div class="tip-row">
 					<div>
-						<p class="tip-title">Tips for Accuracy</p>
+						<p class="tip-title">{lt('Tips for Accuracy', 'সঠিকতার টিপস')}</p>
 						<ul>
-							<li><strong>Judge the segments</strong>, not the tick mark itself — focus on the two white spaces.</li>
-							<li><strong>Centre your gaze</strong> before each trial to prevent carry-over bias from the previous response.</li>
-							<li><strong>Trust your first impression</strong> — deliberate re-inspection often introduces second-guessing without improving accuracy.</li>
+							<li><strong>{lt('Judge the segments', 'দুই অংশ বিচার করুন')}</strong>, {lt('not the mark itself.', 'শুধু দাগটাকে নয়।')}</li>
+							<li><strong>{lt('Centre your gaze', 'চোখ মাঝামাঝি রাখুন')}</strong> {lt('before each trial.', 'প্রতিটি ট্রায়ালের আগে।')}</li>
+							<li><strong>{lt('Trust your first impression', 'প্রথম ধারণাকে বিশ্বাস করুন')}</strong> {lt('and avoid over-checking.', 'এবং বারবার মাপার চেষ্টা করবেন না।')}</li>
 						</ul>
 					</div>
 					<button class="show-more-btn" on:click={() => (showHelp = !showHelp)}>
-						{showHelp ? 'Less' : 'More tips'}
+						{showHelp ? lt('Less', 'কম দেখান') : lt('More tips', 'আরও টিপস')}
 					</button>
 				</div>
 				{#if showHelp}
 					<ul style="margin-top: 0.75rem;">
-						<li>Avoid tilting your head — it shifts the apparent midpoint perceptually.</li>
-						<li>If you notice you are consistently choosing left or right, slow down — systematic bias is the key clinical signal this task measures.</li>
+						<li>{lt('Avoid tilting your head because it can shift the apparent midpoint.', 'মাথা কাত করবেন না, এতে মাঝখানটা চোখে সরেছে বলে মনে হতে পারে।')}</li>
+						<li>{lt('If you keep choosing one side, slow down slightly and re-center your gaze.', 'একই দিক বারবার বেছে নিলে একটু ধীরে চোখ মাঝখানে আনুন।')}</li>
 					</ul>
 				{/if}
 			</div>
 
 			<div class="clinical-card">
-				<h3>Clinical Significance</h3>
+				<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
 				<p>
-					Pseudoneglect — the normal tendency to slightly over-extend bisections to the left — is
-					detectable with the Landmark Task without any drawing motor requirement. In MS, white-matter
-					lesions in right-hemisphere parietal pathways can shift this bias rightward, indicating
-					hemispatial attention asymmetry. The lateral bias index computed from your responses serves
-					as a screen for such shifts over training time (Harvey et al., 1995; Milner et al., 1992).
+					{lt(
+						'The Landmark Task helps track spatial attention balance without requiring drawing or hand control.',
+						'ল্যান্ডমার্ক টাস্ক আঁকা বা হাতের নিয়ন্ত্রণ ছাড়াই স্থানিক মনোযোগের ভারসাম্য বুঝতে সাহায্য করে।'
+					)}
 				</p>
 			</div>
 
@@ -324,10 +361,10 @@
 			{/if}
 			<div class="play-header">
 				<div>
-					<p class="eyebrow">Trial {currentTrialIndex + 1} of {sessionData.total_trials}</p>
-					<h2>Which side is longer?</h2>
+					<p class="eyebrow">{trialText(currentTrialIndex + 1, sessionData.total_trials)}</p>
+					<h2>{lt('Which side is longer?', 'কোন দিকটি বেশি লম্বা?')}</h2>
 				</div>
-				<div class="rule-chip">Midpoint Judgment</div>
+				<div class="rule-chip">{lt('Midpoint Judgment', 'মধ্যবিন্দু বিচার')}</div>
 			</div>
 
 			<div class="progress-track">
@@ -342,16 +379,16 @@
 
 			<div class="response-grid">
 				<button class="response-btn left" on:click={() => submitResponse('left')}>
-					Left Longer
-					<small>`A` / Left Arrow</small>
+					{landmarkResponse('left')}
+					<small>A / {lt('Left Arrow', 'বাম তীর')}</small>
 				</button>
 				<button class="response-btn equal" on:click={() => submitResponse('equal')}>
-					Equal
-					<small>`S` / Down Arrow</small>
+					{landmarkResponse('equal')}
+					<small>S / {lt('Down Arrow', 'নিচের তীর')}</small>
 				</button>
 				<button class="response-btn right" on:click={() => submitResponse('right')}>
-					Right Longer
-					<small>`L` / Right Arrow</small>
+					{landmarkResponse('right')}
+					<small>L / {lt('Right Arrow', 'ডান তীর')}</small>
 				</button>
 			</div>
 		</section>
@@ -360,9 +397,9 @@
 		<section class="panel hero">
 			<div class="header">
 				<div>
-					<p class="eyebrow">Session Complete</p>
-					<h1>Landmark Results</h1>
-					<p class="subtitle">Your spatial-bias and midpoint-judgment metrics are now part of the visual-scanning profile.</p>
+					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>
+					<h1>{lt('Landmark Results', 'ল্যান্ডমার্ক ফলাফল')}</h1>
+					<p class="subtitle">{lt('Your spatial-bias and midpoint-judgment metrics are now part of the visual-scanning profile.', 'আপনার স্থানিক বায়াস ও মধ্যবিন্দু বিচার এখন দৃশ্য-স্ক্যানিং প্রোফাইলে যোগ হয়েছে।')}</p>
 				</div>
 			</div>
 
@@ -372,49 +409,49 @@
 
 			<div class="results">
 				<div class="metric primary-metric">
-					<span>Overall score</span>
-					<strong>{sessionResults.metrics.score}</strong>
+					<span>{lt('Overall score', 'সামগ্রিক স্কোর')}</span>
+					<strong>{n(sessionResults.metrics.score)}</strong>
 				</div>
 				<div class="metric">
-					<span>Accuracy</span>
-					<strong>{sessionResults.metrics.accuracy.toFixed(1)}%</strong>
+					<span>{lt('Accuracy', 'সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Offset accuracy</span>
-					<strong>{sessionResults.metrics.offset_accuracy.toFixed(1)}%</strong>
+					<span>{lt('Offset accuracy', 'সরানো রেখায় সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.offset_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Centered accuracy</span>
-					<strong>{sessionResults.metrics.centered_accuracy.toFixed(1)}%</strong>
+					<span>{lt('Centered accuracy', 'মাঝামাঝি রেখায় সঠিকতা')}</span>
+					<strong>{pct(sessionResults.metrics.centered_accuracy)}</strong>
 				</div>
 				<div class="metric">
-					<span>Avg RT</span>
-					<strong>{sessionResults.metrics.average_reaction_time.toFixed(0)} ms</strong>
+					<span>{lt('Avg RT', 'গড় RT')}</span>
+					<strong>{ms(sessionResults.metrics.average_reaction_time)}</strong>
 				</div>
 				<div class="metric">
-					<span>Spatial bias index</span>
-					<strong>{sessionResults.metrics.spatial_bias_index.toFixed(1)}</strong>
+					<span>{lt('Spatial bias index', 'স্থানিক বায়াস সূচক')}</span>
+					<strong>{fixed(sessionResults.metrics.spatial_bias_index, 1)}</strong>
 				</div>
 				<div class="metric">
-					<span>Left-bias errors</span>
-					<strong>{sessionResults.metrics.left_bias_errors}</strong>
+					<span>{lt('Left-bias errors', 'বাম-বায়াস ভুল')}</span>
+					<strong>{n(sessionResults.metrics.left_bias_errors)}</strong>
 				</div>
 				<div class="metric">
-					<span>Right-bias errors</span>
-					<strong>{sessionResults.metrics.right_bias_errors}</strong>
+					<span>{lt('Right-bias errors', 'ডান-বায়াস ভুল')}</span>
+					<strong>{n(sessionResults.metrics.right_bias_errors)}</strong>
 				</div>
 			</div>
 
 			<div class="difficulty">
-				<span>Level {sessionResults.difficulty_before}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_before)}</span>
 				<span class="arrow">-&gt;</span>
-				<span>Level {sessionResults.difficulty_after}</span>
+				<span>{lt('Level', 'লেভেল')} {n(sessionResults.difficulty_after)}</span>
 			</div>
-			<p class="subtitle center">{sessionResults.adaptation_reason}</p>
+			<p class="subtitle center">{adaptationReasonText(sessionResults.adaptation_reason)}</p>
 
 			<div class="actions">
-				<button class="primary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
-				<button class="secondary" on:click={() => goto('/dashboard')}>Back To Dashboard</button>
+				<button class="primary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
+				<button class="secondary" on:click={() => goto('/dashboard')}>{lt('Back To Dashboard', 'ড্যাশবোর্ডে ফিরুন')}</button>
 			</div>
 		</section>
 	{/if}

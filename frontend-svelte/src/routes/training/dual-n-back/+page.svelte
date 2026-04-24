@@ -8,7 +8,7 @@
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
     import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-    import { formatNumber, formatPercent, locale, localizeStimulusSymbol, translateText } from '$lib/i18n';
+    import { formatNumber, formatPercent, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
     import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
     import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onDestroy, onMount } from 'svelte';
@@ -55,6 +55,7 @@
     let sessionRunId = 0;
 
     function t(text) { return translateText(text, $locale); }
+    function lt(en, bn) { return localeText({ en, bn }, $locale); }
     function n(value, options = {}) { return formatNumber(value, $locale, options); }
     function pct(value, options = {}) { return formatPercent(value, $locale, options); }
     function stimulus(value) { return localizeStimulusSymbol(value, $locale); }
@@ -363,78 +364,78 @@
             <!-- Header -->
             <div class="task-header">
                 <div class="header-center">
-                    <h1 class="task-title">Dual N-Back</h1>
+                    <h1 class="task-title">{lt('Dual N-Back', 'ডুয়াল N-Back')}</h1>
                     <DifficultyBadge {difficulty} domain="Working Memory" />
                 </div>
             </div>
 
             {#if loadError}
                 <div class="error-banner">
-                    <p>Failed to load session. Please try again.</p>
-                    <button on:click={() => { loadError = false; loadSession(); }}>Retry</button>
+                    <p>{lt('Failed to load session. Please try again.', 'সেশন লোড করা যায়নি। আবার চেষ্টা করুন।')}</p>
+                    <button on:click={() => { loadError = false; loadSession(); }}>{lt('Retry', 'আবার চেষ্টা করুন')}</button>
                 </div>
             {:else}
                 <div class="concept-card">
-                    <div class="concept-badge">Working Memory · Dual-Task Training</div>
-                    <h2>What Is Dual N-Back?</h2>
+                    <div class="concept-badge">{lt('Working Memory - Dual-Task Training', 'ওয়ার্কিং মেমরি - দ্বৈত টাস্ক ট্রেনিং')}</div>
+                    <h2>{lt('What Is Dual N-Back?', 'ডুয়াল N-Back কী?')}</h2>
                     <p>{introSubtitle(sessionData.instructions.n_level)}</p>
                 </div>
 
                 <div class="rules-card">
-                    <h3>How to Respond</h3>
+                    <h3>{lt('How to Respond', 'কীভাবে উত্তর দেবেন')}</h3>
                     <ol class="rules-list">
-                        <li>Watch the <strong>3×3 grid</strong> — one cell flashes each step.</li>
-                        <li>Listen for a <strong>spoken letter</strong> (or read the on-screen fallback).</li>
-                        <li>If the <strong>position</strong> matches what appeared {nBackLabel(sessionData.instructions.n_level)} ago, press <kbd>V</kbd> (Visual Match).</li>
-                        <li>If the <strong>letter</strong> matches what appeared {nBackLabel(sessionData.instructions.n_level)} ago, press <kbd>A</kbd> (Audio Match).</li>
-                        <li>Both can match simultaneously — press both buttons.</li>
+                        <li>{lt('Watch the', 'লক্ষ্য করুন')} <strong>{n(3)}×{n(3)} {lt('grid', 'গ্রিড')}</strong> - {lt('one cell flashes each step.', 'প্রতিটি ধাপে একটি ঘর জ্বলে উঠবে।')}</li>
+                        <li>{lt('Listen for a', 'একটি')} <strong>{lt('spoken letter', 'শোনা অক্ষর')}</strong> {lt('(or read the on-screen fallback).', '(অডিও না থাকলে স্ক্রিনে দেখানো অক্ষর পড়ুন)।')}</li>
+                        <li>{lt('If the', 'যদি')} <strong>{lt('position', 'অবস্থান')}</strong> {lt('matches what appeared', 'আগের দেখা অবস্থানের সঙ্গে মিলে যায়')} {nBackLabel(sessionData.instructions.n_level)} {lt('ago, press', 'আগে, চাপুন')} <kbd>V</kbd> ({lt('Visual Match', 'ভিজ্যুয়াল মিল')}).</li>
+                        <li>{lt('If the', 'যদি')} <strong>{lt('letter', 'অক্ষর')}</strong> {lt('matches what appeared', 'আগের শোনা অক্ষরের সঙ্গে মিলে যায়')} {nBackLabel(sessionData.instructions.n_level)} {lt('ago, press', 'আগে, চাপুন')} <kbd>A</kbd> ({lt('Audio Match', 'অডিও মিল')}).</li>
+                        <li>{lt('Both can match simultaneously - press both buttons.', 'দুটিই একসঙ্গে মিলতে পারে - তখন দুই বোতামই চাপুন।')}</li>
                     </ol>
                     <p class="rules-note">{observeInstruction(sessionData.instructions.n_level)}</p>
                 </div>
 
                 <div class="info-grid">
                     <div class="info-card">
-                        <div class="info-label">Rounds</div>
+                        <div class="info-label">{lt('Rounds', 'রাউন্ড')}</div>
                         <div class="info-val">{n(sessionData.num_trials)}</div>
-                        <p>Each round is a full stimulus sequence. Round results shown between rounds.</p>
+                        <p>{lt('Each round is a full stimulus sequence. Round results shown between rounds.', 'প্রতিটি রাউন্ডে একটি পূর্ণ সংকেত-ক্রম থাকে। রাউন্ডের ফলাফল রাউন্ডগুলোর মাঝখানে দেখানো হবে।')}</p>
                     </div>
                     <div class="info-card">
-                        <div class="info-label">N-Level</div>
+                        <div class="info-label">{lt('N-Level', 'N-লেভেল')}</div>
                         <div class="info-val">{nBackLabel(sessionData.instructions.n_level)}</div>
-                        <p>Match stimuli that appeared this many steps back in the sequence.</p>
+                        <p>{lt('Match stimuli that appeared this many steps back in the sequence.', 'ক্রমে এত ধাপ আগে যে সংকেত দেখা বা শোনা হয়েছিল, তার সঙ্গে মিল খুঁজুন।')}</p>
                     </div>
                     <div class="info-card">
-                        <div class="info-label">Audio</div>
-                        <div class="info-val">{speechEnabled ? 'Enabled' : 'Visual fallback'}</div>
-                        <p>{speechEnabled ? 'Letters are spoken aloud via speech synthesis.' : 'Speech unavailable — letters shown on screen instead.'}</p>
+                        <div class="info-label">{lt('Audio', 'অডিও')}</div>
+                        <div class="info-val">{speechEnabled ? lt('Enabled', 'চালু') : lt('Visual fallback', 'স্ক্রিনে দেখাবে')}</div>
+                        <p>{speechEnabled ? lt('Letters are spoken aloud via speech synthesis.', 'স্পিচ সিনথেসিস দিয়ে অক্ষরগুলো শোনানো হবে।') : lt('Speech unavailable - letters shown on screen instead.', 'অডিও পাওয়া যাচ্ছে না - তার বদলে অক্ষর স্ক্রিনে দেখানো হবে।')}</p>
                     </div>
                 </div>
 
                 {#if showHelp}
                     <div class="tip-card">
-                        <div class="tip-title">Advanced Tips</div>
+                        <div class="tip-title">{lt('Advanced Tips', 'উন্নত কৌশল')}</div>
                         <ul>
-                            <li><strong>Warm-up phase:</strong> no responses needed until enough items have appeared — buttons become active automatically.</li>
-                            <li><strong>Dual matches:</strong> press both V and A if both position and letter repeat.</li>
-                            <li><strong>Accuracy vs. false alarms:</strong> incorrect presses lower your score just as missed targets do. Only respond when confident.</li>
-                            <li><strong>Rhythm:</strong> use a steady internal rhythm rather than rushing each cue.</li>
+                            <li><strong>{lt('Warm-up phase:', 'ওয়ার্ম-আপ ধাপ:')}</strong> {lt('no responses needed until enough items have appeared - buttons become active automatically.', 'যথেষ্ট আইটেম না আসা পর্যন্ত উত্তর দিতে হবে না - বোতাম নিজে থেকেই সক্রিয় হবে।')}</li>
+                            <li><strong>{lt('Dual matches:', 'দুই ধরনের মিল:')}</strong> {lt('press both V and A if both position and letter repeat.', 'অবস্থান ও অক্ষর দুটোই পুনরাবৃত্তি হলে V ও A দুটোই চাপুন।')}</li>
+                            <li><strong>{lt('Accuracy vs. false alarms:', 'নির্ভুলতা বনাম ভুল সংকেত:')}</strong> {lt('incorrect presses lower your score just as missed targets do. Only respond when confident.', 'ভুল চাপলে স্কোর কমে, যেমন লক্ষ্য মিস করলেও কমে। নিশ্চিত হলে তবেই উত্তর দিন।')}</li>
+                            <li><strong>{lt('Rhythm:', 'ছন্দ:')}</strong> {lt('use a steady internal rhythm rather than rushing each cue.', 'প্রতিটি সংকেতে তাড়াহুড়া না করে ভেতরে একটি স্থির ছন্দ রাখুন।')}</li>
                         </ul>
                     </div>
                 {:else}
                     <div class="tip-card minimal">
                         <div class="tip-row">
                             <div>
-                                <div class="tip-title">Strategy</div>
-                                <p>Keep your eyes centered on the grid and let peripheral motion guide you. Only press when confident — false alarms count against your score.</p>
+                                <div class="tip-title">{lt('Strategy', 'কৌশল')}</div>
+                                <p>{lt('Keep your eyes centered on the grid and let peripheral motion guide you. Only press when confident - false alarms count against your score.', 'চোখ গ্রিডের মাঝখানে রাখুন এবং পাশের নড়াচড়া আপনাকে দিক নির্দেশনা দিক। নিশ্চিত হলে তবেই চাপুন - ভুল সংকেত স্কোর কমায়।')}</p>
                             </div>
-                            <button class="show-more-btn" on:click={() => (showHelp = true)}>More tips</button>
+                            <button class="show-more-btn" on:click={() => (showHelp = true)}>{lt('More tips', 'আরও কৌশল')}</button>
                         </div>
                     </div>
                 {/if}
 
                 <div class="clinical-card">
-                    <h3>Clinical Basis</h3>
-                    <p>Dual N-Back is one of the few cognitive training tasks with strong evidence for transfer to real-world working memory capacity. In multiple sclerosis, working memory deficits affect approximately 40–65% of patients and correlate with lesion burden in frontal and parietal white matter. Regular N-Back training has been shown to increase prefrontal cortex activation and improve performance on untrained working memory measures. The dual-task format (simultaneous visual and auditory streams) places maximal load on the central executive component of working memory, targeting the very system most vulnerable to MS-related neurodegeneration.</p>
+                    <h3>{lt('Clinical Basis', 'ক্লিনিক্যাল ভিত্তি')}</h3>
+                    <p>{lt('Dual N-Back is one of the few cognitive training tasks with strong evidence for transfer to real-world working memory capacity. In multiple sclerosis, working memory deficits affect approximately 40-65% of patients and correlate with lesion burden in frontal and parietal white matter. Regular N-Back training has been shown to increase prefrontal cortex activation and improve performance on untrained working memory measures. The dual-task format (simultaneous visual and auditory streams) places maximal load on the central executive component of working memory, targeting the very system most vulnerable to MS-related neurodegeneration.', 'ডুয়াল N-Back এমন কয়েকটি কগনিটিভ ট্রেনিং টাস্কের একটি, যার বাস্তব জীবনের ওয়ার্কিং মেমরি ক্ষমতায় প্রভাবের ভালো প্রমাণ আছে। MS-এ ওয়ার্কিং মেমরির সমস্যা প্রায় ৪০-৬৫% রোগীর ক্ষেত্রে দেখা যায় এবং ফ্রন্টাল ও প্যারিয়েটাল হোয়াইট ম্যাটারের লেশন-লোডের সঙ্গে সম্পর্কিত। নিয়মিত N-Back ট্রেনিং প্রিফ্রন্টাল কর্টেক্স সক্রিয়তা বাড়াতে এবং আলাদা ওয়ার্কিং মেমরি মাপে পারফরম্যান্স উন্নত করতে দেখা গেছে। একই সঙ্গে ভিজ্যুয়াল ও অডিও সংকেত থাকায় এই ফরম্যাট ওয়ার্কিং মেমরির কেন্দ্রীয় নির্বাহী অংশকে বেশি চ্যালেঞ্জ করে, যা MS-সম্পর্কিত নিউরোডিজেনারেশনে বেশি ঝুঁকিতে থাকে।')}</p>
                 </div>
 
                 <TaskPracticeActions
@@ -485,7 +486,7 @@
 
                 <div class="arena">
                     <div class="stream-card">
-                        <div class="stream-label">Visual Stream</div>
+                        <div class="stream-label">{lt('Visual Stream', 'ভিজ্যুয়াল সংকেত')}</div>
                         <div class="grid-board">
                             {#each Array(9) as _, idx}
                                 <div class={gridCellClasses(idx)}></div>
@@ -494,7 +495,7 @@
                     </div>
 
                     <div class="stream-card cue-stream">
-                        <div class="stream-label">Audio Stream</div>
+                        <div class="stream-label">{lt('Audio Stream', 'অডিও সংকেত')}</div>
                         <div class="cue-letter">{speechEnabled ? t('Speaker cue active') : stimulus(currentLetter)}</div>
                         <p class="cue-support">{responseSupportLabel()}</p>
                     </div>
@@ -559,21 +560,21 @@
 
             <div class="task-header">
                 <div class="header-center">
-                    <h1 class="task-title">Session Complete</h1>
+                    <h1 class="task-title">{lt('Session Complete', 'সেশন সম্পন্ন')}</h1>
                 </div>
             </div>
 
             {#if saveError}
                 <div class="error-banner">
-                    <p>Results could not be saved. Your progress may not have been recorded.</p>
-                    <button on:click={() => (saveError = false)}>Dismiss</button>
+                    <p>{lt('Results could not be saved. Your progress may not have been recorded.', 'ফলাফল সংরক্ষণ করা যায়নি। আপনার অগ্রগতি রেকর্ড নাও হতে পারে।')}</p>
+                    <button on:click={() => (saveError = false)}>{lt('Dismiss', 'বন্ধ করুন')}</button>
                 </div>
             {/if}
 
             {#if sessionResults}
                 <div class="results-card">
                     <div class="results-header">
-                        <h2>Dual N-Back Results</h2>
+                        <h2>{lt('Dual N-Back Results', 'ডুয়াল N-Back ফলাফল')}</h2>
                         <p class="results-sub">
                             {$locale === 'bn'
                                 ? 'আপনার ওয়ার্কিং মেমরি স্কোর আপডেটের নির্ভুলতা ও ভুল সংকেত নিয়ন্ত্রণ — দুটিকেই দেখায়।'

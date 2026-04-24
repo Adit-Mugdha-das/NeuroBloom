@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
@@ -508,8 +509,8 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Progress Reports"
-	subtitle="Structured reporting for a single patient, including generated report history, baseline comparison, domain summaries, exports, and clinician commentary."
+	title={uiText("Progress Reports", $activeLocale)}
+	subtitle={uiText("Structured reporting for a single patient, including generated report history, baseline comparison, domain summaries, exports, and clinician commentary.", $activeLocale)}
 	eyebrow="Doctor Report Workspace"
 	maxWidth="1440px"
 >
@@ -526,7 +527,7 @@
 
 	{#if loading}
 		<section class="state-card">
-			<p>Loading progress reports...</p>
+			<p>{uiText("Loading progress reports...", $activeLocale)}</p>
 		</section>
 	{:else}
 		{#if error}
@@ -537,19 +538,19 @@
 
 		<section class="hero-card">
 			<div>
-				<p class="panel-kicker">Patient</p>
+				<p class="panel-kicker">{uiText("Patient", $activeLocale)}</p>
 				<h2>{patientLabel}</h2>
 				<p class="hero-copy">
 					{#if selectedReport}
-						Current report period: {formatDate(selectedReport.period_start)} to {formatDate(selectedReport.period_end)}
+						{uiText("Current report period:", $activeLocale)} {formatDate(selectedReport.period_start)} to {formatDate(selectedReport.period_end)}
 					{:else}
-						Generate or select a report to review detailed performance and commentary.
+						{uiText("Generate or select a report to review detailed performance and commentary.", $activeLocale)}
 					{/if}
 				</p>
 			</div>
 			<div class="hero-actions">
-				<button class="outline-btn" on:click={exportToPDF} disabled={!selectedReport}>Export PDF</button>
-				<button class="outline-btn" on:click={exportToCSV} disabled={!selectedReport}>Export CSV</button>
+				<button class="outline-btn" on:click={exportToPDF} disabled={!selectedReport}>{uiText("Export PDF", $activeLocale)}</button>
+				<button class="outline-btn" on:click={exportToCSV} disabled={!selectedReport}>{uiText("Export CSV", $activeLocale)}</button>
 			</div>
 		</section>
 
@@ -557,14 +558,14 @@
 			<aside class="sidebar-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">History</p>
-						<h3>Report List</h3>
+						<p class="panel-kicker">{uiText("History", $activeLocale)}</p>
+						<h3>{uiText("Report List", $activeLocale)}</h3>
 					</div>
 				</div>
 
 				{#if reports.length === 0}
 					<div class="empty-card">
-						<p>No reports yet. Generate a report to populate this workspace.</p>
+						<p>{uiText("No reports yet. Generate a report to populate this workspace.", $activeLocale)}</p>
 					</div>
 				{:else}
 					<div class="report-list">
@@ -582,7 +583,7 @@
 									<p class="report-dates">{formatDate(report.period_start)} to {formatDate(report.period_end)}</p>
 								</div>
 								{#if report.doctor_commentary}
-									<span class="commentary-flag">Commentary</span>
+									<span class="commentary-flag">{uiText("Commentary", $activeLocale)}</span>
 								{/if}
 							</button>
 						{/each}
@@ -604,8 +605,8 @@
 					<section class="chart-card">
 						<div class="panel-heading">
 							<div>
-								<p class="panel-kicker">Overview</p>
-								<h3>Cognitive Domain Performance</h3>
+								<p class="panel-kicker">{uiText("Overview", $activeLocale)}</p>
+								<h3>{uiText("Cognitive Domain Performance", $activeLocale)}</h3>
 							</div>
 						</div>
 						<div class="chart-wrapper"><canvas id="domainChart"></canvas></div>
@@ -614,8 +615,8 @@
 					<section class="chart-card">
 						<div class="panel-heading">
 							<div>
-								<p class="panel-kicker">Activity</p>
-								<h3>Daily Activity and Scores</h3>
+								<p class="panel-kicker">{uiText("Activity", $activeLocale)}</p>
+								<h3>{uiText("Daily Activity and Scores", $activeLocale)}</h3>
 							</div>
 						</div>
 						<div class="chart-wrapper"><canvas id="dailyActivityChart"></canvas></div>
@@ -624,8 +625,8 @@
 					<section class="chart-card">
 						<div class="panel-heading">
 							<div>
-								<p class="panel-kicker">Tasks</p>
-								<h3>Top Task Performance</h3>
+								<p class="panel-kicker">{uiText("Tasks", $activeLocale)}</p>
+								<h3>{uiText("Top Task Performance", $activeLocale)}</h3>
 							</div>
 						</div>
 						<div class="chart-wrapper"><canvas id="taskPerformanceChart"></canvas></div>
@@ -635,11 +636,11 @@
 						<section class="panel-card">
 							<div class="panel-heading">
 								<div>
-									<p class="panel-kicker">Baseline</p>
-									<h3>Baseline Comparison</h3>
+									<p class="panel-kicker">{uiText("Baseline", $activeLocale)}</p>
+									<h3>{uiText("Baseline Comparison", $activeLocale)}</h3>
 								</div>
 							</div>
-							<p class="hero-copy">Baseline completed on {formatDate(selectedReport.report_data.baseline.date)}</p>
+							<p class="hero-copy">{uiText("Baseline completed on", $activeLocale)} {formatDate(selectedReport.report_data.baseline.date)}</p>
 							<div class="chart-wrapper"><canvas id="baselineComparisonChart"></canvas></div>
 
 							<div class="improvement-grid">
@@ -648,9 +649,9 @@
 										<article class="improvement-card">
 											<h4>{formatDomainName(domain)}</h4>
 											<div class="improvement-metrics">
-												<div><span>Baseline</span><strong>{(stats.baseline_score || 0).toFixed(1)}%</strong></div>
-												<div><span>Current</span><strong>{(stats.avg_score || 0).toFixed(1)}%</strong></div>
-												<div><span>Change</span><strong class:positive={stats.improvement >= 0} class:negative={stats.improvement < 0}>{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} points</strong></div>
+												<div><span>{uiText("Baseline", $activeLocale)}</span><strong>{(stats.baseline_score || 0).toFixed(1)}%</strong></div>
+												<div><span>{uiText("Current", $activeLocale)}</span><strong>{(stats.avg_score || 0).toFixed(1)}%</strong></div>
+												<div><span>{uiText("Change", $activeLocale)}</span><strong class:positive={stats.improvement >= 0} class:negative={stats.improvement < 0}>{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} {uiText("points", $activeLocale)}</strong></div>
 											</div>
 										</article>
 									{/if}
@@ -662,8 +663,8 @@
 					<section class="panel-card">
 						<div class="panel-heading">
 							<div>
-								<p class="panel-kicker">Domain Detail</p>
-								<h3>Domain Statistics</h3>
+								<p class="panel-kicker">{uiText("Domain Detail", $activeLocale)}</p>
+								<h3>{uiText("Domain Statistics", $activeLocale)}</h3>
 							</div>
 						</div>
 						<div class="domain-grid">
@@ -674,13 +675,13 @@
 										<span class="trend-pill {getTrendClass(stats.trend)}">{getTrendIcon(stats.trend)}</span>
 									</div>
 									<div class="metric-list compact">
-										<div><span>Sessions</span><strong>{stats.sessions_count}</strong></div>
-										<div><span>Average Score</span><strong>{stats.avg_score.toFixed(1)}%</strong></div>
-										<div><span>Accuracy</span><strong>{stats.avg_accuracy.toFixed(1)}%</strong></div>
-										<div><span>Reaction Time</span><strong>{stats.avg_reaction_time.toFixed(0)}ms</strong></div>
-										<div><span>Difficulty</span><strong>{stats.avg_difficulty.toFixed(1)}/10</strong></div>
+										<div><span>{uiText("Sessions", $activeLocale)}</span><strong>{stats.sessions_count}</strong></div>
+										<div><span>{uiText("Average Score", $activeLocale)}</span><strong>{stats.avg_score.toFixed(1)}%</strong></div>
+										<div><span>{uiText("Accuracy", $activeLocale)}</span><strong>{stats.avg_accuracy.toFixed(1)}%</strong></div>
+										<div><span>{uiText("Reaction Time", $activeLocale)}</span><strong>{stats.avg_reaction_time.toFixed(0)}ms</strong></div>
+										<div><span>{uiText("Difficulty", $activeLocale)}</span><strong>{stats.avg_difficulty.toFixed(1)}/10</strong></div>
 										{#if stats.baseline_score !== null && stats.improvement !== null && stats.improvement_percent !== null}
-											<div><span>vs Baseline</span><strong class:positive={stats.improvement >= 0} class:negative={stats.improvement < 0}>{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} ({stats.improvement_percent > 0 ? '+' : ''}{stats.improvement_percent.toFixed(1)}%)</strong></div>
+											<div><span>{uiText("vs Baseline", $activeLocale)}</span><strong class:positive={stats.improvement >= 0} class:negative={stats.improvement < 0}>{stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)} ({stats.improvement_percent > 0 ? '+' : ''}{stats.improvement_percent.toFixed(1)}%)</strong></div>
 										{/if}
 									</div>
 								</article>
@@ -697,8 +698,8 @@
 					<section class="panel-card">
 						<div class="panel-heading">
 							<div>
-								<p class="panel-kicker">Commentary</p>
-								<h3>Doctor Commentary</h3>
+								<p class="panel-kicker">{uiText("Commentary", $activeLocale)}</p>
+								<h3>{uiText("Doctor Commentary", $activeLocale)}</h3>
 							</div>
 							<button class="outline-btn" on:click={() => (editingCommentary = !editingCommentary)}>
 								{editingCommentary ? 'Cancel' : 'Edit'}
@@ -707,9 +708,9 @@
 
 						{#if editingCommentary}
 							<div class="commentary-editor">
-								<textarea bind:value={commentaryText} rows="8" placeholder="Add professional observations and recommendations."></textarea>
+								<textarea bind:value={commentaryText} rows="8" placeholder={uiText("Add professional observations and recommendations.", $activeLocale)}></textarea>
 								<div class="commentary-actions">
-									<button class="primary-btn" on:click={saveCommentary}>Save Commentary</button>
+									<button class="primary-btn" on:click={saveCommentary}>{uiText("Save Commentary", $activeLocale)}</button>
 								</div>
 							</div>
 						{:else}
@@ -717,7 +718,7 @@
 								{#if selectedReport.doctor_commentary}
 									<p>{selectedReport.doctor_commentary}</p>
 								{:else}
-									<p class="empty-copy">No commentary added yet.</p>
+									<p class="empty-copy">{uiText("No commentary added yet.", $activeLocale)}</p>
 								{/if}
 							</div>
 						{/if}
@@ -725,8 +726,8 @@
 				</div>
 			{:else}
 				<section class="panel-card empty-main">
-					<h3>No Report Selected</h3>
-					<p class="empty-copy">Select a report from the sidebar or generate a new one.</p>
+					<h3>{uiText("No Report Selected", $activeLocale)}</h3>
+					<p class="empty-copy">{uiText("Select a report from the sidebar or generate a new one.", $activeLocale)}</p>
 				</section>
 			{/if}
 		</section>

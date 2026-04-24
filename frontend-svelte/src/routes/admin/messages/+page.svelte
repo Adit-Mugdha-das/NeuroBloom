@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores';
@@ -145,89 +146,89 @@
 				<path d="M12 5v14M5 12h14"/>
 			</svg>
 		</div>
-			<span class="brand-name">NeuroBloom Admin</span>
+			<span class="brand-name">{uiText("NeuroBloom Admin", $activeLocale)}</span>
 		</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
 			</svg>
-			 Dashboard
+			 {uiText("Dashboard", $activeLocale)}
 			</a>
 			<a href="/admin/analytics" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 			</svg>
-			 System Analytics
+			 {uiText("System Analytics", $activeLocale)}
 			</a>
 			<a href="/admin/doctors" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 			</svg>
-			 Doctor Management
+			 {uiText("Doctor Management", $activeLocale)}
 			</a>
 			<a href="/admin/patients" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
 			</svg>
-			 Patient Management
+			 {uiText("Patient Management", $activeLocale)}
 			</a>
 			<a href="/admin/departments" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
 			</svg>
-			 Departments
+			 {uiText("Departments", $activeLocale)}
 			</a>
 			<a href="/admin/interventions" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 			</svg>
-			 Interventions
+			 {uiText("Interventions", $activeLocale)}
 			</a>
 			<a href="/admin/messages" class="nav-item active">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 			</svg>
-			 Message Audit
+			 {uiText("Message Audit", $activeLocale)}
 			</a>
 			<a href="/admin/audit-logs" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 			</svg>
-			 Audit Logs
+			 {uiText("Audit Logs", $activeLocale)}
 			</a>
 			<a href="/admin/system-health" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 			</svg>
-			 System Health
+			 {uiText("System Health", $activeLocale)}
 			</a>
 			<a href="/admin/notifications" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
 			</svg>
-			 Notification Center
+			 {uiText("Notification Center", $activeLocale)}
 			</a>
 			<a href="/admin/research-data" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
 			</svg>
-			 Research Data
+			 {uiText("Research Data", $activeLocale)}
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 			<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 		</svg>
-		Sign Out
+		{uiText("Sign Out", $activeLocale)}
 		</button>
 	</aside>
 
 	<main class="main-content">
 		<header class="topbar">
 			<div>
-				<h1 class="page-title">Message Audit</h1>
-				<p class="page-sub">Communication logging, moderation signals, and oversight across doctor-patient messaging</p>
+				<h1 class="page-title">{uiText("Message Audit", $activeLocale)}</h1>
+				<p class="page-sub">{uiText("Communication logging, moderation signals, and oversight across doctor-patient messaging", $activeLocale)}</p>
 			</div>
 			<div class="admin-info">
 				<div class="admin-avatar">
@@ -237,7 +238,7 @@
 				</div>
 				<div class="admin-details">
 					<span class="admin-name">{admin?.full_name || admin?.email}</span>
-					<span class="admin-role">Administrator</span>
+					<span class="admin-role">{uiText("Administrator", $activeLocale)}</span>
 				</div>
 			</div>
 		</header>
@@ -248,28 +249,28 @@
 			{/if}
 
 			{#if loading}
-				<div class="loading-state">Loading message audit...</div>
+				<div class="loading-state">{uiText("Loading message audit...", $activeLocale)}</div>
 			{:else}
 				<div class="stats-strip">
 					<div class="stat-card">
 						<p class="stat-value">{filteredMessages.length}</p>
-						<p class="stat-label">Messages In View</p>
+						<p class="stat-label">{uiText("Messages In View", $activeLocale)}</p>
 						<p class="stat-sub">{periodLabel(periodDays)}</p>
 					</div>
 					<div class="stat-card danger-soft">
 						<p class="stat-value danger-text">{flaggedInView}</p>
-						<p class="stat-label">Flagged For Review</p>
-						<p class="stat-sub">potential moderation issues</p>
+						<p class="stat-label">{uiText("Flagged For Review", $activeLocale)}</p>
+						<p class="stat-sub">{uiText("potential moderation issues", $activeLocale)}</p>
 					</div>
 					<div class="stat-card">
 						<p class="stat-value">{summary?.patient_to_doctor || 0}</p>
-						<p class="stat-label">Patient → Doctor</p>
-						<p class="stat-sub">communications logged</p>
+						<p class="stat-label">{uiText("Patient → Doctor", $activeLocale)}</p>
+						<p class="stat-sub">{uiText("communications logged", $activeLocale)}</p>
 					</div>
 					<div class="stat-card">
 						<p class="stat-value">{summary?.doctor_to_patient || 0}</p>
-						<p class="stat-label">Doctor → Patient</p>
-						<p class="stat-sub">communications logged</p>
+						<p class="stat-label">{uiText("Doctor → Patient", $activeLocale)}</p>
+						<p class="stat-sub">{uiText("communications logged", $activeLocale)}</p>
 					</div>
 				</div>
 
@@ -299,23 +300,23 @@
 						<input
 							class="search-input"
 							type="text"
-							placeholder="Search sender, recipient, subject, or message content..."
+							placeholder={uiText("Search sender, recipient, subject, or message content...", $activeLocale)}
 							bind:value={searchQuery}
 						/>
 						<select class="filter-select" bind:value={directionFilter}>
-							<option value="all">All Directions</option>
-							<option value="patient_to_doctor">Patient → Doctor</option>
-							<option value="doctor_to_patient">Doctor → Patient</option>
+							<option value="all">{uiText("All Directions", $activeLocale)}</option>
+							<option value="patient_to_doctor">{uiText("Patient → Doctor", $activeLocale)}</option>
+							<option value="doctor_to_patient">{uiText("Doctor → Patient", $activeLocale)}</option>
 						</select>
 					</div>
 				</div>
 
 				<div class="section-head">
 					<div>
-						<h2 class="section-title">Communication Log</h2>
-						<p class="section-sub">Hospitals often require communication logging for compliance and quality review.</p>
+						<h2 class="section-title">{uiText("Communication Log", $activeLocale)}</h2>
+						<p class="section-sub">{uiText("Hospitals often require communication logging for compliance and quality review.", $activeLocale)}</p>
 					</div>
-					<div class="section-meta">{filteredMessages.length} record{filteredMessages.length !== 1 ? 's' : ''}</div>
+					<div class="section-meta">{filteredMessages.length} {uiText("record", $activeLocale)}{filteredMessages.length !== 1 ? 's' : ''}</div>
 				</div>
 
 				{#if filteredMessages.length === 0}
@@ -325,8 +326,8 @@
 					<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 				</svg>
 			</div>
-						<p class="empty-title">No messages found</p>
-						<p class="empty-sub">Try widening the audit window or removing filters.</p>
+						<p class="empty-title">{uiText("No messages found", $activeLocale)}</p>
+						<p class="empty-sub">{uiText("Try widening the audit window or removing filters.", $activeLocale)}</p>
 					</div>
 				{:else}
 					<div class="audit-list">
@@ -365,8 +366,8 @@
 									{/if}
 
 									<div class="audit-footer">
-										<span class="footer-item">Logged: {formatDateTime(message.created_at)}</span>
-										<span class="footer-item">Type: {message.sender_type} → {message.recipient_type}</span>
+										<span class="footer-item">{uiText("Logged:", $activeLocale)} {formatDateTime(message.created_at)}</span>
+										<span class="footer-item">{uiText("Type:", $activeLocale)} {message.sender_type} → {message.recipient_type}</span>
 									</div>
 								</div>
 							</div>

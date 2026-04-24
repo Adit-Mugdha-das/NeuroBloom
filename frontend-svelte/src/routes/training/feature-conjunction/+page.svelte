@@ -8,11 +8,27 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatMillisecondsPerItem, formatNumber, formatSeconds, formatSecondsPerItem, locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
+	}
+
+	function secPerItem(value, options = {}) {
+		return formatSecondsPerItem(value, $locale, options);
+	}
+
+	function msPerItem(value, options = {}) {
+		return formatMillisecondsPerItem(value, $locale, options);
+	}
 
 	// ── State ─────────────────────────────────────────
 	let gamePhase = 'loading'; // loading | intro | playing | results
@@ -326,19 +342,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('Rules', 'নিয়মাবলী')}</h2>
 					<div class="rules-list">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">{lt('Study the target — remember BOTH its color and shape', 'লক্ষ্যটি মনে রাখুন — রঙ এবং আকার উভয়ই')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">{lt('Search the display carefully — distractors share one attribute with the target — scan item by item', 'মনোযোগ দিয়ে স্ক্যান করুন — ডিস্ট্র্যাক্টররা একটি বৈশিষ্ট্য শেয়ার করে')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">{lt('Respond as quickly and accurately as possible — both speed and accuracy count', 'দ্রুত ও নির্ভুলভাবে উত্তর দিন — গতি এবং নির্ভুলতা উভয়ই গুরুত্বপূর্ণ')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">{lt(`You have ${timeLimit} seconds — if time runs out, it counts as absent`, `আপনার ${timeLimit} সেকেন্ড আছে — সময় শেষ হলে অনুপস্থিত হিসেবে`)}</div>
 						</div>
 					</div>
@@ -360,7 +376,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							</div>
 							<div class="detail-row">
 								<span>{lt('Time Limit', 'সময়সীমা')}</span>
-								<strong>{timeLimit}s</strong>
+								<strong>{sec(timeLimit)}</strong>
 							</div>
 							<div class="detail-row">
 								<span>{lt('Difficulty', 'কঠিনতা')}</span>
@@ -500,11 +516,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<div class="metric-label">{lt('Correct', 'সঠিক')}</div>
 					</div>
 					<div class="metric-card metric-amber">
-						<div class="metric-value">{(results.score * 100).toFixed(0)}%</div>
+						<div class="metric-value">{n(results.score * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 						<div class="metric-label">{lt('Score', 'স্কোর')}</div>
 					</div>
 					<div class="metric-card metric-orange">
-						<div class="metric-value">{results.reaction_time.toFixed(2)}s</div>
+						<div class="metric-value">{sec(results.reaction_time, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 						<div class="metric-label">{lt('Reaction Time', 'প্রতিক্রিয়া সময়')}</div>
 					</div>
 					<div class="metric-card metric-slate">
@@ -519,12 +535,12 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<div class="analysis-grid">
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('Search Efficiency', 'সার্চ দক্ষতা')}</div>
-							<div class="analysis-value">{results.search_efficiency.toFixed(3)}s/item</div>
+							<div class="analysis-value">{secPerItem(results.search_efficiency, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
 							<div class="analysis-desc">{lt('Time spent per display item', 'প্রতিটি আইটেমে ব্যয়িত সময়')}</div>
 						</div>
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('Search Slope', 'সার্চ স্লোপ')}</div>
-							<div class="analysis-value">{results.search_slope_ms.toFixed(1)} ms/item</div>
+							<div class="analysis-value">{msPerItem(results.search_slope_ms, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 							<div class="analysis-desc">{lt('Conjunction target: < 30 ms = excellent (serial)', 'কনজাংশন: < ৩০ ms = অসাধারণ')}</div>
 						</div>
 						<div class="analysis-cell">
@@ -1130,4 +1146,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.search-arena    { height: 50vh; min-height: 320px; }
 	}
 </style>
-

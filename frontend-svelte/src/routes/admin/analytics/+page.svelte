@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores';
@@ -446,89 +447,89 @@
 					<path d="M12 5v14M5 12h14"/>
 				</svg>
 			</div>
-			<span class="brand-name">NeuroBloom Admin</span>
+			<span class="brand-name">{uiText("NeuroBloom Admin", $activeLocale)}</span>
 		</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
 			</svg>
-			Dashboard
+			{uiText("Dashboard", $activeLocale)}
 			</a>
 			<a href="/admin/analytics" class="nav-item active">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 			</svg>
-			System Analytics
+			{uiText("System Analytics", $activeLocale)}
 			</a>
 			<a href="/admin/doctors" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 			</svg>
-			Doctor Management
+			{uiText("Doctor Management", $activeLocale)}
 			</a>
 			<a href="/admin/patients" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
 			</svg>
-			Patient Management
+			{uiText("Patient Management", $activeLocale)}
 			</a>
 			<a href="/admin/departments" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
 			</svg>
-			Departments
+			{uiText("Departments", $activeLocale)}
 			</a>
 			<a href="/admin/interventions" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 			</svg>
-			Interventions
+			{uiText("Interventions", $activeLocale)}
 			</a>
 			<a href="/admin/messages" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 			</svg>
-			Message Audit
+			{uiText("Message Audit", $activeLocale)}
 			</a>
 			<a href="/admin/audit-logs" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 			</svg>
-			Audit Logs
+			{uiText("Audit Logs", $activeLocale)}
 			</a>
 			<a href="/admin/system-health" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 			</svg>
-			System Health
+			{uiText("System Health", $activeLocale)}
 			</a>
 			<a href="/admin/notifications" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
 			</svg>
-			Notification Center
+			{uiText("Notification Center", $activeLocale)}
 			</a>
 			<a href="/admin/research-data" class="nav-item">
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
 			</svg>
-			Research Data
+			{uiText("Research Data", $activeLocale)}
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 			</svg>
-			Sign Out
+			{uiText("Sign Out", $activeLocale)}
 		</button>
 	</aside>
 
 	<main class="main-content">
 		<header class="topbar">
 			<div>
-				<h1 class="page-title">System Analytics</h1>
-				<p class="page-subtitle">Focused system-wide analytics page with only the core operational and clinical trends.</p>
+				<h1 class="page-title">{uiText("System Analytics", $activeLocale)}</h1>
+				<p class="page-subtitle">{uiText("Focused system-wide analytics page with only the core operational and clinical trends.", $activeLocale)}</p>
 			</div>
 			<div class="admin-info">
 				<div class="admin-avatar">
@@ -538,7 +539,7 @@
 				</div>
 				<div class="admin-details">
 					<span class="admin-name">{admin?.full_name || admin?.email}</span>
-					<span class="admin-role">Administrator</span>
+					<span class="admin-role">{uiText("Administrator", $activeLocale)}</span>
 				</div>
 			</div>
 		</header>
@@ -564,7 +565,7 @@
 						<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">Total Patients</p><p class="stat-value">{stats.total_patients}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("Total Patients", $activeLocale)}</p><p class="stat-value">{stats.total_patients}</p></div>
 				</div>
 				<div class="stat-card">
 				<div class="stat-icon-wrap purple">
@@ -572,7 +573,7 @@
 						<path d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">Total Doctors</p><p class="stat-value">{stats.total_doctors}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("Total Doctors", $activeLocale)}</p><p class="stat-value">{stats.total_doctors}</p></div>
 				</div>
 				<div class="stat-card">
 				<div class="stat-icon-wrap emerald">
@@ -580,7 +581,7 @@
 						<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">Active Patients Today</p><p class="stat-value">{stats.active_patients_today}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("Active Patients Today", $activeLocale)}</p><p class="stat-value">{stats.active_patients_today}</p></div>
 				</div>
 				<div class="stat-card">
 				<div class="stat-icon-wrap slate">
@@ -588,7 +589,7 @@
 						<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">Sessions Completed</p><p class="stat-value">{stats.completed_sessions}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("Sessions Completed", $activeLocale)}</p><p class="stat-value">{stats.completed_sessions}</p></div>
 				</div>
 				<div class="stat-card">
 				<div class="stat-icon-wrap teal">
@@ -596,7 +597,7 @@
 						<path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">Average Improvement</p><p class="stat-value small">{stats.average_improvement_score >= 0 ? '+' : ''}{stats.average_improvement_score}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("Average Improvement", $activeLocale)}</p><p class="stat-value small">{stats.average_improvement_score >= 0 ? '+' : ''}{stats.average_improvement_score}</p></div>
 				</div>
 				<div class="stat-card">
 				<div class="stat-icon-wrap red">
@@ -604,23 +605,23 @@
 						<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">High-Risk Patients</p><p class="stat-value">{stats.high_risk_patients}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("High-Risk Patients", $activeLocale)}</p><p class="stat-value">{stats.high_risk_patients}</p></div>
 				</div>
 			</div>
 
 			<section class="risk-monitor-panel">
 				<div class="panel-header">
 					<div>
-						<p class="panel-kicker rose-text">Risk Monitoring</p>
-						<h2>High-Risk Patients</h2>
-						<p class="panel-copy">System-wide alerts are consolidated here so the admin can quickly notify the assigned doctor, escalate urgent cases, or mark alerts as reviewed without adding workflow clutter elsewhere.</p>
+						<p class="panel-kicker rose-text">{uiText("Risk Monitoring", $activeLocale)}</p>
+						<h2>{uiText("High-Risk Patients", $activeLocale)}</h2>
+						<p class="panel-copy">{uiText("System-wide alerts are consolidated here so the admin can quickly notify the assigned doctor, escalate urgent cases, or mark alerts as reviewed without adding workflow clutter elsewhere.", $activeLocale)}</p>
 					</div>
-					<div class="panel-chip rose-chip">{riskAlerts.length} active alerts</div>
+					<div class="panel-chip rose-chip">{riskAlerts.length} {uiText("active alerts", $activeLocale)}</div>
 				</div>
 
 				<div class="risk-monitor-list">
 					{#if riskAlerts.length === 0}
-						<div class="empty-risk-state">No patients are currently flagged as high risk.</div>
+						<div class="empty-risk-state">{uiText("No patients are currently flagged as high risk.", $activeLocale)}</div>
 					{:else}
 						{#each riskAlerts as alert}
 							<div class="risk-monitor-row">
@@ -632,18 +633,18 @@
 										</div>
 										<div class="risk-status-group">
 											<span class="status-chip {alert.alert_status}">{alert.alert_status}</span>
-											<span class="metric-chip">Risk score {alert.risk_score}</span>
+											<span class="metric-chip">{uiText("Risk score", $activeLocale)} {alert.risk_score}</span>
 										</div>
 									</div>
 
 									<div class="risk-monitor-meta">
 										<span>{alert.email}</span>
-										<span>Doctor: {alert.assigned_doctor_name || 'Unassigned'}</span>
+										<span>{uiText("Doctor:", $activeLocale)} {alert.assigned_doctor_name || 'Unassigned'}</span>
 										{#if alert.recent_avg_fatigue !== null}
-											<span>Fatigue {alert.recent_avg_fatigue}</span>
+											<span>{uiText("Fatigue", $activeLocale)} {alert.recent_avg_fatigue}</span>
 										{/if}
 										{#if alert.recent_avg_score !== null}
-											<span>Score {alert.recent_avg_score}</span>
+											<span>{uiText("Score", $activeLocale)} {alert.recent_avg_score}</span>
 										{/if}
 									</div>
 
@@ -656,21 +657,21 @@
 										on:click={() => runRiskAction(alert.id, 'notify')}
 										disabled={!alert.assigned_doctor_id || alert.doctor_notified || isRiskActionLoading(alert.id, 'notify')}
 									>
-										{#if isRiskActionLoading(alert.id, 'notify')}Sending...{:else if alert.doctor_notified}Doctor notified{:else}Notify doctor{/if}
+										{#if isRiskActionLoading(alert.id, 'notify')}{uiText("Sending...", $activeLocale)}{:else if alert.doctor_notified}{uiText("Doctor notified", $activeLocale)}{:else}{uiText("Notify doctor", $activeLocale)}{/if}
 									</button>
 									<button
 										class="action-btn danger"
 										on:click={() => runRiskAction(alert.id, 'escalate')}
 										disabled={alert.alert_status === 'escalated' || isRiskActionLoading(alert.id, 'escalate')}
 									>
-										{#if isRiskActionLoading(alert.id, 'escalate')}Escalating...{:else if alert.alert_status === 'escalated'}Escalated{:else}Escalate case{/if}
+										{#if isRiskActionLoading(alert.id, 'escalate')}{uiText("Escalating...", $activeLocale)}{:else if alert.alert_status === 'escalated'}{uiText("Escalated", $activeLocale)}{:else}{uiText("Escalate case", $activeLocale)}{/if}
 									</button>
 									<button
 										class="action-btn success"
 										on:click={() => runRiskAction(alert.id, 'review')}
 										disabled={alert.alert_status === 'reviewed' || isRiskActionLoading(alert.id, 'review')}
 									>
-										{#if isRiskActionLoading(alert.id, 'review')}Saving...{:else if alert.alert_status === 'reviewed'}Reviewed{:else}Mark reviewed{/if}
+										{#if isRiskActionLoading(alert.id, 'review')}{uiText("Saving...", $activeLocale)}{:else if alert.alert_status === 'reviewed'}{uiText("Reviewed", $activeLocale)}{:else}{uiText("Mark reviewed", $activeLocale)}{/if}
 									</button>
 								</div>
 							</div>
@@ -683,20 +684,20 @@
 				<div class="insight-panel">
 					<div class="panel-header compact">
 						<div>
-							<p class="panel-kicker">Task Usage</p>
-							<h2>Most Used Tasks</h2>
+							<p class="panel-kicker">{uiText("Task Usage", $activeLocale)}</p>
+							<h2>{uiText("Most Used Tasks", $activeLocale)}</h2>
 						</div>
 					</div>
 					<div class="task-list">
 						{#if stats.most_used_tasks.length === 0}
-							<p class="empty-copy">No completed task data is available yet.</p>
+							<p class="empty-copy">{uiText("No completed task data is available yet.", $activeLocale)}</p>
 						{:else}
 							{#each stats.most_used_tasks as task, index}
 								<div class="task-row">
 									<div class="task-rank">{index + 1}</div>
 									<div class="task-meta">
 										<p class="task-name">{task.task}</p>
-										<p class="task-sub">Completed sessions</p>
+										<p class="task-sub">{uiText("Completed sessions", $activeLocale)}</p>
 									</div>
 									<div class="task-count">{task.count}</div>
 								</div>
@@ -711,64 +712,64 @@
 				<div class="chart-panel">
 					<div class="panel-header">
 						<div>
-							<p class="panel-kicker">Activity</p>
-							<h2>Patient Activity</h2>
-							<p class="panel-copy">Seven-day view of completed sessions and distinct active patients.</p>
+							<p class="panel-kicker">{uiText("Activity", $activeLocale)}</p>
+							<h2>{uiText("Patient Activity", $activeLocale)}</h2>
+							<p class="panel-copy">{uiText("Seven-day view of completed sessions and distinct active patients.", $activeLocale)}</p>
 						</div>
-						<div class="panel-chip">Last 7 days</div>
+						<div class="panel-chip">{uiText("Last 7 days", $activeLocale)}</div>
 					</div>
 					{#if hasActivityData()}
 						<div class="chart-wrap"><canvas bind:this={activityChartCanvas}></canvas></div>
 					{:else}
-						<div class="empty-state">No activity data is available yet.</div>
+						<div class="empty-state">{uiText("No activity data is available yet.", $activeLocale)}</div>
 					{/if}
 				</div>
 
 				<div class="chart-panel">
 					<div class="panel-header">
 						<div>
-							<p class="panel-kicker teal-text">Performance</p>
-							<h2>Cognitive Performance Trend</h2>
-							<p class="panel-copy">Average completed-session score over the last 14 days.</p>
+							<p class="panel-kicker teal-text">{uiText("Performance", $activeLocale)}</p>
+							<h2>{uiText("Cognitive Performance Trend", $activeLocale)}</h2>
+							<p class="panel-copy">{uiText("Average completed-session score over the last 14 days.", $activeLocale)}</p>
 						</div>
-						<div class="panel-chip teal-chip">14 days</div>
+						<div class="panel-chip teal-chip">{uiText("14 days", $activeLocale)}</div>
 					</div>
 					{#if hasPerformanceData()}
 						<div class="chart-wrap"><canvas bind:this={performanceChartCanvas}></canvas></div>
 					{:else}
-						<div class="empty-state">No performance trend is available yet.</div>
+						<div class="empty-state">{uiText("No performance trend is available yet.", $activeLocale)}</div>
 					{/if}
 				</div>
 
 				<div class="chart-panel">
 					<div class="panel-header">
 						<div>
-							<p class="panel-kicker rose-text">Fatigue</p>
-							<h2>Fatigue Trends</h2>
-							<p class="panel-copy">Fatigue questionnaire signals compared with average performance.</p>
+							<p class="panel-kicker rose-text">{uiText("Fatigue", $activeLocale)}</p>
+							<h2>{uiText("Fatigue Trends", $activeLocale)}</h2>
+							<p class="panel-copy">{uiText("Fatigue questionnaire signals compared with average performance.", $activeLocale)}</p>
 						</div>
-						<div class="panel-chip rose-chip">Context data</div>
+						<div class="panel-chip rose-chip">{uiText("Context data", $activeLocale)}</div>
 					</div>
 					{#if hasFatigueData()}
 						<div class="chart-wrap"><canvas bind:this={fatigueChartCanvas}></canvas></div>
 					{:else}
-						<div class="empty-state">No fatigue questionnaire data has been recorded yet.</div>
+						<div class="empty-state">{uiText("No fatigue questionnaire data has been recorded yet.", $activeLocale)}</div>
 					{/if}
 				</div>
 
 				<div class="chart-panel">
 					<div class="panel-header">
 						<div>
-							<p class="panel-kicker sky-text">Completion</p>
-							<h2>Task Completion Rate</h2>
-							<p class="panel-copy">Completion percentage and completed-session totals across the last 14 days.</p>
+							<p class="panel-kicker sky-text">{uiText("Completion", $activeLocale)}</p>
+							<h2>{uiText("Task Completion Rate", $activeLocale)}</h2>
+							<p class="panel-copy">{uiText("Completion percentage and completed-session totals across the last 14 days.", $activeLocale)}</p>
 						</div>
-						<div class="panel-chip sky-chip">14 days</div>
+						<div class="panel-chip sky-chip">{uiText("14 days", $activeLocale)}</div>
 					</div>
 					{#if hasCompletionData()}
 						<div class="chart-wrap"><canvas bind:this={completionChartCanvas}></canvas></div>
 					{:else}
-						<div class="empty-state">No completion trend is available yet.</div>
+						<div class="empty-state">{uiText("No completion trend is available yet.", $activeLocale)}</div>
 					{/if}
 				</div>
 			</section>

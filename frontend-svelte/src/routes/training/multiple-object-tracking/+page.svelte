@@ -8,11 +8,19 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
 	import { onDestroy, onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
+	}
 
 	// ── Auth ──────────────────────────────────────────
 	let currentUser = null;
@@ -337,19 +345,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('How It Works', 'কীভাবে কাজ করে')}</h2>
 					<div class="rules-list">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">{lt('Several circles will flash — these are your targets to remember', 'কিছু বৃত্ত জ্বলতে থাকবে — এগুলো আপনার মনে রাখার লক্ষ্য')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">{lt('All circles begin moving randomly — keep your eyes on the targets as they mix with distractors', 'সব বৃত্ত এলোমেলোভাবে চলতে শুরু করবে — লক্ষ্যগুলো চোখে রাখুন')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">{lt('When movement stops, click all circles you were tracking', 'চলাচল থামলে আপনি যে বৃত্তগুলো ট্র্যাক করছিলেন সেগুলোতে ক্লিক করুন')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">{lt('Accuracy matters more than speed — take your time during selection', 'গতির চেয়ে নির্ভুলতা বেশি গুরুত্বপূর্ণ — নির্বাচনের সময় সতর্কভাবে দেখুন')}</div>
 						</div>
 					</div>
@@ -370,7 +378,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							</div>
 							<div class="detail-row">
 								<span>{lt('Tracking Duration', 'ট্র্যাকিং সময়কাল')}</span>
-								<strong>{trialData.tracking_duration}s</strong>
+								<strong>{sec(trialData.tracking_duration)}</strong>
 							</div>
 							<div class="detail-row">
 								<span>{lt('Speed', 'গতি')}</span>
@@ -443,7 +451,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{:else if phase === 'tracking'}
 					<div class="phase-status phase-tracking">
 						<div class="timer-block">
-							<div class="timer-value {timeRemaining < 3 ? 'timer-critical' : ''}">{timeRemaining.toFixed(1)}</div>
+							<div class="timer-value {timeRemaining < 3 ? 'timer-critical' : ''}">{n(timeRemaining, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 							<div class="timer-label">{lt('seconds left', 'সেকেন্ড বাকি')}</div>
 						</div>
 						<div>
@@ -461,7 +469,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						</div>
 						<div>
 							<div class="phase-label">{lt('Phase 3 — Select Targets', 'ধাপ ৩ — লক্ষ্য নির্বাচন করুন')}</div>
-							<div class="phase-desc">{lt('Click all circles you were tracking · Time elapsed:', 'আপনি যে বৃত্তগুলো ট্র্যাক করছিলেন সেগুলো ক্লিক করুন · সময়:')} {selectionElapsed.toFixed(1)}s</div>
+							<div class="phase-desc">{lt('Click all circles you were tracking · Time elapsed:', 'আপনি যে বৃত্তগুলো ট্র্যাক করছিলেন সেগুলো ক্লিক করুন · সময়:')} {sec(selectionElapsed, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 						</div>
 					</div>
 				{/if}
@@ -537,7 +545,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Key Metrics -->
 				<div class="metrics-grid">
 					<div class="metric-card metric-violet">
-						<div class="metric-value">{(results.score * 100).toFixed(0)}%</div>
+						<div class="metric-value">{n(results.score * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 						<div class="metric-label">{lt('Overall Score', 'সামগ্রিক স্কোর')}</div>
 					</div>
 					<div class="metric-card metric-green">
@@ -545,7 +553,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<div class="metric-label">{lt('Targets Found', 'লক্ষ্য খুঁজে পাওয়া')}</div>
 					</div>
 					<div class="metric-card metric-blue">
-						<div class="metric-value">{(results.accuracy * 100).toFixed(0)}%</div>
+						<div class="metric-value">{n(results.accuracy * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 						<div class="metric-label">{lt('Recall Accuracy', 'রিকল নির্ভুলতা')}</div>
 					</div>
 					<div class="metric-card metric-amber">
@@ -560,22 +568,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<div class="analysis-grid">
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('Precision', 'নির্ভুলতা')}</div>
-							<div class="analysis-value">{(results.precision * 100).toFixed(0)}%</div>
+							<div class="analysis-value">{n(results.precision * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 							<div class="analysis-desc">{lt('Correct out of all selected', 'নির্বাচিতের মধ্যে সঠিক')}</div>
 						</div>
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('F1 Score', 'F1 স্কোর')}</div>
-							<div class="analysis-value">{(results.f1_score * 100).toFixed(0)}%</div>
+							<div class="analysis-value">{n(results.f1_score * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 							<div class="analysis-desc">{lt('Balanced precision–recall metric', 'সুষম নির্ভুলতা–স্মরণ মেট্রিক')}</div>
 						</div>
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('Tracking Efficiency', 'ট্র্যাকিং দক্ষতা')}</div>
-							<div class="analysis-value">{(results.tracking_efficiency * 100).toFixed(0)}%</div>
+							<div class="analysis-value">{n(results.tracking_efficiency * 100, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%</div>
 							<div class="analysis-desc">{results.targets_missed} {lt('missed', 'মিস')} · {results.false_positives} {lt('extra', 'অতিরিক্ত')}</div>
 						</div>
 						<div class="analysis-cell">
 							<div class="analysis-label">{lt('Selection Time', 'নির্বাচন সময়')}</div>
-							<div class="analysis-value">{results.response_time.toFixed(1)}s</div>
+							<div class="analysis-value">{sec(results.response_time, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 							<div class="analysis-desc">{lt('Time taken to identify targets', 'লক্ষ্য চিহ্নিত করতে নেওয়া সময়')}</div>
 						</div>
 					</div>
@@ -1137,4 +1145,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.phase-status   { gap: 0.75rem; }
 	}
 </style>
-

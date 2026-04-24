@@ -1,4 +1,4 @@
-import { localeText } from '$lib/i18n';
+import { formatNumber, formatPercent, localeText } from '$lib/i18n';
 
 export const domainOrder = [
 	'working_memory',
@@ -62,9 +62,9 @@ export function formatDuration(totalSeconds, targetLocale = 'en') {
 	const minutes = Math.floor((totalSeconds || 0) / 60);
 	const seconds = (totalSeconds || 0) % 60;
 	if (targetLocale === 'bn') {
-		if (minutes <= 0) return `${seconds} সেকেন্ড`;
-		if (seconds === 0) return `${minutes} মিনিট`;
-		return `${minutes} মিনিট ${seconds} সেকেন্ড`;
+		if (minutes <= 0) return `${formatNumber(seconds, targetLocale)} সেকেন্ড`;
+		if (seconds === 0) return `${formatNumber(minutes, targetLocale)} মিনিট`;
+		return `${formatNumber(minutes, targetLocale)} মিনিট ${formatNumber(seconds, targetLocale)} সেকেন্ড`;
 	}
 	return `${minutes}m ${seconds}s`;
 }
@@ -79,7 +79,9 @@ export function calculateBaselineDifficulty(score) {
 
 export function formatImprovementPercentage(value, targetLocale = 'en') {
 	if (Math.abs(value || 0) < 1) return localeText({ en: 'Stable', bn: 'স্থিতিশীল' }, targetLocale);
-	return `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)}%`;
+	return `${value > 0 ? '+' : ''}${formatPercent(value || 0, targetLocale, {
+		maximumFractionDigits: 0
+	})}`;
 }
 
 export function getComparisonSummary(value, targetLocale = 'en') {
@@ -108,6 +110,8 @@ export function formatPointChange(value, targetLocale = 'en') {
 		);
 	}
 	return targetLocale === 'bn'
-		? `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} পয়েন্ট বেসলাইন থেকে`
+		? `${value > 0 ? '+' : ''}${formatNumber(value || 0, targetLocale, {
+				maximumFractionDigits: 0
+			})} পয়েন্ট বেসলাইন থেকে`
 		: `${value > 0 ? '+' : ''}${Number(value || 0).toFixed(0)} points since baseline`;
 }

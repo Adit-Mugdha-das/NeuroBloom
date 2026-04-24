@@ -7,13 +7,17 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale } from '$lib/i18n';
+	import { formatNumber, locale, localeText } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
 
 	import { API_BASE_URL } from '$lib/api';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
 
 	let currentUser = null;
 	let sessionData = null;
@@ -52,6 +56,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	let practiceStatusMessage = '';
 	let practiceAdvanceTimeout = null;
 	let practiceRunId = 0;
+	const lt = (en, bn) => localeText({ en, bn }, $locale);
 
 	// Subscribe to user store
 	user.subscribe(value => {
@@ -299,9 +304,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 		{:else if error}
 			<div class="screen-card error-screen">
-				<h2>Error</h2>
+				<h2>{lt('Error', 'ত্রুটি')}</h2>
 				<p>{error}</p>
-				<button class="start-button" on:click={returnToDashboard}>Return to Dashboard</button>
+				<button class="start-button" on:click={returnToDashboard}>{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
 			</div>
 
 		{:else if showInstructions}
@@ -309,11 +314,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="instructions-card">
 				<div class="header-content">
 					<div class="title-row">
-						<h1>Inspection Time</h1>
+						<h1>{lt('Inspection Time', 'ইন্সপেকশন টাইম')}</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Processing Speed" />
 					</div>
-					<p class="subtitle">How fast can your brain perceive a brief visual flash?</p>
-					<div class="classic-badge">Inspection Time · Vickers & Smith (1986) · Pure Perceptual Speed</div>
+					<p class="subtitle">{lt('How fast can your brain perceive a brief visual flash?', 'আপনার মস্তিষ্ক অতি অল্প সময়ের দৃশ্য কত দ্রুত ধরতে পারে?')}</p>
+					<div class="classic-badge">{lt('Inspection Time · Vickers & Smith (1986) · Pure Perceptual Speed', 'ইন্সপেকশন টাইম · Vickers & Smith (১৯৮৬) · বিশুদ্ধ উপলব্ধির গতি')}</div>
 				</div>
 
 				{#if practiceStatusMessage}
@@ -321,17 +326,17 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{/if}
 
 				<div class="task-concept">
-					<h3>The Challenge</h3>
-					<p>Two vertical lines flash on screen for a <strong>fraction of a second</strong> — then a mask covers them. Your job: say which line was <strong>longer</strong> (left or right). No motor tricks — pure perception.</p>
+					<h3>{lt('The Challenge', 'চ্যালেঞ্জ')}</h3>
+					<p>{lt('Two vertical lines flash on screen for a', 'স্ক্রিনে দুটি উল্লম্ব রেখা')} <strong>{lt('fraction of a second', 'সেকেন্ডের ভগ্নাংশ সময়ের জন্য')}</strong> {lt('then a mask covers them. Your job: say which line was', 'দেখা যাবে, তারপর একটি মাস্ক সেগুলো ঢেকে দেবে। আপনার কাজ: কোন রেখাটি')} <strong>{lt('longer', 'লম্বা')}</strong> {lt('(left or right). No motor tricks — pure perception.', '(বাম নাকি ডান) বলা। মোটর দক্ষতার বিষয় নয় — শুধু উপলব্ধি।')}</p>
 					<div class="demo-lines">
 						<div class="demo-line-col">
 							<div class="demo-line" style="height: 64px;"></div>
-							<span class="demo-line-label">LEFT</span>
+							<span class="demo-line-label">{lt('LEFT', 'বাম')}</span>
 						</div>
-						<div class="demo-vs">vs</div>
+						<div class="demo-vs">{lt('vs', 'বনাম')}</div>
 						<div class="demo-line-col">
 							<div class="demo-line" style="height: 48px;"></div>
-							<span class="demo-line-label">RIGHT</span>
+							<span class="demo-line-label">{lt('RIGHT', 'ডান')}</span>
 						</div>
 					</div>
 					<div class="demo-answer-row">
@@ -341,110 +346,110 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="rules-grid">
 					<div class="rule-card">
-						<span class="rule-icon">Look</span>
+						<span class="rule-icon">{lt('Look', 'দেখুন')}</span>
 						<div class="rule-text">
-							<strong>Step 1: Watch</strong>
-							<span>Two lines flash very briefly — as short as 50ms</span>
+							<strong>{lt('Step 1: Watch', 'ধাপ ১: দেখুন')}</strong>
+							<span>{lt('Two lines flash very briefly — as short as 50ms', 'দুটি রেখা খুব অল্প সময়ের জন্য দেখা যাবে — ৫০ মি.সে. পর্যন্ত কম হতে পারে')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">▣</span>
 						<div class="rule-text">
-							<strong>Step 2: Mask</strong>
-							<span>A pattern mask immediately covers the lines</span>
+							<strong>{lt('Step 2: Mask', 'ধাপ ২: মাস্ক')}</strong>
+							<span>{lt('A pattern mask immediately covers the lines', 'একটি প্যাটার্ন মাস্ক সঙ্গে সঙ্গে রেখাগুলো ঢেকে দেবে')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">↔</span>
 						<div class="rule-text">
-							<strong>Step 3: Decide</strong>
-							<span>Which line was longer — LEFT or RIGHT?</span>
+							<strong>{lt('Step 3: Decide', 'ধাপ ৩: সিদ্ধান্ত নিন')}</strong>
+							<span>{lt('Which line was longer — LEFT or RIGHT?', 'কোন রেখাটি লম্বা ছিল — বাম নাকি ডান?')}</span>
 						</div>
 					</div>
 					<div class="rule-card">
 						<span class="rule-icon">↺</span>
 						<div class="rule-text">
-							<strong>Step 4: Repeat</strong>
-							<span>Keep going for all {sessionData?.total_trials || 20} trials</span>
+							<strong>{lt('Step 4: Repeat', 'ধাপ ৪: চালিয়ে যান')}</strong>
+							<span>{lt('Keep going for all', 'মোট')} {n(sessionData?.total_trials || 20)} {lt('trials', 'ট্রায়াল শেষ করুন')}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="info-grid">
 					<div class="info-section">
-						<h4>Perception Tips</h4>
+						<h4>{lt('Perception Tips', 'উপলব্ধির পরামর্শ')}</h4>
 						<ul class="tips-list">
-							<li><strong>Stay relaxed:</strong> Tension reduces perceptual sensitivity</li>
-							<li><strong>Central focus:</strong> Keep eyes on the screen centre before each trial</li>
-							<li><strong>Trust instincts:</strong> Go with your first impression — don't overthink</li>
-							<li><strong>It's OK to guess:</strong> Some trials are genuinely at your threshold</li>
+							<li><strong>{lt('Stay relaxed:', 'শান্ত থাকুন:')}</strong> {lt('Tension reduces perceptual sensitivity', 'টেনশন উপলব্ধির সংবেদনশীলতা কমাতে পারে')}</li>
+							<li><strong>{lt('Central focus:', 'মাঝখানে মনোযোগ:')}</strong> {lt('Keep eyes on the screen centre before each trial', 'প্রতিটি ট্রায়ালের আগে স্ক্রিনের মাঝখানে চোখ রাখুন')}</li>
+							<li><strong>{lt('Trust instincts:', 'প্রথম ধারণাকে বিশ্বাস করুন:')}</strong> {lt("Go with your first impression — don't overthink", 'প্রথমে যা মনে হয় সেটিই বেছে নিন — অতিরিক্ত ভাববেন না')}</li>
+							<li><strong>{lt("It's OK to guess:", 'অনুমান করাও ঠিক আছে:')}</strong> {lt('Some trials are genuinely at your threshold', 'কিছু ট্রায়াল সত্যিই আপনার উপলব্ধির সীমার কাছাকাছি থাকবে')}</li>
 						</ul>
 					</div>
 					<div class="info-section">
-						<h4>Test Format</h4>
+						<h4>{lt('Test Format', 'টেস্টের ধরন')}</h4>
 						<ul class="structure-list">
-							<li><span class="struct-key">Trials</span><span class="struct-val">{sessionData?.total_trials || 20}</span></li>
-							<li><span class="struct-key">Flash duration</span><span class="struct-val">{sessionData?.config?.presentation_time_ms || 100}ms</span></li>
-							<li><span class="struct-key">Mask duration</span><span class="struct-val">{sessionData?.config?.mask_duration_ms || 500}ms</span></li>
-							<li><span class="struct-key">Measures</span><span class="struct-val">perceptual speed</span></li>
+							<li><span class="struct-key">{lt('Trials', 'ট্রায়াল')}</span><span class="struct-val">{n(sessionData?.total_trials || 20)}</span></li>
+							<li><span class="struct-key">{lt('Flash duration', 'ফ্ল্যাশের সময়')}</span><span class="struct-val">{n(sessionData?.config?.presentation_time_ms || 100)}{lt('ms', 'মি.সে.')}</span></li>
+							<li><span class="struct-key">{lt('Mask duration', 'মাস্কের সময়')}</span><span class="struct-val">{n(sessionData?.config?.mask_duration_ms || 500)}{lt('ms', 'মি.সে.')}</span></li>
+							<li><span class="struct-key">{lt('Measures', 'যা মাপে')}</span><span class="struct-val">{lt('perceptual speed', 'উপলব্ধির গতি')}</span></li>
 						</ul>
 					</div>
 				</div>
 
 				<div class="clinical-info">
-					<h4>Clinical Significance</h4>
+					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
 					<div class="clinical-grid">
 						<div class="clinical-item">
-							<strong>Pure Perception</strong>
-							<span>Measures basic visual processing speed — no motor component</span>
+							<strong>{lt('Pure Perception', 'বিশুদ্ধ উপলব্ধি')}</strong>
+							<span>{lt('Measures basic visual processing speed — no motor component', 'মোটর অংশ ছাড়া মৌলিক ভিজ্যুয়াল প্রসেসিং স্পিড মাপে')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>MS Sensitive</strong>
-							<span>Processing speed is one of the most affected domains in MS</span>
+							<strong>{lt('MS Sensitive', 'MS-সংবেদনশীল')}</strong>
+							<span>{lt('Processing speed is one of the most affected domains in MS', 'MS-এ প্রসেসিং স্পিড সবচেয়ে বেশি প্রভাবিত ক্ষেত্রগুলোর একটি')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>No Motor Bias</strong>
-							<span>Physical limitations don't affect this measure</span>
+							<strong>{lt('No Motor Bias', 'মোটর পক্ষপাত নেই')}</strong>
+							<span>{lt("Physical limitations don't affect this measure", 'শারীরিক সীমাবদ্ধতা এই মাপে প্রভাব ফেলে না')}</span>
 						</div>
 						<div class="clinical-item">
-							<strong>Research Backed</strong>
-							<span>Vickers & Smith (1986), widely used in neuropsychology</span>
+							<strong>{lt('Research Backed', 'গবেষণাসমর্থিত')}</strong>
+							<span>{lt('Vickers & Smith (1986), widely used in neuropsychology', 'Vickers & Smith (১৯৮৬), নিউরোসাইকোলজিতে বহুল ব্যবহৃত')}</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="perf-guide">
-					<h4>Performance Targets</h4>
+					<h4>{lt('Performance Targets', 'পারফরম্যান্স লক্ষ্য')}</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
-							<span class="norm-label">Excellent</span>
-							<span class="norm-val">≥90% accuracy</span>
+							<span class="norm-label">{lt('Excellent', 'চমৎকার')}</span>
+							<span class="norm-val">{lt('≥90% accuracy', '≥৯০% নির্ভুলতা')}</span>
 						</div>
 						<div class="norm-bar norm-good">
-							<span class="norm-label">Good</span>
-							<span class="norm-val">75–89% accuracy</span>
+							<span class="norm-label">{lt('Good', 'ভালো')}</span>
+							<span class="norm-val">{lt('75–89% accuracy', '৭৫–৮৯% নির্ভুলতা')}</span>
 						</div>
 						<div class="norm-bar norm-avg">
-							<span class="norm-label">Average</span>
-							<span class="norm-val">60–74% accuracy</span>
+							<span class="norm-label">{lt('Average', 'গড়')}</span>
+							<span class="norm-val">{lt('60–74% accuracy', '৬০–৭৪% নির্ভুলতা')}</span>
 						</div>
 						<div class="norm-bar norm-fair">
-							<span class="norm-label">Fair</span>
-							<span class="norm-val">50–59% accuracy</span>
+							<span class="norm-label">{lt('Fair', 'মাঝারি')}</span>
+							<span class="norm-val">{lt('50–59% accuracy', '৫০–৫৯% নির্ভুলতা')}</span>
 						</div>
 						<div class="norm-bar norm-needs">
-							<span class="norm-label">Developing</span>
-							<span class="norm-val">&lt;50% accuracy</span>
+							<span class="norm-label">{lt('Developing', 'উন্নতির পথে')}</span>
+							<span class="norm-val">{lt('<50% accuracy', '<৫০% নির্ভুলতা')}</span>
 						</div>
 					</div>
-					<p class="norm-note">*Scores depend on presentation time — faster flash = harder task</p>
+					<p class="norm-note">{lt('*Scores depend on presentation time — faster flash = harder task', '*স্কোর ফ্ল্যাশ দেখানোর সময়ের ওপর নির্ভর করে — দ্রুত ফ্ল্যাশ মানে কঠিন টাস্ক')}</p>
 				</div>
 
 				<div class="button-group">
-					<button class="btn-secondary" on:click={startPractice}>Try Practice First</button>
+					<button class="btn-secondary" on:click={startPractice}>{lt('Try Practice First', 'আগে অনুশীলন করুন')}</button>
 					<TaskPracticeActions
 						locale={$locale}
-						startLabel="Start Actual Task"
+						startLabel={lt('Start Actual Task', 'আসল টাস্ক শুরু করুন')}
 						practiceVisible={false}
 						statusMessage={practiceStatusMessage}
 						align="center"
@@ -456,18 +461,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		{:else if showPractice}
 			<div class="screen-card practice-screen">
 				<PracticeModeBanner locale={$locale} showExit on:exit={() => finishPractice(false)} />
-				<h2>Practice Mode</h2>
-				<p class="practice-intro">Practice with a slower flash to get familiar with the task.</p>
+				<h2>{lt('Practice Mode', 'অনুশীলন মোড')}</h2>
+				<p class="practice-intro">{lt('Practice with a slower flash to get familiar with the task.', 'টাস্কটি বুঝে নিতে ধীর ফ্ল্যাশ দিয়ে অনুশীলন করুন।')}</p>
 
 				<div class="practice-info-row">
-					<span class="p-badge">Trial {practiceAttempts + 1}</span>
-					<span class="p-badge p-speed">Flash: {practiceTrial.presentation_time_ms}ms (slower than real test)</span>
+					<span class="p-badge">{lt('Trial', 'ট্রায়াল')} {n(practiceAttempts + 1)}</span>
+					<span class="p-badge p-speed">{lt('Flash:', 'ফ্ল্যাশ:')} {n(practiceTrial.presentation_time_ms)}{lt('ms', 'মি.সে.')} {lt('(slower than real test)', '(আসল টেস্টের চেয়ে ধীর)')}</span>
 				</div>
 
 				{#if !showStimulus && !showMask && !waitingForResponse}
 					<div class="practice-ready">
-						<p>Focus on the centre of the screen, then click when ready.</p>
-						<button class="start-button" on:click={runPracticeTrial}>Ready — Start Trial</button>
+						<p>{lt('Focus on the centre of the screen, then click when ready.', 'স্ক্রিনের মাঝখানে মনোযোগ দিন, প্রস্তুত হলে ক্লিক করুন।')}</p>
+						<button class="start-button" on:click={runPracticeTrial}>{lt('Ready — Start Trial', 'প্রস্তুত — ট্রায়াল শুরু করুন')}</button>
 					</div>
 				{/if}
 
@@ -495,14 +500,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				{#if waitingForResponse}
 					<div class="response-area">
-						<p class="response-prompt">Which line was longer?</p>
+						<p class="response-prompt">{lt('Which line was longer?', 'কোন রেখাটি লম্বা ছিল?')}</p>
 						<div class="response-buttons">
 							<button class="response-btn left-btn" on:click={() => handlePracticeResponse('left')}>
 								<span class="resp-icon">←</span>
-								<span class="resp-text">LEFT</span>
+								<span class="resp-text">{lt('LEFT', 'বাম')}</span>
 							</button>
 							<button class="response-btn right-btn" on:click={() => handlePracticeResponse('right')}>
-								<span class="resp-text">RIGHT</span>
+								<span class="resp-text">{lt('RIGHT', 'ডান')}</span>
 								<span class="resp-icon">→</span>
 							</button>
 						</div>
@@ -514,8 +519,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="screen-card testing-screen">
 				<div class="test-header">
 					<div class="test-badges">
-						<span class="count-badge">Trial {currentTrialIndex + 1} / {sessionData.total_trials}</span>
-						<span class="speed-badge">{sessionData.config.presentation_time_ms}ms flash</span>
+						<span class="count-badge">{lt('Trial', 'ট্রায়াল')} {n(currentTrialIndex + 1)} / {n(sessionData.total_trials)}</span>
+						<span class="speed-badge">{n(sessionData.config.presentation_time_ms)}{lt('ms', 'মি.সে.')} {lt('flash', 'ফ্ল্যাশ')}</span>
 					</div>
 					<div class="progress-track">
 						<div class="progress-fill" style="width: {progressPercent}%"></div>
@@ -540,14 +545,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						</div>
 					{:else if waitingForResponse}
 						<div class="response-area">
-							<p class="response-prompt">Which line was longer?</p>
+							<p class="response-prompt">{lt('Which line was longer?', 'কোন রেখাটি লম্বা ছিল?')}</p>
 							<div class="response-buttons">
 								<button class="response-btn left-btn" on:click={() => handleResponse('left')}>
 									<span class="resp-icon">←</span>
-									<span class="resp-text">LEFT</span>
+									<span class="resp-text">{lt('LEFT', 'বাম')}</span>
 								</button>
 								<button class="response-btn right-btn" on:click={() => handleResponse('right')}>
-									<span class="resp-text">RIGHT</span>
+									<span class="resp-text">{lt('RIGHT', 'ডান')}</span>
 									<span class="resp-icon">→</span>
 								</button>
 							</div>
@@ -555,7 +560,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{:else}
 						<div class="waiting-state">
 							<div class="fixation-cross">+</div>
-							<p>Get ready…</p>
+							<p>{lt('Get ready…', 'প্রস্তুত হন…')}</p>
 						</div>
 					{/if}
 				</div>
@@ -567,83 +572,83 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				{#if results}
 					<div class="perf-banner">
 												<div class="perf-level">{results.metrics.performance_level}</div>
-						<div class="perf-subtitle">Perceptual Speed Index: {results.metrics.perceptual_speed_index} · Inspection Time Complete!</div>
+						<div class="perf-subtitle">{lt('Perceptual Speed Index:', 'উপলব্ধির গতি সূচক:')} {n(results.metrics.perceptual_speed_index)} · {lt('Inspection Time Complete!', 'ইন্সপেকশন টাইম সম্পন্ন!')}</div>
 					</div>
 
 					<div class="metrics-grid">
 						<div class="metric-card highlight">
 							<div class="metric-icon">◎</div>
-							<div class="metric-value">{results.metrics.accuracy}%</div>
-							<div class="metric-label">Accuracy</div>
-							<div class="metric-sub">{results.metrics.correct_count}/{results.metrics.total_trials} correct</div>
+							<div class="metric-value">{n(results.metrics.accuracy)}%</div>
+							<div class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</div>
+							<div class="metric-sub">{n(results.metrics.correct_count)}/{n(results.metrics.total_trials)} {lt('correct', 'সঠিক')}</div>
 						</div>
 						<div class="metric-card">
 							<div class="metric-icon">→</div>
-							<div class="metric-value">{results.metrics.perceptual_speed_index}</div>
-							<div class="metric-label">Perceptual Speed Index</div>
-							<div class="metric-sub">at {results.metrics.presentation_time_ms}ms flash</div>
+							<div class="metric-value">{n(results.metrics.perceptual_speed_index)}</div>
+							<div class="metric-label">{lt('Perceptual Speed Index', 'উপলব্ধির গতি সূচক')}</div>
+							<div class="metric-sub">{n(results.metrics.presentation_time_ms)}{lt('ms', 'মি.সে.')} {lt('flash', 'ফ্ল্যাশে')}</div>
 						</div>
 						<div class="metric-card">
 							<div class="metric-icon">⏱</div>
-							<div class="metric-value">{results.metrics.average_reaction_time}ms</div>
-							<div class="metric-label">Avg Decision Time</div>
-							<div class="metric-sub">after mask appears</div>
+							<div class="metric-value">{n(results.metrics.average_reaction_time)}{lt('ms', 'মি.সে.')}</div>
+							<div class="metric-label">{lt('Avg Decision Time', 'গড় সিদ্ধান্ত সময়')}</div>
+							<div class="metric-sub">{lt('after mask appears', 'মাস্ক দেখানোর পর')}</div>
 						</div>
 						<div class="metric-card">
 							<div class="metric-icon">↑</div>
-							<div class="metric-value">{results.metrics.consistency}%</div>
-							<div class="metric-label">Consistency</div>
-							<div class="metric-sub">response variability</div>
+							<div class="metric-value">{n(results.metrics.consistency)}%</div>
+							<div class="metric-label">{lt('Consistency', 'ধারাবাহিকতা')}</div>
+							<div class="metric-sub">{lt('response variability', 'উত্তরের ওঠানামা')}</div>
 						</div>
 					</div>
 
 					<div class="breakdown">
-						<h3>Detailed Analysis</h3>
+						<h3>{lt('Detailed Analysis', 'বিস্তারিত বিশ্লেষণ')}</h3>
 						<div class="breakdown-row">
-							<span class="bd-label">Total Trials</span>
-							<span class="bd-val">{results.metrics.total_trials}</span>
+							<span class="bd-label">{lt('Total Trials', 'মোট ট্রায়াল')}</span>
+							<span class="bd-val">{n(results.metrics.total_trials)}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Correct Answers</span>
-							<span class="bd-val bd-success">{results.metrics.correct_count}</span>
+							<span class="bd-label">{lt('Correct Answers', 'সঠিক উত্তর')}</span>
+							<span class="bd-val bd-success">{n(results.metrics.correct_count)}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Presentation Time</span>
-							<span class="bd-val">{results.metrics.presentation_time_ms}ms</span>
+							<span class="bd-label">{lt('Presentation Time', 'দেখানোর সময়')}</span>
+							<span class="bd-val">{n(results.metrics.presentation_time_ms)}{lt('ms', 'মি.সে.')}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Perceptual Speed Index</span>
-							<span class="bd-val">{results.metrics.perceptual_speed_index}</span>
+							<span class="bd-label">{lt('Perceptual Speed Index', 'উপলব্ধির গতি সূচক')}</span>
+							<span class="bd-val">{n(results.metrics.perceptual_speed_index)}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Consistency</span>
-							<span class="bd-val">{results.metrics.consistency}%</span>
+							<span class="bd-label">{lt('Consistency', 'ধারাবাহিকতা')}</span>
+							<span class="bd-val">{n(results.metrics.consistency)}%</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">Performance Level</span>
+							<span class="bd-label">{lt('Performance Level', 'পারফরম্যান্স স্তর')}</span>
 							<span class="bd-val">{results.metrics.performance_level}</span>
 						</div>
 					</div>
 
 					<div class="clinical-note">
-						<h4>Clinical Context</h4>
+						<h4>{lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h4>
 						<p>
 							{#if results.metrics.accuracy >= 90}
-								Excellent perceptual speed! You're accurately processing visual information at <strong>{results.metrics.presentation_time_ms}ms</strong> — significantly below the average conscious perception threshold.
+								{lt("Excellent perceptual speed! You're accurately processing visual information at", 'চমৎকার উপলব্ধির গতি! আপনি ভিজ্যুয়াল তথ্য সঠিকভাবে প্রসেস করছেন')} <strong>{n(results.metrics.presentation_time_ms)}{lt('ms', 'মি.সে.')}</strong> - {lt('significantly below the average conscious perception threshold.', 'যা সচেতন উপলব্ধির গড় সীমার চেয়েও অনেক কম।')}
 							{:else if results.metrics.accuracy >= 75}
-								Good perceptual processing. You're reliably perceiving brief flashes at <strong>{results.metrics.presentation_time_ms}ms</strong>. Regular practice can push your threshold even lower.
+								{lt("Good perceptual processing. You're reliably perceiving brief flashes at", 'ভালো উপলব্ধি প্রসেসিং। আপনি নির্ভরযোগ্যভাবে সংক্ষিপ্ত ফ্ল্যাশ ধরতে পারছেন')} <strong>{n(results.metrics.presentation_time_ms)}{lt('ms', 'মি.সে.')}</strong>. {lt('Regular practice can push your threshold even lower.', 'নিয়মিত অনুশীলনে আপনার সীমা আরও কমতে পারে।')}
 							{:else if results.metrics.accuracy >= 60}
-								Average perceptual speed at this duration. Your brain is working at its threshold — precision will improve with training.
+								{lt('Average perceptual speed at this duration. Your brain is working at its threshold — precision will improve with training.', 'এই সময়মাত্রায় উপলব্ধির গতি গড় পর্যায়ে। আপনার মস্তিষ্ক সীমার কাছাকাছি কাজ করছে — অনুশীলনে নির্ভুলতা বাড়বে।')}
 							{:else}
-								You're developing perceptual speed at this threshold. The task adapts to find your optimal level — keep practising and improvement will follow.
+								{lt("You're developing perceptual speed at this threshold. The task adapts to find your optimal level — keep practising and improvement will follow.", 'এই সীমায় আপনার উপলব্ধির গতি উন্নতির পথে। টাস্কটি আপনার উপযুক্ত স্তর খুঁজে নিতে বদলায় — অনুশীলন চালিয়ে গেলে উন্নতি আসবে।')}
 							{/if}
 						</p>
-						<p class="why-matters"><strong>Why this matters for MS:</strong> Processing speed deficits are among the most common cognitive changes in MS. This task measures pure visual perception speed without any motor demands, making it ideal for tracking brain efficiency over time.</p>
+						<p class="why-matters"><strong>{lt('Why this matters for MS:', 'MS-এর ক্ষেত্রে কেন গুরুত্বপূর্ণ:')}</strong> {lt('Processing speed deficits are among the most common cognitive changes in MS. This task measures pure visual perception speed without any motor demands, making it ideal for tracking brain efficiency over time.', 'MS-এ প্রসেসিং স্পিডের দুর্বলতা সবচেয়ে সাধারণ কগনিটিভ পরিবর্তনগুলোর একটি। এই টাস্ক মোটর চাহিদা ছাড়াই বিশুদ্ধ ভিজ্যুয়াল উপলব্ধির গতি মাপে, তাই সময়ের সঙ্গে মস্তিষ্কের দক্ষতা ট্র্যাক করতে উপযোগী।')}</p>
 					</div>
 
 					{#if results.adaptation_reason}
 						<div class="difficulty-info">
-							<span>Difficulty: <strong>{results.difficulty_before}</strong> → <strong>{results.difficulty_after}</strong></span>
+							<span>{lt('Difficulty:', 'কঠিনতা:')} <strong>{n(results.difficulty_before)}</strong> → <strong>{n(results.difficulty_after)}</strong></span>
 							<span class="adapt-reason">{results.adaptation_reason}</span>
 						</div>
 					{/if}
@@ -653,8 +658,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{/if}
 
 					<div class="button-group">
-						<button class="start-button" on:click={returnToDashboard}>Return to Dashboard</button>
-						<button class="btn-secondary" on:click={() => goto('/dashboard')}>Back to Dashboard</button>
+						<button class="start-button" on:click={returnToDashboard}>{lt('Return to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
+						<button class="btn-secondary" on:click={() => goto('/dashboard')}>{lt('Back to Dashboard', 'ড্যাশবোর্ডে ফিরে যান')}</button>
 					</div>
 				{/if}
 			</div>
@@ -667,30 +672,30 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="modal-content" on:click|stopPropagation role="dialog" tabindex="-1" on:keydown={(e) => e.key === 'Escape' && (showHelp = false)}>
 			<button class="close-btn" on:click={() => showHelp = false}>×</button>
-			<h2>Inspection Time — Strategies</h2>
+			<h2>{lt('Inspection Time — Strategies', 'ইনস্পেকশন টাইম — কৌশল')}</h2>
 			<div class="strategy">
-				<h3>Stay Relaxed</h3>
-				<p>Tension and anxiety physically reduce perceptual sensitivity. Take a breath before each trial and stay calm — your perception improves when you're relaxed.</p>
+				<h3>{lt('Stay Relaxed', 'শান্ত থাকুন')}</h3>
+				<p>{lt('Tension and anxiety physically reduce perceptual sensitivity. Take a breath before each trial and stay calm — your perception improves when you are relaxed.', 'টেনশন ও উদ্বেগ চোখে ধরা সংবেদনশীলতা কমাতে পারে। প্রতিটি ট্রায়ালের আগে শ্বাস নিন ও শান্ত থাকুন — শান্ত থাকলে দেখা ভালো হয়।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Central Focus</h3>
-				<p>Keep your gaze fixed on the centre of the screen between trials. The lines appear left and right — central focus lets peripheral vision catch both at once.</p>
+				<h3>{lt('Central Focus', 'মাঝখানে মনোযোগ')}</h3>
+				<p>{lt('Keep your gaze fixed on the centre of the screen between trials. The lines appear left and right — central focus lets peripheral vision catch both at once.', 'ট্রায়ালের মাঝে চোখ স্ক্রিনের মাঝখানে রাখুন। রেখা বাম ও ডানে দেখা যাবে — মাঝখানে তাকালে দুই পাশ একসঙ্গে ধরতে সুবিধা হয়।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Trust Your First Impression</h3>
-				<p>The flash is too brief for conscious analysis. Your first instinct is your perceptual system's best output — trust it rather than deliberating.</p>
+				<h3>{lt('Trust Your First Impression', 'প্রথম ধারণাকে বিশ্বাস করুন')}</h3>
+				<p>{lt('The flash is too brief for conscious analysis. Your first instinct is your perceptual system’s best output — trust it rather than deliberating.', 'ঝলকটি বিশ্লেষণ করার মতো দীর্ঘ নয়। প্রথম যে ধারণা আসে সেটিই আপনার দেখার সিস্টেমের সেরা উত্তর — বেশি ভেবে বদলাবেন না।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Why the Mask?</h3>
-				<p>The pattern mask immediately after the flash prevents "afterimage" processing. This ensures we're measuring true real-time perception, not memory of the image.</p>
+				<h3>{lt('Why the Mask?', 'মাস্ক কেন?')}</h3>
+				<p>{lt('The pattern mask immediately after the flash prevents afterimage processing. This measures real-time perception, not memory of the image.', 'ঝলকের পরপরই প্যাটার্ন মাস্ক দেখালে পরে থেকে যাওয়া ছবি ধরে উত্তর দেওয়া যায় না। এতে ছবির স্মৃতি নয়, আসল সময়ে দেখা মাপা হয়।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Adaptive Difficulty</h3>
-				<p>The task adjusts flash duration to find your perceptual threshold. Getting some wrong is expected and scientifically meaningful — not a failure.</p>
+				<h3>{lt('Adaptive Difficulty', 'মানিয়ে নেওয়া কঠিনতা')}</h3>
+				<p>{lt('The task adjusts flash duration to find your perceptual threshold. Getting some wrong is expected and meaningful — not a failure.', 'আপনার দেখা ধরার সীমা খুঁজতে টাস্কটি ঝলকের সময় বদলায়। কিছু ভুল হওয়া স্বাভাবিক এবং তথ্যপূর্ণ — এটি ব্যর্থতা নয়।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>Why This Matters</h3>
-				<p>Inspection Time requires no complex motor responses — just a simple left/right click. This makes it an exceptionally clean measure of pure cognitive processing speed for MS research.</p>
+				<h3>{lt('Why This Matters', 'কেন গুরুত্বপূর্ণ')}</h3>
+				<p>{lt('Inspection Time requires no complex motor responses — just a simple left/right click. This makes it a clean measure of cognitive processing speed for MS research.', 'ইনস্পেকশন টাইমে জটিল হাতের কাজ লাগে না — শুধু বাম/ডান ক্লিক। তাই MS গবেষণায় এটি প্রক্রিয়াকরণের গতি মাপার পরিষ্কার উপায়।')}</p>
 			</div>
 		</div>
 	</div>
@@ -1170,4 +1175,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.lines-container { gap: 2rem; }
 	}
 </style>
-

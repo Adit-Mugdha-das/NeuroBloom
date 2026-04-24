@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import { user } from '$lib/stores';
@@ -147,89 +148,89 @@
 				<path d="M12 5v14M5 12h14"/>
 			</svg>
 		</div>
-			<span class="brand-name">NeuroBloom Admin</span>
+			<span class="brand-name">{uiText("NeuroBloom Admin", $activeLocale)}</span>
 		</div>
 		<nav class="sidebar-nav">
 			<a href="/admin/dashboard" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
 			</svg>
-			Dashboard
+			{uiText("Dashboard", $activeLocale)}
 			</a>
 			<a href="/admin/analytics" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 			</svg>
-			System Analytics
+			{uiText("System Analytics", $activeLocale)}
 			</a>
 			<a href="/admin/doctors" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
 			</svg>
-			Doctor Management
+			{uiText("Doctor Management", $activeLocale)}
 			</a>
 			<a href="/admin/patients" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
 			</svg>
-			Patient Management
+			{uiText("Patient Management", $activeLocale)}
 			</a>
 			<a href="/admin/departments" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
 			</svg>
-			Departments
+			{uiText("Departments", $activeLocale)}
 			</a>
 			<a href="/admin/interventions" class="nav-item active">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 			</svg>
-			Interventions
+			{uiText("Interventions", $activeLocale)}
 			</a>
 			<a href="/admin/messages" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
 			</svg>
-			Message Audit
+			{uiText("Message Audit", $activeLocale)}
 			</a>
 			<a href="/admin/audit-logs" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 			</svg>
-			Audit Logs
+			{uiText("Audit Logs", $activeLocale)}
 			</a>
 			<a href="/admin/system-health" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 			</svg>
-			System Health
+			{uiText("System Health", $activeLocale)}
 			</a>
 			<a href="/admin/notifications" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
 			</svg>
-			Notification Center
+			{uiText("Notification Center", $activeLocale)}
 			</a>
 			<a href="/admin/research-data" class="nav-item">
 				<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
 			</svg>
-			Research Data
+			{uiText("Research Data", $activeLocale)}
 			</a>
 		</nav>
 		<button class="logout-btn" on:click={logout}>
 			<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 			</svg>
-			Sign Out
+			{uiText("Sign Out", $activeLocale)}
 		</button>
 	</aside>
 
 	<main class="main-content">
 		<header class="topbar">
 			<div>
-				<h1 class="page-title">Intervention Monitoring</h1>
-				<p class="page-sub">Clinical quality oversight of all doctor-patient interventions</p>
+				<h1 class="page-title">{uiText("Intervention Monitoring", $activeLocale)}</h1>
+				<p class="page-sub">{uiText("Clinical quality oversight of all doctor-patient interventions", $activeLocale)}</p>
 			</div>
 			<div class="admin-info">
 				<div class="admin-avatar">
@@ -239,7 +240,7 @@
 				</div>
 				<div class="admin-details">
 					<span class="admin-name">{admin?.full_name || admin?.email}</span>
-					<span class="admin-role">Administrator</span>
+					<span class="admin-role">{uiText("Administrator", $activeLocale)}</span>
 				</div>
 			</div>
 		</header>
@@ -250,30 +251,30 @@
 			{/if}
 
 			{#if loading}
-				<div class="loading-state">Loading interventions...</div>
+				<div class="loading-state">{uiText("Loading interventions...", $activeLocale)}</div>
 			{:else}
 				<!-- Summary Strip -->
 				<div class="summary-strip">
 					<div class="summary-card">
 						<p class="sc-value">{filtered.length}</p>
-						<p class="sc-label">Interventions in View</p>
+						<p class="sc-label">{uiText("Interventions in View", $activeLocale)}</p>
 						<p class="sc-sub">{periodLabel}</p>
 					</div>
 					<div class="summary-card">
 						<p class="sc-value">{doctorGenerated}</p>
-						<p class="sc-label">Doctor-Generated</p>
-						<p class="sc-sub">clinical actions</p>
+						<p class="sc-label">{uiText("Doctor-Generated", $activeLocale)}</p>
+						<p class="sc-sub">{uiText("clinical actions", $activeLocale)}</p>
 					</div>
 					<div class="summary-card">
 						<p class="sc-value">{uniqueDoctors.length}</p>
-						<p class="sc-label">Active Doctors</p>
-						<p class="sc-sub">with recorded interventions</p>
+						<p class="sc-label">{uiText("Active Doctors", $activeLocale)}</p>
+						<p class="sc-sub">{uiText("with recorded interventions", $activeLocale)}</p>
 					</div>
 					{#if topDoctor}
 						<div class="summary-card summary-highlight">
-							<p class="sc-value sc-truncate">Dr. {topDoctor.doctor_name}</p>
-							<p class="sc-label">Most Active Doctor</p>
-							<p class="sc-sub">{topDoctor.count} intervention{topDoctor.count !== 1 ? 's' : ''} total</p>
+							<p class="sc-value sc-truncate">{uiText("Dr.", $activeLocale)} {topDoctor.doctor_name}</p>
+							<p class="sc-label">{uiText("Most Active Doctor", $activeLocale)}</p>
+							<p class="sc-sub">{topDoctor.count} {uiText("intervention", $activeLocale)}{topDoctor.count !== 1 ? 's' : ''} {uiText("total", $activeLocale)}</p>
 						</div>
 					{/if}
 				</div>
@@ -281,7 +282,7 @@
 				<!-- Filter Bar -->
 				<div class="filter-bar">
 					<div class="filter-group">
-						<span class="filter-label">Period</span>
+						<span class="filter-label">{uiText("Period", $activeLocale)}</span>
 						<div class="period-tabs">
 						{#each PERIODS as [val, lbl]}
 							<button
@@ -293,27 +294,27 @@
 						</div>
 					</div>
 					<div class="filter-group">
-						<span class="filter-label">Type</span>
+						<span class="filter-label">{uiText("Type", $activeLocale)}</span>
 						<select class="filter-select" bind:value={filterType}>
-							<option value="all">All Types</option>
+							<option value="all">{uiText("All Types", $activeLocale)}</option>
 							{#each uniqueTypes as t}
 								<option value={t}>{typeLabel(t)}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="filter-group">
-						<span class="filter-label">Doctor</span>
+						<span class="filter-label">{uiText("Doctor", $activeLocale)}</span>
 						<select class="filter-select" bind:value={filterDoctorId}>
-							<option value="all">All Doctors</option>
+							<option value="all">{uiText("All Doctors", $activeLocale)}</option>
 							{#each uniqueDoctors as d}
-								<option value={String(d.id)}>Dr. {d.name}</option>
+								<option value={String(d.id)}>{uiText("Dr.", $activeLocale)} {d.name}</option>
 							{/each}
 						</select>
 					</div>
 				</div>
 
 				<!-- Results Count -->
-				<p class="results-bar">{filtered.length} intervention{filtered.length !== 1 ? 's' : ''}</p>
+				<p class="results-bar">{filtered.length} {uiText("intervention", $activeLocale)}{filtered.length !== 1 ? 's' : ''}</p>
 
 				<!-- Feed -->
 				{#if filtered.length === 0}
@@ -323,8 +324,8 @@
 							<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
 						</svg>
 					</div>
-						<p class="empty-title">No interventions found</p>
-						<p class="empty-sub">Try adjusting the period or filters above.</p>
+						<p class="empty-title">{uiText("No interventions found", $activeLocale)}</p>
+						<p class="empty-sub">{uiText("Try adjusting the period or filters above.", $activeLocale)}</p>
 					</div>
 				{:else}
 					<div class="feed">
@@ -334,7 +335,7 @@
 								<div class="icard-body">
 									<div class="icard-header">
 										<div class="icard-who">
-											<span class="who-doctor">Dr. {item.doctor_name}</span>
+											<span class="who-doctor">{uiText("Dr.", $activeLocale)} {item.doctor_name}</span>
 											{#if item.doctor_specialization}
 												<span class="who-spec">{item.doctor_specialization}</span>
 											{/if}

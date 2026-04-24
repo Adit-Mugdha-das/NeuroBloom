@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
-	import { locale, translateText } from '$lib/i18n';
+	import { locale, translateText, locale as activeLocale, uiText } from '$lib/i18n';
 
 	let email = '';
 	let password = '';
@@ -218,7 +218,7 @@
 							type="email"
 							id="email"
 							bind:value={email}
-							placeholder="you@example.com"
+							placeholder={uiText("you@example.com", $activeLocale)}
 							disabled={loading}
 							autocomplete="email"
 						/>
@@ -241,7 +241,7 @@
 									type="text"
 									id="licenseNumber"
 									bind:value={licenseNumber}
-									placeholder="e.g. GMC-123456"
+									placeholder={uiText("e.g. GMC-123456", $activeLocale)}
 									disabled={loading}
 								/>
 							</div>
@@ -257,7 +257,7 @@
 									type="text"
 									id="specialization"
 									bind:value={specialization}
-									placeholder="e.g. Neurology, Psychiatry"
+									placeholder={uiText("e.g. Neurology, Psychiatry", $activeLocale)}
 									disabled={loading}
 								/>
 							</div>
@@ -307,7 +307,7 @@
 								disabled={loading}
 								autocomplete="new-password"
 							/>
-							<button type="button" class="toggle-pw" on:click={() => showPassword = !showPassword} tabindex="-1" aria-label="Toggle password visibility">
+							<button type="button" class="toggle-pw" on:click={() => showPassword = !showPassword} tabindex="-1" aria-label={uiText("Toggle password visibility", $activeLocale)}>
 								{#if showPassword}
 									<svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/></svg>
 								{:else}
@@ -332,7 +332,7 @@
 								autocomplete="new-password"
 								class:input-mismatch={confirmPassword && password !== confirmPassword}
 							/>
-							<button type="button" class="toggle-pw" on:click={() => showConfirm = !showConfirm} tabindex="-1" aria-label="Toggle confirm password visibility">
+							<button type="button" class="toggle-pw" on:click={() => showConfirm = !showConfirm} tabindex="-1" aria-label={uiText("Toggle confirm password visibility", $activeLocale)}>
 								{#if showConfirm}
 									<svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/></svg>
 								{:else}

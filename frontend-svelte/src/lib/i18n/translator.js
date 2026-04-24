@@ -5,6 +5,7 @@ import {
 	PHRASE_TRANSLATIONS,
 	WORD_TRANSLATIONS
 } from './catalog.js';
+import { UI_EXACT_TRANSLATIONS } from './ui-copy.js';
 
 export const DEFAULT_LOCALE = 'en';
 export const SUPPORTED_LOCALES = [
@@ -277,7 +278,35 @@ export function translateText(input, targetLocale = DEFAULT_LOCALE, options = {}
 		return normalizedText;
 	}
 
+	const exactTranslation = UI_EXACT_TRANSLATIONS[normalizedText];
+	if (exactTranslation) {
+		return toBanglaDigits(exactTranslation);
+	}
+
 	return translateBangla(normalizedText, options);
+}
+
+const UI_TEXT_CACHE = new Map();
+
+export function uiText(input, targetLocale = DEFAULT_LOCALE) {
+	if (input === null || input === undefined) return '';
+
+	const normalizedLocale = normalizeLocale(targetLocale);
+	const normalizedText = String(input);
+	if (normalizedLocale !== 'bn') {
+		return normalizedText;
+	}
+
+	const cacheKey = `${normalizedLocale}\u0000${normalizedText}`;
+	if (!UI_TEXT_CACHE.has(cacheKey)) {
+		const exactTranslation = UI_EXACT_TRANSLATIONS[normalizedText];
+		UI_TEXT_CACHE.set(
+			cacheKey,
+			exactTranslation ? toBanglaDigits(exactTranslation) : translateBangla(normalizedText, { aggressive: true })
+		);
+	}
+
+	return UI_TEXT_CACHE.get(cacheKey);
 }
 
 export function t(input, targetLocale = DEFAULT_LOCALE, options = {}) {

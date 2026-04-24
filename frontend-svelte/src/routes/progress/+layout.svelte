@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, locale as activeLocale, uiText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 
 	let currentUser = null;
@@ -43,7 +43,7 @@
 <div class="progress-shell">
 	<header class="progress-header">
 		<div class="header-copy">
-			<p class="eyebrow">NeuroBloom Progress</p>
+			<p class="eyebrow">{uiText("NeuroBloom Progress", $activeLocale)}</p>
 			<h1>{lt('Your Progress Area', 'আপনার অগ্রগতির এলাকা')}</h1>
 			<p class="header-subcopy">{lt('Each view focuses on one purpose only, so reviewing progress stays calm and easy to follow.', 'প্রতিটি ভিউ একটি নির্দিষ্ট কাজের জন্য, তাই অগ্রগতি দেখা সহজ ও শান্ত থাকে।')}</p>
 		</div>
@@ -55,7 +55,7 @@
 		</div>
 	</header>
 
-	<nav class="progress-nav" aria-label="Progress sections">
+	<nav class="progress-nav" aria-label={uiText("Progress sections", $activeLocale)}>
 		{#each tabs as tab}
 			<a href={tab.href} class:selected={isActive(tab.href)}>{localeText(tab.label, $locale)}</a>
 		{/each}

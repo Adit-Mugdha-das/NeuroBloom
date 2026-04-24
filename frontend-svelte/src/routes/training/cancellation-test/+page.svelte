@@ -8,11 +8,19 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
+
+	function n(value, options = {}) {
+		return formatNumber(value, $locale, options);
+	}
+
+	function sec(value, options = {}) {
+		return formatSeconds(value, $locale, options);
+	}
 
 	let gamePhase = 'loading'; // loading | intro | playing | results
 	let trialData = null;
@@ -259,19 +267,19 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h2 class="section-title">{lt('Rules', 'নিয়মাবলী')}</h2>
 					<div class="rules-list">
 						<div class="rule-item">
-							<div class="rule-num">1</div>
+							<div class="rule-num">{n(1)}</div>
 							<div class="rule-text">{lt('Click every cell that contains a target item — do not skip any', 'প্রতিটি টার্গেট সেল ক্লিক করুন — কোনোটি বাদ দেবেন না')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">2</div>
+							<div class="rule-num">{n(2)}</div>
 							<div class="rule-text">{lt('Click a marked cell again to unmark it if you made a mistake', 'ভুল করলে চিহ্নিত সেলটি আবার ক্লিক করে চিহ্ন তুলে নিন')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">3</div>
+							<div class="rule-num">{n(3)}</div>
 							<div class="rule-text">{lt('Scan systematically — left to right, row by row', 'পদ্ধতিগতভাবে স্ক্যান করুন — বাম থেকে ডানে, সারি থেকে সারি')}</div>
 						</div>
 						<div class="rule-item">
-							<div class="rule-num">4</div>
+							<div class="rule-num">{n(4)}</div>
 							<div class="rule-text">{lt('No time limit — prioritize accuracy over speed', 'কোনো সময়সীমা নেই — গতির চেয়ে নির্ভুলতাকে অগ্রাধিকার দিন')}</div>
 						</div>
 					</div>
@@ -435,7 +443,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Key Metrics -->
 				<div class="metrics-grid">
 					<div class="metric-card metric-green">
-						<div class="metric-value">{results.accuracy.toFixed(1)}%</div>
+						<div class="metric-value">{n(results.accuracy, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</div>
 						<div class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</div>
 					</div>
 					<div class="metric-card metric-blue">
@@ -443,7 +451,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<div class="metric-label">{lt('Targets Found', 'লক্ষ্য সনাক্ত')}</div>
 					</div>
 					<div class="metric-card metric-amber">
-						<div class="metric-value">{results.completion_time.toFixed(1)}s</div>
+						<div class="metric-value">{sec(results.completion_time, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
 						<div class="metric-label">{lt('Completion Time', 'সম্পন্ন সময়')}</div>
 					</div>
 					<div class="metric-card metric-red">
@@ -1054,4 +1062,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.game-status-bar { flex-direction: column; align-items: flex-start; }
 	}
 </style>
-

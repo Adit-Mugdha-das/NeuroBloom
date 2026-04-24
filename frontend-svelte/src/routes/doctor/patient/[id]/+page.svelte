@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
@@ -295,7 +296,7 @@
 
 <DoctorWorkspaceShell
 	title={patientName}
-	subtitle="Patient-specific clinical overview with adherence, focus areas, biomarker access, progress monitoring, and recent activity in one calmer workspace."
+	subtitle={uiText("Patient-specific clinical overview with adherence, focus areas, biomarker access, progress monitoring, and recent activity in one calmer workspace.", $activeLocale)}
 	eyebrow="Doctor Patient Workspace"
 	maxWidth="1360px"
 >
@@ -309,7 +310,7 @@
 
 	{#if loading}
 		<section class="state-card">
-			<p>Loading patient workspace...</p>
+			<p>{uiText("Loading patient workspace...", $activeLocale)}</p>
 		</section>
 	{:else if error}
 		<section class="state-card error-state">
@@ -318,25 +319,25 @@
 	{:else if patientData}
 		<section class="hero-card">
 			<div>
-				<p class="eyebrow">Clinical Summary</p>
+				<p class="eyebrow">{uiText("Clinical Summary", $activeLocale)}</p>
 				<h2 data-localize-skip>{patientData.patient_info.diagnosis || 'Diagnosis not recorded'}</h2>
 				<p class="hero-copy">
 					{#if patientData.patient_info.treatment_goal}
-						<span>Treatment goal:</span>
+						<span>{uiText("Treatment goal:", $activeLocale)}</span>
 						<span data-localize-skip> {patientData.patient_info.treatment_goal}</span>
 					{:else}
-						No explicit treatment goal has been recorded yet.
+						{uiText("No explicit treatment goal has been recorded yet.", $activeLocale)}
 					{/if}
 				</p>
 			</div>
 			<div class="hero-meta">
 				<div>
-					<span>Last Session</span>
+					<span>{uiText("Last Session", $activeLocale)}</span>
 					<strong>{formatShortDate(patientData.training_summary.last_session)}</strong>
 				</div>
 				<div>
-					<span>Longest Streak</span>
-					<strong>{patientData.training_summary.longest_streak} days</strong>
+					<span>{uiText("Longest Streak", $activeLocale)}</span>
+					<strong>{patientData.training_summary.longest_streak} {uiText("days", $activeLocale)}</strong>
 				</div>
 			</div>
 		</section>
@@ -354,48 +355,48 @@
 			<article class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Focus</p>
-						<h3>Training Priorities</h3>
+						<p class="panel-kicker">{uiText("Focus", $activeLocale)}</p>
+						<h3>{uiText("Training Priorities", $activeLocale)}</h3>
 					</div>
-					<button class="outline-btn small" on:click={openFocusAreasModal}>Customize</button>
+					<button class="outline-btn small" on:click={openFocusAreasModal}>{uiText("Customize", $activeLocale)}</button>
 				</div>
 
 				<div class="focus-groups">
 					<div>
-						<span class="focus-label">Primary</span>
+						<span class="focus-label">{uiText("Primary", $activeLocale)}</span>
 						<div class="focus-tags">
 							{#if focusAreas.primary?.length}
 								{#each focusAreas.primary as area}
 									<span class="focus-tag primary">{formatDomainLabel(area)}</span>
 								{/each}
 							{:else}
-								<span class="empty-inline">No primary focus set</span>
+								<span class="empty-inline">{uiText("No primary focus set", $activeLocale)}</span>
 							{/if}
 						</div>
 					</div>
 
 					<div>
-						<span class="focus-label">Secondary</span>
+						<span class="focus-label">{uiText("Secondary", $activeLocale)}</span>
 						<div class="focus-tags">
 							{#if focusAreas.secondary?.length}
 								{#each focusAreas.secondary as area}
 									<span class="focus-tag secondary">{formatDomainLabel(area)}</span>
 								{/each}
 							{:else}
-								<span class="empty-inline">No secondary focus set</span>
+								<span class="empty-inline">{uiText("No secondary focus set", $activeLocale)}</span>
 							{/if}
 						</div>
 					</div>
 
 					<div>
-						<span class="focus-label">Maintenance</span>
+						<span class="focus-label">{uiText("Maintenance", $activeLocale)}</span>
 						<div class="focus-tags">
 							{#if focusAreas.maintenance?.length}
 								{#each focusAreas.maintenance as area}
 									<span class="focus-tag maintenance">{formatDomainLabel(area)}</span>
 								{/each}
 							{:else}
-								<span class="empty-inline">No maintenance areas set</span>
+								<span class="empty-inline">{uiText("No maintenance areas set", $activeLocale)}</span>
 							{/if}
 						</div>
 					</div>
@@ -405,34 +406,34 @@
 			<article class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Recent Performance</p>
-						<h3>Last 7 Days</h3>
+						<p class="panel-kicker">{uiText("Recent Performance", $activeLocale)}</p>
+						<h3>{uiText("Last 7 Days", $activeLocale)}</h3>
 					</div>
 				</div>
 
 				<div class="metric-list">
-					<div><span>Sessions</span><strong>{patientData.recent_performance.sessions_last_7_days}</strong></div>
-					<div><span>Average Score</span><strong>{patientData.recent_performance.avg_score}</strong></div>
-					<div><span>Average Accuracy</span><strong>{patientData.recent_performance.avg_accuracy}%</strong></div>
-					<div><span>Total Sessions Overall</span><strong>{patientData.training_summary.total_sessions}</strong></div>
+					<div><span>{uiText("Sessions", $activeLocale)}</span><strong>{patientData.recent_performance.sessions_last_7_days}</strong></div>
+					<div><span>{uiText("Average Score", $activeLocale)}</span><strong>{patientData.recent_performance.avg_score}</strong></div>
+					<div><span>{uiText("Average Accuracy", $activeLocale)}</span><strong>{patientData.recent_performance.avg_accuracy}%</strong></div>
+					<div><span>{uiText("Total Sessions Overall", $activeLocale)}</span><strong>{patientData.training_summary.total_sessions}</strong></div>
 				</div>
 			</article>
 
 			<article class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Session Limits</p>
-						<h3>Current Pacing Rules</h3>
+						<p class="panel-kicker">{uiText("Session Limits", $activeLocale)}</p>
+						<h3>{uiText("Current Pacing Rules", $activeLocale)}</h3>
 					</div>
-					<button class="outline-btn small" on:click={openFocusAreasModal}>Edit Limits</button>
+					<button class="outline-btn small" on:click={openFocusAreasModal}>{uiText("Edit Limits", $activeLocale)}</button>
 				</div>
 
 				<div class="metric-list compact">
-					<div><span>Max Sessions Per Day</span><strong>{sessionConstraints.max_sessions_per_day}</strong></div>
-					<div><span>Recommended Per Week</span><strong>{sessionConstraints.recommended_sessions_per_week}</strong></div>
-					<div><span>Tasks Per Session</span><strong>{sessionConstraints.tasks_per_session}</strong></div>
-					<div><span>Session Length</span><strong>{sessionConstraints.recommended_session_length_min_minutes}-{sessionConstraints.recommended_session_length_max_minutes} min</strong></div>
-					<div><span>Cooldown</span><strong>{sessionConstraints.cooldown_between_sessions_minutes} min</strong></div>
+					<div><span>{uiText("Max Sessions Per Day", $activeLocale)}</span><strong>{sessionConstraints.max_sessions_per_day}</strong></div>
+					<div><span>{uiText("Recommended Per Week", $activeLocale)}</span><strong>{sessionConstraints.recommended_sessions_per_week}</strong></div>
+					<div><span>{uiText("Tasks Per Session", $activeLocale)}</span><strong>{sessionConstraints.tasks_per_session}</strong></div>
+					<div><span>{uiText("Session Length", $activeLocale)}</span><strong>{sessionConstraints.recommended_session_length_min_minutes}-{sessionConstraints.recommended_session_length_max_minutes} {uiText("min", $activeLocale)}</strong></div>
+					<div><span>{uiText("Cooldown", $activeLocale)}</span><strong>{sessionConstraints.cooldown_between_sessions_minutes} {uiText("min", $activeLocale)}</strong></div>
 				</div>
 			</article>
 		</section>
@@ -441,8 +442,8 @@
 			<section class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Clinical Notes</p>
-						<h3>Recent Interventions</h3>
+						<p class="panel-kicker">{uiText("Clinical Notes", $activeLocale)}</p>
+						<h3>{uiText("Recent Interventions", $activeLocale)}</h3>
 					</div>
 				</div>
 
@@ -457,10 +458,10 @@
 							{#if intervention.data}
 								<div class="intervention-meta">
 									{#if intervention.data.suggested_tasks}
-										<div><span>Suggested Tasks</span><strong data-localize-skip>{intervention.data.suggested_tasks.join(', ')}</strong></div>
+										<div><span>{uiText("Suggested Tasks", $activeLocale)}</span><strong data-localize-skip>{intervention.data.suggested_tasks.join(', ')}</strong></div>
 									{/if}
 									{#if intervention.data.performance_goals}
-										<div><span>Goals</span><strong data-localize-skip>{intervention.data.performance_goals}</strong></div>
+										<div><span>{uiText("Goals", $activeLocale)}</span><strong data-localize-skip>{intervention.data.performance_goals}</strong></div>
 									{/if}
 								</div>
 							{/if}
@@ -479,8 +480,8 @@
 				<article class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Adherence</p>
-							<h3>Training Adherence</h3>
+							<p class="panel-kicker">{uiText("Adherence", $activeLocale)}</p>
+							<h3>{uiText("Training Adherence", $activeLocale)}</h3>
 						</div>
 						<span class="status-pill status-{progressData.adherence.status}">{progressData.adherence.status.replaceAll('_', ' ')}</span>
 					</div>
@@ -488,14 +489,14 @@
 					<div class="adherence-layout">
 						<div class="adherence-score">
 							<strong>{progressData.adherence.adherence_rate}%</strong>
-							<span>adherence</span>
+							<span>{uiText("adherence", $activeLocale)}</span>
 						</div>
 						<div class="metric-list compact">
-							<div><span>Total Sessions</span><strong>{progressData.adherence.total_sessions}</strong></div>
-							<div><span>Expected</span><strong>{progressData.adherence.expected_sessions}</strong></div>
-							<div><span>Last 7 Days</span><strong>{progressData.adherence.sessions_last_7_days}</strong></div>
-							<div><span>Last 30 Days</span><strong>{progressData.adherence.sessions_last_30_days}</strong></div>
-							<div><span>Avg Days Between</span><strong>{progressData.adherence.avg_days_between_sessions} days</strong></div>
+							<div><span>{uiText("Total Sessions", $activeLocale)}</span><strong>{progressData.adherence.total_sessions}</strong></div>
+							<div><span>{uiText("Expected", $activeLocale)}</span><strong>{progressData.adherence.expected_sessions}</strong></div>
+							<div><span>{uiText("Last 7 Days", $activeLocale)}</span><strong>{progressData.adherence.sessions_last_7_days}</strong></div>
+							<div><span>{uiText("Last 30 Days", $activeLocale)}</span><strong>{progressData.adherence.sessions_last_30_days}</strong></div>
+							<div><span>{uiText("Avg Days Between", $activeLocale)}</span><strong>{progressData.adherence.avg_days_between_sessions} {uiText("days", $activeLocale)}</strong></div>
 						</div>
 					</div>
 				</article>
@@ -503,8 +504,8 @@
 				<article class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Alerts</p>
-							<h3>Areas Requiring Attention</h3>
+							<p class="panel-kicker">{uiText("Alerts", $activeLocale)}</p>
+							<h3>{uiText("Areas Requiring Attention", $activeLocale)}</h3>
 						</div>
 					</div>
 
@@ -522,7 +523,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="empty-copy">No concerning areas are currently flagged.</p>
+						<p class="empty-copy">{uiText("No concerning areas are currently flagged.", $activeLocale)}</p>
 					{/if}
 				</article>
 			</section>
@@ -531,8 +532,8 @@
 				<section class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Trend Analysis</p>
-							<h3>Recent Changes</h3>
+							<p class="panel-kicker">{uiText("Trend Analysis", $activeLocale)}</p>
+							<h3>{uiText("Recent Changes", $activeLocale)}</h3>
 						</div>
 					</div>
 
@@ -541,14 +542,14 @@
 							<article class="trend-card direction-{trend.direction}">
 								<h4>{formatDomainLabel(domain)}</h4>
 								<div class="trend-comparison">
-									<div><span>Previous</span><strong>{trend.previous_avg}</strong></div>
-									<div><span>Recent</span><strong>{trend.recent_avg}</strong></div>
+									<div><span>{uiText("Previous", $activeLocale)}</span><strong>{trend.previous_avg}</strong></div>
+									<div><span>{uiText("Recent", $activeLocale)}</span><strong>{trend.recent_avg}</strong></div>
 								</div>
 								<p class:positive={trend.change >= 0} class:negative={trend.change < 0} class="trend-change">
-									{trend.change >= 0 ? '+' : ''}{trend.change} points
+									{trend.change >= 0 ? '+' : ''}{trend.change} {uiText("points", $activeLocale)}
 								</p>
 								{#if trend.is_concerning}
-									<p class="warning-note">Concerning decline</p>
+									<p class="warning-note">{uiText("Concerning decline", $activeLocale)}</p>
 								{/if}
 							</article>
 						{/each}
@@ -560,8 +561,8 @@
 				<section class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Improvement</p>
-							<h3>Domain Improvement Snapshot</h3>
+							<p class="panel-kicker">{uiText("Improvement", $activeLocale)}</p>
+							<h3>{uiText("Domain Improvement Snapshot", $activeLocale)}</h3>
 						</div>
 					</div>
 
@@ -570,10 +571,10 @@
 							<article class="improvement-card trending-{improvement.trending}">
 								<h4>{formatDomainLabel(domain)}</h4>
 								<div class="metric-list compact">
-									<div><span>Early Average</span><strong>{improvement.early_avg}</strong></div>
-									<div><span>Recent Average</span><strong>{improvement.recent_avg}</strong></div>
-									<div><span>Overall Change</span><strong>{improvement.overall_improvement >= 0 ? '+' : ''}{improvement.overall_improvement}</strong></div>
-									<div><span>Total Sessions</span><strong>{improvement.total_sessions}</strong></div>
+									<div><span>{uiText("Early Average", $activeLocale)}</span><strong>{improvement.early_avg}</strong></div>
+									<div><span>{uiText("Recent Average", $activeLocale)}</span><strong>{improvement.recent_avg}</strong></div>
+									<div><span>{uiText("Overall Change", $activeLocale)}</span><strong>{improvement.overall_improvement >= 0 ? '+' : ''}{improvement.overall_improvement}</strong></div>
+									<div><span>{uiText("Total Sessions", $activeLocale)}</span><strong>{improvement.total_sessions}</strong></div>
 								</div>
 								<div class="score-row">
 									{#each improvement.recent_scores as score}
@@ -590,24 +591,24 @@
 		<section class="panel-card">
 			<div class="panel-heading">
 				<div>
-					<p class="panel-kicker">Activity</p>
-					<h3>Recent Training Sessions</h3>
+					<p class="panel-kicker">{uiText("Activity", $activeLocale)}</p>
+					<h3>{uiText("Recent Training Sessions", $activeLocale)}</h3>
 				</div>
 			</div>
 
 			{#if sessions.length === 0}
-				<p class="empty-copy">No training sessions have been recorded yet.</p>
+				<p class="empty-copy">{uiText("No training sessions have been recorded yet.", $activeLocale)}</p>
 			{:else}
 				<div class="table-wrap">
 					<table>
 						<thead>
 							<tr>
-								<th>Date</th>
-								<th>Domain</th>
-								<th>Task</th>
-								<th>Difficulty</th>
-								<th>Score</th>
-								<th>Accuracy</th>
+								<th>{uiText("Date", $activeLocale)}</th>
+								<th>{uiText("Domain", $activeLocale)}</th>
+								<th>{uiText("Task", $activeLocale)}</th>
+								<th>{uiText("Difficulty", $activeLocale)}</th>
+								<th>{uiText("Score", $activeLocale)}</th>
+								<th>{uiText("Accuracy", $activeLocale)}</th>
 								<th>RT</th>
 							</tr>
 						</thead>
@@ -617,7 +618,7 @@
 									<td>{formatDate(session.completed_at)}</td>
 									<td><span class="domain-pill" style={`background:${getDomainColor(session.domain)};`}>{formatDomainLabel(session.domain)}</span></td>
 									<td>{session.task_code || session.task_type}</td>
-									<td>Level {session.difficulty}</td>
+									<td>{uiText("Level", $activeLocale)} {session.difficulty}</td>
 									<td>{session.score}</td>
 									<td>{session.accuracy}%</td>
 									<td>{session.reaction_time || 'N/A'} ms</td>
@@ -636,7 +637,7 @@
 		class="modal-overlay"
 		role="button"
 		tabindex="0"
-		aria-label="Close clinical note dialog"
+		aria-label={uiText("Close clinical note dialog", $activeLocale)}
 		on:click={closeInterventionModal}
 		on:keydown={(event) => handleModalOverlayKeydown(event, closeInterventionModal)}
 	>
@@ -644,43 +645,43 @@
 			class="modal-content"
 			role="dialog"
 			aria-modal="true"
-			aria-label="Add clinical note"
+			aria-label={uiText("Add clinical note", $activeLocale)}
 			tabindex="-1"
 			on:click|stopPropagation
 			on:keydown|stopPropagation={stopModalPropagation}
 		>
 			<div class="modal-header">
-				<h2>Add Clinical Note</h2>
+				<h2>{uiText("Add Clinical Note", $activeLocale)}</h2>
 				<button class="close-btn" on:click={closeInterventionModal}>x</button>
 			</div>
 
 			<div class="modal-body">
 				<div class="form-group">
-					<label for="interventionType">Note Type</label>
+					<label for="interventionType">{uiText("Note Type", $activeLocale)}</label>
 					<select id="interventionType" bind:value={interventionType}>
-						<option value="note">General Observation</option>
-						<option value="task_recommendation">Task Recommendation</option>
-						<option value="goal_setting">Performance Goal</option>
-						<option value="check_in">Follow-up Scheduled</option>
+						<option value="note">{uiText("General Observation", $activeLocale)}</option>
+						<option value="task_recommendation">{uiText("Task Recommendation", $activeLocale)}</option>
+						<option value="goal_setting">{uiText("Performance Goal", $activeLocale)}</option>
+						<option value="check_in">{uiText("Follow-up Scheduled", $activeLocale)}</option>
 					</select>
 				</div>
 
 				<div class="form-group">
-					<label for="interventionDescription">Clinical Notes</label>
-					<textarea id="interventionDescription" bind:value={interventionDescription} rows="6" placeholder="Record observations, recommendations, or concerns."></textarea>
+					<label for="interventionDescription">{uiText("Clinical Notes", $activeLocale)}</label>
+					<textarea id="interventionDescription" bind:value={interventionDescription} rows="6" placeholder={uiText("Record observations, recommendations, or concerns.", $activeLocale)}></textarea>
 				</div>
 
 				{#if interventionType === 'task_recommendation'}
 					<div class="form-group">
-						<label for="suggestedTasks">Suggested Tasks</label>
-						<input id="suggestedTasks" type="text" bind:value={suggestedTasks} placeholder="digit_span, trail_making, stroop" />
+						<label for="suggestedTasks">{uiText("Suggested Tasks", $activeLocale)}</label>
+						<input id="suggestedTasks" type="text" bind:value={suggestedTasks} placeholder={uiText("digit_span, trail_making, stroop", $activeLocale)} />
 					</div>
 				{/if}
 			</div>
 
 			<div class="modal-footer">
-				<button class="outline-btn" on:click={closeInterventionModal}>Cancel</button>
-				<button class="primary-btn" disabled={!interventionDescription.trim()} on:click={submitIntervention}>Save Note</button>
+				<button class="outline-btn" on:click={closeInterventionModal}>{uiText("Cancel", $activeLocale)}</button>
+				<button class="primary-btn" disabled={!interventionDescription.trim()} on:click={submitIntervention}>{uiText("Save Note", $activeLocale)}</button>
 			</div>
 		</div>
 	</div>
@@ -691,7 +692,7 @@
 		class="modal-overlay"
 		role="button"
 		tabindex="0"
-		aria-label="Close training plan dialog"
+		aria-label={uiText("Close training plan dialog", $activeLocale)}
 		on:click={closeFocusAreasModal}
 		on:keydown={(event) => handleModalOverlayKeydown(event, closeFocusAreasModal)}
 	>
@@ -699,20 +700,20 @@
 			class="modal-content large-modal"
 			role="dialog"
 			aria-modal="true"
-			aria-label="Adjust training plan"
+			aria-label={uiText("Adjust training plan", $activeLocale)}
 			tabindex="-1"
 			on:click|stopPropagation
 			on:keydown|stopPropagation={stopModalPropagation}
 		>
 			<div class="modal-header">
-				<h2>Adjust Training Plan</h2>
+				<h2>{uiText("Adjust Training Plan", $activeLocale)}</h2>
 				<button class="close-btn" on:click={closeFocusAreasModal}>x</button>
 			</div>
 
 			<div class="modal-body">
 				<div class="focus-customization">
 					<div class="focus-category">
-						<h3 class="category-title">Primary Focus</h3>
+						<h3 class="category-title">{uiText("Primary Focus", $activeLocale)}</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
 								<button class:selected={primaryFocusAreas.includes(domain.id)} class="domain-btn primary" on:click={() => toggleDomain(domain.id, 'primary')}>{domain.label}</button>
@@ -721,7 +722,7 @@
 					</div>
 
 					<div class="focus-category">
-						<h3 class="category-title">Secondary Focus</h3>
+						<h3 class="category-title">{uiText("Secondary Focus", $activeLocale)}</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
 								<button class:selected={secondaryFocusAreas.includes(domain.id)} class="domain-btn secondary" on:click={() => toggleDomain(domain.id, 'secondary')}>{domain.label}</button>
@@ -730,7 +731,7 @@
 					</div>
 
 					<div class="focus-category">
-						<h3 class="category-title">Maintenance</h3>
+						<h3 class="category-title">{uiText("Maintenance", $activeLocale)}</h3>
 						<div class="domain-selection">
 							{#each allDomains as domain}
 								<button class:selected={maintenanceAreas.includes(domain.id)} class="domain-btn maintenance" on:click={() => toggleDomain(domain.id, 'maintenance')}>{domain.label}</button>
@@ -754,45 +755,45 @@
 
 				<div class="limits-grid">
 					<div class="form-group limit-card">
-						<label for="maxSessionsPerDay">Max Sessions Per Day</label>
+						<label for="maxSessionsPerDay">{uiText("Max Sessions Per Day", $activeLocale)}</label>
 						<input id="maxSessionsPerDay" type="number" min="1" bind:value={maxSessionsPerDay} />
 					</div>
 
 					<div class="form-group limit-card">
-						<label for="recommendedSessionsPerWeek">Recommended Sessions Per Week</label>
+						<label for="recommendedSessionsPerWeek">{uiText("Recommended Sessions Per Week", $activeLocale)}</label>
 						<input id="recommendedSessionsPerWeek" type="number" min="1" bind:value={recommendedSessionsPerWeek} />
 					</div>
 
 					<div class="form-group limit-card">
-						<label for="tasksPerSession">Tasks Per Session</label>
+						<label for="tasksPerSession">{uiText("Tasks Per Session", $activeLocale)}</label>
 						<input id="tasksPerSession" type="number" min="1" bind:value={tasksPerSession} />
 					</div>
 
 					<div class="form-group limit-card">
-						<label for="sessionLengthMinMinutes">Minimum Session Length</label>
+						<label for="sessionLengthMinMinutes">{uiText("Minimum Session Length", $activeLocale)}</label>
 						<input id="sessionLengthMinMinutes" type="number" min="1" bind:value={sessionLengthMinMinutes} />
 					</div>
 
 					<div class="form-group limit-card">
-						<label for="sessionLengthMaxMinutes">Maximum Session Length</label>
+						<label for="sessionLengthMaxMinutes">{uiText("Maximum Session Length", $activeLocale)}</label>
 						<input id="sessionLengthMaxMinutes" type="number" min="1" bind:value={sessionLengthMaxMinutes} />
 					</div>
 
 					<div class="form-group limit-card">
-						<label for="cooldownBetweenSessionsMinutes">Cooldown Between Sessions</label>
+						<label for="cooldownBetweenSessionsMinutes">{uiText("Cooldown Between Sessions", $activeLocale)}</label>
 						<input id="cooldownBetweenSessionsMinutes" type="number" min="0" bind:value={cooldownBetweenSessionsMinutes} />
 					</div>
 				</div>
 
 				<div class="form-group">
-					<label for="focusAreasNotes">Clinical Reasoning</label>
-					<textarea id="focusAreasNotes" bind:value={focusAreasNotes} rows="4" placeholder="Explain why these adjustments are being made."></textarea>
+					<label for="focusAreasNotes">{uiText("Clinical Reasoning", $activeLocale)}</label>
+					<textarea id="focusAreasNotes" bind:value={focusAreasNotes} rows="4" placeholder={uiText("Explain why these adjustments are being made.", $activeLocale)}></textarea>
 				</div>
 			</div>
 
 			<div class="modal-footer">
-				<button class="outline-btn" on:click={closeFocusAreasModal}>Cancel</button>
-				<button class="primary-btn" on:click={submitFocusAreas}>Update Training Plan</button>
+				<button class="outline-btn" on:click={closeFocusAreasModal}>{uiText("Cancel", $activeLocale)}</button>
+				<button class="primary-btn" on:click={submitFocusAreas}>{uiText("Update Training Plan", $activeLocale)}</button>
 			</div>
 		</div>
 	</div>

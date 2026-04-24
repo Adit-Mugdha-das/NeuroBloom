@@ -1,7 +1,8 @@
 export const PUBLIC_LANGUAGE_ROUTE_PATHS = ['/', '/login', '/register'];
 
-// These older interactive tasks mutate their own DOM/state frequently, so they
-// still need observer-backed localization until they are migrated to native i18n.
+// DOM-backed localization is now an explicit legacy escape hatch only. Normal
+// routes render from Svelte's locale store so switching is immediate and does
+// not require MutationObserver passes.
 export const OBSERVED_DOM_ROUTE_PATHS = [];
 
 export const NATIVE_LOCALIZED_ROUTE_PATHS = [
@@ -61,17 +62,13 @@ export const NATIVE_LOCALIZED_ROUTES = new Set(NATIVE_LOCALIZED_ROUTE_PATHS);
 export const LEGACY_GAME_ROUTES = OBSERVED_DOM_ROUTES;
 
 export function getRouteLocalizationMode(pathname = '') {
-	if (NATIVE_LOCALIZED_ROUTES.has(pathname)) {
-		return 'native';
-	}
-
 	if (OBSERVED_DOM_ROUTES.has(pathname)) {
 		return 'observe';
 	}
 
-	return 'refresh';
+	return 'native';
 }
 
 export function shouldUseLegacyDomLocalization(pathname = '') {
-	return getRouteLocalizationMode(pathname) !== 'native';
+	return getRouteLocalizationMode(pathname) === 'observe';
 }

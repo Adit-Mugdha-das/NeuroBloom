@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
-	import { locale, translateText } from '$lib/i18n';
+	import { locale, translateText, locale as activeLocale, uiText } from '$lib/i18n';
 	import { clearUser, setUser } from '$lib/stores';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
@@ -203,7 +203,7 @@
 							type="email"
 							id="email"
 							bind:value={email}
-							placeholder="you@example.com"
+							placeholder={uiText("you@example.com", $activeLocale)}
 							disabled={loading}
 							autocomplete="email"
 						/>

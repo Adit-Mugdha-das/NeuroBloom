@@ -1129,7 +1129,7 @@ function createJourneyDashboardHero(locale, { journey, nextTasks, streak, metric
 
 	return {
 		label: localeText(locale, { en: 'Today', bn: 'আজ' }),
-		title: nextTask ? getTaskLabel(locale, nextTask) : localeText(locale, { en: 'Training is ready', bn: '??????? ????????' }),
+		title: nextTask ? getTaskLabel(locale, nextTask) : localeText(locale, { en: 'Training is ready', bn: 'ট্রেনিং প্রস্তুত' }),
 		description: nextTask
 			? locale === 'bn'
 				? `${getDomainName(locale, nextTask.domain)} দিয়ে আজকের সেশন শুরু করুন।`

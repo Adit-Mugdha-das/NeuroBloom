@@ -1,10 +1,38 @@
 <script>
-	import { locale, setLocale } from '$lib/i18n';
+	import { locale, localeText, setLocale } from '$lib/i18n/runtime.js';
 
-	export let title = 'Language Preference';
-	export let description =
-		'Choose the language used across the NeuroBloom interface, training instructions, and visible numbers.';
+	export let title = {
+		en: 'Language Preference',
+		bn: 'ভাষা পছন্দ'
+	};
+	export let description = {
+		en: 'Choose the language used across the NeuroBloom interface, training instructions, and visible numbers.',
+		bn: 'NeuroBloom ইন্টারফেস, ট্রেনিং নির্দেশনা এবং দৃশ্যমান সংখ্যায় কোন ভাষা ব্যবহার হবে তা বেছে নিন।'
+	};
 	export let compact = false;
+
+	const panelCopy = {
+		'Language Preference': { en: 'Language Preference', bn: 'ভাষা পছন্দ' },
+		'Choose the language used across the NeuroBloom interface, training instructions, and visible numbers.': {
+			en: 'Choose the language used across the NeuroBloom interface, training instructions, and visible numbers.',
+			bn: 'NeuroBloom ইন্টারফেস, ট্রেনিং নির্দেশনা এবং দৃশ্যমান সংখ্যায় কোন ভাষা ব্যবহার হবে তা বেছে নিন।'
+		},
+		'Choose the admin workspace language for navigation, system dashboards, and visible metrics.': {
+			en: 'Choose the admin workspace language for navigation, system dashboards, and visible metrics.',
+			bn: 'অ্যাডমিন নেভিগেশন, সিস্টেম ড্যাশবোর্ড এবং দৃশ্যমান মেট্রিকের ভাষা বেছে নিন।'
+		},
+		'Set the clinician workspace language for dashboards, notifications, and task-facing copy.': {
+			en: 'Set the clinician workspace language for dashboards, notifications, and task-facing copy.',
+			bn: 'ড্যাশবোর্ড, নোটিফিকেশন এবং টাস্ক-সংক্রান্ত লেখার জন্য ক্লিনিশিয়ান ওয়ার্কস্পেসের ভাষা ঠিক করুন।'
+		}
+	};
+
+	function panelText(value) {
+		return localeText(typeof value === 'string' ? panelCopy[value] ?? value : value, $locale);
+	}
+
+	$: panelTitle = panelText(title);
+	$: panelDescription = panelText(description);
 
 	function handleChange(event) {
 		setLocale(event.currentTarget.value);
@@ -13,13 +41,13 @@
 
 <section class:compact class="language-panel">
 	<div class="language-copy">
-		<p class="language-kicker">Preferences</p>
-		<h3>{title}</h3>
-		<p>{description}</p>
+		<p class="language-kicker">{localeText({ en: 'Preferences', bn: 'পছন্দ' }, $locale)}</p>
+		<h3>{panelTitle}</h3>
+		<p>{panelDescription}</p>
 	</div>
 
 	<label class="language-field">
-		<span>Interface language</span>
+		<span>{localeText({ en: 'Interface language', bn: 'ইন্টারফেসের ভাষা' }, $locale)}</span>
 		<select data-localize-skip value={$locale} on:change={handleChange}>
 			<option value="en">English</option>
 			<option value="bn">বাংলা</option>

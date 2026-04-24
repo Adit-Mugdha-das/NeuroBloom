@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -200,13 +201,13 @@
 </script>
 
 <DoctorWorkspaceShell
-	title="Dashboard"
-	subtitle="A compact clinician overview focused on attention, pending actions, and a quick cohort readout."
+	title={uiText("Dashboard", $activeLocale)}
+	subtitle={uiText("A compact clinician overview focused on attention, pending actions, and a quick cohort readout.", $activeLocale)}
 >
 	{#if notificationToast}
 		<div class="toast-shell" role="status" aria-live="polite">
 			<div class="notification-toast">
-				<p class="toast-label">New notification</p>
+				<p class="toast-label">{uiText("New notification", $activeLocale)}</p>
 				<p class="toast-title">{notificationToast.title}</p>
 				<p class="toast-message">{notificationToast.message}</p>
 			</div>
@@ -215,13 +216,24 @@
 
 	{#if loading}
 		<section class="state-card">
-			<p>Loading doctor dashboard...</p>
+			<p>{uiText("Loading doctor dashboard...", $activeLocale)}</p>
 		</section>
 	{:else if error}
 		<section class="state-card error-state">
 			<p>{error}</p>
 		</section>
 	{:else}
+<<<<<<< HEAD
+=======
+		<section class="panel-section">
+			<LanguagePreferencePanel
+				title={uiText("Language Preference", $activeLocale)}
+				description="Set the clinician workspace language for dashboards, notifications, and task-facing copy."
+				compact={true}
+			/>
+		</section>
+
+>>>>>>> 3bf3510 (bangla interface refactoring)
 		<section class="snapshot-grid">
 			{#each snapshotCards as card}
 				<article class="snapshot-card tone-{card.tone}">
@@ -237,16 +249,16 @@
 		<section class="panel-section">
 			<div class="section-heading">
 				<div>
-					<p class="section-kicker warning">Priority</p>
-					<h2>Patients Requiring Attention</h2>
+					<p class="section-kicker warning">{uiText("Priority", $activeLocale)}</p>
+					<h2>{uiText("Patients Requiring Attention", $activeLocale)}</h2>
 				</div>
 				<span class="section-count">{attentionPatients.length}</span>
 			</div>
 
 			{#if attentionPatients.length === 0}
 				<div class="empty-card">
-					<h3>No urgent patient flags</h3>
-					<p>Your monitored cohort has no current high-risk or medium-risk patients.</p>
+					<h3>{uiText("No urgent patient flags", $activeLocale)}</h3>
+					<p>{uiText("Your monitored cohort has no current high-risk or medium-risk patients.", $activeLocale)}</p>
 				</div>
 			{:else}
 				<div class="attention-grid">
@@ -263,17 +275,17 @@
 
 							<div class="attention-stats">
 								<div>
-									<span>Adherence</span>
+									<span>{uiText("Adherence", $activeLocale)}</span>
 									<strong>{patient.adherence_rate}%</strong>
 								</div>
 								<div>
-									<span>Last Activity</span>
+									<span>{uiText("Last Activity", $activeLocale)}</span>
 									<strong>{formatDate(patient.last_activity)}</strong>
 								</div>
 							</div>
 
 							<div class="risk-factors">
-								<p>Risk Factors</p>
+								<p>{uiText("Risk Factors", $activeLocale)}</p>
 								<ul>
 									{#each patient.risk_factors as factor}
 										<li>{factor}</li>
@@ -282,7 +294,7 @@
 							</div>
 
 							<button class="primary-btn" on:click={() => viewPatient(patient.patient_id)}>
-								Open Patient
+								{uiText("Open Patient", $activeLocale)}
 							</button>
 						</article>
 					{/each}
@@ -294,15 +306,15 @@
 			<div class="request-panel">
 				<div class="section-heading compact">
 					<div>
-						<p class="section-kicker">Today</p>
-						<h2>Assignment Requests</h2>
+						<p class="section-kicker">{uiText("Today", $activeLocale)}</p>
+						<h2>{uiText("Assignment Requests", $activeLocale)}</h2>
 					</div>
 					<span class="section-count">{pendingRequests.length}</span>
 				</div>
 
 				{#if pendingRequests.length === 0}
 					<div class="empty-card small">
-						<p>No pending requests right now.</p>
+						<p>{uiText("No pending requests right now.", $activeLocale)}</p>
 					</div>
 				{:else}
 					<div class="request-list">
@@ -316,8 +328,8 @@
 									{/if}
 								</div>
 								<div class="request-actions">
-									<button class="outline-btn" on:click={() => rejectRequest(request.id)}>Reject</button>
-									<button class="primary-btn" on:click={() => approveRequest(request.id)}>Approve</button>
+									<button class="outline-btn" on:click={() => rejectRequest(request.id)}>{uiText("Reject", $activeLocale)}</button>
+									<button class="primary-btn" on:click={() => approveRequest(request.id)}>{uiText("Approve", $activeLocale)}</button>
 								</div>
 							</article>
 						{/each}
@@ -328,10 +340,10 @@
 			<div class="cohort-panel">
 				<div class="section-heading compact">
 					<div>
-						<p class="section-kicker">Overview</p>
-						<h2>Cohort Snapshot</h2>
+						<p class="section-kicker">{uiText("Overview", $activeLocale)}</p>
+						<h2>{uiText("Cohort Snapshot", $activeLocale)}</h2>
 					</div>
-					<button class="outline-btn" on:click={() => goto('/doctor/analytics')}>View Full Analytics</button>
+					<button class="outline-btn" on:click={() => goto('/doctor/analytics')}>{uiText("View Full Analytics", $activeLocale)}</button>
 				</div>
 
 				<div class="cohort-grid">

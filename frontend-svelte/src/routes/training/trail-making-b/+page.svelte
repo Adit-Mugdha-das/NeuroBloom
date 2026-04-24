@@ -93,13 +93,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	function sequencePreview(values = practiceSequence) {
-		return values.map((value) => marker(value)).join(' \u2192 ');
+		return values.map((value) => marker(value)).join(' → ');
 	}
 
 	function difficultyChangeLabel(before, after) {
 		return $locale === 'bn'
-			? `কঠিনতা: ${n(before)} \u2192 ${n(after)}`
-			: `Difficulty: ${before} \u2192 ${after}`;
+			? `কঠিনতা: ${n(before)} → ${n(after)}`
+			: `Difficulty: ${before} → ${after}`;
 	}
 
 	// Subscribe to user store
@@ -539,7 +539,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<p class="concept-body">
 					{$locale === 'bn'
 						? 'বৃত্তগুলি সংখ্যা ও বর্ণ পর্যায়ক্রমে সংযুক্ত করুন — যেমন 1 → A → 2 → B → 3 → C। এটি কগনিটিভ ফ্লেক্সিবিলিটি, সেট-শিফটিং এবং বিভক্ত মনোযোগ মাপে।'
-						: 'Connect circles alternating between numbers and letters — 1 \u2192 A \u2192 2 \u2192 B \u2192 3 \u2192 C. This measures cognitive flexibility, set-shifting, and divided attention.'}
+						: 'Connect circles alternating between numbers and letters — 1 → A → 2 → B → 3 → C. This measures cognitive flexibility, set-shifting, and divided attention.'}
 				</p>
 			</div>
 
@@ -548,39 +548,39 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<h2 class="section-title">{t('How It Works')}</h2>
 				<div class="rules-grid">
 					<div class="rule-item">
-						<div class="rule-num purple">1</div>
+						<div class="rule-num purple">{n(1)}</div>
 						<div class="rule-body">
 							<strong>{t('Alternating Pattern')}</strong>
 							<div class="seq-demo">
-								<span class="seq-num">1</span>
-								<span class="seq-arr">\u2192</span>
+								<span class="seq-num">{n(1)}</span>
+								<span class="seq-arr">→</span>
 								<span class="seq-let">A</span>
-								<span class="seq-arr">\u2192</span>
-								<span class="seq-num">2</span>
-								<span class="seq-arr">\u2192</span>
+								<span class="seq-arr">→</span>
+								<span class="seq-num">{n(2)}</span>
+								<span class="seq-arr">→</span>
 								<span class="seq-let">B</span>
-								<span class="seq-arr">\u2192</span>
-								<span class="seq-num">3</span>
+								<span class="seq-arr">→</span>
+								<span class="seq-num">{n(3)}</span>
 							</div>
-							<span>{t('Always alternate number \u2192 letter \u2192 number')}</span>
+							<span>{t('Always alternate number → letter → number')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num purple">2</div>
+						<div class="rule-num purple">{n(2)}</div>
 						<div class="rule-body">
 							<strong>{t('Click in Sequence')}</strong>
 							<span>{t('Click each circle in the correct order. A line draws as you connect them.')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num purple">3</div>
+						<div class="rule-num purple">{n(3)}</div>
 						<div class="rule-body">
 							<strong>{t('Speed Matters')}</strong>
 							<span>{t('Work as quickly as possible. Your completion time is recorded.')}</span>
 						</div>
 					</div>
 					<div class="rule-item">
-						<div class="rule-num purple">4</div>
+						<div class="rule-num purple">{n(4)}</div>
 						<div class="rule-body">
 							<strong>{t('Watch for Distractors')}</strong>
 							<span>{t('Some circles may not belong in the sequence — only click circles that follow the pattern.')}</span>
@@ -612,7 +612,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						</li>
 						<li>
 							<span class="dl-label">{t('Sequence')}</span>
-							<span class="dl-value">{t('1 \u2192 A \u2192 2 \u2192 B \u2192 ...')}</span>
+							<span class="dl-value">{t('1 → A → 2 → B → ...')}</span>
 						</li>
 					</ul>
 				</div>
@@ -645,7 +645,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					</div>
 					<div class="clinical-item">
 						<span class="ci-label">{t('Reference')}</span>
-						<span>D'Elia et al., 1996; {t('MS executive function research')}</span>
+						<span>{t('D Elia et al., 1996; MS executive function research')}</span>
 					</div>
 				</div>
 			</div>
@@ -657,17 +657,17 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<div class="norm-bar">
 						<span class="norm-label">{t('Excellent')}</span>
 						<div class="norm-track"><div class="norm-fill purple-fill" style="width:25%"></div></div>
-						<span class="norm-val">&lt; 60s</span>
+						<span class="norm-val">{$locale === 'bn' ? '< ৬০ সেকেন্ড' : '< 60s'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{t('Good')}</span>
 						<div class="norm-track"><div class="norm-fill purple-mid" style="width:50%"></div></div>
-						<span class="norm-val">60–90s</span>
+						<span class="norm-val">{$locale === 'bn' ? '৬০–৯০ সেকেন্ড' : '60–90s'}</span>
 					</div>
 					<div class="norm-bar">
 						<span class="norm-label">{t('Developing')}</span>
 						<div class="norm-track"><div class="norm-fill purple-low" style="width:75%"></div></div>
-						<span class="norm-val">&gt; 90s</span>
+						<span class="norm-val">{$locale === 'bn' ? '> ৯০ সেকেন্ড' : '> 90s'}</span>
 					</div>
 				</div>
 			</div>
@@ -691,16 +691,16 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<div class="seq-callout">
 					<span class="seq-label">{t('Alternating pattern:')}</span>
 					<div class="seq-row">
-						<span class="seq-num">1</span>
-						<span class="seq-arr-lg">\u2192</span>
+						<span class="seq-num">{n(1)}</span>
+						<span class="seq-arr-lg">→</span>
 						<span class="seq-let">A</span>
-						<span class="seq-arr-lg">\u2192</span>
-						<span class="seq-num">2</span>
-						<span class="seq-arr-lg">\u2192</span>
+						<span class="seq-arr-lg">→</span>
+						<span class="seq-num">{n(2)}</span>
+						<span class="seq-arr-lg">→</span>
 						<span class="seq-let">B</span>
-						<span class="seq-arr-lg">\u2192</span>
-						<span class="seq-num">3</span>
-						<span class="seq-arr-lg">\u2192</span>
+						<span class="seq-arr-lg">→</span>
+						<span class="seq-num">{n(3)}</span>
+						<span class="seq-arr-lg">→</span>
 						<span class="seq-let">C</span>
 						<span class="seq-more">...</span>
 					</div>
@@ -708,25 +708,25 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="flow-row">
 					<div class="flow-step">
-						<div class="flow-num purple">1</div>
+						<div class="flow-num purple">{n(1)}</div>
 						<p class="flow-label">{t('Circles Appear')}</p>
 						<p class="flow-sub">{t('Numbers and letters scattered on screen')}</p>
 					</div>
 					<div class="flow-connector"></div>
 					<div class="flow-step">
-						<div class="flow-num purple">2</div>
+						<div class="flow-num purple">{n(2)}</div>
 						<p class="flow-label">{t('Click in Order')}</p>
-						<p class="flow-sub">{t('1 \u2192 A \u2192 2 \u2192 B, alternating')}</p>
+						<p class="flow-sub">{t('1 → A → 2 → B, alternating')}</p>
 					</div>
 					<div class="flow-connector"></div>
 					<div class="flow-step">
-						<div class="flow-num purple">3</div>
+						<div class="flow-num purple">{n(3)}</div>
 						<p class="flow-label">{t('Line Connects')}</p>
 						<p class="flow-sub">{t('A trail draws as you progress')}</p>
 					</div>
 					<div class="flow-connector"></div>
 					<div class="flow-step">
-						<div class="flow-num purple">4</div>
+						<div class="flow-num purple">{n(4)}</div>
 						<p class="flow-label">{t('Finish Fast')}</p>
 						<p class="flow-sub">{t('Complete all items as quickly as possible')}</p>
 					</div>
@@ -758,7 +758,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					<h4>{t('Success Strategy')}</h4>
 					<ul>
 						<li>{t('Scan the whole screen before starting — plan your path')}</li>
-						<li>{t('Alternate strictly: number \u2192 letter \u2192 number \u2192 letter')}</li>
+						<li>{t('Alternate strictly: number → letter → number → letter')}</li>
 						<li>{t('If you make an error, the circle flashes red — keep going without stopping')}</li>
 						<li>{t('Ignore circles that are not part of the alternating pattern')}</li>
 					</ul>
@@ -827,7 +827,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 
 			<p class="trial-hint">
-				{t('Connect in order: 1 \u2192 A \u2192 2 \u2192 B \u2192 3 \u2192 C... | Click circles to connect')}
+				{t('Connect in order: 1 → A → 2 → B → 3 → C... | Click circles to connect')}
 			</p>
 		</div>
 
@@ -929,7 +929,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						</div>
 					</div>
 					<div class="error-tip-box">
-						{t('Tip: Focus on the alternating pattern (number \u2192 letter \u2192 number) and scan ahead before each click.')}
+						{t('Tip: Focus on the alternating pattern (number → letter → number) and scan ahead before each click.')}
 					</div>
 				</div>
 			{/if}
@@ -955,7 +955,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 <!-- Help FAB -->
 {#if phase === 'intro' || phase === 'instructions'}
-	<button class="help-fab" on:click={() => {}} aria-label="Help">?</button>
+	<button class="help-fab" on:click={() => {}} aria-label={t('Help')}>?</button>
 {/if}
 
 <style>
@@ -1684,5 +1684,3 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		.metrics-grid { grid-template-columns: 1fr; }
 	}
 </style>
-
-

@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { training } from '$lib/api';
 	import { buildTrainingTaskUrl } from '$lib/training-launch';
 	import { user } from '$lib/stores';
@@ -384,14 +385,14 @@
 </script>
 
 <div class="dev-panel {isOpen ? 'open' : ''}">
-	<button class="toggle-btn" on:click={togglePanel} title="Dev Tools">
+	<button class="toggle-btn" on:click={togglePanel} title={uiText("Dev Tools", $activeLocale)}>
 		🛠️
 	</button>
 	
 	{#if isOpen}
 		<div class="panel-content" class:minimized={isMinimized}>
 			<div class="panel-header">
-				<h3>⚡ Dev Tools</h3>
+				<h3>{uiText("⚡ Dev Tools", $activeLocale)}</h3>
 				<div class="header-actions">
 					<button class="minimize-btn" on:click={toggleMinimize} title={isMinimized ? 'Expand' : 'Minimize'}>
 						{isMinimized ? '▲' : '▼'}
@@ -412,7 +413,7 @@
 			<div class="task-launcher">
 				<!-- Difficulty Selector - Always visible -->
 				<div class="difficulty-selector">
-					<span class="diff-label">Difficulty:</span>
+					<span class="diff-label">{uiText("Difficulty:", $activeLocale)}</span>
 					<button class="diff-btn" on:click={() => adjustDifficulty(-1)} disabled={selectedDifficulty <= 1}>−</button>
 					<span class="diff-value">{selectedDifficulty}</span>
 					<button class="diff-btn" on:click={() => adjustDifficulty(1)} disabled={selectedDifficulty >= 10}>+</button>
@@ -421,7 +422,7 @@
 
 				{#if !selectedDomain}
 					<!-- Domain Selection -->
-					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">Select Domain</h4>
+					<h4 style="margin: 0 0 8px 0; color: #333; font-size: 0.95rem;">{uiText("Select Domain", $activeLocale)}</h4>
 					<div class="domain-grid">
 						{#each Object.keys(tasksByDomain) as domain}
 							<button 
@@ -435,7 +436,7 @@
 				{:else}
 					<!-- Task Selection -->
 					<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-						<button class="back-btn" on:click={backToDomains}>← Back</button>
+						<button class="back-btn" on:click={backToDomains}>{uiText("← Back", $activeLocale)}</button>
 						<h4 style="margin: 0; color: #333; flex: 1; font-size: 0.9rem;">{selectedDomain}</h4>
 					</div>
 					<div class="tasks-list">
@@ -464,38 +465,38 @@
 				<button class="dev-btn primary" on:click={completeSingleSession} disabled={loading}>
 					<span class="icon">✅</span>
 					<span class="text">
-						<strong>Complete Session</strong>
-						<small>Finish 1 session (4 tasks)</small>
+						<strong>{uiText("Complete Session", $activeLocale)}</strong>
+						<small>{uiText("Finish 1 session (4 tasks)", $activeLocale)}</small>
 					</span>
 				</button>
 				
 				<button class="dev-btn primary" on:click={generateSessions} disabled={loading}>
 					<span class="icon">📊</span>
 					<span class="text">
-						<strong>Generate Sessions</strong>
-						<small>Add 3 test sessions (12 tasks)</small>
+						<strong>{uiText("Generate Sessions", $activeLocale)}</strong>
+						<small>{uiText("Add 3 test sessions (12 tasks)", $activeLocale)}</small>
 					</span>
 				</button>
 				
 				<button class="dev-btn accent" on:click={setStreak} disabled={loading}>
 					<span class="icon">🔥</span>
 					<span class="text">
-						<strong>Set 7-Day Streak</strong>
-						<small>Test streak features</small>
+						<strong>{uiText("Set 7-Day Streak", $activeLocale)}</strong>
+						<small>{uiText("Test streak features", $activeLocale)}</small>
 					</span>
 				</button>
 				
 				<button class="dev-btn danger" on:click={clearAll} disabled={loading}>
 					<span class="icon">🗑️</span>
 					<span class="text">
-						<strong>Clear All Data</strong>
-						<small>Reset to fresh start</small>
+						<strong>{uiText("Clear All Data", $activeLocale)}</strong>
+						<small>{uiText("Reset to fresh start", $activeLocale)}</small>
 					</span>
 				</button>
 			</div>
 
 			<div class="info">
-				<small>💡 Quick test tools for development</small>
+				<small>{uiText("💡 Quick test tools for development", $activeLocale)}</small>
 			</div>
 			{/if}
 		</div>

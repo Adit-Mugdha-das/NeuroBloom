@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { patientJourney, training } from '$lib/api';
-	import { locale, localeText } from '$lib/i18n';
+	import { formatNumber, formatPercent, locale, localeText } from '$lib/i18n';
 	import { domainOrder, getDomainName, getScoreColor, getTrendLabel, getTrendTone } from '$lib/progress';
 	import { user } from '$lib/stores';
 	import { onMount } from 'svelte';
@@ -19,6 +19,9 @@
 	});
 
 	const lt = (en, bn) => localeText({ en, bn }, $locale);
+	const n = (value, options = {}) => formatNumber(value, $locale, options);
+	const oneDecimal = (value) => n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	const pct = (value) => formatPercent(value, $locale, { maximumFractionDigits: 1 });
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -100,7 +103,7 @@
 					<div class="card-topline">
 						<div>
 							<p class="card-label">{getDomainName(entry.domain, $locale)}</p>
-							<h2>{entry.data.average_score.toFixed(1)}</h2>
+							<h2>{oneDecimal(entry.data.average_score)}</h2>
 						</div>
 						<span class="trend-pill {getTrendTone(entry.data.improvement)}">{getTrendLabel(entry.data.improvement, $locale)}</span>
 					</div>
@@ -108,19 +111,19 @@
 					<div class="metric-row">
 						<div>
 							<p class="metric-label">{lt('Sessions', 'সেশন')}</p>
-							<p class="metric-value">{entry.data.total_sessions}</p>
+							<p class="metric-value">{n(entry.data.total_sessions)}</p>
 						</div>
 						<div>
 							<p class="metric-label">{lt('Average score', 'গড় স্কোর')}</p>
-							<p class="metric-value" style="color: {getScoreColor(entry.data.average_score)}">{entry.data.average_score.toFixed(1)}</p>
+							<p class="metric-value" style="color: {getScoreColor(entry.data.average_score)}">{oneDecimal(entry.data.average_score)}</p>
 						</div>
 						<div>
 							<p class="metric-label">{lt('Accuracy', 'নির্ভুলতা')}</p>
-							<p class="metric-value">{entry.data.average_accuracy.toFixed(1)}%</p>
+							<p class="metric-value">{pct(entry.data.average_accuracy)}</p>
 						</div>
 						<div>
 							<p class="metric-label">{lt('Improvement', 'উন্নতি')}</p>
-							<p class="metric-value">{entry.data.improvement > 0 ? '+' : ''}{entry.data.improvement.toFixed(1)}</p>
+							<p class="metric-value">{entry.data.improvement > 0 ? '+' : ''}{oneDecimal(entry.data.improvement)}</p>
 						</div>
 					</div>
 				</article>

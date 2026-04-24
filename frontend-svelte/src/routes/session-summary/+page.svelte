@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { training } from '$lib/api';
 	import EmptyState from '$lib/components/EmptyState.svelte';
@@ -143,18 +144,18 @@
 	{:else if error}
 		<EmptyState 
 			icon="🎯"
-			title="No Session Data"
-			message="Complete a training session to see your celebration summary here!"
-			actionText="Start Training"
+			title={uiText("No Session Data", $activeLocale)}
+			message={uiText("Complete a training session to see your celebration summary here!", $activeLocale)}
+			actionText={uiText("Start Training", $activeLocale)}
 			actionLink="/training"
-			tip="Each session includes 4 cognitive tasks designed to challenge your brain"
+			tip={uiText("Each session includes 4 cognitive tasks designed to challenge your brain", $activeLocale)}
 		/>
 	{:else if sessionData}
 		<!-- Header -->
 		<div class="header">
 			<div class="celebration">🎉</div>
-			<h1>Session Complete!</h1>
-			<p class="subtitle">Great work! You've completed Session #{sessionData.sessionNumber}</p>
+			<h1>{uiText("Session Complete!", $activeLocale)}</h1>
+			<p class="subtitle">{uiText("Great work! You've completed Session #", $activeLocale)}{sessionData.sessionNumber}</p>
 		</div>
 		
 		<!-- Overall Stats -->
@@ -164,13 +165,13 @@
 				<div class="stat-value" style="color: {getScoreColor(sessionData.avgScore)}">
 					{sessionData.avgScore}%
 				</div>
-				<div class="stat-label">Average Score</div>
+				<div class="stat-label">{uiText("Average Score", $activeLocale)}</div>
 			</div>
 			
 			<div class="stat-card">
 				<div class="stat-icon">✓</div>
 				<div class="stat-value">{sessionData.avgAccuracy}%</div>
-				<div class="stat-label">Accuracy</div>
+				<div class="stat-label">{uiText("Accuracy", $activeLocale)}</div>
 			</div>
 			
 			<div class="stat-card">
@@ -178,20 +179,20 @@
 				<div class="stat-value">
 					{Math.floor(sessionData.duration / 60)}:{(sessionData.duration % 60).toString().padStart(2, '0')}
 				</div>
-				<div class="stat-label">Session Duration</div>
+				<div class="stat-label">{uiText("Session Duration", $activeLocale)}</div>
 			</div>
 			
 			<div class="stat-card rebalance-card">
 				<div class="stat-icon">🔄</div>
 				<div class="stat-value">{sessionData.sessionsUntilRebalance}</div>
-				<div class="stat-label">Until Rebalancing</div>
-				<div class="stat-subtext">Training plan auto-adjusts</div>
+				<div class="stat-label">{uiText("Until Rebalancing", $activeLocale)}</div>
+				<div class="stat-subtext">{uiText("Training plan auto-adjusts", $activeLocale)}</div>
 			</div>
 		</div>
 		
 		<!-- Task Breakdown -->
 		<div class="breakdown-card">
-			<h3>This Session's Tasks</h3>
+			<h3>{uiText("This Session's Tasks", $activeLocale)}</h3>
 			<div class="tasks-list">
 				{#each sessionData.taskBreakdown as task}
 					<div class="task-row">
@@ -199,22 +200,22 @@
 							<div class="task-name">
 								{task.domain}
 								{#if task.isPersonalBest}
-									<span class="personal-best" title="Personal Best!">🏆</span>
+									<span class="personal-best" title={uiText("Personal Best!", $activeLocale)}>🏆</span>
 								{/if}
 							</div>
 							<div class="task-score" style="color: {getScoreColor(task.score)}">
 								{task.score.toFixed(1)}%
 								{#if task.isPersonalBest}
-									<span class="pb-label">PB!</span>
+									<span class="pb-label">{uiText("PB!", $activeLocale)}</span>
 								{/if}
 							</div>
 						</div>
 						
 						<div class="task-difficulty">
-							<span class="difficulty-label">Difficulty:</span>
+							<span class="difficulty-label">{uiText("Difficulty:", $activeLocale)}</span>
 							<span class="difficulty-change">
 								{getDifficultyChangeIcon(task.difficultyChange)}
-								Level {task.difficultyBefore} → {task.difficultyAfter}
+								{uiText("Level", $activeLocale)} {task.difficultyBefore} → {task.difficultyAfter}
 								<small>({getDifficultyChangeText(task.difficultyChange)})</small>
 							</span>
 						</div>
@@ -231,8 +232,8 @@
 		
 		<!-- Next Session Preview -->
 		<div class="next-session-preview">
-			<h3>🎯 Next Session Preview</h3>
-			<p class="preview-subtitle">Here's what to expect in your next training session</p>
+			<h3>{uiText("🎯 Next Session Preview", $activeLocale)}</h3>
+			<p class="preview-subtitle">{uiText("Here's what to expect in your next training session", $activeLocale)}</p>
 			<div class="preview-grid">
 				{#each sessionData.taskBreakdown as task}
 					{@const difficultyChange = task.difficultyChange}
@@ -243,11 +244,11 @@
 						<div class="preview-header">
 							<div class="preview-domain">{task.domain}</div>
 							{#if difficultyChange > 0}
-								<span class="change-indicator up">▲ Harder</span>
+								<span class="change-indicator up">{uiText("▲ Harder", $activeLocale)}</span>
 							{:else if difficultyChange < 0}
-								<span class="change-indicator down">▼ Easier</span>
+								<span class="change-indicator down">{uiText("▼ Easier", $activeLocale)}</span>
 							{:else}
-								<span class="change-indicator stable">◆ Same</span>
+								<span class="change-indicator stable">{uiText("◆ Same", $activeLocale)}</span>
 							{/if}
 						</div>
 						
@@ -260,13 +261,13 @@
 						
 						<div class="difficulty-description">
 							{#if task.nextDifficulty <= 3}
-								Warm-up level - building foundations
+								{uiText("Warm-up level - building foundations", $activeLocale)}
 							{:else if task.nextDifficulty <= 6}
-								Moderate challenge - good progress
+								{uiText("Moderate challenge - good progress", $activeLocale)}
 							{:else if task.nextDifficulty <= 8}
-								Demanding - pushing your limits
+								{uiText("Demanding - pushing your limits", $activeLocale)}
 							{:else}
-								Elite level - maximum difficulty
+								{uiText("Elite level - maximum difficulty", $activeLocale)}
 							{/if}
 						</div>
 					</div>
@@ -276,16 +277,16 @@
 		
 		<!-- Next Steps -->
 		<div class="next-steps">
-			<h3>What's Next?</h3>
+			<h3>{uiText("What's Next?", $activeLocale)}</h3>
 			<div class="buttons">
 				<button class="btn-primary" on:click={continueTraining}>
-					Continue Training
+					{uiText("Continue Training", $activeLocale)}
 				</button>
 				<button class="btn-secondary" on:click={viewProgress}>
-					View Full Progress
+					{uiText("View Full Progress", $activeLocale)}
 				</button>
 			</div>
-			<p class="timestamp">Session completed at {sessionData.timestamp}</p>
+			<p class="timestamp">{uiText("Session completed at", $activeLocale)} {sessionData.timestamp}</p>
 		</div>
 	{/if}
 </div>

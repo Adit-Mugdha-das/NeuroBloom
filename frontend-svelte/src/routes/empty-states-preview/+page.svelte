@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import LoadingSkeleton from '$lib/components/LoadingSkeleton.svelte';
@@ -6,23 +7,23 @@
 
 <div class="preview-container">
 	<div class="preview-header">
-		<h1>🎨 Phase 6: Empty States Preview</h1>
-		<p>All empty states and loading skeletons without clearing your data</p>
-		<button class="back-btn" on:click={() => goto('/dashboard')}>← Back to Dashboard</button>
+		<h1>{uiText("🎨 Phase 6: Empty States Preview", $activeLocale)}</h1>
+		<p>{uiText("All empty states and loading skeletons without clearing your data", $activeLocale)}</p>
+		<button class="back-btn" on:click={() => goto('/dashboard')}>{uiText("← Back to Dashboard", $activeLocale)}</button>
 	</div>
 	
 	<div class="preview-grid">
 		<!-- Progress Page Empty State -->
 		<div class="preview-section">
-			<h3>Progress Page - No Data</h3>
+			<h3>{uiText("Progress Page - No Data", $activeLocale)}</h3>
 			<div class="preview-wrapper gradient-bg">
 				<EmptyState 
 					icon="📊"
-					title="Start Your Progress Journey"
-					message="Complete your first training session to see detailed analytics, trends, and badges!"
-					actionText="Begin Training"
+					title={uiText("Start Your Progress Journey", $activeLocale)}
+					message={uiText("Complete your first training session to see detailed analytics, trends, and badges!", $activeLocale)}
+					actionText={uiText("Begin Training", $activeLocale)}
 					actionLink="/training"
-					tip="Consistent training leads to measurable cognitive improvements"
+					tip={uiText("Consistent training leads to measurable cognitive improvements", $activeLocale)}
 					variant="large"
 				/>
 			</div>
@@ -30,30 +31,30 @@
 		
 		<!-- Session Summary Empty State -->
 		<div class="preview-section">
-			<h3>Session Summary - No Session</h3>
+			<h3>{uiText("Session Summary - No Session", $activeLocale)}</h3>
 			<div class="preview-wrapper purple-gradient-bg">
 				<EmptyState 
 					icon="🎯"
-					title="No Session Data"
-					message="Complete a training session to see your celebration summary here!"
-					actionText="Start Training"
+					title={uiText("No Session Data", $activeLocale)}
+					message={uiText("Complete a training session to see your celebration summary here!", $activeLocale)}
+					actionText={uiText("Start Training", $activeLocale)}
 					actionLink="/training"
-					tip="Each session includes 4 cognitive tasks designed to challenge your brain"
+					tip={uiText("Each session includes 4 cognitive tasks designed to challenge your brain", $activeLocale)}
 				/>
 			</div>
 		</div>
 		
 		<!-- Weekly Summary Empty State -->
 		<div class="preview-section">
-			<h3>Weekly Summary - Less than 7 Days</h3>
+			<h3>{uiText("Weekly Summary - Less than 7 Days", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<EmptyState 
 					icon="📅"
-					title="Build Your Weekly Streak"
-					message="Train for 7 days to unlock your weekly summary with insights and progress tracking!"
-					actionText="Start Training"
+					title={uiText("Build Your Weekly Streak", $activeLocale)}
+					message={uiText("Train for 7 days to unlock your weekly summary with insights and progress tracking!", $activeLocale)}
+					actionText={uiText("Start Training", $activeLocale)}
 					actionLink="/training"
-					tip="Training multiple days per week shows better cognitive improvements"
+					tip={uiText("Training multiple days per week shows better cognitive improvements", $activeLocale)}
 					variant="compact"
 				/>
 			</div>
@@ -61,15 +62,15 @@
 		
 		<!-- Badges Empty State -->
 		<div class="preview-section">
-			<h3>Badges - No Badges Earned</h3>
+			<h3>{uiText("Badges - No Badges Earned", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<EmptyState 
 					icon="🎯"
-					title="Start Earning Badges!"
-					message="Complete training sessions to unlock your first achievement badge!"
-					actionText="Start Training"
+					title={uiText("Start Earning Badges!", $activeLocale)}
+					message={uiText("Complete training sessions to unlock your first achievement badge!", $activeLocale)}
+					actionText={uiText("Start Training", $activeLocale)}
 					actionLink="/training"
-					tip="Badges track your progress, consistency, and mastery across all cognitive domains"
+					tip={uiText("Badges track your progress, consistency, and mastery across all cognitive domains", $activeLocale)}
 					variant="compact"
 				/>
 			</div>
@@ -77,15 +78,15 @@
 		
 		<!-- Performance Trends Empty State -->
 		<div class="preview-section">
-			<h3>Performance Trends - Not Enough Data</h3>
+			<h3>{uiText("Performance Trends - Not Enough Data", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<EmptyState 
 					icon="📈"
-					title="Track Your Progress"
-					message="Complete multiple training sessions to unlock your performance trends graph and see how you improve over time!"
-					actionText="Start Training"
+					title={uiText("Track Your Progress", $activeLocale)}
+					message={uiText("Complete multiple training sessions to unlock your performance trends graph and see how you improve over time!", $activeLocale)}
+					actionText={uiText("Start Training", $activeLocale)}
 					actionLink="/training"
-					tip="Trends become visible after 3+ sessions"
+					tip={uiText("Trends become visible after 3+ sessions", $activeLocale)}
 					variant="compact"
 				/>
 			</div>
@@ -93,7 +94,7 @@
 		
 		<!-- Loading Skeleton - Card Variant -->
 		<div class="preview-section">
-			<h3>Loading Skeleton - Card Grid</h3>
+			<h3>{uiText("Loading Skeleton - Card Grid", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<LoadingSkeleton variant="card" count={4} />
 			</div>
@@ -101,7 +102,7 @@
 		
 		<!-- Loading Skeleton - List Variant -->
 		<div class="preview-section">
-			<h3>Loading Skeleton - List Items</h3>
+			<h3>{uiText("Loading Skeleton - List Items", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<LoadingSkeleton variant="list" count={3} />
 			</div>
@@ -109,7 +110,7 @@
 		
 		<!-- Loading Skeleton - Default Variant -->
 		<div class="preview-section">
-			<h3>Loading Skeleton - Block</h3>
+			<h3>{uiText("Loading Skeleton - Block", $activeLocale)}</h3>
 			<div class="preview-wrapper">
 				<LoadingSkeleton variant="default" count={2} />
 			</div>
@@ -117,16 +118,16 @@
 	</div>
 	
 	<div class="preview-footer">
-		<h3>✅ Phase 6 Features Demonstrated:</h3>
+		<h3>{uiText("✅ Phase 6 Features Demonstrated:", $activeLocale)}</h3>
 		<ul>
-			<li>✨ Animated icons with bounce effect</li>
-			<li>🎨 Gradient backgrounds (3 variants: default, compact, large)</li>
-			<li>💡 Glass-morphism tip cards</li>
-			<li>🔘 Interactive call-to-action buttons with hover effects</li>
-			<li>⚡ Shimmer loading skeletons (3 variants: card, list, block)</li>
-			<li>📱 Fully responsive design</li>
-			<li>🎯 Context-specific messaging for each empty state</li>
-			<li>✨ Professional polish throughout</li>
+			<li>{uiText("✨ Animated icons with bounce effect", $activeLocale)}</li>
+			<li>{uiText("🎨 Gradient backgrounds (3 variants: default, compact, large)", $activeLocale)}</li>
+			<li>{uiText("💡 Glass-morphism tip cards", $activeLocale)}</li>
+			<li>{uiText("🔘 Interactive call-to-action buttons with hover effects", $activeLocale)}</li>
+			<li>{uiText("⚡ Shimmer loading skeletons (3 variants: card, list, block)", $activeLocale)}</li>
+			<li>{uiText("📱 Fully responsive design", $activeLocale)}</li>
+			<li>{uiText("🎯 Context-specific messaging for each empty state", $activeLocale)}</li>
+			<li>{uiText("✨ Professional polish throughout", $activeLocale)}</li>
 		</ul>
 	</div>
 </div>

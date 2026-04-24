@@ -1,4 +1,5 @@
 <script>
+	import { locale as activeLocale, uiText } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import api, { API_BASE_URL } from '$lib/api.js';
@@ -304,7 +305,7 @@
 
 <DoctorWorkspaceShell
 	title={`Prescriptions · ${patientName}`}
-	subtitle="Structured digital prescribing with revision history, clinician review, PDF generation, and patient delivery."
+	subtitle={uiText("Structured digital prescribing with revision history, clinician review, PDF generation, and patient delivery.", $activeLocale)}
 	eyebrow="Doctor Patient Workspace"
 	maxWidth="1360px"
 >
@@ -315,17 +316,17 @@
 	</svelte:fragment>
 
 	{#if loading}
-		<section class="state-card"><p>Loading prescriptions...</p></section>
+		<section class="state-card"><p>{uiText("Loading prescriptions...", $activeLocale)}</p></section>
 	{:else if error}
 		<section class="state-card error-state"><p>{error}</p></section>
 	{:else}
 		<section class="hero-card">
 			<div>
-				<p class="eyebrow-copy">Patient Prescription Record</p>
+				<p class="eyebrow-copy">{uiText("Patient Prescription Record", $activeLocale)}</p>
 				<h2>{patientName}</h2>
 				<p class="hero-copy" data-localize-skip>{patient?.diagnosis || patient?.treatment_goal || 'No diagnosis or treatment goal recorded yet.'}</p>
 				{#if latestActivePrescription}
-					<p class="hero-note">Current active prescription: {latestActivePrescription.title} · {latestActivePrescription.verification_id}</p>
+					<p class="hero-note">{uiText("Current active prescription:", $activeLocale)} {latestActivePrescription.title} · {latestActivePrescription.verification_id}</p>
 				{/if}
 			</div>
 			<div class="hero-grid">
@@ -345,17 +346,17 @@
 		<section class="panel-card section-card">
 			<div class="section-head">
 				<div>
-					<p class="section-kicker">Prescription History</p>
-					<h3>Issued documents and revisions</h3>
+					<p class="section-kicker">{uiText("Prescription History", $activeLocale)}</p>
+					<h3>{uiText("Issued documents and revisions", $activeLocale)}</h3>
 				</div>
-				<span class="meta-pill">{prescriptions.length} record{prescriptions.length === 1 ? '' : 's'}</span>
+				<span class="meta-pill">{prescriptions.length} {uiText("record", $activeLocale)}{prescriptions.length === 1 ? '' : 's'}</span>
 			</div>
 
 			{#if prescriptions.length === 0}
 				<div class="empty-state">
-					<h3>No prescriptions have been issued yet</h3>
-					<p>Create the first structured prescription to add it to the patient’s history and deliver it through the patient portal.</p>
-					<button class="primary-btn" on:click={openCreateComposer}>Create First Prescription</button>
+					<h3>{uiText("No prescriptions have been issued yet", $activeLocale)}</h3>
+					<p>{uiText("Create the first structured prescription to add it to the patient’s history and deliver it through the patient portal.", $activeLocale)}</p>
+					<button class="primary-btn" on:click={openCreateComposer}>{uiText("Create First Prescription", $activeLocale)}</button>
 				</div>
 			{:else}
 				{#if formError}
@@ -374,42 +375,42 @@
 									<p class="summary-copy" data-localize-skip>{prescription.summary || prescription.patient_instructions}</p>
 								</div>
 								<div class="head-meta">
-									<span>Issued {formatDateTime(prescription.created_at)}</span>
-									<span>Version {prescription.version_number}</span>
+									<span>{uiText("Issued", $activeLocale)} {formatDateTime(prescription.created_at)}</span>
+									<span>{uiText("Version", $activeLocale)} {prescription.version_number}</span>
 								</div>
 							</div>
 
 							<div class="detail-grid">
 								<div>
-									<span>Patient instructions</span>
+									<span>{uiText("Patient instructions", $activeLocale)}</span>
 									<strong data-localize-skip>{prescription.patient_instructions}</strong>
 								</div>
 								<div>
-									<span>Review date</span>
+									<span>{uiText("Review date", $activeLocale)}</span>
 									<strong>{formatDate(prescription.review_date)}</strong>
 								</div>
 								<div>
-									<span>Valid until</span>
+									<span>{uiText("Valid until", $activeLocale)}</span>
 									<strong>{formatDate(prescription.valid_until)}</strong>
 								</div>
 								<div>
-									<span>Medication count</span>
+									<span>{uiText("Medication count", $activeLocale)}</span>
 									<strong>{prescription.medication_count}</strong>
 								</div>
 							</div>
 
 							{#if prescription.retired_reason || prescription.retired_at}
 								<div class="status-note-card">
-									<p class="card-kicker">Status Update</p>
+									<p class="card-kicker">{uiText("Status Update", $activeLocale)}</p>
 									<p>
 										{#if prescription.retired_reason}
 											<span data-localize-skip>{prescription.retired_reason}</span>
 										{:else}
-											This prescription is no longer active.
+											{uiText("This prescription is no longer active.", $activeLocale)}
 										{/if}
 									</p>
 									{#if prescription.retired_at}
-										<small>Updated {formatDateTime(prescription.retired_at)}</small>
+										<small>{uiText("Updated", $activeLocale)} {formatDateTime(prescription.retired_at)}</small>
 									{/if}
 								</div>
 							{/if}
@@ -430,7 +431,7 @@
 
 							{#if prescription.lifestyle_plan?.length}
 								<div class="lifestyle-block">
-									<p class="card-kicker">Lifestyle Recommendations</p>
+									<p class="card-kicker">{uiText("Lifestyle Recommendations", $activeLocale)}</p>
 									<ul data-localize-skip>
 										{#each prescription.lifestyle_plan as item}
 											<li>{item}</li>
@@ -440,9 +441,9 @@
 							{/if}
 
 							<div class="action-row">
-								<button class="ghost-btn" on:click={() => openPdf(prescription)}>View PDF</button>
-								<button class="ghost-btn" on:click={() => downloadPdf(prescription)}>Download</button>
-								<button class="primary-btn" on:click={() => openRevisionComposer(prescription)}>Edit And Reissue</button>
+								<button class="ghost-btn" on:click={() => openPdf(prescription)}>{uiText("View PDF", $activeLocale)}</button>
+								<button class="ghost-btn" on:click={() => downloadPdf(prescription)}>{uiText("Download", $activeLocale)}</button>
+								<button class="primary-btn" on:click={() => openRevisionComposer(prescription)}>{uiText("Edit And Reissue", $activeLocale)}</button>
 								{#if prescription.status === 'active'}
 									<button
 										class="warning-btn"
@@ -474,7 +475,7 @@
 		class="modal-overlay"
 		role="button"
 		tabindex="0"
-		aria-label="Close prescription composer"
+		aria-label={uiText("Close prescription composer", $activeLocale)}
 		on:click={closeComposer}
 		on:keydown={handleOverlayKeydown}
 	>
@@ -482,7 +483,7 @@
 			class="modal-shell"
 			role="dialog"
 			aria-modal="true"
-			aria-label="Prescription composer"
+			aria-label={uiText("Prescription composer", $activeLocale)}
 			tabindex="-1"
 			on:click|stopPropagation
 			on:keydown|stopPropagation
@@ -499,54 +500,54 @@
 				<section class="composer-panel form-panel">
 					<div class="form-grid">
 						<label>
-							<span>Prescription title</span>
-							<input bind:value={draft.title} placeholder="Cognitive support medication plan" />
+							<span>{uiText("Prescription title", $activeLocale)}</span>
+							<input bind:value={draft.title} placeholder={uiText("Cognitive support medication plan", $activeLocale)} />
 						</label>
 
 						<label>
-							<span>Clinical summary</span>
-							<textarea bind:value={draft.summary} rows="3" placeholder="Short diagnostic and prescribing summary."></textarea>
+							<span>{uiText("Clinical summary", $activeLocale)}</span>
+							<textarea bind:value={draft.summary} rows="3" placeholder={uiText("Short diagnostic and prescribing summary.", $activeLocale)}></textarea>
 						</label>
 
 						<label>
-							<span>Patient instructions</span>
-							<textarea bind:value={draft.patient_instructions} rows="4" placeholder="Explain how the patient should follow this plan."></textarea>
+							<span>{uiText("Patient instructions", $activeLocale)}</span>
+							<textarea bind:value={draft.patient_instructions} rows="4" placeholder={uiText("Explain how the patient should follow this plan.", $activeLocale)}></textarea>
 						</label>
 
 						<div class="two-up">
 							<label>
-								<span>Valid until</span>
+								<span>{uiText("Valid until", $activeLocale)}</span>
 								<input type="date" bind:value={draft.valid_until} />
 							</label>
 							<label>
-								<span>Review date</span>
+								<span>{uiText("Review date", $activeLocale)}</span>
 								<input type="date" bind:value={draft.review_date} />
 							</label>
 						</div>
 
 						<label>
-							<span>Follow-up plan</span>
-							<textarea bind:value={draft.follow_up_plan} rows="2" placeholder="Follow-up review, monitoring, or lab instructions."></textarea>
+							<span>{uiText("Follow-up plan", $activeLocale)}</span>
+							<textarea bind:value={draft.follow_up_plan} rows="2" placeholder={uiText("Follow-up review, monitoring, or lab instructions.", $activeLocale)}></textarea>
 						</label>
 
 						<label>
-							<span>Clinician notes</span>
-							<textarea bind:value={draft.clinician_notes} rows="3" placeholder="Private clinical notes to keep in the record."></textarea>
+							<span>{uiText("Clinician notes", $activeLocale)}</span>
+							<textarea bind:value={draft.clinician_notes} rows="3" placeholder={uiText("Private clinical notes to keep in the record.", $activeLocale)}></textarea>
 						</label>
 
 						<label>
-							<span>Lifestyle recommendations</span>
-							<textarea bind:value={draft.lifestyle_plan_text} rows="4" placeholder="One recommendation per line."></textarea>
+							<span>{uiText("Lifestyle recommendations", $activeLocale)}</span>
+							<textarea bind:value={draft.lifestyle_plan_text} rows="4" placeholder={uiText("One recommendation per line.", $activeLocale)}></textarea>
 						</label>
 					</div>
 
 					<div class="medications-panel">
 						<div class="section-head compact-head">
 							<div>
-								<p class="section-kicker">Medication Items</p>
-								<h3>Dosage, schedule, and duration</h3>
+								<p class="section-kicker">{uiText("Medication Items", $activeLocale)}</p>
+								<h3>{uiText("Dosage, schedule, and duration", $activeLocale)}</h3>
 							</div>
-							<button class="ghost-btn" on:click={addMedication}>Add Item</button>
+							<button class="ghost-btn" on:click={addMedication}>{uiText("Add Item", $activeLocale)}</button>
 						</div>
 
 						<div class="medication-editor-list">
@@ -554,30 +555,30 @@
 								<div class="medication-editor">
 									<div class="two-up">
 										<label>
-											<span>Medication name</span>
-											<input value={medication.name} on:input={(event) => updateMedication(index, 'name', event.currentTarget.value)} placeholder="Donepezil" />
+											<span>{uiText("Medication name", $activeLocale)}</span>
+											<input value={medication.name} on:input={(event) => updateMedication(index, 'name', event.currentTarget.value)} placeholder={uiText("Donepezil", $activeLocale)} />
 										</label>
 										<label>
-											<span>Dosage</span>
-											<input value={medication.dosage} on:input={(event) => updateMedication(index, 'dosage', event.currentTarget.value)} placeholder="5 mg" />
+											<span>{uiText("Dosage", $activeLocale)}</span>
+											<input value={medication.dosage} on:input={(event) => updateMedication(index, 'dosage', event.currentTarget.value)} placeholder={uiText("5 mg", $activeLocale)} />
 										</label>
 									</div>
 									<div class="two-up">
 										<label>
-											<span>Frequency</span>
-											<input value={medication.frequency} on:input={(event) => updateMedication(index, 'frequency', event.currentTarget.value)} placeholder="Once daily" />
+											<span>{uiText("Frequency", $activeLocale)}</span>
+											<input value={medication.frequency} on:input={(event) => updateMedication(index, 'frequency', event.currentTarget.value)} placeholder={uiText("Once daily", $activeLocale)} />
 										</label>
 										<label>
-											<span>Duration</span>
-											<input value={medication.duration} on:input={(event) => updateMedication(index, 'duration', event.currentTarget.value)} placeholder="30 days" />
+											<span>{uiText("Duration", $activeLocale)}</span>
+											<input value={medication.duration} on:input={(event) => updateMedication(index, 'duration', event.currentTarget.value)} placeholder={uiText("30 days", $activeLocale)} />
 										</label>
 									</div>
 									<label>
-										<span>Instructions</span>
-										<input value={medication.instructions} on:input={(event) => updateMedication(index, 'instructions', event.currentTarget.value)} placeholder="Take after dinner" />
+										<span>{uiText("Instructions", $activeLocale)}</span>
+										<input value={medication.instructions} on:input={(event) => updateMedication(index, 'instructions', event.currentTarget.value)} placeholder={uiText("Take after dinner", $activeLocale)} />
 									</label>
 									{#if draft.medications.length > 1}
-										<button class="text-btn danger" on:click={() => removeMedication(index)}>Remove item</button>
+										<button class="text-btn danger" on:click={() => removeMedication(index)}>{uiText("Remove item", $activeLocale)}</button>
 									{/if}
 								</div>
 							{/each}
@@ -589,7 +590,7 @@
 					{/if}
 
 					<div class="action-row composer-actions">
-						<button class="ghost-btn" on:click={closeComposer}>Cancel</button>
+						<button class="ghost-btn" on:click={closeComposer}>{uiText("Cancel", $activeLocale)}</button>
 						<button class="primary-btn" disabled={saving} on:click={savePrescription}>
 							{saving ? 'Saving...' : editingPrescription ? 'Issue Revision' : 'Issue Prescription'}
 						</button>
@@ -597,19 +598,19 @@
 				</section>
 
 				<aside class="composer-panel preview-panel">
-					<p class="section-kicker">Live Review</p>
+					<p class="section-kicker">{uiText("Live Review", $activeLocale)}</p>
 					<h3>{draft.title || 'Prescription title preview'}</h3>
 					<p class="preview-summary" data-localize-skip>{draft.summary || draft.patient_instructions || 'A short summary and patient-facing instructions will appear here as you compose the prescription.'}</p>
 
 					<div class="preview-meta">
-						<div><span>Patient</span><strong>{patientName}</strong></div>
-						<div><span>Diagnosis</span><strong data-localize-skip>{patient?.diagnosis || 'Not recorded'}</strong></div>
-						<div><span>Review date</span><strong>{draft.review_date || 'Not scheduled'}</strong></div>
-						<div><span>Status</span><strong>{draft.status}</strong></div>
+						<div><span>{uiText("Patient", $activeLocale)}</span><strong>{patientName}</strong></div>
+						<div><span>{uiText("Diagnosis", $activeLocale)}</span><strong data-localize-skip>{patient?.diagnosis || 'Not recorded'}</strong></div>
+						<div><span>{uiText("Review date", $activeLocale)}</span><strong>{draft.review_date || 'Not scheduled'}</strong></div>
+						<div><span>{uiText("Status", $activeLocale)}</span><strong>{draft.status}</strong></div>
 					</div>
 
 					<div class="preview-block">
-						<p class="card-kicker">Medications</p>
+						<p class="card-kicker">{uiText("Medications", $activeLocale)}</p>
 						{#if previewMedications.length}
 							{#each previewMedications as medication}
 								<div class="preview-item" data-localize-skip>
@@ -624,12 +625,12 @@
 								</div>
 							{/each}
 						{:else}
-							<p class="empty-copy">Medication items will appear here.</p>
+							<p class="empty-copy">{uiText("Medication items will appear here.", $activeLocale)}</p>
 						{/if}
 					</div>
 
 					<div class="preview-block">
-						<p class="card-kicker">Lifestyle Recommendations</p>
+						<p class="card-kicker">{uiText("Lifestyle Recommendations", $activeLocale)}</p>
 						{#if previewLifestyleItems.length}
 							<ul data-localize-skip>
 								{#each previewLifestyleItems as item}
@@ -637,12 +638,12 @@
 								{/each}
 							</ul>
 						{:else}
-							<p class="empty-copy">Lifestyle guidance will appear here.</p>
+							<p class="empty-copy">{uiText("Lifestyle guidance will appear here.", $activeLocale)}</p>
 						{/if}
 					</div>
 
 					<div class="preview-block">
-						<p class="card-kicker">Patient Instructions</p>
+						<p class="card-kicker">{uiText("Patient Instructions", $activeLocale)}</p>
 						<p data-localize-skip>{draft.patient_instructions || 'Patient-facing instructions will appear here.'}</p>
 					</div>
 				</aside>

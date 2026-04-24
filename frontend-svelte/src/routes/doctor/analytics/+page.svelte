@@ -1,4 +1,10 @@
 <script>
+<<<<<<< HEAD
+=======
+	import { formatDate, formatNumber, formatPercent, locale as activeLocale, uiText } from '$lib/i18n';
+	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
+	import api from '$lib/api.js';
+>>>>>>> 3bf3510 (bangla interface refactoring)
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
@@ -49,47 +55,64 @@
 	}
 
 	function formatDomainName(domain) {
-		return domain
+		const label = domain
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
+		return uiText(label, $activeLocale);
+	}
+
+	function n(value, options = {}) {
+		return formatNumber(value, $activeLocale, options);
+	}
+
+	function oneDecimal(value) {
+		return n(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	}
+
+	function pct(value) {
+		return formatPercent(value, $activeLocale, { maximumFractionDigits: 1 });
+	}
+
+	function compactDate(value) {
+		return formatDate(value, $activeLocale, { day: '2-digit', month: 'short' });
 	}
 
 	$: lifetimeMetrics = analytics
 		? [
-				{ label: 'Cohort Avg Score', value: analytics.success_metrics.avg_session_score, timeframe: 'All time' },
-				{ label: 'Cohort Avg Accuracy', value: `${analytics.success_metrics.avg_session_accuracy}%`, timeframe: 'All time' },
-				{ label: 'Total Sessions', value: analytics.success_metrics.total_sessions_completed, timeframe: 'All time' },
-				{ label: 'Baseline Completion', value: `${analytics.overview.baseline_completion_rate}%`, timeframe: 'Current cohort' }
+				{ label: 'Cohort Avg Score', value: oneDecimal(analytics.success_metrics.avg_session_score), timeframe: 'All time' },
+				{ label: 'Cohort Avg Accuracy', value: pct(analytics.success_metrics.avg_session_accuracy), timeframe: 'All time' },
+				{ label: 'Total Sessions', value: n(analytics.success_metrics.total_sessions_completed), timeframe: 'All time' },
+				{ label: 'Baseline Completion', value: pct(analytics.overview.baseline_completion_rate), timeframe: 'Current cohort' }
 			]
 		: [];
 
 	$: recentMetrics = analytics
 		? [
-				{ label: 'Overall Adherence', value: `${analytics.adherence.overall_adherence_rate}%`, timeframe: 'Last 30 days' },
-				{ label: 'Avg Sessions / Week', value: cohortTrends?.summary?.avg_sessions_per_week ?? 0, timeframe: 'Last 30 days' },
-				{ label: 'Recent Avg Score', value: cohortTrends?.summary?.overall_avg_score ?? 0, timeframe: 'Last 30 days' },
-				{ label: 'Active Patients', value: analytics.overview.active_patients, timeframe: 'Last 7 days' }
+				{ label: 'Overall Adherence', value: pct(analytics.adherence.overall_adherence_rate), timeframe: 'Last 30 days' },
+				{ label: 'Avg Sessions / Week', value: oneDecimal(cohortTrends?.summary?.avg_sessions_per_week ?? 0), timeframe: 'Last 30 days' },
+				{ label: 'Recent Avg Score', value: oneDecimal(cohortTrends?.summary?.overall_avg_score ?? 0), timeframe: 'Last 30 days' },
+				{ label: 'Active Patients', value: n(analytics.overview.active_patients), timeframe: 'Last 7 days' }
 			]
 		: [];
 
 	$: longitudinalMetrics = analytics
 		? [
-				{ label: 'Avg Improvement', value: `${analytics.success_metrics.avg_improvement > 0 ? '+' : ''}${analytics.success_metrics.avg_improvement}`, timeframe: 'First 5 vs last 5 sessions' },
-				{ label: 'Patients Improving', value: analytics.success_metrics.patients_improving, timeframe: 'Enough sessions only' },
-				{ label: 'Patients Declining', value: analytics.success_metrics.patients_declining, timeframe: 'Enough sessions only' },
-				{ label: 'Assigned Patients', value: analytics.overview.total_patients, timeframe: 'Current cohort' }
+				{ label: 'Avg Improvement', value: `${analytics.success_metrics.avg_improvement > 0 ? '+' : ''}${oneDecimal(analytics.success_metrics.avg_improvement)}`, timeframe: 'First 5 vs last 5 sessions' },
+				{ label: 'Patients Improving', value: n(analytics.success_metrics.patients_improving), timeframe: 'Enough sessions only' },
+				{ label: 'Patients Declining', value: n(analytics.success_metrics.patients_declining), timeframe: 'Enough sessions only' },
+				{ label: 'Assigned Patients', value: n(analytics.overview.total_patients), timeframe: 'Current cohort' }
 			]
 		: [];
 </script>
 
 <DoctorWorkspaceShell
-	title="Analytics"
-	subtitle="Clinician analytics organized by timeframe so current monitoring, lifetime summary, and longitudinal signals are clearly separated."
+	title={uiText("Analytics", $activeLocale)}
+	subtitle={uiText("Clinician analytics organized by timeframe so current monitoring, lifetime summary, and longitudinal signals are clearly separated.", $activeLocale)}
 >
 	{#if loading}
 		<section class="state-card">
-			<p>Loading analytics...</p>
+			<p>{uiText("Loading analytics...", $activeLocale)}</p>
 		</section>
 	{:else if error}
 		<section class="state-card error-state">
@@ -98,29 +121,29 @@
 	{:else}
 		<section class="orientation-card">
 			<div>
-				<p class="panel-kicker">How To Read This Page</p>
-				<h2>Metrics are grouped by timeframe</h2>
-				<p class="empty-copy">Recent monitoring uses the last 30 days unless noted. Lifetime summary uses all completed sessions. Longitudinal trends compare earlier versus more recent performance for patients with enough session history.</p>
+				<p class="panel-kicker">{uiText("How To Read This Page", $activeLocale)}</p>
+				<h2>{uiText("Metrics are grouped by timeframe", $activeLocale)}</h2>
+				<p class="empty-copy">{uiText("Recent monitoring uses the last 30 days unless noted. Lifetime summary uses all completed sessions. Longitudinal trends compare earlier versus more recent performance for patients with enough session history.", $activeLocale)}</p>
 			</div>
 			<div class="legend-grid">
-				<div class="legend-pill recent">Recent monitoring</div>
-				<div class="legend-pill lifetime">Lifetime summary</div>
-				<div class="legend-pill longitudinal">Longitudinal trends</div>
+				<div class="legend-pill recent">{uiText("Recent monitoring", $activeLocale)}</div>
+				<div class="legend-pill lifetime">{uiText("Lifetime summary", $activeLocale)}</div>
+				<div class="legend-pill longitudinal">{uiText("Longitudinal trends", $activeLocale)}</div>
 			</div>
 		</section>
 
 		<section class="section-block">
 			<div class="section-header-block">
-				<p class="panel-kicker">Recent Monitoring</p>
-				<h2>Use these metrics for current engagement and short-term activity</h2>
+				<p class="panel-kicker">{uiText("Recent Monitoring", $activeLocale)}</p>
+				<h2>{uiText("Use these metrics for current engagement and short-term activity", $activeLocale)}</h2>
 			</div>
 
 			<section class="metrics-grid">
 				{#each recentMetrics as metric}
 					<article class="metric-card metric-card-recent">
-						<p>{metric.label}</p>
+						<p>{uiText(metric.label, $activeLocale)}</p>
 						<strong>{metric.value}</strong>
-						<span class="timeframe-badge recent">{metric.timeframe}</span>
+						<span class="timeframe-badge recent">{uiText(metric.timeframe, $activeLocale)}</span>
 					</article>
 				{/each}
 			</section>
@@ -129,37 +152,37 @@
 				<article class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Adherence</p>
-							<h2>Cohort Adherence Breakdown</h2>
+							<p class="panel-kicker">{uiText("Adherence", $activeLocale)}</p>
+							<h2>{uiText("Cohort Adherence Breakdown", $activeLocale)}</h2>
 						</div>
 						<div class="heading-stack">
-							<span class="timeframe-badge recent">Last 30 days</span>
-							<span class="big-value">{analytics.adherence.overall_adherence_rate}%</span>
+							<span class="timeframe-badge recent">{uiText("Last 30 days", $activeLocale)}</span>
+							<span class="big-value">{pct(analytics.adherence.overall_adherence_rate)}</span>
 						</div>
 					</div>
 					<div class="breakdown-list">
-						<div><span>Excellent</span><strong>{analytics.adherence.adherence_breakdown.excellent}</strong></div>
-						<div><span>Good</span><strong>{analytics.adherence.adherence_breakdown.good}</strong></div>
-						<div><span>Fair</span><strong>{analytics.adherence.adherence_breakdown.fair}</strong></div>
-						<div><span>Poor</span><strong>{analytics.adherence.adherence_breakdown.poor}</strong></div>
+						<div><span>{uiText("Excellent", $activeLocale)}</span><strong>{n(analytics.adherence.adherence_breakdown.excellent)}</strong></div>
+						<div><span>{uiText("Good", $activeLocale)}</span><strong>{n(analytics.adherence.adherence_breakdown.good)}</strong></div>
+						<div><span>{uiText("Fair", $activeLocale)}</span><strong>{n(analytics.adherence.adherence_breakdown.fair)}</strong></div>
+						<div><span>{uiText("Poor", $activeLocale)}</span><strong>{n(analytics.adherence.adherence_breakdown.poor)}</strong></div>
 					</div>
 				</article>
 
 				<article class="panel-card">
 					<div class="panel-heading">
 						<div>
-							<p class="panel-kicker">Activity</p>
-							<h2>Cohort Activity Summary</h2>
+							<p class="panel-kicker">{uiText("Activity", $activeLocale)}</p>
+							<h2>{uiText("Cohort Activity Summary", $activeLocale)}</h2>
 						</div>
 						<div class="heading-stack">
-							<span class="timeframe-badge recent">Last 30 days</span>
+							<span class="timeframe-badge recent">{uiText("Last 30 days", $activeLocale)}</span>
 						</div>
 					</div>
 					<div class="breakdown-list">
-						<div><span>Average Sessions / Week</span><strong>{cohortTrends?.summary?.avg_sessions_per_week ?? 0}</strong></div>
-						<div><span>Overall Average Score</span><strong>{cohortTrends?.summary?.overall_avg_score ?? 0}</strong></div>
-						<div><span>Weeks Tracked</span><strong>{cohortTrends?.summary?.weeks_tracked ?? 0}</strong></div>
-						<div><span>Active Patients</span><strong>{analytics.overview.active_patients}</strong></div>
+						<div><span>{uiText("Average Sessions / Week", $activeLocale)}</span><strong>{oneDecimal(cohortTrends?.summary?.avg_sessions_per_week ?? 0)}</strong></div>
+						<div><span>{uiText("Overall Average Score", $activeLocale)}</span><strong>{oneDecimal(cohortTrends?.summary?.overall_avg_score ?? 0)}</strong></div>
+						<div><span>{uiText("Weeks Tracked", $activeLocale)}</span><strong>{n(cohortTrends?.summary?.weeks_tracked ?? 0)}</strong></div>
+						<div><span>{uiText("Active Patients", $activeLocale)}</span><strong>{n(analytics.overview.active_patients)}</strong></div>
 					</div>
 				</article>
 			</section>
@@ -167,16 +190,16 @@
 
 		<section class="section-block">
 			<div class="section-header-block">
-				<p class="panel-kicker">Lifetime Summary</p>
-				<h2>These metrics use all completed sessions for the currently assigned cohort</h2>
+				<p class="panel-kicker">{uiText("Lifetime Summary", $activeLocale)}</p>
+				<h2>{uiText("These metrics use all completed sessions for the currently assigned cohort", $activeLocale)}</h2>
 			</div>
 
 			<section class="metrics-grid">
 				{#each lifetimeMetrics as metric}
 					<article class="metric-card metric-card-lifetime">
-						<p>{metric.label}</p>
+						<p>{uiText(metric.label, $activeLocale)}</p>
 						<strong>{metric.value}</strong>
-						<span class="timeframe-badge lifetime">{metric.timeframe}</span>
+						<span class="timeframe-badge lifetime">{uiText(metric.timeframe, $activeLocale)}</span>
 					</article>
 				{/each}
 			</section>
@@ -184,11 +207,11 @@
 			<section class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Domains</p>
-						<h2>Domain Performance Overview</h2>
+						<p class="panel-kicker">{uiText("Domains", $activeLocale)}</p>
+						<h2>{uiText("Domain Performance Overview", $activeLocale)}</h2>
 					</div>
 					<div class="heading-stack">
-						<span class="timeframe-badge lifetime">All completed sessions</span>
+						<span class="timeframe-badge lifetime">{uiText("All completed sessions", $activeLocale)}</span>
 					</div>
 				</div>
 				<div class="domain-grid">
@@ -196,12 +219,12 @@
 						<article class="domain-card">
 							<h3>{formatDomainName(domain)}</h3>
 							<div class="domain-stats">
-								<div><span>Sessions</span><strong>{stats.sessions_count}</strong></div>
-								<div><span>Patients</span><strong>{stats.patients_count}</strong></div>
-								<div><span>Average Score</span><strong>{stats.avg_score}</strong></div>
-								<div><span>Average Accuracy</span><strong>{stats.avg_accuracy}%</strong></div>
-								<div><span>Average Reaction Time</span><strong>{stats.avg_reaction_time} ms</strong></div>
-								<div><span>Score Range</span><strong>{stats.score_range.min} - {stats.score_range.max}</strong></div>
+								<div><span>{uiText("Sessions", $activeLocale)}</span><strong>{n(stats.sessions_count)}</strong></div>
+								<div><span>{uiText("Patients", $activeLocale)}</span><strong>{n(stats.patients_count)}</strong></div>
+								<div><span>{uiText("Average Score", $activeLocale)}</span><strong>{oneDecimal(stats.avg_score)}</strong></div>
+								<div><span>{uiText("Average Accuracy", $activeLocale)}</span><strong>{pct(stats.avg_accuracy)}</strong></div>
+								<div><span>{uiText("Average Reaction Time", $activeLocale)}</span><strong>{n(stats.avg_reaction_time)} ms</strong></div>
+								<div><span>{uiText("Score Range", $activeLocale)}</span><strong>{n(stats.score_range.min)} - {n(stats.score_range.max)}</strong></div>
 							</div>
 						</article>
 					{/each}
@@ -211,16 +234,16 @@
 
 		<section class="section-block">
 			<div class="section-header-block">
-				<p class="panel-kicker">Longitudinal Trends</p>
-				<h2>These values compare earlier sessions with more recent sessions</h2>
+				<p class="panel-kicker">{uiText("Longitudinal Trends", $activeLocale)}</p>
+				<h2>{uiText("These values compare earlier sessions with more recent sessions", $activeLocale)}</h2>
 			</div>
 
 			<section class="metrics-grid">
 				{#each longitudinalMetrics as metric}
 					<article class="metric-card metric-card-longitudinal">
-						<p>{metric.label}</p>
+						<p>{uiText(metric.label, $activeLocale)}</p>
 						<strong>{metric.value}</strong>
-						<span class="timeframe-badge longitudinal">{metric.timeframe}</span>
+						<span class="timeframe-badge longitudinal">{uiText(metric.timeframe, $activeLocale)}</span>
 					</article>
 				{/each}
 			</section>
@@ -228,49 +251,49 @@
 			<section class="panel-card">
 				<div class="panel-heading">
 					<div>
-						<p class="panel-kicker">Method</p>
-						<h2>How improvement is calculated</h2>
+						<p class="panel-kicker">{uiText("Method", $activeLocale)}</p>
+						<h2>{uiText("How improvement is calculated", $activeLocale)}</h2>
 					</div>
 					<div class="heading-stack">
-						<span class="timeframe-badge longitudinal">Interpret carefully</span>
+						<span class="timeframe-badge longitudinal">{uiText("Interpret carefully", $activeLocale)}</span>
 					</div>
 				</div>
-				<p class="empty-copy">Improvement compares the first 5 recorded scores with the last 5 recorded scores for patients who have enough completed sessions. It is a longitudinal signal, not a short-term monitoring metric.</p>
+				<p class="empty-copy">{uiText("Improvement compares the first 5 recorded scores with the last 5 recorded scores for patients who have enough completed sessions. It is a longitudinal signal, not a short-term monitoring metric.", $activeLocale)}</p>
 			</section>
 		</section>
 
 		<section class="panel-card">
 			<div class="panel-heading">
 				<div>
-					<p class="panel-kicker">Activity</p>
-					<h2>Cohort Activity Trends</h2>
+					<p class="panel-kicker">{uiText("Activity", $activeLocale)}</p>
+					<h2>{uiText("Cohort Activity Trends", $activeLocale)}</h2>
 				</div>
 				<div class="heading-stack">
-					<span class="timeframe-badge recent">Last 30 days</span>
+					<span class="timeframe-badge recent">{uiText("Last 30 days", $activeLocale)}</span>
 				</div>
 			</div>
 			{#if cohortTrends?.trends?.length}
 				<div class="trend-summary">
-					<div><span>Average Sessions / Week</span><strong>{cohortTrends.summary.avg_sessions_per_week}</strong></div>
-					<div><span>Overall Average Score</span><strong>{cohortTrends.summary.overall_avg_score}</strong></div>
+					<div><span>{uiText("Average Sessions / Week", $activeLocale)}</span><strong>{oneDecimal(cohortTrends.summary.avg_sessions_per_week)}</strong></div>
+					<div><span>{uiText("Overall Average Score", $activeLocale)}</span><strong>{oneDecimal(cohortTrends.summary.overall_avg_score)}</strong></div>
 				</div>
 				<div class="trend-list">
 					{#each cohortTrends.trends as week}
 						<div class="trend-row">
-							<div class="trend-date">{new Date(week.week_starting).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</div>
+							<div class="trend-date">{compactDate(week.week_starting)}</div>
 							<div class="trend-bars">
 								<div class="trend-bar sessions" style={`width: ${(week.sessions / cohortTrends.summary.total_sessions) * 400}%`}></div>
 							</div>
 							<div class="trend-copy">
-								<span>{week.sessions} sessions</span>
-								<span>{week.active_patients} patients</span>
-								<span>Avg {week.avg_score}</span>
+								<span>{n(week.sessions)} {uiText("sessions", $activeLocale)}</span>
+								<span>{n(week.active_patients)} {uiText("patients", $activeLocale)}</span>
+								<span>{uiText("Avg", $activeLocale)} {oneDecimal(week.avg_score)}</span>
 							</div>
 						</div>
 					{/each}
 				</div>
 			{:else}
-				<p class="empty-copy">No recent cohort activity was found for the selected period.</p>
+				<p class="empty-copy">{uiText("No recent cohort activity was found for the selected period.", $activeLocale)}</p>
 			{/if}
 		</section>
 	{/if}

@@ -8,7 +8,7 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
+	import { formatNumber, formatSeconds, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -64,7 +64,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	function compactSecondsLabel(value) {
-		return taskLocale() === 'bn' ? `${n(value)}স` : `${value}s`;
+		return formatSeconds(value, taskLocale());
 	}
 
 	function wordsLabel(count) {
