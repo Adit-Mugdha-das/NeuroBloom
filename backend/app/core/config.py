@@ -183,8 +183,24 @@ def _ensure_legacy_account_columns() -> None:
 def _ensure_reference_data() -> None:
     """Populate required reference tables for a fresh environment."""
     from seed_cognitive_tasks import seed_cognitive_tasks
+    from app.models.department import Department
 
     seed_cognitive_tasks(verbose=False)
+
+    # Seed default departments (idempotent — unique constraint on name)
+    default_departments = [
+        {"name": "Neurology",  "description": "Neurological disorders and brain health"},
+        {"name": "Psychiatry", "description": "Mental health and psychiatric care"},
+    ]
+    with Session(engine) as session:
+        for dept_data in default_departments:
+            from sqlmodel import select as _select
+            existing = session.exec(
+                _select(Department).where(Department.name == dept_data["name"])
+            ).first()
+            if not existing:
+                session.add(Department(name=dept_data["name"], description=dept_data["description"]))
+        session.commit()
 
 
 def init_db() -> None:
