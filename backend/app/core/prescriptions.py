@@ -149,7 +149,13 @@ def _draw_page_header(pdf: canvas.Canvas, width: float, height: float, prescript
 		text_x = 100 if logo_drawn else 52
 		pdf.setFillColor(colors.white)
 		pdf.setFont('Helvetica-Bold', 17)
-		pdf.drawString(text_x, height - 74, brand_name[:40])
+		max_brand_width = width - text_x - 80  # leave room for the teal circle
+		# Shrink font size until the name fits, rather than slicing it
+		font_size = 17
+		while font_size >= 10 and pdf.stringWidth(brand_name, 'Helvetica-Bold', font_size) > max_brand_width:
+			font_size -= 1
+		pdf.setFont('Helvetica-Bold', font_size)
+		pdf.drawString(text_x, height - 74, brand_name)
 		pdf.setFont('Helvetica', 9)
 		pdf.drawString(text_x, height - 89, 'Digital Prescription Record')
 		pdf.drawString(text_x, height - 102, 'NeuroBloom clinical prescribing workflow')

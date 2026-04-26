@@ -15,9 +15,9 @@
 	const domainSelectId = 'performance-trends-domain';
 	
 	const metricOptions = {
-		score: { label: 'Score', color: '#667eea', unit: '%' },
-		accuracy: { label: 'Accuracy', color: '#4caf50', unit: '%' },
-		difficulty: { label: 'Difficulty', color: '#ff9800', unit: '' }
+		score: { label: 'Score', color: '#0e7490', unit: '%' },
+		accuracy: { label: 'Accuracy', color: '#059669', unit: '%' },
+		difficulty: { label: 'Difficulty', color: '#d97706', unit: '' }
 	};
 	
 	const domainNames = {
@@ -136,68 +136,93 @@
 		const chartWidth = width - padding.left - padding.right;
 		const chartHeight = height - padding.top - padding.bottom;
 		
-		// Draw grid
-		ctx.strokeStyle = '#f0f0f0';
-		ctx.lineWidth = 1;
-		for (let i = 0; i <= 5; i++) {
-			const y = padding.top + (chartHeight / 5) * i;
+		// Draw background
+		ctx.fillStyle = '#ffffff';
+		ctx.fillRect(0, 0, width, height);
+
+		// Draw grid lines
+		const gridCount = 5;
+		for (let i = 0; i <= gridCount; i++) {
+			const y = padding.top + (chartHeight / gridCount) * i;
+			ctx.strokeStyle = i === gridCount ? '#d1e9f0' : '#e8f4f8';
+			ctx.lineWidth = i === gridCount ? 1.5 : 1;
 			ctx.beginPath();
 			ctx.moveTo(padding.left, y);
 			ctx.lineTo(width - padding.right, y);
 			ctx.stroke();
-			
+
 			// Y-axis labels
-			const value = maxValue - (range / 5) * i;
-			ctx.fillStyle = '#666';
-			ctx.font = '12px sans-serif';
+			const value = maxValue - (range / gridCount) * i;
+			ctx.fillStyle = '#94a3b8';
+			ctx.font = '600 11px Inter, system-ui, sans-serif';
 			ctx.textAlign = 'right';
-			ctx.fillText(oneDecimal(value), padding.left - 10, y + 4);
+			ctx.fillText(oneDecimal(value), padding.left - 8, y + 4);
 		}
-		
-		// Draw line
-		ctx.strokeStyle = datasets[0].borderColor;
-		ctx.fillStyle = datasets[0].backgroundColor;
-		ctx.lineWidth = 2;
-		
+
+		// Compute smoothed points using cardinal spline
+		const pts = data.map((point, i) => ({
+			x: padding.left + (chartWidth / (data.length - 1 || 1)) * i,
+			y: padding.top + chartHeight - ((point.y - minValue) / range) * chartHeight
+		}));
+
+		// Draw filled area first (gradient)
+		const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+		grad.addColorStop(0, datasets[0].borderColor + '30');
+		grad.addColorStop(1, datasets[0].borderColor + '05');
+		ctx.fillStyle = grad;
 		ctx.beginPath();
-		data.forEach((point, i) => {
-			const x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
-			const y = padding.top + chartHeight - ((point.y - minValue) / range) * chartHeight;
-			
-			if (i === 0) {
-				ctx.moveTo(x, y);
-			} else {
-				ctx.lineTo(x, y);
+		ctx.moveTo(pts[0].x, pts[0].y);
+		if (pts.length === 1) {
+			ctx.lineTo(pts[0].x, pts[0].y);
+		} else {
+			for (let i = 0; i < pts.length - 1; i++) {
+				const cpx = (pts[i].x + pts[i + 1].x) / 2;
+				ctx.bezierCurveTo(cpx, pts[i].y, cpx, pts[i + 1].y, pts[i + 1].x, pts[i + 1].y);
 			}
-		});
-		ctx.stroke();
-		
-		// Fill area
-		ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
-		ctx.lineTo(padding.left, padding.top + chartHeight);
+		}
+		ctx.lineTo(pts[pts.length - 1].x, padding.top + chartHeight);
+		ctx.lineTo(pts[0].x, padding.top + chartHeight);
 		ctx.closePath();
 		ctx.fill();
-		
+
+		// Draw smooth line
+		ctx.strokeStyle = datasets[0].borderColor;
+		ctx.lineWidth = 2.5;
+		ctx.lineJoin = 'round';
+		ctx.beginPath();
+		ctx.moveTo(pts[0].x, pts[0].y);
+		if (pts.length === 1) {
+			ctx.lineTo(pts[0].x, pts[0].y);
+		} else {
+			for (let i = 0; i < pts.length - 1; i++) {
+				const cpx = (pts[i].x + pts[i + 1].x) / 2;
+				ctx.bezierCurveTo(cpx, pts[i].y, cpx, pts[i + 1].y, pts[i + 1].x, pts[i + 1].y);
+			}
+		}
+		ctx.stroke();
+
 		// Draw points
-		ctx.fillStyle = datasets[0].borderColor;
-		data.forEach((point, i) => {
-			const x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
-			const y = padding.top + chartHeight - ((point.y - minValue) / range) * chartHeight;
-			
+		pts.forEach(pt => {
+			// outer white ring
 			ctx.beginPath();
-			ctx.arc(x, y, 4, 0, Math.PI * 2);
+			ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+			ctx.fillStyle = '#ffffff';
+			ctx.fill();
+			// inner colored dot
+			ctx.beginPath();
+			ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
+			ctx.fillStyle = datasets[0].borderColor;
 			ctx.fill();
 		});
-		
-		// X-axis labels (show every nth label to avoid crowding)
-		ctx.fillStyle = '#666';
-		ctx.font = '11px sans-serif';
+
+		// X-axis labels
+		ctx.fillStyle = '#94a3b8';
+		ctx.font = '600 11px Inter, system-ui, sans-serif';
 		ctx.textAlign = 'center';
 		const labelStep = Math.ceil(data.length / 8);
 		data.forEach((point, i) => {
 			if (i % labelStep === 0 || i === data.length - 1) {
-				const x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
-				ctx.fillText(point.x, x, height - 15);
+				ctx.fillText(point.x, pts[i].x, height - 10);
 			}
 		});
 		
@@ -250,50 +275,51 @@
 <div class="trends-card">
 	<div class="trends-header">
 		<div class="header-left">
-			<h3>{uiText("📈 Performance Trends", $activeLocale)}</h3>
+			<h3>Performance Trends</h3>
 			<p class="subtitle">{uiText("Track your progress over time", $activeLocale)}</p>
 		</div>
-		
-		<div class="header-actions">
+
+		<div class="header-right">
 			{#if hasTrendSessions}
-				<button class="download-btn" on:click={handleDownloadChart} title={uiText("Download chart as image", $activeLocale)}>
-					{uiText("📊 Chart", $activeLocale)}
-				</button>
-				<button class="download-btn" on:click={handleDownloadData} title={uiText("Download data as CSV", $activeLocale)}>
-					{uiText("📋 Data", $activeLocale)}
-				</button>
+				<div class="download-group">
+					<button class="download-btn" on:click={handleDownloadChart} title={uiText("Download chart as image", $activeLocale)}>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+						{uiText("Chart", $activeLocale)}
+					</button>
+					<button class="download-btn" on:click={handleDownloadData} title={uiText("Download data as CSV", $activeLocale)}>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+						{uiText("Data", $activeLocale)}
+					</button>
+				</div>
 			{/if}
-		</div>
-		
-		<div class="controls">
-			<!-- Metric Selector -->
-			<div class="selector">
-				<label for={metricSelectId}>{uiText("Metric:", $activeLocale)}</label>
-				<select id={metricSelectId} bind:value={selectedMetric} on:change={updateChart}>
-					<option value="score">{uiText("Score", $activeLocale)}</option>
-					<option value="accuracy">{uiText("Accuracy", $activeLocale)}</option>
-					<option value="difficulty">{uiText("Difficulty", $activeLocale)}</option>
-				</select>
-			</div>
-			
-			<!-- Domain Selector -->
-			<div class="selector">
-				<label for={domainSelectId}>{uiText("Domain:", $activeLocale)}</label>
-				<select id={domainSelectId} bind:value={selectedDomain} on:change={updateChart}>
-					<option value="all">{uiText("Overall", $activeLocale)}</option>
-					{#if availableDomains.length > 0}
-						{#each availableDomains as domain}
-							<option value={domain}>{uiText(domainNames[domain], $activeLocale)}</option>
-						{/each}
-					{/if}
-				</select>
+
+			<div class="controls">
+				<div class="selector">
+					<label for={metricSelectId}>{uiText("Metric:", $activeLocale)}</label>
+					<select id={metricSelectId} bind:value={selectedMetric} on:change={updateChart}>
+						<option value="score">{uiText("Score", $activeLocale)}</option>
+						<option value="accuracy">{uiText("Accuracy", $activeLocale)}</option>
+						<option value="difficulty">{uiText("Difficulty", $activeLocale)}</option>
+					</select>
+				</div>
+				<div class="selector">
+					<label for={domainSelectId}>{uiText("Domain:", $activeLocale)}</label>
+					<select id={domainSelectId} bind:value={selectedDomain} on:change={updateChart}>
+						<option value="all">{uiText("Overall", $activeLocale)}</option>
+						{#if availableDomains.length > 0}
+							{#each availableDomains as domain}
+								<option value={domain}>{uiText(domainNames[domain], $activeLocale)}</option>
+							{/each}
+						{/if}
+					</select>
+				</div>
 			</div>
 		</div>
 	</div>
 	
 	<div class="chart-container">
 		{#if hasTrendSessions}
-			<canvas bind:this={chartCanvas} width="800" height="300"></canvas>
+			<canvas bind:this={chartCanvas} width="900" height="320"></canvas>
 		{:else}
 			<EmptyState 
 				icon="📈"
@@ -327,172 +353,203 @@
 
 <style>
 	.trends-card {
-		background: white;
-		border-radius: 20px;
-		padding: 2rem;
-		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+		background: #ffffff;
+		border-radius: 16px;
+		padding: 1.75rem 2rem;
+		border: 1px solid #e2eef3;
+		box-shadow: 0 2px 12px rgba(14, 116, 144, 0.07);
 		margin-bottom: 2rem;
 	}
-	
+
 	.trends-header {
 		display: flex;
 		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 2rem;
-		gap: 2rem;
+		align-items: center;
+		margin-bottom: 1.25rem;
+		gap: 1.5rem;
 		flex-wrap: wrap;
 	}
-	
-	.header-left {
-		flex: 1;
-		min-width: 200px;
-	}
-	
+
 	.header-left h3 {
-		margin: 0 0 0.5rem 0;
-		color: #333;
-		font-size: 1.5rem;
+		margin: 0 0 0.2rem 0;
+		color: #0f172a;
+		font-size: 1.15rem;
+		font-weight: 700;
+		letter-spacing: -0.01em;
 	}
-	
+
 	.subtitle {
 		margin: 0;
-		color: #666;
-		font-size: 0.9rem;
+		color: #64748b;
+		font-size: 0.82rem;
 	}
-	
-	.header-actions {
+
+	.header-right {
 		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
-	
-	.download-btn {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 0.5rem 1rem;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-size: 0.85rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s;
-		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-	}
-	
-	.download-btn:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-	}
-	
-	.download-btn:active {
-		transform: translateY(0);
-	}
-	
-	.controls {
-		display: flex;
+		align-items: flex-end;
 		gap: 1rem;
 		flex-wrap: wrap;
 	}
-	
+
+	.download-group {
+		display: flex;
+		gap: 0.4rem;
+		align-items: flex-end;
+	}
+
+	.download-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.42rem 0.85rem;
+		background: #f0f9ff;
+		color: #0e7490;
+		border: 1.5px solid #bae6fd;
+		border-radius: 8px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s, color 0.15s;
+	}
+
+	.download-btn:hover {
+		background: #e0f2fe;
+		border-color: #0e7490;
+		color: #164e63;
+	}
+
+	.download-btn:active {
+		background: #bae6fd;
+	}
+
+	.controls {
+		display: flex;
+		gap: 0.75rem;
+		align-items: flex-end;
+	}
+
 	.selector {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.3rem;
 	}
-	
+
 	.selector label {
-		font-size: 0.85rem;
-		color: #666;
+		font-size: 0.75rem;
+		color: #64748b;
 		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
-	
+
 	.selector select {
-		padding: 0.5rem 1rem;
-		border: 2px solid #e0e0e0;
+		padding: 0.42rem 2rem 0.42rem 0.75rem;
+		border: 1.5px solid #cbd5e1;
 		border-radius: 8px;
-		background: white;
-		color: #333;
-		font-size: 0.9rem;
+		background: #ffffff;
+		color: #0f172a;
+		font-size: 0.875rem;
 		cursor: pointer;
-		transition: all 0.3s;
+		transition: border-color 0.15s, box-shadow 0.15s;
+		appearance: none;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 0.6rem center;
 	}
-	
+
 	.selector select:hover {
-		border-color: #667eea;
+		border-color: #0e7490;
 	}
-	
+
 	.selector select:focus {
 		outline: none;
-		border-color: #667eea;
-		box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		border-color: #0e7490;
+		box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
 	}
-	
+
 	.chart-container {
-		background: #f8f9fa;
-		border-radius: 15px;
-		padding: 2rem;
-		min-height: 300px;
+		background: #ffffff;
+		border: 1px solid #e8f4f8;
+		border-radius: 12px;
+		padding: 1rem 0.5rem 0.5rem 0.5rem;
+		min-height: 280px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
 	}
-	
+
 	canvas {
 		max-width: 100%;
 		height: auto;
+		display: block;
 	}
-	
+
 	.stats-summary {
 		display: flex;
-		justify-content: space-around;
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 2px solid #f0f0f0;
+		justify-content: center;
+		gap: 0;
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid #f1f5f9;
 	}
-	
+
 	.stat-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.25rem;
+		flex: 1;
+		padding: 0 1rem;
 	}
-	
+
+	.stat-item + .stat-item {
+		border-left: 1px solid #e2e8f0;
+	}
+
 	.stat-label {
-		font-size: 0.85rem;
-		color: #666;
+		font-size: 0.75rem;
+		color: #94a3b8;
 		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
-	
+
 	.stat-value {
 		font-size: 1.5rem;
-		color: #667eea;
+		color: #0e7490;
 		font-weight: 700;
+		line-height: 1;
 	}
-	
+
 	@media (max-width: 768px) {
 		.trends-header {
 			flex-direction: column;
+			align-items: flex-start;
 		}
-		
+
+		.header-right {
+			width: 100%;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
 		.controls {
 			width: 100%;
 		}
-		
+
 		.selector {
 			flex: 1;
-			min-width: 140px;
+			min-width: 130px;
 		}
-		
+
 		.chart-container {
-			padding: 1rem;
+			padding: 0.5rem;
 		}
-		
+
 		.stats-summary {
 			flex-wrap: wrap;
-			gap: 1.5rem;
+			gap: 1rem;
 		}
 	}
 </style>

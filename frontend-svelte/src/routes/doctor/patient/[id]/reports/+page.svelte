@@ -463,7 +463,112 @@
 	}
 
 	function exportToPDF() {
-		alert('PDF export feature coming soon!');
+		if (!selectedReport) return;
+
+		const data = selectedReport.report_data;
+		const patient = patientInfo?.patient_info;
+		const name = patient?.full_name || patient?.email || 'Patient';
+		const period = `${formatDate(selectedReport.period_start)} – ${formatDate(selectedReport.period_end)}`;
+		const generated = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+
+		const domainRows = Object.entries(data.domain_stats || {}).map(([domain, stats]) => `
+			<tr>
+				<td>${formatDomainName(domain)}</td>
+				<td>${stats.sessions_count ?? '—'}</td>
+				<td>${stats.avg_score != null ? stats.avg_score.toFixed(1) + '%' : '—'}</td>
+				<td>${stats.avg_accuracy != null ? stats.avg_accuracy.toFixed(1) + '%' : '—'}</td>
+				<td>${stats.avg_reaction_time != null ? stats.avg_reaction_time.toFixed(0) + ' ms' : '—'}</td>
+				<td class="trend-${stats.trend}">${stats.trend ?? '—'}</td>
+			</tr>`).join('');
+
+		const commentary = selectedReport.doctor_commentary
+			? `<section class="section">
+					<h2>Clinician Commentary</h2>
+					<p class="commentary">${selectedReport.doctor_commentary.replace(/\n/g, '<br>')}</p>
+			   </section>`
+			: '';
+
+		const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Progress Report – ${name}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px 40px; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; border-bottom: 2px solid #0e7490; margin-bottom: 24px; }
+  .logo { font-size: 18px; font-weight: 700; color: #0e7490; letter-spacing: -0.02em; }
+  .logo span { font-weight: 400; color: #64748b; font-size: 11px; display: block; }
+  .meta { text-align: right; color: #64748b; font-size: 11px; line-height: 1.6; }
+  h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 700; color: #0e7490; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .section { margin-bottom: 24px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .summary-card { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px 14px; }
+  .summary-card .label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .summary-card .value { font-size: 20px; font-weight: 700; color: #0e7490; }
+  table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  th { background: #f8fafc; text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  tr:last-child td { border-bottom: none; }
+  .trend-improving { color: #059669; font-weight: 700; }
+  .trend-declining { color: #dc2626; font-weight: 700; }
+  .trend-stable { color: #d97706; font-weight: 600; }
+  .commentary { line-height: 1.7; color: #334155; background: #f8fafc; border-left: 3px solid #0e7490; padding: 12px 16px; border-radius: 0 6px 6px 0; }
+  footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+  @media print {
+    body { padding: 20px 28px; }
+    @page { margin: 16mm 18mm; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">NeuroBloom <span>Doctor Portal</span></div>
+    <h1>${name}</h1>
+    <p style="color:#64748b;font-size:11px;margin-top:4px;">Report period: ${period}</p>
+  </div>
+  <div class="meta">
+    <div>Generated: ${generated}</div>
+    <div>Period type: ${selectedReport.period_type}</div>
+    <div>Report ID: ${selectedReport.id}</div>
+  </div>
+</header>
+
+<div class="summary-grid">
+  <div class="summary-card"><div class="label">Total Sessions</div><div class="value">${data.summary.total_sessions}</div></div>
+  <div class="summary-card"><div class="label">Training Time</div><div class="value">${data.summary.total_duration_minutes?.toFixed(0)}m</div></div>
+  <div class="summary-card"><div class="label">Average Score</div><div class="value">${data.summary.avg_overall_score?.toFixed(1)}%</div></div>
+  <div class="summary-card"><div class="label">Active Days</div><div class="value">${data.summary.active_days}</div></div>
+</div>
+
+<section class="section">
+  <h2>Cognitive Domain Performance</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Domain</th><th>Sessions</th><th>Avg Score</th><th>Avg Accuracy</th><th>Avg RT</th><th>Trend</th>
+      </tr>
+    </thead>
+    <tbody>${domainRows}</tbody>
+  </table>
+</section>
+
+${commentary}
+
+<footer>
+  <span>NeuroBloom — Cognitive Training &amp; Monitoring Platform</span>
+  <span>Confidential — For clinical use only</span>
+</footer>
+
+<script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`;
+
+		const win = window.open('', '_blank');
+		win.document.write(html);
+		win.document.close();
 	}
 
 	function exportToCSV() {
