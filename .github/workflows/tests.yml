@@ -59,10 +59,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-httpx
 
+      # No real Postgres needed — conftest.py overrides get_session with SQLite
       - name: Run tests
         env:
-          # Point to in-memory SQLite so no real Postgres is needed in CI
-          DATABASE_URL: sqlite:///:memory:
+          DATABASE_URL: "sqlite:///:memory:"
           POSTGRES_HOST: localhost
           POSTGRES_DB: neurobloom_test
           POSTGRES_USER: postgres
