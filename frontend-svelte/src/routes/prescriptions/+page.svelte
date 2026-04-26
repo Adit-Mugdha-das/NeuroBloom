@@ -1,7 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import api, { API_BASE_URL } from '$lib/api.js';
-	import { locale, localeText } from '$lib/i18n';
+	import { locale, localeText, t } from '$lib/i18n';
 	import { user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 
@@ -203,7 +203,7 @@
 									<div>
 										<p class="card-kicker">{prescription.verification_id}</p>
 										<h3 data-localize-skip>{prescription.title}</h3>
-										<p class="summary-copy" data-localize-skip>{prescription.summary || prescription.patient_instructions}</p>
+										<p class="summary-copy">{t(prescription.summary || prescription.patient_instructions || '', $locale)}</p>
 									</div>
 									<div class="card-meta">
 										<span class="status-pill status-{prescription.status}">{translateStatus(prescription.status)}</span>
@@ -219,19 +219,19 @@
 									<div><span>{lt('Medication count', 'ওষুধের সংখ্যা')}</span><strong>{prescription.medication_count}</strong></div>
 								</div>
 
-								{#if prescription.medications?.length}
-									<div class="medication-list">
-										{#each prescription.medications as medication}
-											<div class="medication-item" data-localize-skip>
-												<strong>{medication.name}</strong>
-												<span>{medication.dosage} · {medication.frequency}{medication.duration ? ` · ${medication.duration}` : ''}</span>
-												{#if medication.instructions}
-													<small>{medication.instructions}</small>
-												{/if}
-											</div>
-										{/each}
-									</div>
-								{/if}
+							{#if prescription.medications?.length}
+								<div class="medication-list">
+									{#each prescription.medications as medication}
+										<div class="medication-item">
+											<strong>{medication.name}</strong>
+											<span>{medication.dosage} · {t(medication.frequency, $locale)}{medication.duration ? ` · ${t(medication.duration, $locale)}` : ''}</span>
+											{#if medication.instructions}
+												<small>{t(medication.instructions, $locale)}</small>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{/if}
 
 								{#if prescription.lifestyle_plan?.length}
 									<div class="support-block">
