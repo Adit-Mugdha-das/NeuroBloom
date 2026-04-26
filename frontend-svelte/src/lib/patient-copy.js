@@ -357,7 +357,7 @@ const BADGE_CATEGORY_COPY = Object.freeze({
 });
 
 const SHELL_COPY = Object.freeze({
-	dashboard_title: { en: 'Recovery Dashboard', bn: 'রোগীর ড্যাশবোর্ড' },
+	dashboard_title: { en: 'My Dashboard', bn: 'আমার ড্যাশবোর্ড' },
 	dashboard_description: {
 		en: 'Your next step, today’s practice, and recovery progress in one place.',
 		bn: 'আজকের পরবর্তী ধাপ, অনুশীলন, আর অগ্রগতি এক জায়গায় দেখুন।'

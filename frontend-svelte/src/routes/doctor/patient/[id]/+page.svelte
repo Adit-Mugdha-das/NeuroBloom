@@ -600,7 +600,7 @@
 				<p class="empty-copy">{uiText("No training sessions have been recorded yet.", $activeLocale)}</p>
 			{:else}
 				<div class="table-wrap">
-					<table>
+					<table class="session-table">
 						<thead>
 							<tr>
 								<th>{uiText("Date", $activeLocale)}</th>
@@ -609,19 +609,25 @@
 								<th>{uiText("Difficulty", $activeLocale)}</th>
 								<th>{uiText("Score", $activeLocale)}</th>
 								<th>{uiText("Accuracy", $activeLocale)}</th>
-								<th>RT</th>
+								<th>{uiText("RT", $activeLocale)}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each sessions as session}
+								{@const score = parseFloat(session.score)}
+								{@const scoreClass = score >= 75 ? 'score-good' : score >= 50 ? 'score-mid' : 'score-low'}
 								<tr>
-									<td>{formatDate(session.completed_at)}</td>
-									<td><span class="domain-pill" style={`background:${getDomainColor(session.domain)};`}>{formatDomainLabel(session.domain)}</span></td>
-									<td>{session.task_code || session.task_type}</td>
-									<td>{uiText("Level", $activeLocale)} {session.difficulty}</td>
-									<td>{session.score}</td>
-									<td>{session.accuracy}%</td>
-									<td>{session.reaction_time || 'N/A'} ms</td>
+									<td class="col-date">{formatDate(session.completed_at)}</td>
+									<td class="col-domain">
+										<span class="domain-pill" style="--pill-color:{getDomainColor(session.domain)}">
+											{formatDomainLabel(session.domain)}
+										</span>
+									</td>
+									<td class="col-task">{(session.task_code || session.task_type || '').replaceAll('_', ' ')}</td>
+									<td class="col-diff"><span class="level-badge">{uiText("Lv", $activeLocale)}&nbsp;{session.difficulty}</span></td>
+									<td class="col-score {scoreClass}">{session.score}</td>
+									<td class="col-acc">{session.accuracy}%</td>
+									<td class="col-rt">{session.reaction_time != null ? session.reaction_time + ' ms' : '—'}</td>
 								</tr>
 							{/each}
 						</tbody>
@@ -1310,5 +1316,107 @@
 			flex-direction: column;
 			align-items: stretch;
 		}
+	}
+
+	/* ── Recent Training Sessions table ─────────────────────────── */
+	.table-wrap {
+		overflow-x: auto;
+		border-radius: 12px;
+		border: 1px solid #e2e8f0;
+		margin-top: 0.75rem;
+	}
+
+	.session-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.82rem;
+	}
+
+	.session-table thead tr {
+		background: #f1f5f9;
+	}
+
+	.session-table th {
+		padding: 0.65rem 0.9rem;
+		text-align: left;
+		font-size: 0.7rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: #64748b;
+		white-space: nowrap;
+		border-bottom: 1px solid #e2e8f0;
+	}
+
+	.session-table tbody tr {
+		border-bottom: 1px solid #f1f5f9;
+		transition: background 0.12s;
+	}
+
+	.session-table tbody tr:last-child {
+		border-bottom: none;
+	}
+
+	.session-table tbody tr:hover {
+		background: #f8fafc;
+	}
+
+	.session-table td {
+		padding: 0.7rem 0.9rem;
+		color: #334155;
+		vertical-align: middle;
+		white-space: nowrap;
+	}
+
+	.col-date {
+		color: #64748b;
+		font-size: 0.78rem;
+	}
+
+	.col-task {
+		text-transform: capitalize;
+		color: #1e293b;
+		font-weight: 500;
+	}
+
+	.domain-pill {
+		display: inline-block;
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		background: var(--pill-color, #6b7280);
+		color: #ffffff;
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+	}
+
+	.level-badge {
+		display: inline-block;
+		padding: 0.15rem 0.55rem;
+		border-radius: 6px;
+		background: #f1f5f9;
+		border: 1px solid #e2e8f0;
+		color: #475569;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.col-score {
+		font-weight: 700;
+		font-size: 0.88rem;
+	}
+
+	.score-good { color: #059669; }
+	.score-mid  { color: #d97706; }
+	.score-low  { color: #dc2626; }
+
+	.col-acc {
+		color: #475569;
+	}
+
+	.col-rt {
+		color: #94a3b8;
+		font-size: 0.78rem;
 	}
 </style>

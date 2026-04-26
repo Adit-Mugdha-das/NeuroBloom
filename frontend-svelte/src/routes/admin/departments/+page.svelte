@@ -7,11 +7,15 @@
 
 	let admin = null;
 	let departments = [];
+	let allDoctors = [];
 	let loading = true;
 	let saving = false;
 	let error = '';
 	let successMsg = '';
 	let form = { name: '', description: '' };
+	// per-department selected doctor for the assign dropdown
+	let assignSelections = {};
+	let assigningSaving = {};
 
 	onMount(async () => {
 		const currentUser = $user;
@@ -21,19 +25,66 @@
 		}
 
 		admin = currentUser;
-		await loadDepartments();
+		await loadAll();
 	});
 
-	async function loadDepartments() {
+	async function loadAll() {
 		loading = true;
 		error = '';
 		try {
-			const response = await api.get(`/api/admin/departments?admin_id=${admin.id}`);
-			departments = response.data.departments;
+			const [deptRes, docRes] = await Promise.all([
+				api.get(`/api/admin/departments?admin_id=${admin.id}`),
+				api.get(`/api/admin/doctors?admin_id=${admin.id}`),
+			]);
+			departments = deptRes.data.departments;
+			allDoctors = docRes.data.doctors;
 		} catch (requestError) {
-			error = requestError.response?.data?.detail || 'Failed to load departments';
+			error = requestError.response?.data?.detail || 'Failed to load data';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadDepartments() {
+		const [deptRes, docRes] = await Promise.all([
+			api.get(`/api/admin/departments?admin_id=${admin.id}`),
+			api.get(`/api/admin/doctors?admin_id=${admin.id}`),
+		]);
+		departments = deptRes.data.departments;
+		allDoctors = docRes.data.doctors;
+	}
+
+	function doctorsInDept(deptId) {
+		return allDoctors.filter(d => d.department_id === deptId);
+	}
+
+	function unassignedDoctors() {
+		return allDoctors.filter(d => d.department_id == null);
+	}
+
+	async function assignDoctor(deptId) {
+		const doctorId = assignSelections[deptId];
+		if (!doctorId) return;
+		assigningSaving = { ...assigningSaving, [deptId]: true };
+		try {
+			await api.patch(`/api/admin/doctors/${doctorId}/department?admin_id=${admin.id}`, { department_id: deptId });
+			successMsg = 'Doctor assigned successfully.';
+			assignSelections = { ...assignSelections, [deptId]: '' };
+			await loadDepartments();
+		} catch (e) {
+			error = e.response?.data?.detail || 'Failed to assign doctor';
+		} finally {
+			assigningSaving = { ...assigningSaving, [deptId]: false };
+		}
+	}
+
+	async function removeDoctor(doctorId) {
+		try {
+			await api.patch(`/api/admin/doctors/${doctorId}/department?admin_id=${admin.id}`, { department_id: null });
+			successMsg = 'Doctor removed from department.';
+			await loadDepartments();
+		} catch (e) {
+			error = e.response?.data?.detail || 'Failed to remove doctor';
 		}
 	}
 
@@ -203,6 +254,8 @@
 			{:else}
 				<div class="department-grid">
 					{#each departments as department (department.id)}
+						{@const deptDoctors = doctorsInDept(department.id)}
+						{@const freePool = unassignedDoctors()}
 						<div class="department-card">
 							<h3>{department.name}</h3>
 							<p class="department-desc">{department.description || 'No description provided.'}</p>
@@ -215,6 +268,36 @@
 									<p class="metric-value">{department.patient_count}</p>
 									<p class="metric-label">{uiText("Patients", $activeLocale)}</p>
 								</div>
+							</div>
+
+							{#if deptDoctors.length > 0}
+								<div class="doctor-list">
+									{#each deptDoctors as doc}
+										<div class="doctor-row">
+											<div class="doctor-info">
+												<span class="doctor-name">{doc.full_name}</span>
+												{#if doc.specialization}<span class="doctor-spec">{doc.specialization}</span>{/if}
+											</div>
+											<button class="remove-btn" on:click={() => removeDoctor(doc.id)} title="Remove from department">
+												&times;
+											</button>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<div class="assign-row">
+								<select bind:value={assignSelections[department.id]} class="assign-select" disabled={freePool.length === 0}>
+									<option value="">{freePool.length === 0 ? 'All doctors assigned' : 'Add doctor…'}</option>
+									{#each freePool as doc}
+										<option value={doc.id}>{doc.full_name}{doc.specialization ? ` — ${doc.specialization}` : ''}</option>
+									{/each}
+								</select>
+								<button
+									class="assign-btn"
+									on:click={() => assignDoctor(department.id)}
+									disabled={!assignSelections[department.id] || assigningSaving[department.id]}
+								>Assign</button>
 							</div>
 						</div>
 					{/each}
@@ -257,12 +340,27 @@
 	.form-grid input { padding: 0.7rem 0.9rem; border: 1px solid #dbe2ea; border-radius: 8px; font-size: 0.9rem; }
 	.primary-btn { background: #1e293b; color: white; border: none; border-radius: 8px; padding: 0.7rem 1rem; cursor: pointer; font-weight: 600; }
 	.primary-btn:disabled { opacity: .6; cursor: not-allowed; }
-	.department-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-	.department-card { background: white; border-radius: 12px; padding: 1.4rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); border-top: 3px solid #1d4ed8; }
+	.department-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
+	.department-card { background: white; border-radius: 12px; padding: 1.4rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); border-top: 3px solid #1d4ed8; overflow: hidden; }
 	.department-card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; color: #1e293b; }
 	.department-desc { margin: 0 0 1rem; font-size: 0.88rem; color: #64748b; min-height: 2.5rem; }
 	.metric-row { display: flex; gap: 1.5rem; }
 	.metric-value { margin: 0; font-size: 1.5rem; font-weight: 700; color: #1e293b; }
 	.metric-label { margin: 0.2rem 0 0; font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
 	.loading-msg, .empty-state { padding: 3rem; text-align: center; color: #64748b; }
+
+	.doctor-list { margin-top: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 0.65rem; display: flex; flex-direction: column; gap: 0.35rem; }
+	.doctor-row { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.55rem; border-radius: 6px; background: #f8fafc; }
+	.doctor-info { display: flex; flex-direction: column; gap: 0.05rem; }
+	.doctor-name { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+	.doctor-spec { font-size: 0.72rem; color: #64748b; }
+	.remove-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0.1rem 0.35rem; border-radius: 4px; }
+	.remove-btn:hover { background: #fee2e2; color: #dc2626; }
+
+	.assign-row { display: flex; gap: 0.5rem; margin-top: 0.85rem; align-items: center; }
+	.assign-select { flex: 1; min-width: 0; padding: 0.5rem 0.65rem; border: 1px solid #dbe2ea; border-radius: 7px; font-size: 0.82rem; color: #334155; background: white; overflow: hidden; text-overflow: ellipsis; }
+	.assign-select:disabled { background: #f1f5f9; color: #94a3b8; }
+	.assign-btn { padding: 0.5rem 0.9rem; background: #1d4ed8; color: white; border: none; border-radius: 7px; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+	.assign-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+	.assign-btn:not(:disabled):hover { background: #1e40af; }
 </style>
