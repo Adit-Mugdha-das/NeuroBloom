@@ -186,6 +186,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		clearTimeout(practiceAdvanceTimeout);
 		playMode = TASK_PLAY_MODE.RECORDED;
 		practiceStatusMessage = '';
+		showInstructions = false;
 		showPractice = false;
 		practiceComplete = false;
 		testStarted = true;
@@ -447,14 +448,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 				<div class="button-group">
 					<button class="btn-secondary" on:click={startPractice}>{lt('Try Practice First', 'আগে অনুশীলন করুন')}</button>
-					<TaskPracticeActions
-						locale={$locale}
-						startLabel={lt('Start Actual Task', 'আসল টাস্ক শুরু করুন')}
-						practiceVisible={false}
-						statusMessage={practiceStatusMessage}
-						align="center"
-						on:start={startTest}
-					/>
+					<button class="start-button" on:click={startTest} disabled={!sessionData}>{lt('Start Actual Task', 'আসল টাস্ক শুরু করুন')}</button>
 				</div>
 			</div>
 

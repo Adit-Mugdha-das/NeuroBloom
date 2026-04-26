@@ -357,10 +357,10 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 </script>
 
-<div class="wm-container" class:intro-layout={stage === 'intro'} data-localize-skip>
+<div class="wm-container" data-localize-skip>
 	{#if stage === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-		<div class="page-content">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 			<div class="task-header">				<h1 class="task-title">{t('Working Memory Test')}</h1>
 			</div>
 
@@ -533,8 +533,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		</div>
 	
 	{:else if stage === 'results'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 		<div class="test-card">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 			<h1>🎉 {t('Test Complete!')}</h1>
 			
 			{#if isTrainingMode}
@@ -625,18 +625,12 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 <style>
 	.wm-container {
 		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-	}
-
-	.wm-container.intro-layout {
-		background: #c8defa;
+		background: #C8DEFA;
 		display: block;
 		padding: 2rem;
 	}
+
+	/* removed .wm-container.intro-layout override — always use #C8DEFA */
 
 	.page-content {
 		max-width: 960px;
@@ -644,6 +638,31 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+	}
+
+	/* Intro unified card */
+	.intro-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+	}
+
+	.intro-wrapper > .concept-card,
+	.intro-wrapper > .rules-card,
+	.intro-wrapper > .tip-card,
+	.intro-wrapper > .clinical-card {
+		box-shadow: none;
+		border-radius: 12px;
+	}
+
+	.intro-wrapper .info-grid .info-card {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
 	.task-header {
@@ -901,7 +920,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		padding: 3rem;
 		max-width: 900px;
 		width: 100%;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		margin: 0 auto;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
 		text-align: center;
 		position: relative;
 	}
@@ -911,7 +931,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	.test-card h1 {
-		color: #667eea;
+		color: #0e7490;
 		font-size: 2.5rem;
 		margin-bottom: 0.5rem;
 		font-weight: 700;
@@ -928,12 +948,12 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.progress-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(90deg, #5eead4 0%, #0d9488 100%);
 		transition: width 0.3s ease;
 	}
 
 	.timer {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #0e7490 0%, #164e63 100%);
 		color: white;
 		padding: 0.75rem 1.5rem;
 		border-radius: 50px;
@@ -941,35 +961,35 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		font-weight: 600;
 		display: inline-block;
 		margin-bottom: 1.5rem;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+		box-shadow: 0 4px 15px rgba(14, 116, 144, 0.3);
 	}
 
 	.task-reminder {
-		color: #764ba2;
+		color: #164e63;
 		font-size: 1.2rem;
 		margin-bottom: 1.5rem;
 		font-weight: 600;
 	}
 
 	.task-reminder strong {
-		color: #667eea;
+		color: #0e7490;
 	}
 
 	.word-display {
 		font-size: 10rem;
 		font-weight: 700;
-		color: #667eea;
+		color: #0e7490;
 		margin: 2rem 0;
 		min-height: 180px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
+		background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
 		border-radius: 20px;
-		box-shadow: inset 0 4px 20px rgba(102, 126, 234, 0.1);
+		box-shadow: inset 0 4px 20px rgba(14, 116, 144, 0.08);
 		animation: letterPulse 0.3s ease;
 		letter-spacing: 0.05em;
-		border: 3px solid #667eea;
+		border: 3px solid #0e7490;
 	}
 
 	@keyframes letterPulse {
@@ -1077,7 +1097,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	.result-value {
-		color: #667eea;
+		color: #0e7490;
 		font-size: 1.5rem;
 		font-weight: 700;
 	}
@@ -1098,22 +1118,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	
 	/* Training Progress Banner */
 	.training-progress-banner {
-		background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
-		border: 2px solid #667eea;
+		background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+		border: 2px solid #0e7490;
 		border-radius: 16px;
 		padding: 1.5rem;
 		margin: 1.5rem 0;
 	}
 	
 	.progress-label {
-		color: #764ba2;
+		color: #164e63;
 		font-weight: 600;
 		font-size: 0.9rem;
 		margin: 0 0 0.5rem 0;
 	}
 	
 	.progress-value {
-		color: #667eea;
+		color: #0e7490;
 		font-weight: 700;
 		font-size: 1.3rem;
 		margin: 0 0 1rem 0;
@@ -1147,7 +1167,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 
 	.btn-primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #0e7490 0%, #164e63 100%);
 		color: white;
 		border: none;
 		padding: 1rem 2.5rem;
@@ -1156,7 +1176,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+		box-shadow: 0 4px 15px rgba(14, 116, 144, 0.4);
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -1164,7 +1184,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	.btn-primary:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+		box-shadow: 0 6px 20px rgba(14, 116, 144, 0.5);
 	}
 
 	.btn-primary:active {
@@ -1227,8 +1247,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	}
 
 	@media (max-width: 768px) {
-		.wm-container,
-		.wm-container.intro-layout {
+		.wm-container {
 			padding: 1rem;
 		}
 

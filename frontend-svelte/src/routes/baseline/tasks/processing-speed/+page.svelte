@@ -265,9 +265,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- INTRO -->
     {#if stage === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
-
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
             <div class="task-header">                <h1 class="task-title">Simple Reaction Time</h1>
             </div>
 
@@ -420,9 +419,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- RESULTS -->
     {:else if stage === 'results'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
-
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
             <div class="task-header">                <h1 class="task-title">Results</h1>
             </div>
 
@@ -511,6 +509,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+    }
+
+    /* Intro / Results unified card */
+    .intro-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 1.8rem;
+    }
+
+    .intro-wrapper > .concept-card,
+    .intro-wrapper > .parts-grid,
+    .intro-wrapper > .tip-card,
+    .intro-wrapper > .clinical-card,
+    .intro-wrapper > .results-card {
+        box-shadow: none;
+        border-radius: 12px;
     }
 
     /* Task header */
@@ -639,20 +659,25 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     .clinical-card p  { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
 
     /* ============================================================
-       SIMPLE REACTION TIME ARENA (full screen flash zone)
+       SIMPLE REACTION TIME ARENA (card panel flash zone)
     ============================================================ */
     .arena-wrap {
-        min-height: 100vh;
+        max-width: 680px;
+        margin: 0 auto;
+        width: 100%;
+        min-height: 480px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         background: #1e293b;
+        border-radius: 26px;
         transition: background 0.08s ease;
         user-select: none;
         position: relative;
         padding: 2rem;
+        box-shadow: 0 24px 60px rgba(19, 52, 74, 0.15);
     }
     .arena-wrap.arena-green { background: #16a34a; }
 

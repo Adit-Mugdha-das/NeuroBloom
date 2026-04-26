@@ -611,7 +611,10 @@
 	.training-header {
 		padding: 1.4rem;
 		display: grid;
+		grid-template-columns: 1fr auto;
+		grid-template-rows: auto auto;
 		gap: 1.1rem;
+		align-items: start;
 	}
 
 	.header-copy h1 {
@@ -643,12 +646,17 @@
 		gap: 0.75rem;
 		flex-wrap: wrap;
 		justify-content: flex-end;
+		grid-column: 2;
+		grid-row: 1;
+		align-self: start;
+		padding-top: 0.1rem;
 	}
 
 	.summary-strip {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.9rem;
+		grid-column: 1 / -1;
 	}
 
 	.summary-item {

@@ -428,6 +428,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 		{#if gamePhase === 'intro'}
 
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
+
 			<!-- Header Card -->
 			<div class="header-card">
 				<div class="header-content">

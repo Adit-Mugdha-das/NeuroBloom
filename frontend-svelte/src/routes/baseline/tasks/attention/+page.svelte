@@ -226,9 +226,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- INTRO -->
     {#if stage === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
-
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
             <div class="task-header">                <h1 class="task-title">{lt('Continuous Performance Test', 'কন্টিনিউয়াস পারফরম্যান্স টেস্ট')}</h1>
             </div>
 
@@ -331,9 +330,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- RESULTS -->
     {:else if stage === 'results'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
-
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
             <div class="task-header">                <h1 class="task-title">{lt('Results', 'ফলাফল')}</h1>
             </div>
 
@@ -410,6 +408,28 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+    }
+
+    /* Intro / Results unified card */
+    .intro-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 1.8rem;
+    }
+
+    .intro-wrapper > .concept-card,
+    .intro-wrapper > .rules-card,
+    .intro-wrapper > .tip-card,
+    .intro-wrapper > .clinical-card,
+    .intro-wrapper > .results-card {
+        box-shadow: none;
+        border-radius: 12px;
     }
 
     /* Task header */
@@ -555,12 +575,17 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
        TEST ARENA
     ============================================================ */
     .test-arena {
-        min-height: 100vh;
+        max-width: 680px;
+        margin: 0 auto;
+        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 2rem 1rem;
-        background: #0f172a;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(118, 145, 163, 0.18);
+        border-radius: 26px;
+        box-shadow: 0 24px 60px rgba(19, 52, 74, 0.1);
         position: relative;
     }
 
@@ -584,8 +609,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
 
     .trial-pill {
-        background: rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.7);
+        background: rgba(14, 116, 144, 0.1);
+        color: #0e7490;
         font-size: 0.85rem; font-weight: 600;
         padding: 0.35rem 1rem;
         border-radius: 20px;
@@ -617,22 +642,22 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         font-size: 9rem;
         font-weight: 900;
         font-family: 'Courier New', monospace;
-        color: white;
+        color: #1e293b;
         line-height: 1;
-        text-shadow: 0 0 40px rgba(255,255,255,0.1);
+        text-shadow: none;
         transition: color 0.1s ease;
         letter-spacing: -2px;
     }
-    .letter-x { color: #4ade80; text-shadow: 0 0 40px rgba(74, 222, 128, 0.4); }
+    .letter-x { color: #16a34a; text-shadow: 0 0 20px rgba(22, 163, 74, 0.3); }
 
-    .stage-alert .current-letter { color: #fcd34d; text-shadow: 0 0 40px rgba(252, 211, 77, 0.3); }
-    .stage-alert .letter-x       { color: #4ade80; text-shadow: 0 0 40px rgba(74, 222, 128, 0.5); }
+    .stage-alert .current-letter { color: #d97706; text-shadow: none; }
+    .stage-alert .letter-x       { color: #16a34a; text-shadow: 0 0 20px rgba(22, 163, 74, 0.4); }
 
     .prev-label {
         font-size: 0.9rem;
-        color: rgba(255,255,255,0.4);
+        color: #64748b;
     }
-    .prev-label strong { color: rgba(255,255,255,0.75); }
+    .prev-label strong { color: #1e293b; }
 
     /* Response zone */
     .respond-zone {
@@ -641,30 +666,30 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         cursor: pointer;
     }
     .respond-inner {
-        background: rgba(255,255,255,0.06);
-        border: 2px solid rgba(255,255,255,0.12);
+        background: rgba(14, 116, 144, 0.06);
+        border: 2px solid rgba(14, 116, 144, 0.2);
         border-radius: 20px;
         padding: 2.5rem;
         text-align: center;
         transition: background 0.15s, border-color 0.15s;
     }
     .respond-zone:hover .respond-inner {
-        background: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.25);
+        background: rgba(14, 116, 144, 0.1);
+        border-color: rgba(14, 116, 144, 0.4);
     }
     .respond-zone:active .respond-inner {
-        background: rgba(14, 116, 144, 0.35);
+        background: rgba(14, 116, 144, 0.25);
         border-color: #0e7490;
     }
 
     .respond-icon {
         display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
-        color: rgba(255,255,255,0.5);
+        color: #64748b;
         font-size: 1.1rem; font-weight: 700;
         letter-spacing: 2px; text-transform: uppercase;
         transition: color 0.15s;
     }
-    .respond-icon.icon-alert { color: #fcd34d; }
+    .respond-icon.icon-alert { color: #d97706; }
     .respond-subtext { font-size: 0.75rem; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.7; }
 
     /* ============================================================

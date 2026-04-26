@@ -259,8 +259,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- INTRO -->
     {#if stage === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 
             <div class="task-header">                <h1 class="task-title">{lt('Task Switching', 'টাস্ক সুইচিং')}</h1>
             </div>
@@ -370,8 +370,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- RESULTS -->
     {:else if stage === 'results'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
-        <div class="page-content">
+        <div class="intro-wrapper">
+            <TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.BASELINE} />
 
             <div class="task-header">                <h1 class="task-title">{lt('Results', 'ফলাফল')}</h1>
             </div>
@@ -445,14 +445,23 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         font-family: inherit;
     }
 
-    /* Page content */
-    .page-content {
-        max-width: 900px;
+    /* Unified intro/results card */
+    .intro-wrapper {
+        max-width: 960px;
         margin: 0 auto;
+        width: 100%;
+        background: white;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 1.8rem;
     }
+    .intro-wrapper .concept-card,
+    .intro-wrapper .rules-card,
+    .intro-wrapper .switch-example,
+    .intro-wrapper .results-card { box-shadow: none; }
 
     /* Task header */
     .task-header {
@@ -465,7 +474,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     .task-title {
         font-size: 1.75rem;
         font-weight: 700;
-        color: #701a75;
+        color: #1e293b;
         margin: 0;
     }
 
@@ -478,8 +487,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
     .concept-badge {
         display: inline-block;
-        background: #fae8ff;
-        color: #a21caf;
+        background: #e0f2fe;
+        color: #0e7490;
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -488,7 +497,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         border-radius: 20px;
         margin-bottom: 0.75rem;
     }
-    .concept-card h2 { font-size: 1.4rem; font-weight: 700; color: #701a75; margin: 0 0 0.75rem; }
+    .concept-card h2 { font-size: 1.4rem; font-weight: 700; color: #0e7490; margin: 0 0 0.75rem; }
     .concept-card p  { color: #374151; line-height: 1.65; margin: 0; }
 
     /* Rules card */
@@ -498,7 +507,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         padding: 2rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.07);
     }
-    .rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #701a75; margin: 0 0 1.25rem; }
+    .rules-card h3 { font-size: 1.1rem; font-weight: 700; color: #0e7490; margin: 0 0 1.25rem; }
 
     .rule-pair {
         display: grid;
@@ -544,7 +553,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         padding: 1.5rem 2rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.07);
     }
-    .se-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 1rem; }
+    .se-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0e7490; margin-bottom: 1rem; }
 
     .se-sequence {
         display: flex;
@@ -564,16 +573,16 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     .se-ans  { font-size: 0.75rem; font-weight: 700; opacity: 0.9; }
 
     .se-arrow { color: #9ca3af; font-size: 1rem; font-weight: 300; white-space: nowrap; }
-    .se-switch-arrow { color: #a21caf; font-weight: 700; font-size: 0.85rem; }
+    .se-switch-arrow { color: #0e7490; font-weight: 700; font-size: 0.85rem; }
 
     /* Tip card */
     .tip-card {
-        background: #fdf4ff;
-        border: 1px solid #e9d5ff;
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
         border-radius: 16px;
         padding: 1.5rem 2rem;
     }
-    .tip-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 0.5rem; }
+    .tip-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0e7490; margin-bottom: 0.5rem; }
     .tip-card p { color: #374151; line-height: 1.6; margin: 0; }
 
     /* Clinical card */
@@ -587,10 +596,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     .clinical-card p  { color: #166534; font-size: 0.95rem; line-height: 1.65; margin: 0; }
 
     /* ============================================================
-       TEST ARENA
+       TEST ARENA (card panel)
     ============================================================ */
     .test-arena {
-        min-height: 100vh;
+        max-width: 680px;
+        margin: 0 auto;
+        width: 100%;
+        min-height: 520px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -598,6 +610,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         padding: 2rem 1rem;
         transition: background 0.15s ease;
         position: relative;
+        border-radius: 26px;
+        box-shadow: 0 24px 60px rgba(19, 52, 74, 0.15);
+        overflow: hidden;
     }
     .arena-blue { background: #1d4ed8; }
     .arena-red  { background: #b91c1c; }
@@ -701,7 +716,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
        RESULTS
     ============================================================ */
     .training-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0e7490 0%, #164e63 100%);
         color: white;
         padding: 1.25rem 1.75rem;
         border-radius: 12px;
@@ -721,7 +736,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
 
     .score-header {
-        background: linear-gradient(135deg, #a21caf 0%, #701a75 100%);
+        background: linear-gradient(135deg, #0e7490 0%, #164e63 100%);
         padding: 2rem;
         text-align: center;
         color: white;
@@ -750,7 +765,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         padding: 1.5rem 1.75rem;
         border-bottom: 1px solid #f1f5f9;
     }
-    .interp-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a21caf; margin-bottom: 0.5rem; }
+    .interp-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0e7490; margin-bottom: 0.5rem; }
     .interp-card p { color: #374151; line-height: 1.6; margin: 0 0 0.5rem; font-size: 0.95rem; }
     .persev-note { color: #b45309; font-size: 0.9rem; }
 
@@ -758,7 +773,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         display: block;
         width: calc(100% - 3.5rem);
         margin: 1.75rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0e7490 0%, #164e63 100%);
         color: white;
         border: none;
         padding: 1rem;
@@ -769,7 +784,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     }
     .start-button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 20px rgba(14, 116, 144, 0.4);
     }
 
     /* Responsive */

@@ -1,10 +1,5 @@
 <script>
-<<<<<<< HEAD
-=======
 	import { locale as activeLocale, uiText } from '$lib/i18n';
-	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';
-	import api from '$lib/api.js';
->>>>>>> 3bf3510 (bangla interface refactoring)
 	import { goto } from '$app/navigation';
 	import api from '$lib/api.js';
 	import DoctorWorkspaceShell from '$lib/components/DoctorWorkspaceShell.svelte';

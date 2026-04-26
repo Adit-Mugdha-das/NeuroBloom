@@ -223,17 +223,6 @@
 			<p>{error}</p>
 		</section>
 	{:else}
-<<<<<<< HEAD
-=======
-		<section class="panel-section">
-			<LanguagePreferencePanel
-				title={uiText("Language Preference", $activeLocale)}
-				description="Set the clinician workspace language for dashboards, notifications, and task-facing copy."
-				compact={true}
-			/>
-		</section>
-
->>>>>>> 3bf3510 (bangla interface refactoring)
 		<section class="snapshot-grid">
 			{#each snapshotCards as card}
 				<article class="snapshot-card tone-{card.tone}">

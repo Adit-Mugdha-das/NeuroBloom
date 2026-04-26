@@ -248,8 +248,8 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-		<div class="page-content">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="hero-banner">
 				<div class="hero-inner">
 					<div class="hero-text">
@@ -393,8 +393,8 @@
 			</div>
 		</section>
 	{:else if state === STATE.COMPLETE}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="header">
 				<div>
 					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>
@@ -461,22 +461,9 @@
 	/* ── Container ─────────────────────────────────────────── */
 	.landmark-page {
 		min-height: 100vh;
-		background-image: url('/background.png');
-		background-size: cover;
-		background-position: center;
-		background-attachment: fixed;
+		background: #C8DEFA;
 		padding: 2rem 1rem 3rem;
 		color: #2a3130;
-		position: relative;
-	}
-
-	.landmark-page::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		background: rgba(200, 222, 250, 0.52);
-		pointer-events: none;
-		z-index: 0;
 	}
 
 	/* ── Page content (instruction view) ──────────────────── */
@@ -486,8 +473,35 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
-		position: relative;
-		z-index: 1;
+	}
+
+	/* ── Intro unified card (GoNoGo-style single container) ── */
+	.intro-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+	}
+
+	.intro-wrapper > .concept-card,
+	.intro-wrapper > .rules-card,
+	.intro-wrapper > .tip-card,
+	.intro-wrapper > .clinical-card {
+		box-shadow: none;
+		border-radius: 12px;
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+
+	.intro-wrapper .info-grid .info-card {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
 	}
 
 	/* ── Hero Banner ─────────────────────────────────────────── */

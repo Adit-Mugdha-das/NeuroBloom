@@ -280,8 +280,8 @@
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-		<div class="page-content">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			<!-- Header -->
 			<div class="task-header">
@@ -482,6 +482,32 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.25rem;
+	}
+
+	/* Intro unified card (GoNoGo-style single container) */
+	.intro-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+	}
+
+	.intro-wrapper > .concept-card,
+	.intro-wrapper > .rules-card,
+	.intro-wrapper > .tip-card,
+	.intro-wrapper > .clinical-card {
+		box-shadow: none;
+		border-radius: 12px;
+		padding: 1.5rem;
+	}
+
+	.intro-wrapper > .info-grid .info-card {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 
 	/* Task header */

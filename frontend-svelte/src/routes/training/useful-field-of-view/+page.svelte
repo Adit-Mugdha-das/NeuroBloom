@@ -322,8 +322,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- Intro -->
     {:else if gamePhase === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-        <div class="page-content">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
             <div class="concept-card">
                 <div class="concept-badge">{lt('Visual Scanning · Divided Attention', 'দৃশ্য খোঁজা · ভাগ করা মনোযোগ')}</div>
@@ -381,7 +381,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
                 on:start={() => startTask(TASK_PLAY_MODE.RECORDED)}
                 on:practice={() => startTask(TASK_PLAY_MODE.PRACTICE)}
             />
-        </div>
+		</div>
 
     <!-- Ready -->
     {:else if gamePhase === 'ready'}
@@ -499,8 +499,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
     <!-- Results -->
     {:else if gamePhase === 'results' && results}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-        <div class="page-content">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
             <div class="results-card">
                 <div class="perf-header" style="background: {perfColor(results.performance)}">
                     <h2>{performanceLabel(results.performance)}</h2>
@@ -621,7 +621,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
                 </div>
             </div>
-        </div>
+		</div>
     {/if}
 
     <!-- BadgeNotification outside all phases -->
@@ -723,6 +723,37 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+    }
+
+    /* ── Intro / Results unified card (GoNoGo-style single container) ── */
+    .intro-wrapper {
+        max-width: 960px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 1.8rem;
+    }
+
+    /* Flatten inner section cards inside the intro wrapper */
+    .intro-wrapper > .concept-card,
+    .intro-wrapper > .rules-card,
+    .intro-wrapper > .tip-card,
+    .intro-wrapper > .clinical-card {
+        box-shadow: none;
+        border-radius: 12px;
+        padding: 1.5rem;
+        background: #f8fafc;
+    }
+
+    /* Results card inside wrapper: remove double shadow */
+    .intro-wrapper > .results-card {
+        box-shadow: none;
+        border-radius: 12px;
+        overflow: hidden;
     }
 
     .page-content.narrow {

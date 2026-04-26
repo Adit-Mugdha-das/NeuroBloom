@@ -475,8 +475,8 @@
 
 	<!-- ── INTRO ──────────────────────────────────────────────── -->
 	{:else if phase === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-		<div class="page-wrapper">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			<!-- Task title -->
 			<div class="task-title-row">
@@ -622,9 +622,10 @@
 			</div>
 
 			<div class="btn-row">
-				<button class="start-button" on:click={startInstructions}>
+				<button class="start-button" on:click={startTest}>
 					{lt('Begin Task', 'টাস্ক শুরু করুন')}
-				</button>			</div>
+				</button>
+			</div>
 		</div>
 
 	<!-- ── INSTRUCTIONS ───────────────────────────────────────── -->
@@ -947,6 +948,32 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+	}
+
+	/* ── Intro unified card (GoNoGo-style single container) ─── */
+	.intro-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+	}
+
+	/* Flatten individual section cards inside the intro wrapper */
+	.intro-wrapper > .card {
+		box-shadow: none;
+		border-radius: 12px;
+		padding: 1.5rem;
+	}
+
+	/* info-grid cards stay as subtle embedded cards */
+	.intro-wrapper .info-grid .card {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		border-radius: 12px;
 	}
 
 	/* ── Card ──────────────────────────────────────────────── */
@@ -1732,6 +1759,130 @@
 
 	@media (max-width: 480px) {
 		.metrics-grid { grid-template-columns: 1fr; }
+	}
+
+	/* ── Unified intro card ─────────────────────────────────── */
+	.task-shell {
+		max-width: 920px;
+		margin: 0 auto;
+		padding-top: 1rem;
+	}
+
+	.intro-main-card {
+		background: #ffffff;
+		border-radius: 16px;
+		padding: 2.5rem 2.25rem;
+		box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+	}
+
+	.intro-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		margin-bottom: 1.8rem;
+	}
+
+	.intro-header h1 {
+		font-size: 2rem;
+		font-weight: 800;
+		color: #0f172a;
+		margin: 0 0 0.4rem;
+	}
+
+	.concept-strip {
+		background: #eaf8ff;
+		border: 1px solid #bae6fd;
+		border-radius: 14px;
+		padding: 1.4rem 1.6rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.concept-strip p {
+		margin: 0;
+		font-size: 1rem;
+		line-height: 1.7;
+		color: #0f172a;
+	}
+
+	.challenge-box {
+		background: #f5edff;
+		border: 1px solid #c4b5fd;
+		border-radius: 14px;
+		padding: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.challenge-box h2 {
+		margin: 0 0 0.7rem;
+		font-size: 1.05rem;
+		font-weight: 800;
+		color: #6d28d9;
+	}
+
+	.challenge-box p {
+		color: #2e1065;
+		line-height: 1.7;
+		margin-bottom: 1.2rem;
+	}
+
+	.arrow-example-box {
+		background: #ffffff;
+		border-radius: 12px;
+		padding: 1.2rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+		box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+	}
+
+	.arrow-side {
+		text-align: center;
+	}
+
+	.arrow-side span {
+		display: block;
+		margin-top: 0.4rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: #475569;
+	}
+
+	.vs-text {
+		font-weight: 800;
+		color: #7c3aed;
+	}
+
+	.fixed-rules {
+		margin-bottom: 1.5rem;
+	}
+
+	.clinical-strip {
+		background: #f8fafc;
+		border-left: 4px solid #7c3aed;
+		border-radius: 12px;
+		padding: 1.2rem 1.4rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.clinical-strip h3 {
+		margin: 0 0 0.5rem;
+		font-size: 1rem;
+		font-weight: 800;
+		color: #0f172a;
+	}
+
+	.clinical-strip p {
+		margin: 0;
+		color: #475569;
+		line-height: 1.6;
+	}
+
+	@media (max-width: 768px) {
+		.intro-main-card { padding: 1.5rem; }
+		.intro-header { flex-direction: column; }
+		.arrow-example-box { flex-direction: column; gap: 1rem; }
 	}
 </style>
 

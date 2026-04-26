@@ -284,8 +284,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	{#if state === STATE.LOADING}
 		<LoadingSkeleton variant="card" count={3} />
 	{:else if state === STATE.INSTRUCTIONS}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="header">
 				<div>
 					<p class="eyebrow">{lt('Processing Speed Training', 'প্রক্রিয়াকরণের গতি অনুশীলন')}</p>
@@ -404,8 +404,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 		</section>
 	{:else if state === STATE.COMPLETE}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 		<section class="panel hero">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 			<div class="header">
 				<div>
 					<p class="eyebrow">{lt('Session Complete', 'সেশন শেষ')}</p>

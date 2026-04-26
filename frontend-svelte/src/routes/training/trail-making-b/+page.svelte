@@ -521,8 +521,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	<!-- ── INTRO ──────────────────────────────────────────────── -->
 	{:else if phase === 'intro'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-		<div class="page-wrapper">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			<!-- Title row -->
 			<div class="task-title-row">
@@ -673,11 +673,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 
 			<div class="btn-row">
-				<button class="start-button" on:click={startInstructions}>
-					{t('Continue to Instructions')}
-				</button>
-				<button class="btn-secondary" on:click={returnToDashboard}>
-					{t('Back to Dashboard')}
+				<button class="start-button" on:click={startTest}>
+					{t('Begin Task')}
 				</button>
 			</div>
 		</div>
@@ -833,8 +830,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 	<!-- ── RESULTS ─────────────────────────────────────────────── -->
 	{:else if phase === 'results'}
-		<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
-		<div class="page-wrapper">
+		<div class="intro-wrapper">
+			<TaskReturnButton locale={$locale} context={TASK_RETURN_CONTEXT.TRAINING} />
 
 			{#if newBadges.length > 0}
 				<BadgeNotification badges={newBadges} />
@@ -978,6 +975,30 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+	}
+
+	/* ── Intro / Results unified card (GoNoGo-style) ────── */
+	.intro-wrapper {
+		max-width: 960px;
+		margin: 0 auto;
+		background: white;
+		border-radius: 16px;
+		padding: 2.5rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+		display: flex;
+		flex-direction: column;
+		gap: 1.8rem;
+	}
+
+	.intro-wrapper > .card {
+		box-shadow: none;
+		border-radius: 12px;
+		padding: 1.5rem;
+	}
+
+	.intro-wrapper .info-grid .card {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		border-radius: 12px;
 	}
 
 	/* ── Card ──────────────────────────────────────────────── */
