@@ -1,6 +1,8 @@
 # NeuroBloom
 
-NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at [https://neurobloom-67qo.onrender.com/](https://neurobloom-67qo.onrender.com/).
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21207720.svg)](https://doi.org/10.5281/zenodo.21207720)
+
+NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at https://neurobloom-67qo.onrender.com/.
 
 ## Key Features
 
@@ -165,10 +167,11 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 ## Citation
 
-If you use NeuroBloom in your research, please cite the archived software release:
+If you use NeuroBloom in your research, please cite the archived software release.
 
-**Das, A. M., Deb Nath, A., & Alom, K. S.** (2026). *NeuroBloom* (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
+> Das, A. M., Deb Nath, A., & Alom, K. S. (2026). **NeuroBloom** (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
 
+GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
 ## Contact
 
 For questions, contact:
