@@ -162,7 +162,6 @@ demo/NeuroBloom_demo.mp4
 
 NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details.
 
-## Citation
 
 ## Citation
 
