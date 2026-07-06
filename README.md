@@ -1,192 +1,147 @@
-# NeuroBloom
+# Nirbaan
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21207720.svg)](https://doi.org/10.5281/zenodo.21207720)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21220833.svg)](https://doi.org/10.5281/zenodo.21220833)
 
-NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at https://neurobloom-67qo.onrender.com/.
+Nirbaan is an open-source GenAI-powered therapy management platform
+designed to support therapist-supervised Exposure and Response
+Prevention (ERP) and digital mental healthcare. The platform integrates
+multi-role clinical workflows with LangGraph-based agentic AI,
+therapist-scoped retrieval-augmented generation (RAG), human-in-the-loop
+safety mechanisms, and real-time communication to bridge the gap between
+therapy sessions. Developed alongside a SoftwareX publication, Nirbaan
+provides a reproducible research framework for AI-assisted digital
+mental health systems. A live demonstration is available at
+**https://nirbaan-frontend-6vu7.onrender.com/**.
 
 ## Key Features
 
-- 35 cognitive tasks across 6 cognitive domains, each with 10 difficulty levels
-- Pre-session contextual capture for fatigue, sleep quality, stress, and medication timing
-- Longitudinal analytics with digital biomarker extraction
-- Three-role architecture for patients, clinicians, and administrators
-- Bilingual support in Bengali and English
-- Automated high-risk patient alerts and bidirectional messaging
-- Free-of-cost and open source under the MIT License
+-   Multi-role platform for therapists, patients, and emergency
+    personnel
+-   LangGraph-based agentic AI workflows
+-   Therapist-scoped retrieval-augmented generation (RAG)
+-   AI-assisted ERP coaching and imaginal exposure generation
+-   Hidden symptom detection for therapist decision support
+-   Human-in-the-loop approval for AI-generated clinical content
+-   Real-time messaging and WebRTC video therapy sessions
+-   Docker Compose deployment with GitHub Actions continuous integration
+-   Open-source under the MIT License
 
 ## System Requirements
 
-- Python 3.10+
-- Node.js 18+
-- npm
-- PostgreSQL 14+
-- Modern web browser
+-   Python 3.11+
+-   Node.js 20+
+-   PostgreSQL 16+ with pgvector
+-   Redis 7+
+-   Docker Desktop (recommended)
+-   Ollama (optional)
 
 ## Installation
 
-1. Clone the repository.
-
-```bash
-git clone https://github.com/Adit-Mugdha-das/NeuroBloom.git
-cd NeuroBloom
+``` bash
+git clone https://github.com/tahmidalbi/Nirbaan-A-GenAI-Powered-Therapy-Management-Project.git
+cd Nirbaan-A-GenAI-Powered-Therapy-Management-Project
+cp .env.docker .env
+docker compose up --build
 ```
 
-2. Set up the backend.
+Services: - Frontend: http://localhost:5174 - Backend:
+http://localhost:8000 - Swagger: http://localhost:8000/docs
 
-```bash
+## Local Development
+
+``` bash
 cd backend
-python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-
 pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-3. Copy the environment template and configure database settings.
-
-```bash
-cd ..
-
-# Windows PowerShell
-Copy-Item .env.example .env.local
-
-# macOS / Linux
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your local PostgreSQL database name, username, password, host, port, and allowed frontend origins. For local development without Docker, ensure PostgreSQL is running and the configured database exists before starting the backend. Leave `DATABASE_URL` commented unless you intentionally want to override the individual PostgreSQL settings.
-
-If the configured database does not exist yet, create it before initialization:
-
-```bash
-createdb neurobloom_db
-```
-
-Alternatively, using `psql`:
-
-```bash
-psql -U postgres -c "CREATE DATABASE neurobloom_db;"
-```
-
-4. Initialize the database.
-
-```bash
-cd backend
-python seed_initial_data.py
-```
-
-5. Start the backend API.
-
-```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-6. Set up and start the frontend.
-
-```bash
-cd ../frontend-svelte
+``` bash
+cd frontend
 npm install
 npm run dev
 ```
 
-The frontend development server runs on `http://localhost:5174`, and the backend API runs on `http://127.0.0.1:8000`.
-
-## Running with Docker
-
-Docker Compose is the recommended setup for local deployment. It starts PostgreSQL, the backend API, and the frontend container.
-
-```bash
-# Windows PowerShell
-Copy-Item .env.example .env.local
-
-# macOS / Linux
-cp .env.example .env.local
-
-docker compose --env-file .env.local -f compose.yaml up --build
-```
-
-After the containers are running, initialize the default admin account and reference data once:
-
-```bash
-docker compose --env-file .env.local -f compose.yaml exec backend python seed_initial_data.py
-```
-
-The frontend is available at `http://localhost:8080`, and the backend API is available at `http://localhost:8000`.
-
-If your Docker installation uses the older standalone Compose binary, replace `docker compose` with `docker-compose`.
-
 ## API Documentation
 
-NeuroBloom exposes an automatically generated OpenAPI (Swagger UI) interface through FastAPI for exploring and testing backend REST API endpoints.
-
-After starting the backend, the API documentation is available at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-These interfaces provide interactive documentation for all available API endpoints, request parameters, and response schemas.
+-   Swagger UI: http://localhost:8000/docs
+-   ReDoc: http://localhost:8000/redoc
 
 ## Project Structure
 
-```text
-NeuroBloom/
-|-- backend/                 # FastAPI backend, SQLModel models, APIs, services, seed scripts
-|-- frontend-svelte/         # SvelteKit frontend application
-|-- Paper_Materials/         # SoftwareX manuscript, figures, and publication materials
-|-- demo/                    # Supplementary demo video
-|-- compose.yaml             # Docker Compose configuration
-|-- .env.example             # Environment variable template
-|-- LICENSE                  # MIT License
-`-- README.md                # Project documentation
+``` text
+Nirbaan/
+├── backend/
+├── frontend/
+├── FTSLM/
+├── Paper_Materials/
+├── demo/
+├── docker-compose.yml
+├── CITATION.cff
+├── LICENSE
+└── README.md
 ```
 
 ## User Roles
 
-Patients complete baseline and training activities, submit contextual information, review progress, receive prescriptions, and communicate with clinicians.
+**Therapists** -- Manage patients, ERP sessions, AI review, and clinical
+resources.
 
-Clinicians review patient histories, monitor longitudinal trends and risk alerts, adjust rehabilitation plans, issue prescriptions, generate reports, and exchange messages with assigned patients.
+**Patients** -- Complete ERP exercises, self-monitor symptoms, receive
+therapist-grounded AI support, and communicate with therapists.
 
-Administrators manage users, departments, assignments, notifications, audit logs, system health, and research-oriented data export.
+**Emergency Personnel** -- Respond to AI-triggered escalations and
+communicate with assigned patients.
 
-## Supplementary Video
+## AI Components
 
-A supplementary screencast demonstrating the main NeuroBloom workflows is available at:
+  -----------------------------------------------------------------------
+  Component                           Purpose
+  ----------------------------------- -----------------------------------
+  NirbaanAI Patient                   Therapist-grounded patient support
 
-```text
-demo/NeuroBloom_demo.mp4
-```
+  ERP Coach                           AI-guided ERP sessions
+
+  Hidden Symptom Detector             Fear ladder review using
+                                      therapist-scoped RAG
+
+  Imaginal Script Generator           Therapist-approved imaginal
+                                      exposure generation
+
+  Therapist Assistant                 Clinical decision support
+
+  Education Agents                    Personalized psychoeducation
+  -----------------------------------------------------------------------
 
 ## Tech Stack
 
-- Python
-- FastAPI
-- SQLModel
-- PostgreSQL
-- JavaScript
-- Svelte
-- SvelteKit
-- Vite
+**Backend:** Python, FastAPI, PostgreSQL, pgvector, Redis, Celery,
+LangGraph, LangChain, Docker
+
+**Frontend:** React, Vite, Zustand, Axios, WebRTC
+
+## Reproducibility
+
+Nirbaan can be deployed using Docker Compose, which orchestrates the
+React frontend, FastAPI backend, PostgreSQL with pgvector, Redis, Celery
+Worker, and Celery Beat services. The repository includes GitHub Actions
+workflows for continuous integration, while the archived software
+release is available through Zenodo.
 
 ## License
 
-NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details.
-
+Released under the MIT License.
 
 ## Citation
 
-If you use NeuroBloom in your research, please cite the archived software release.
+If you use Nirbaan in your research, please cite:
 
-> Das, A. M., Deb Nath, A., & Alam, K. S. (2026). **NeuroBloom** (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
+> Islam, M. T., Abdullah, A. N., & Das, A. M. (2026). **Nirbaan: A
+> GenAI-Powered Therapy Management Platform** (Version 1.0). Zenodo.
+> https://doi.org/10.5281/zenodo.21220833
 
-GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
+GitHub also provides a **Cite this repository** option through the
+included `CITATION.cff` file.
+
 ## Contact
 
-For questions, contact:
-
-```text
-aditmugdhadas@gmail.com
-```
+**das2107118@stud.kuet.ac.bd**
