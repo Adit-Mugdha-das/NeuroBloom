@@ -169,7 +169,7 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release.
 
-> Das, A. M., Deb Nath, A., & Alom, K. S. (2026). **NeuroBloom** (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
+> Das, A. M., Deb Nath, A., & Alam, K. S. (2026). **NeuroBloom** (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
 
 GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
 ## Contact
