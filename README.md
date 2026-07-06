@@ -119,6 +119,17 @@ The frontend is available at `http://localhost:8080`, and the backend API is ava
 
 If your Docker installation uses the older standalone Compose binary, replace `docker compose` with `docker-compose`.
 
+## API Documentation
+
+NeuroBloom exposes an automatically generated OpenAPI (Swagger UI) interface through FastAPI for exploring and testing backend REST API endpoints.
+
+After starting the backend, the API documentation is available at:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+These interfaces provide interactive documentation for all available API endpoints, request parameters, and response schemas.
+
 ## Project Structure
 
 ```text
