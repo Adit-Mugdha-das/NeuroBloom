@@ -1,6 +1,9 @@
 cff-version: 1.2.0
-title: "NeuroBloom"
+
+title: "Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.1 – SoftwareX Archive Release"
+
 message: "If you use NeuroBloom in your research, please cite this software using the metadata below."
+
 type: software
 
 authors:
@@ -14,7 +17,7 @@ authors:
   - family-names: "Alam"
     given-names: "Kazi Saeed"
 
-version: "1.1"
+version: "v1.1"
 
 doi: "10.5281/zenodo.21207720"
 
@@ -28,9 +31,9 @@ url: "https://github.com/Adit-Mugdha-das/NeuroBloom"
 
 abstract: >
   NeuroBloom is a web-based platform for longitudinal cognitive monitoring
-  and clinician-guided rehabilitation in multiple sclerosis. It provides
-  adaptive cognitive training, longitudinal analytics, clinician review,
-  and bilingual (English/Bengali) support.
+  and clinician-supervised rehabilitation planning in multiple sclerosis.
+  It provides adaptive cognitive training, longitudinal analytics, clinician
+  review, and bilingual (English/Bengali) support.
 
 keywords:
   - multiple sclerosis
