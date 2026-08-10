@@ -13,9 +13,15 @@ authors:
 
   - family-names: "Deb Nath"
     given-names: "Abhijeet"
+    orcid: "https://orcid.org/0009-0006-5738-6399"
 
   - family-names: "Alam"
     given-names: "Kazi Saeed"
+    orcid: "https://orcid.org/0000-0001-6863-1309"
+
+  - family-names: "Hossain"
+    given-names: "Sk. Imran"
+    orcid: "https://orcid.org/0000-0002-1869-224X"
 
 version: "v1.1"
 
