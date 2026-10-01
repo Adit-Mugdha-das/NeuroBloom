@@ -119,6 +119,17 @@ The frontend is available at `http://localhost:8080`, and the backend API is ava
 
 If your Docker installation uses the older standalone Compose binary, replace `docker compose` with `docker-compose`.
 
+## API Documentation
+
+NeuroBloom exposes an automatically generated OpenAPI (Swagger UI) interface through FastAPI for exploring and testing backend REST API endpoints.
+
+After starting the backend, the API documentation is available at:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+These interfaces provide interactive documentation for all available API endpoints, request parameters, and response schemas.
+
 ## Project Structure
 
 ```text
@@ -169,9 +180,10 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release.
 
-> Das, A. M., Deb Nath, A., & Alam, K. S. (2026). **NeuroBloom** (Version 1.1). Zenodo. https://doi.org/10.5281/zenodo.21207720
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.1 – SoftwareX Archive Release* (Version v1.1) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.21207720](https://doi.org/10.5281/zenodo.21207720)
 
 GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
+
 ## Contact
 
 For questions, contact:
