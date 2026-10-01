@@ -1,7 +1,7 @@
 """
-Test Script: Digital Biomarkers Verification
+Test Script: Descriptive Longitudinal Indicator Verification
 =============================================
-Run this to verify all 5 biomarkers are working correctly.
+Run this to verify the descriptive analytics calculations.
 
 Usage:
     cd NeuroBloom/backend
@@ -66,7 +66,7 @@ def make_sessions(trend="improving", n=10):
             'score': score,
             'mean_rt': mean_rt,
             'date': f"2026-02-{i+1:02d}",
-            'fatigue_metrics': {'fatigue_index': fatigue_idx},
+            'fatigue_metrics': {'fatigue_proxy': fatigue_idx},
             'iiv_metrics': {'rt_cv': 0.3},
             'fatigue_level': 8 - i,        # context: fatigue decreasing (improving condition)
             'sleep_quality': 5 + (i * 0.3),
@@ -76,24 +76,24 @@ def make_sessions(trend="improving", n=10):
 
 
 # ─────────────────────────────────────────────
-# TEST 1: FATIGUE INDEX
+# TEST 1: FATIGUE-RELATED PROXY
 # ─────────────────────────────────────────────
 
-def test_fatigue_index():
+def test_fatigue_proxy():
     print("\n" + "─" * 50)
-    print("TEST 1: Fatigue Index")
+    print("TEST 1: Fatigue-Related Proxy")
     print("─" * 50)
 
     # Patient who fatigues heavily
     tired_trials = make_trials(start_accuracy=0.95, end_accuracy=0.55)
     result = calculate_fatigue_signature(tired_trials)
 
-    print(f"  Fatigue Index   : {result['fatigue_index']}  (expected > 0.3)")
+    print(f"  Fatigue Proxy   : {result['fatigue_proxy']}  (expected > 0.3)")
     print(f"  Accuracy Decline: {result['accuracy_decline']:.1f}%")
     print(f"  RT Increase     : {result['rt_increase']:.0f}ms")
     print(f"  Perf Slope      : {result['performance_slope']:.4f}")
 
-    ok = result['fatigue_index'] > 0.3
+    ok = result['fatigue_proxy'] > 0.3 and result['status'] == 'available'
     print(f"\n  Result: {PASS if ok else FAIL}")
 
     # Patient who does NOT fatigue (consistent correct responses throughout)
@@ -102,11 +102,18 @@ def test_fatigue_index():
         for i in range(40)
     ]
     result2 = calculate_fatigue_signature(fresh_trials)
-    print(f"\n  No-fatigue Index: {result2['fatigue_index']}  (expected < 0.2)")
-    ok2 = result2['fatigue_index'] < 0.2
+    print(f"\n  Lower proxy case: {result2['fatigue_proxy']}  (expected < 0.2)")
+    ok2 = result2['fatigue_proxy'] < 0.2
+
+    short_session = calculate_fatigue_signature(make_trials(n=7))
+    missing_rt_trials = make_trials(n=8)
+    missing_rt_trials[0]['reaction_time'] = None
+    invalid_session = calculate_fatigue_signature(missing_rt_trials)
+    ok3 = short_session['fatigue_proxy'] is None and short_session['status'] == 'insufficient_data'
+    ok4 = invalid_session['fatigue_proxy'] is None and invalid_session['valid_trial_count'] == 7
     print(f"  Result: {PASS if ok2 else FAIL}")
 
-    return ok and ok2
+    return ok and ok2 and ok3 and ok4
 
 
 # ─────────────────────────────────────────────
@@ -135,12 +142,12 @@ def test_cv():
 
 
 # ─────────────────────────────────────────────
-# TEST 3: RELIABLE CHANGE INDEX (RCI)
+# TEST 3: WITHIN-PERSON STANDARDIZED CHANGE (WPSC)
 # ─────────────────────────────────────────────
 
-def test_rci():
+def test_wpsc():
     print("\n" + "─" * 50)
-    print("TEST 3: Reliable Change Index (RCI)")
+    print("TEST 3: Within-Person Standardized Change (WPSC)")
     print("─" * 50)
 
     # Big improvement over sessions
@@ -152,8 +159,8 @@ def test_rci():
         {'score': 80, 'mean_rt': 600},
     ]
     result = calculate_within_person_variability(improving_sessions)
-    print(f"  RCI (big gain)  : {result['reliable_change_index']}  (expected > 1.0)")
-    ok1 = result['reliable_change_index'] > 1.0
+    print(f"  WPSC (known fixture): {result['within_person_standardized_change']}  (expected 1.79)")
+    ok1 = result['within_person_standardized_change'] == 1.79
 
     # Stable sessions
     stable_sessions = [
@@ -163,11 +170,30 @@ def test_rci():
         {'score': 65, 'mean_rt': 600},
     ]
     result2 = calculate_within_person_variability(stable_sessions)
-    print(f"  RCI (stable)    : {result2['reliable_change_index']}  (expected near 0)")
-    ok2 = abs(result2['reliable_change_index']) < 1.5
+    print(f"  WPSC (no endpoint difference): {result2['within_person_standardized_change']}  (expected 0.0)")
+    ok2 = result2['within_person_standardized_change'] == 0.0
 
-    print(f"\n  Result: {PASS if (ok1 and ok2) else FAIL}")
-    return ok1 and ok2
+    insufficient = calculate_within_person_variability([
+        {'score': 50, 'date': '2026-02-01'},
+        {'score': 60, 'date': '2026-02-02'},
+    ])
+    zero_variance = calculate_within_person_variability([
+        {'score': 65, 'date': '2026-02-01'},
+        {'score': 65, 'date': '2026-02-02'},
+        {'score': 65, 'date': '2026-02-03'},
+    ])
+    missing_and_unordered = calculate_within_person_variability([
+        {'score': 80, 'date': '2026-02-05'},
+        {'score': None, 'date': '2026-02-02'},
+        {'score': 60, 'date': '2026-02-03'},
+        {'score': 40, 'date': '2026-02-01'},
+    ])
+    ok3 = insufficient['within_person_standardized_change'] is None
+    ok4 = zero_variance['within_person_standardized_change'] is None
+    ok5 = missing_and_unordered['within_person_standardized_change'] == 1.41
+
+    print(f"\n  Result: {PASS if (ok1 and ok2 and ok3 and ok4 and ok5) else FAIL}")
+    return ok1 and ok2 and ok3 and ok4 and ok5
 
 
 # ─────────────────────────────────────────────
@@ -246,7 +272,7 @@ def test_full_session():
     result = analyze_session_advanced(session_data)
 
     print(f"  Score           : {result['basic_metrics']['score']}")
-    print(f"  Fatigue Index   : {result['fatigue_metrics']['fatigue_index']}")
+    print(f"  Fatigue Proxy   : {result['fatigue_metrics']['fatigue_proxy']}")
     print(f"  RT CV           : {result['iiv_metrics']['rt_cv']}")
 
     ok = (
@@ -271,14 +297,14 @@ def test_longitudinal():
     report = generate_longitudinal_report(sessions)
 
     trend_dir = report['trends']['score_trend']['trend_direction']
-    avg_fatigue = report['biomarkers']['average_fatigue_index']
-    rci = report['biomarkers']['rci']
+    avg_fatigue = report['descriptive_indicators']['average_fatigue_proxy']
+    wpsc = report['descriptive_indicators']['within_person_standardized_change']
     total = report['summary']['total_sessions']
 
     print(f"  Total Sessions  : {total}  (expected 10)")
     print(f"  Score Trend     : {trend_dir}  (expected IMPROVING)")
-    print(f"  Avg Fatigue Idx : {avg_fatigue}")
-    print(f"  RCI             : {rci}")
+    print(f"  Avg Fatigue Prx : {avg_fatigue}")
+    print(f"  WPSC            : {wpsc}")
 
     ok = total == 10 and trend_dir.lower() == "improving"
     print(f"\n  Result: {PASS if ok else FAIL}")
@@ -291,13 +317,13 @@ def test_longitudinal():
 
 if __name__ == "__main__":
     print("\n" + "=" * 50)
-    print("  DIGITAL BIOMARKERS - VERIFICATION TESTS")
+    print("  DESCRIPTIVE INDICATORS - VERIFICATION TESTS")
     print("=" * 50)
 
     results = {
-        "Fatigue Index"           : test_fatigue_index(),
+        "Fatigue-Related Proxy"   : test_fatigue_proxy(),
         "Coefficient of Variation": test_cv(),
-        "Reliable Change Index"   : test_rci(),
+        "Within-Person Change"    : test_wpsc(),
         "Trend Analysis (EWMA)"   : test_ewma(),
         "Contextual Correlations" : test_correlations(),
         "Full Session Analysis"   : test_full_session(),
@@ -317,8 +343,8 @@ if __name__ == "__main__":
     total = len(results)
     print(f"\n  {passed}/{total} tests passed")
     if passed == total:
-        print("\n  🎉 ALL BIOMARKERS WORKING CORRECTLY!")
-        print("  Ready for clinical validation study.")
+        print("\n  🎉 ALL DESCRIPTIVE INDICATOR TESTS PASSED!")
+        print("  These results verify software calculations, not clinical validity.")
     else:
         print("\n  ⚠️  Some tests failed. Check output above.")
     print("=" * 50 + "\n")

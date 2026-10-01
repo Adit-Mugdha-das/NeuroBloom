@@ -72,16 +72,18 @@ def test_partial_response():
     """Test scoring when user misses some targets."""
     print("\n=== Testing Partial Response ===\n")
     
-    trial = MultipleObjectTrackingTask.generate_trial(difficulty=5)
-    
-    # Select only first 2 targets out of 4
+    # Level 10 is configured with three targets (level 5 has only one).
+    trial = MultipleObjectTrackingTask.generate_trial(difficulty=10)
+    assert trial['num_targets'] == 3
+
+    # Select only first 2 targets out of 3
     user_response = {
         "selected_objects": trial['target_indices'][:2],
         "response_time": 2.0
     }
-    
+
     results = MultipleObjectTrackingTask.score_response(trial, user_response)
-    
+
     print(f"Score: {results['score']:.3f}")
     print(f"Accuracy: {results['accuracy']:.3f}")
     print(f"Precision: {results['precision']:.3f}")
@@ -89,10 +91,10 @@ def test_partial_response():
     print(f"Targets missed: {results['targets_missed']}")
     print(f"False positives: {results['false_positives']}")
     print(f"Performance: {results['performance']}")
-    
-    assert results['accuracy'] == 0.5  # 2 out of 4
+
+    assert abs(results['accuracy'] - 2 / 3) < 1e-9  # 2 out of 3
     assert results['precision'] == 1.0  # No false positives
-    assert results['targets_missed'] == 2
+    assert results['targets_missed'] == 1
     print("✓ Partial response scored correctly\n")
 
 
@@ -132,13 +134,15 @@ def test_poor_response():
     """Test scoring when user performs poorly."""
     print("\n=== Testing Poor Response ===\n")
     
-    trial = MultipleObjectTrackingTask.generate_trial(difficulty=5)
-    
+    # Level 10 is configured with three targets (level 5 has only one).
+    trial = MultipleObjectTrackingTask.generate_trial(difficulty=10)
+    assert trial['num_targets'] == 3
+
     # Get non-target indices
     all_indices = set(range(trial['total_objects']))
     target_indices = set(trial['target_indices'])
     non_target_indices = list(all_indices - target_indices)
-    
+
     # Select only 1 target + 3 non-targets
     user_response = {
         "selected_objects": [trial['target_indices'][0]] + non_target_indices[:3],
@@ -155,7 +159,7 @@ def test_poor_response():
     print(f"False positives: {results['false_positives']}")
     print(f"Performance: {results['performance']}")
     
-    assert results['accuracy'] == 0.25  # 1 out of 4
+    assert abs(results['accuracy'] - 1 / 3) < 1e-9  # 1 out of 3
     assert results['false_positives'] == 3
     assert results['precision'] == 0.25  # 1 correct out of 4 selected
     print("✓ Poor response scored correctly\n")

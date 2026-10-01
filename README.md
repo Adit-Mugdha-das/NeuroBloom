@@ -8,10 +8,10 @@ NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive mo
 
 - 35 cognitive tasks across 6 cognitive domains, each with 10 difficulty levels
 - Pre-session contextual capture for fatigue, sleep quality, stress, and medication timing
-- Longitudinal analytics with digital biomarker extraction
+- Descriptive longitudinal indicators supporting future digital-biomarker-oriented research
 - Three-role architecture for patients, clinicians, and administrators
 - Bilingual support in Bengali and English
-- Automated high-risk patient alerts and bidirectional messaging
+- Configurable review flags for clinician interpretation and bidirectional messaging
 - Free-of-cost and open source under the MIT License
 
 ## System Requirements

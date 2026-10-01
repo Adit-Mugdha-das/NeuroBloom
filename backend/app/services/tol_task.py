@@ -323,7 +323,7 @@ class TowerOfLondonTask:
         # Bonus for perfect solutions
         perfect_bonus = (results["perfect_solutions"] / results["total_problems"]) * 10 if results["total_problems"] > 0 else 0
         
-        results["score"] = int(completion_score + efficiency_score + speed_score + perfect_bonus)
+        results["score"] = min(100, int(completion_score + efficiency_score + speed_score + perfect_bonus))
         
         return results
 

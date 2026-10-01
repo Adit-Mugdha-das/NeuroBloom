@@ -1,0 +1,18 @@
+{
+  "fixture_type": "synthetic sessions",
+  "note": "The fatigue proxy is not an input to the review-flag rule.",
+  "summary": {
+    "parameter_sets": 6,
+    "maximum_absolute_value_change": 0.15,
+    "minimum_rank_correlation_with_default": 1.0,
+    "review_flag_changes": 0
+  },
+  "results": {
+    "default": {"maximum_absolute_value_change": 0.0, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
+    "equal_weights": {"maximum_absolute_value_change": 0.03, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
+    "accuracy_emphasis": {"maximum_absolute_value_change": 0.1, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
+    "rt_emphasis": {"maximum_absolute_value_change": 0.15, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
+    "scales_minus_20_percent": {"maximum_absolute_value_change": 0.037, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
+    "scales_plus_20_percent": {"maximum_absolute_value_change": 0.05, "rank_correlation_with_default": 1.0, "review_flag_changes": 0}
+  }
+}

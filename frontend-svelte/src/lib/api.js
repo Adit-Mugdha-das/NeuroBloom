@@ -235,7 +235,7 @@ export const training = {
 		return response.data;
 	},
 
-	// Get MS digital biomarkers (Phase 1 analytics)
+	// Get descriptive longitudinal indicators (legacy endpoint name retained for compatibility)
 	getBiomarkers: async (userId, days = 30) => {
 		const response = await api.get(`/api/training/advanced-analytics/${userId}/biomarkers`, {
 			params: { days }

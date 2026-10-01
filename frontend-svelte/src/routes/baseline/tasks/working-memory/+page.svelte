@@ -14,6 +14,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	} from '$lib/i18n';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy } from '$lib/task-practice';
+import { scoreNBack } from '$lib/task-scoring';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -276,7 +277,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		}
 		
 		const totalTargets = correctHits + misses;
-		accuracy = totalTargets > 0 ? (correctHits / totalTargets) * 100 : 0;
+		accuracy = scoreNBack(correctHits, misses);
 		
 		const validRTs = reactionTimes.filter(rt => rt < 2000);
 		meanRT = validRTs.length > 0 ? validRTs.reduce((a, b) => a + b, 0) / validRTs.length : 0;

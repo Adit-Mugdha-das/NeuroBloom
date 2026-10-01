@@ -1,6 +1,6 @@
 """
-Advanced Analytics for MS Digital Biomarkers
-Phase 1: Enhanced Metrics for Clinical Research
+Descriptive Longitudinal Analytics for MS Research
+Phase 1: Configurable Monitoring Indicators
 
 This module provides:
 1. Fatigue signature detection (within-session performance decay)
@@ -10,66 +10,114 @@ This module provides:
 
 Author: NeuroBloom Research Team
 Date: February 2026
-Clinical Validation: MS-specific digital biomarkers
+Validation status: descriptive engineering measures; not clinically or psychometrically validated biomarkers
 """
 
+import json
+import math
 import statistics
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 
-# ==================== FATIGUE DETECTION ====================
+# ==================== FATIGUE-RELATED PROXY ====================
 
-def calculate_fatigue_signature(trials: List[Dict[str, Any]]) -> Dict[str, float]:
+_ANALYTICS_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "analytics.json"
+
+
+def _load_fatigue_proxy_config() -> Dict[str, Any]:
+    with _ANALYTICS_CONFIG_PATH.open(encoding="utf-8") as config_file:
+        config = json.load(config_file)["fatigue_proxy"]
+
+    weights = config["weights"]
+    if any(float(value) < 0 for value in weights.values()):
+        raise ValueError("Fatigue-proxy weights must be non-negative")
+    if not math.isclose(sum(float(value) for value in weights.values()), 1.0, abs_tol=1e-9):
+        raise ValueError("Fatigue-proxy weights must sum to 1")
+    if any(float(value) <= 0 for value in config["scales"].values()):
+        raise ValueError("Fatigue-proxy scales must be positive")
+    return config
+
+
+FATIGUE_PROXY_CONFIG = _load_fatigue_proxy_config()
+
+def calculate_fatigue_signature(
+    trials: List[Dict[str, Any]],
+    config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
-    Detect within-session fatigue by comparing performance across trial quartiles.
-    
-    MS patients show characteristic fatigue patterns:
-    - Exponential decay in accuracy
-    - Increasing RT toward end of session
-    - Higher error rates in final trials
+    Calculate a configurable fatigue-related engineering proxy.
     
     Args:
         trials: List of trial data with keys: 'correct', 'reaction_time', 'trial_num'
     
     Returns:
         {
-            'fatigue_index': 0-1 score (0=no fatigue, 1=severe fatigue),
+            'fatigue_proxy': descriptive value on a 0-1 engineering scale,
             'accuracy_decline': % drop from first to last quartile,
             'rt_increase': ms increase from first to last quartile,
-            'performance_slope': linear regression slope of accuracy over time
+            'performance_slope': linear regression slope of accuracy over time,
+            'status': 'available' or 'insufficient_data'
         }
     
-    Clinical Significance:
-    - fatigue_index > 0.3: Moderate fatigue (common in MS)
-    - fatigue_index > 0.5: Severe fatigue (may indicate relapse or poor disease control)
-    - Increasing fatigue_index over weeks: Disease progression signal
+    Interpretation boundary:
+    - This configurable engineering proxy is not clinically calibrated.
+    - Values must not be interpreted as fatigue severity, relapse, or disease progression.
     """
-    if not trials or len(trials) < 4:
+    parameters = config or FATIGUE_PROXY_CONFIG
+    weights = parameters['weights']
+    scales = parameters['scales']
+    minimum_trials = int(parameters['minimum_trials'])
+    minimum_quartile = int(parameters['minimum_quartile_observations'])
+
+    valid_trials = []
+    for trial in trials or []:
+        correct = trial.get('correct')
+        reaction_time = trial.get('reaction_time')
+        if correct not in (True, False, 0, 1):
+            continue
+        try:
+            rt_value = float(reaction_time)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(rt_value) or rt_value <= 0:
+            continue
+        valid_trials.append({'correct': int(bool(correct)), 'reaction_time': rt_value})
+
+    if len(valid_trials) < minimum_trials:
         return {
-            'fatigue_index': 0.0,
-            'accuracy_decline': 0.0,
-            'rt_increase': 0.0,
-            'performance_slope': 0.0
+            'fatigue_proxy': None,
+            'accuracy_decline': None,
+            'rt_increase': None,
+            'performance_slope': None,
+            'valid_trial_count': len(valid_trials),
+            'status': 'insufficient_data'
         }
     
-    n = len(trials)
+    n = len(valid_trials)
     quartile_size = n // 4
+    if quartile_size < minimum_quartile:
+        return {
+            'fatigue_proxy': None,
+            'accuracy_decline': None,
+            'rt_increase': None,
+            'performance_slope': None,
+            'valid_trial_count': n,
+            'status': 'insufficient_data'
+        }
     
     # Split into quartiles
-    q1_trials = trials[:quartile_size]
-    q4_trials = trials[-quartile_size:]
+    q1_trials = valid_trials[:quartile_size]
+    q4_trials = valid_trials[-quartile_size:]
     
     # Calculate accuracy for each quartile
-    q1_accuracy = sum(t.get('correct', 0) for t in q1_trials) / len(q1_trials) if q1_trials else 0
-    q4_accuracy = sum(t.get('correct', 0) for t in q4_trials) / len(q4_trials) if q4_trials else 0
+    q1_accuracy = sum(t['correct'] for t in q1_trials) / len(q1_trials)
+    q4_accuracy = sum(t['correct'] for t in q4_trials) / len(q4_trials)
     
     # Calculate RT for each quartile
-    q1_rts = [t.get('reaction_time', 0) for t in q1_trials if t.get('reaction_time', 0) > 0]
-    q4_rts = [t.get('reaction_time', 0) for t in q4_trials if t.get('reaction_time', 0) > 0]
-    
-    q1_rt = statistics.mean(q1_rts) if q1_rts else 0
-    q4_rt = statistics.mean(q4_rts) if q4_rts else 0
+    q1_rt = statistics.mean(t['reaction_time'] for t in q1_trials)
+    q4_rt = statistics.mean(t['reaction_time'] for t in q4_trials)
     
     # Calculate metrics
     accuracy_decline = (q1_accuracy - q4_accuracy) * 100  # percentage points
@@ -77,9 +125,9 @@ def calculate_fatigue_signature(trials: List[Dict[str, Any]]) -> Dict[str, float
     
     # Performance slope (linear regression of accuracy over trials)
     performance_slope = 0.0
-    if len(trials) >= 2:
-        trial_nums = list(range(len(trials)))
-        accuracies = [float(t.get('correct', 0)) for t in trials]
+    if len(valid_trials) >= 2:
+        trial_nums = list(range(len(valid_trials)))
+        accuracies = [float(t['correct']) for t in valid_trials]
         
         # Simple linear regression: slope = covariance(x,y) / variance(x)
         mean_x = statistics.mean(trial_nums)
@@ -91,19 +139,23 @@ def calculate_fatigue_signature(trials: List[Dict[str, Any]]) -> Dict[str, float
         if denominator > 0:
             performance_slope = numerator / denominator
     
-    # Composite fatigue index (0-1 scale)
-    # Combines accuracy decline + RT increase + negative slope
-    accuracy_component = min(1.0, max(0, accuracy_decline / 30))  # 30% decline = max
-    rt_component = min(1.0, max(0, rt_increase / 200))  # 200ms increase = max
-    slope_component = min(1.0, max(0, -performance_slope * 100))  # negative slope indicates fatigue
-    
-    fatigue_index = (accuracy_component * 0.5 + rt_component * 0.3 + slope_component * 0.2)
+    accuracy_component = min(1.0, max(0, accuracy_decline / float(scales['accuracy_percentage_points'])))
+    rt_component = min(1.0, max(0, rt_increase / float(scales['reaction_time_ms'])))
+    slope_component = min(1.0, max(0, -performance_slope / float(scales['negative_slope_per_trial'])))
+
+    fatigue_proxy = (
+        accuracy_component * float(weights['accuracy_decline'])
+        + rt_component * float(weights['reaction_time_increase'])
+        + slope_component * float(weights['performance_slope'])
+    )
     
     return {
-        'fatigue_index': round(fatigue_index, 3),
+        'fatigue_proxy': round(fatigue_proxy, 3),
         'accuracy_decline': round(accuracy_decline, 2),
         'rt_increase': round(rt_increase, 2),
-        'performance_slope': round(performance_slope, 5)
+        'performance_slope': round(performance_slope, 5),
+        'valid_trial_count': n,
+        'status': 'available'
     }
 
 
@@ -132,9 +184,9 @@ def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] 
         }
     
     Clinical Interpretation:
-    - CV > 0.25: High variability (common in MS)
-    - CV > 0.35: Very high variability (progressive MS or relapse)
-    - Increasing CV over time: Demyelination progression
+    Interpretation boundary:
+    - CV is reported as a descriptive within-person variability measure.
+    - Thresholds are not clinically validated and do not indicate relapse or progression.
     """
     if not reaction_times or len(reaction_times) < 2:
         return {
@@ -164,7 +216,7 @@ def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] 
     # Standard deviation
     rt_std = statistics.stdev(rts_clean) if len(rts_clean) > 1 else 0.0
     
-    # Coefficient of Variation (key MS biomarker!)
+    # Coefficient of variation used as a descriptive within-person indicator.
     rt_cv = (rt_std / mean_rt) if mean_rt > 0 else 0.0
     
     # Median Absolute Deviation (robust measure)
@@ -191,7 +243,7 @@ def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] 
     }
 
 
-def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) -> Dict[str, float]:
+def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Calculate variability ACROSS sessions (day-to-day consistency).
     
@@ -206,31 +258,59 @@ def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) ->
             'score_std': Std dev of scores across sessions,
             'score_cv': CV of scores,
             'rt_across_sessions_std': Std dev of mean RTs across sessions,
-            'reliable_change_index': Statistical significance of score changes
+            'within_person_standardized_change': Descriptive standardized change from baseline
         }
     
-    Clinical Use:
-    - High across-session variability: Unstable disease control
-    - Sudden RCI spike: Possible relapse or medication change
+    Interpretation boundary:
+    - Across-session variability and change values are descriptive only.
+    - They do not establish disease control, relapse, or medication effects.
     """
-    if not session_scores or len(session_scores) < 2:
+    if not session_scores:
         return {
             'score_std': 0.0,
             'score_cv': 0.0,
             'rt_across_sessions_std': 0.0,
-            'reliable_change_index': 0.0
+            'within_person_standardized_change': None,
+            'change_status': 'insufficient_data',
+            'valid_score_count': 0
         }
-    
-    # Extract scores and RTs
-    scores = [s.get('score', 0) for s in session_scores if s.get('score', 0) > 0]
-    mean_rts = [s.get('mean_rt', 0) for s in session_scores if s.get('mean_rt', 0) > 0]
+
+    # Use chronological order when dates are supplied. Python's stable sort
+    # preserves input order for missing or equal dates.
+    ordered_sessions = sorted(
+        enumerate(session_scores),
+        key=lambda item: (str(item[1].get('date', '')), item[0])
+    )
+
+    valid_sessions = []
+    for _, session in ordered_sessions:
+        raw_score = session.get('score')
+        try:
+            score = float(raw_score)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(score):
+            valid_sessions.append((session, score))
+
+    scores = [score for _, score in valid_sessions]
+    mean_rts = []
+    for _, session in ordered_sessions:
+        raw_rt = session.get('mean_rt')
+        try:
+            mean_rt = float(raw_rt)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(mean_rt) and mean_rt > 0:
+            mean_rts.append(mean_rt)
     
     if len(scores) < 2:
         return {
             'score_std': 0.0,
             'score_cv': 0.0,
             'rt_across_sessions_std': 0.0,
-            'reliable_change_index': 0.0
+            'within_person_standardized_change': None,
+            'change_status': 'insufficient_data',
+            'valid_score_count': len(scores)
         }
     
     # Score variability
@@ -241,22 +321,25 @@ def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) ->
     # RT variability across sessions
     rt_std = statistics.stdev(mean_rts) if len(mean_rts) > 1 else 0.0
     
-    # Reliable Change Index (RCI) - compares most recent to baseline
-    # RCI = (X2 - X1) / SE_diff
-    # SE_diff = sqrt(2 * (SE_measurement)^2)
-    # Using score_std as SE estimate
-    rci = 0.0
-    if len(scores) >= 2 and score_std > 0:
+    # Descriptive within-person standardized change score (WPSC).
+    # This is not a reliable change index because independent test-retest
+    # reliability and normative standard deviation estimates are unavailable.
+    wpsc = None
+    change_status = 'insufficient_data'
+    if len(scores) >= 3 and score_std > 0:
         baseline_score = scores[0]
         latest_score = scores[-1]
-        se_diff = (2 ** 0.5) * score_std
-        rci = (latest_score - baseline_score) / se_diff if se_diff > 0 else 0.0
+        denominator = math.sqrt(2) * score_std
+        wpsc = (latest_score - baseline_score) / denominator
+        change_status = 'available'
     
     return {
         'score_std': round(score_std, 2),
         'score_cv': round(score_cv, 3),
         'rt_across_sessions_std': round(rt_std, 2),
-        'reliable_change_index': round(rci, 2)
+        'within_person_standardized_change': round(wpsc, 2) if wpsc is not None else None,
+        'change_status': change_status,
+        'valid_score_count': len(scores)
     }
 
 
@@ -284,10 +367,9 @@ def calculate_ewma_trend(values: List[float], alpha: float = 0.2) -> Dict[str, A
             'recent_slope': Slope of last 5 EWMA points
         }
     
-    Clinical Application:
-    - Declining trend + high fatigue = possible relapse
-    - Improving trend after intervention = treatment working
-    - Stable trend = well-controlled disease
+    Interpretation boundary:
+    - Trend labels are descriptive interface summaries.
+    - They do not establish relapse, treatment response, or disease control.
     """
     if not values or len(values) < 2:
         return {
@@ -487,7 +569,7 @@ def generate_longitudinal_report(
         include_context_correlation: Whether to analyze contextual factors
     
     Returns:
-        Full report with trends, variability, and clinical insights
+        Full report with descriptive trends and variability indicators
     """
     if not sessions:
         return {'error': 'No sessions provided'}
@@ -504,16 +586,18 @@ def generate_longitudinal_report(
     variability = calculate_within_person_variability(sessions)
     
     # Average fatigue and IIV across all sessions
-    fatigue_indices = []
+    fatigue_proxies = []
     cv_values = []
     
     for session in sessions:
         if 'fatigue_metrics' in session:
-            fatigue_indices.append(session['fatigue_metrics'].get('fatigue_index', 0))
+            proxy = session['fatigue_metrics'].get('fatigue_proxy')
+            if proxy is not None:
+                fatigue_proxies.append(proxy)
         if 'iiv_metrics' in session:
             cv_values.append(session['iiv_metrics'].get('rt_cv', 0))
     
-    avg_fatigue = statistics.mean(fatigue_indices) if fatigue_indices else 0
+    avg_fatigue_proxy = statistics.mean(fatigue_proxies) if fatigue_proxies else None
     avg_cv = statistics.mean(cv_values) if cv_values else 0
     
     report = {
@@ -533,10 +617,11 @@ def generate_longitudinal_report(
             'rt_trend': rt_trend
         },
         'variability': variability,
-        'biomarkers': {
-            'average_fatigue_index': round(avg_fatigue, 3),
+        'descriptive_indicators': {
+            'average_fatigue_proxy': round(avg_fatigue_proxy, 3) if avg_fatigue_proxy is not None else None,
             'average_cv': round(avg_cv, 3),
-            'rci': variability.get('reliable_change_index', 0)
+            'within_person_standardized_change': variability.get('within_person_standardized_change'),
+            'change_status': variability.get('change_status', 'insufficient_data')
         }
     }
     

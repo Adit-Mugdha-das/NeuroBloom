@@ -8,6 +8,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, locale, localeText } from '$lib/i18n';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
+    import { scoreContinuousPerformance } from '$lib/task-scoring';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onMount } from 'svelte';
 
@@ -150,7 +151,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             if (isTarget) { targetsShown++; clicked ? targetsHit++ : misses++; }
             else if (clicked) falseAlarms++;
         }
-        accuracy = targetsShown > 0 ? (targetsHit / targetsShown) * 100 : 0;
+        accuracy = scoreContinuousPerformance(targetsHit, targetsShown);
         const validRTs = reactionTimes.filter((rt, i) => {
             const isTarget = i > 0 && letters[i - 1] === 'A' && letters[i] === 'X';
             return isTarget && rt < 1000;

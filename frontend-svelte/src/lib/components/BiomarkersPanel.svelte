@@ -51,11 +51,11 @@
 		})} ${lt('ms', 'মি.সে.')}`;
 	}
 
-	function getFatigueLevel(index) {
+	function getFatigueProxyRange(index) {
 		if (index === null || index === undefined) return null;
 		if (index > 0.5) {
 			return {
-				label: lt('High', 'বেশি'),
+				label: lt('Upper proxy range', 'প্রক্সির উচ্চ পরিসর'),
 				color: '#f44336',
 				bg: '#ffebee',
 				pct: Math.min(100, index * 100)
@@ -63,14 +63,14 @@
 		}
 		if (index > 0.3) {
 			return {
-				label: lt('Moderate', 'মাঝারি'),
+				label: lt('Middle proxy range', 'প্রক্সির মধ্যম পরিসর'),
 				color: '#ff9800',
 				bg: '#fff3e0',
 				pct: Math.min(100, index * 100)
 			};
 		}
 		return {
-			label: lt('Low', 'কম'),
+			label: lt('Lower proxy range', 'প্রক্সির নিম্ন পরিসর'),
 			color: '#4caf50',
 			bg: '#e8f5e9',
 			pct: Math.min(100, index * 100)
@@ -103,26 +103,26 @@
 		};
 	}
 
-	function getRCIInfo(rci) {
-		if (rci === null || rci === undefined) return null;
-		if (rci > 1.96) {
+	function getWPSCInfo(wpsc) {
+		if (wpsc === null || wpsc === undefined) return null;
+		if (wpsc > 0) {
 			return {
-				label: lt('Significant improvement', 'উল্লেখযোগ্য উন্নতি'),
+				label: lt('Above baseline', 'বেসলাইনের উপরে'),
 				icon: '+',
 				color: '#4caf50',
 				bg: '#e8f5e9'
 			};
 		}
-		if (rci < -1.96) {
+		if (wpsc < 0) {
 			return {
-				label: lt('Significant decline', 'উল্লেখযোগ্য অবনতি'),
+				label: lt('Below baseline', 'বেসলাইনের নিচে'),
 				icon: '-',
 				color: '#f44336',
 				bg: '#ffebee'
 			};
 		}
 		return {
-			label: lt('Stable, no significant change', 'স্থিতিশীল, বড় পরিবর্তন নেই'),
+			label: lt('No numerical difference', 'সংখ্যাগত পার্থক্য নেই'),
 			icon: '=',
 			color: '#667eea',
 			bg: '#f0f2ff'
@@ -176,9 +176,7 @@
 	}
 
 	function fatigueTitle() {
-		return doctorView
-			? lt('Fatigue Index', 'ক্লান্তি সূচক')
-			: lt('Brain Fatigue Level', 'মস্তিষ্কের ক্লান্তির মাত্রা');
+		return lt('Fatigue-Related Proxy', 'ক্লান্তি-সম্পর্কিত প্রক্সি');
 	}
 
 	function cvTitle() {
@@ -187,10 +185,8 @@
 			: lt('Response Consistency', 'প্রতিক্রিয়ার ধারাবাহিকতা');
 	}
 
-	function rciTitle() {
-		return doctorView
-			? lt('Reliable Change Index (RCI)', 'নির্ভরযোগ্য পরিবর্তন সূচক (RCI)')
-			: lt('Performance Change', 'পারফরম্যান্সের পরিবর্তন');
+	function wpscTitle() {
+		return lt('Within-Person Standardized Change (WPSC)', 'ব্যক্তিভিত্তিক মানসম্মত পরিবর্তন (WPSC)');
 	}
 
 	function trendTitle() {
@@ -199,22 +195,28 @@
 			: lt('Overall Trend', 'সামগ্রিক ধারা');
 	}
 
-	function patientRciNote() {
-		if (rciVal > 1.96) {
+	function patientWpscNote() {
+		if (wpscValue === null || wpscValue === undefined) {
 			return lt(
-				'Your recent scores are clearly above your starting point.',
-				'আপনার সাম্প্রতিক স্কোর শুরুর অবস্থার তুলনায় স্পষ্টভাবে ভালো।'
+				'At least 3 valid sessions with some score variation are required.',
+				'অন্তত ৩টি বৈধ সেশন এবং স্কোরে কিছু পরিবর্তন প্রয়োজন।'
 			);
 		}
-		if (rciVal < -1.96) {
+		if (wpscValue > 0) {
 			return lt(
-				'Your recent scores are lower than your starting point, so it may be worth discussing.',
-				'আপনার সাম্প্রতিক স্কোর শুরুর অবস্থার তুলনায় কম; প্রয়োজনে চিকিৎসকের সঙ্গে আলোচনা করা ভালো।'
+				'Your latest score is above your starting score. This is a descriptive comparison.',
+				'আপনার সর্বশেষ স্কোর শুরুর স্কোরের উপরে। এটি একটি বর্ণনামূলক তুলনা।'
+			);
+		}
+		if (wpscValue < 0) {
+			return lt(
+				'Your latest score is below your starting score. This is a descriptive comparison.',
+				'আপনার সর্বশেষ স্কোর শুরুর স্কোরের নিচে। এটি একটি বর্ণনামূলক তুলনা।'
 			);
 		}
 		return lt(
-			'Comparing your current scores to your starting point.',
-			'আপনার বর্তমান স্কোরকে শুরুর অবস্থার সঙ্গে তুলনা করা হচ্ছে।'
+			'Your latest and starting scores have no numerical difference.',
+			'আপনার সর্বশেষ এবং শুরুর স্কোরে সংখ্যাগত পার্থক্য নেই।'
 		);
 	}
 
@@ -222,9 +224,9 @@
 		return lt(`n=${number(sampleSize)}`, `n=${number(sampleSize)}`);
 	}
 
-	$: fatigue = biomarkerData?.fatigue_index?.mean ?? null;
+	$: fatigue = biomarkerData?.fatigue_proxy?.mean ?? null;
 	$: cv = biomarkerData?.rt_coefficient_of_variation?.mean ?? null;
-	$: rciVal = biomarkerData?.reliable_change_index?.value ?? null;
+	$: wpscValue = biomarkerData?.within_person_standardized_change?.value ?? null;
 	$: trend = biomarkerData?.performance_trend ?? null;
 	$: rtTrend = biomarkerData?.rt_trend ?? null;
 	$: fatCorr = biomarkerData?.fatigue_correlation ?? null;
@@ -232,9 +234,9 @@
 	$: medCorr = biomarkerData?.medication_timing_correlation ?? null;
 	$: totalSessions = biomarkerData?.total_sessions ?? 0;
 
-	$: fatigueInfo = getFatigueLevel(fatigue);
+	$: fatigueInfo = getFatigueProxyRange(fatigue);
 	$: cvInfo = getCVLevel(cv);
-	$: rciInfo = getRCIInfo(rciVal);
+	$: wpscInfo = getWPSCInfo(wpscValue);
 	$: trendInfo = trend ? getTrendInfo(trend.direction) : null;
 	$: rtTrendInfo = rtTrend ? getTrendInfo(rtTrend.direction) : null;
 	$: remainingSessions = Math.max(REQUIRED_SESSIONS - totalSessions, 0);
@@ -244,12 +246,12 @@
 <div class="biomarkers-panel">
 	<div class="panel-header">
 		<div class="header-left">
-			<h3>{doctorView ? lt('MS Digital Biomarkers', 'MS ডিজিটাল বায়োমার্কার') : lt('Brain Health Indicators', 'মস্তিষ্কের স্বাস্থ্যসূচক')}</h3>
+			<h3>{lt('Longitudinal Monitoring Indicators', 'দীর্ঘমেয়াদি পর্যবেক্ষণ সূচক')}</h3>
 			<p class="subtitle">
 				{doctorView
 					? lt(
-						`Clinical metrics extracted from ${number(totalSessions)} sessions · Last ${number(days)} days`,
-						`${number(totalSessions)} সেশন থেকে নেওয়া ক্লিনিক্যাল মেট্রিক · শেষ ${number(days)} দিন`
+						`Descriptive indicators from ${number(totalSessions)} sessions · Last ${number(days)} days`,
+						`${number(totalSessions)} সেশনের বর্ণনামূলক সূচক · শেষ ${number(days)} দিন`
 					)
 					: lt(
 						`Based on your last ${number(days)} days of training · ${number(totalSessions)} sessions`,
@@ -258,7 +260,7 @@
 			</p>
 		</div>
 		{#if doctorView}
-			<div class="research-badge">{lt('Research Grade', 'গবেষণামানের')}</div>
+			<div class="research-badge">{lt('Research use · Not clinically validated', 'গবেষণার জন্য · ক্লিনিক্যালভাবে যাচাইকৃত নয়')}</div>
 		{/if}
 	</div>
 
@@ -276,8 +278,8 @@
 			<p class="no-data-sub">
 				{doctorView
 					? lt(
-						'Complete at least 3 training sessions to generate MS biomarkers.',
-						'MS বায়োমার্কার তৈরি করতে অন্তত ৩টি ট্রেনিং সেশন সম্পন্ন করতে হবে।'
+						'Complete at least 3 training sessions to generate descriptive monitoring indicators.',
+						'বর্ণনামূলক পর্যবেক্ষণ সূচক তৈরি করতে অন্তত ৩টি ট্রেনিং সেশন সম্পন্ন করতে হবে।'
 					)
 					: lt(
 						'Keep training. Brain health indicators unlock after 3 sessions.',
@@ -300,7 +302,7 @@
 							style="width: {fatigueInfo?.pct ?? 0}%; background: {fatigueInfo?.color ?? '#ccc'}"
 						></div>
 					</div>
-					<span class="bar-labels"><span>{lt('None', 'নেই')}</span><span>{lt('Severe', 'তীব্র')}</span></span>
+					<span class="bar-labels"><span>{lt('Lower proxy value', 'কম প্রক্সি মান')}</span><span>{lt('Higher proxy value', 'বেশি প্রক্সি মান')}</span></span>
 				</div>
 				<div class="metric-tag" style="color: {fatigueInfo?.color}; background: {fatigueInfo?.bg}">
 					{fatigueInfo?.label ?? '—'}
@@ -308,18 +310,13 @@
 				<p class="metric-note">
 					{doctorView
 						? lt(
-							'>0.5 = severe fatigue · may indicate relapse or poor disease control',
-							'>০.৫ = তীব্র ক্লান্তি · রিল্যাপস বা রোগনিয়ন্ত্রণ দুর্বল হওয়ার ইঙ্গিত হতে পারে'
+							'Configurable fatigue-related proxy · not a diagnostic or prognostic measure',
+							'কনফিগারযোগ্য ক্লান্তি-সম্পর্কিত প্রক্সি · রোগনির্ণয় বা পূর্বাভাসের মাপকাঠি নয়'
 						)
-						: (fatigue ?? 0) > 0.4
-							? lt(
-								'You tend to tire during tasks. Rest before training can help.',
-								'টাস্কের সময় আপনি দ্রুত ক্লান্ত হন। ট্রেনিংয়ের আগে বিশ্রাম নিলে সাহায্য হতে পারে।'
-							)
-							: lt(
-								'Good energy levels maintained throughout tasks.',
-								'টাস্কের পুরো সময় জুড়ে শক্তির মাত্রা ভালো ছিল।'
-							)}
+						: lt(
+							'Descriptive within-session proxy · clinical meaning is not established',
+							'সেশনের ভেতরের বর্ণনামূলক প্রক্সি · ক্লিনিক্যাল অর্থ প্রতিষ্ঠিত নয়'
+						)}
 				</p>
 			</div>
 
@@ -344,8 +341,8 @@
 				<p class="metric-note">
 					{doctorView
 						? lt(
-							'CV >0.35 = clinically significant RT variability · IIV MS biomarker',
-							'CV >০.৩৫ = ক্লিনিক্যালি গুরুত্বপূর্ণ RT ভ্যারিয়েবিলিটি · IIV MS বায়োমার্কার'
+							'Descriptive within-person RT variability · clinical meaning is not established',
+							'ব্যক্তির প্রতিক্রিয়া-সময়ের বর্ণনামূলক পরিবর্তনশীলতা · ক্লিনিক্যাল অর্থ প্রতিষ্ঠিত নয়'
 						)
 						: (cv ?? 0) > 0.3
 							? lt(
@@ -359,32 +356,32 @@
 				</p>
 			</div>
 
-			<div class="metric-card" style="--card-bg: {rciInfo?.bg ?? '#f5f5f5'}">
+			<div class="metric-card" style="--card-bg: {wpscInfo?.bg ?? '#f5f5f5'}">
 				<div class="metric-header">
-					<span class="metric-icon">{rciInfo?.icon ?? 'RCI'}</span>
-					<span class="metric-title">{rciTitle()}</span>
+					<span class="metric-icon">{wpscInfo?.icon ?? 'WPSC'}</span>
+					<span class="metric-title">{wpscTitle()}</span>
 				</div>
-				<div class="metric-value" style="color: {rciInfo?.color ?? '#666'}">{signedFixed(rciVal, 2)}</div>
-				<div class="rci-scale">
-					<div class="rci-track">
-						<div class="rci-center-line"></div>
+				<div class="metric-value" style="color: {wpscInfo?.color ?? '#666'}">{signedFixed(wpscValue, 2)}</div>
+				<div class="wpsc-scale">
+					<div class="wpsc-track">
+						<div class="wpsc-center-line"></div>
 						<div
-							class="rci-marker"
-							style="left: calc(50% + {Math.min(50, Math.max(-50, (rciVal ?? 0) * 12.75))}%); background: {rciInfo?.color}"
+							class="wpsc-marker"
+							style="left: calc(50% + {Math.min(50, Math.max(-50, (wpscValue ?? 0) * 12.75))}%); background: {wpscInfo?.color}"
 						></div>
 					</div>
-					<span class="bar-labels"><span>{lt('Declining', 'কমছে')}</span><span>{lt('Improving', 'উন্নতি')}</span></span>
+					<span class="bar-labels"><span>{lt('Below baseline', 'বেসলাইনের নিচে')}</span><span>{lt('Above baseline', 'বেসলাইনের উপরে')}</span></span>
 				</div>
-				<div class="metric-tag" style="color: {rciInfo?.color}; background: {rciInfo?.bg}">
-					{rciInfo?.label ?? '—'}
+				<div class="metric-tag" style="color: {wpscInfo?.color}; background: {wpscInfo?.bg}">
+					{wpscInfo?.label ?? lt('Insufficient data', 'অপর্যাপ্ত তথ্য')}
 				</div>
 				<p class="metric-note">
 					{doctorView
 						? lt(
-							'|RCI| >1.96 = statistically significant change',
-							'|RCI| >১.৯৬ = পরিসংখ্যানগতভাবে উল্লেখযোগ্য পরিবর্তন'
+							'Descriptive standardized difference from baseline · not a reliable change index',
+							'বেসলাইন থেকে বর্ণনামূলক মানসম্মত পার্থক্য · এটি নির্ভরযোগ্য পরিবর্তন সূচক নয়'
 						)
-						: patientRciNote()}
+						: patientWpscNote()}
 				</p>
 			</div>
 		</div>
@@ -510,7 +507,7 @@
 				<span class="legend-item"><span class="dot amber"></span> {lt('Moderate / Watch', 'মাঝারি / নজরে রাখুন')}</span>
 				<span class="legend-item"><span class="dot red"></span> {lt('High / Declining', 'বেশি / কমতির দিকে')}</span>
 				<span class="legend-sep">|</span>
-				<span class="legend-note">{lt('Based on BICAMS standards · RCI threshold ±1.96', 'BICAMS মানদণ্ডভিত্তিক · RCI সীমা ±১.৯৬')}</span>
+				<span class="legend-note">{lt('Descriptive indicators · not clinically validated', 'বর্ণনামূলক সূচক · ক্লিনিক্যালভাবে যাচাইকৃত নয়')}</span>
 			</div>
 		{/if}
 	{/if}
@@ -626,14 +623,14 @@
 	}
 
 	.metric-bar-wrap,
-	.rci-scale {
+	.wpsc-scale {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
 	}
 
 	.metric-bar,
-	.rci-track {
+	.wpsc-track {
 		height: 6px;
 		background: rgba(0, 0, 0, 0.08);
 		border-radius: 4px;
@@ -672,7 +669,7 @@
 		line-height: 1.45;
 	}
 
-	.rci-center-line {
+	.wpsc-center-line {
 		position: absolute;
 		left: 50%;
 		top: -3px;
@@ -683,7 +680,7 @@
 		transform: translateX(-50%);
 	}
 
-	.rci-marker {
+	.wpsc-marker {
 		position: absolute;
 		top: 50%;
 		width: 12px;

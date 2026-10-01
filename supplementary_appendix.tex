@@ -1,0 +1,108 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{hyperref}
+\renewcommand{\thetable}{S\arabic{table}}
+
+\begin{document}
+\begin{landscape}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\setlength{\LTcapwidth}{22cm}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.8cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{1.3cm}}
+\caption{The 35 implemented tasks: domain, inspired paradigm, principal
+outputs, difficulty mechanism, software verification, and psychometric status.
+Exact (F) = hand-derived fixture in the frontend Vitest suite; Exact (B1--B4) =
+hand-derived fixture in backend pytest batch 1--4; ``+ behavioural'' = additional
+behavioural tests. NE = not established (no reliability, validity, or normative
+data). Levels are developer-specified; no patients with multiple sclerosis were
+evaluated.}\label{tab:task-inventory}\\
+\toprule Task & Domain & Inspired paradigm & Principal outputs & Difficulty / adaptation & Software verification & Psycho-metric status \\
+\midrule
+\endfirsthead
+\toprule Task & Domain & Inspired paradigm & Principal outputs & Difficulty / adaptation & Software verification & Psycho-metric status \\
+\midrule
+\endhead
+﻿N-Back & Working memory & Visual $n$-back updating~\cite{R1} & accuracy, mean RT, misses, false alarms & Fixed baseline (20 trials, 1-back); adaptive version is Dual N-Back & Exact (F) & NE \\
+Digit Span & Working memory & Digit recall (forward, backward, mixed)~\cite{R2} & trial accuracy, span, score & Levels 1--10: length 3--9, direction; every fourth trial one level higher & Exact (B1) & NE \\
+Spatial Span & Working memory & Spatial-sequence recall (Corsi-type)~\cite{R3} & set and order accuracy, maximum span, score & Levels 1--10: sequence length, display and interval timing & Exact (B2) & NE \\
+Letter--Number Sequencing & Working memory & Ordered manipulation of mixed letters and digits~\cite{R2} & set accuracy, order accuracy, speed, score & Levels 1--10: sequence composition and length, timing & Exact (B2) & NE \\
+Operation Span & Working memory & Complex span (arithmetic check plus letter recall)~\cite{R4} & arithmetic accuracy, letter accuracy, dual-task score & Levels 1--10: set size, operation complexity, timing & Exact (B2) & NE \\
+Dual N-Back & Working memory & Dual-modality (position and letter) $n$-back~\cite{R5} & visual, auditory and dual accuracy, score & Levels 1--10: $n=1$--3, stream length, timing, target rate & Exact (B4) + behavioural & NE \\
+\midrule
+Simple Reaction Time & Processing speed & Simple reaction time~\cite{R6} & mean RT, RT SD, choice accuracy, combined score & Shared processing-speed workflow; levels 1--10 change delay, alternatives, timing & Exact (F) & NE \\
+Symbol--Digit Matching & Processing speed & Symbol--digit substitution~\cite{R7} & correct, incorrect, completion time, score & Levels 1--10: symbol count, item count, exposure, target & Exact (B1) & NE \\
+Numeric Trail Task & Processing speed & Sequential visual trail~\cite{R8} & completion time, errors, score & Levels 1--10: node count, layout, expected time & Exact (B2) & NE \\
+Pattern Comparison & Processing speed & Rapid same/different comparison~\cite{R9} & accuracy, RT, timeouts, score & Levels 1--10: grid size, similarity, changed cells, duration, trials & Exact (B1) & NE \\
+Inspection Time & Processing speed & Brief line discrimination with mask~\cite{R10} & accuracy, threshold duration, score & Levels 1--10: presentation time, line difference, trials & Exact (B1) & NE \\
+Choice Reaction Time & Processing speed & Stimulus--response choice RT~\cite{R11} & accuracy, mean RT, consistency, score & Levels 1--10: 2--4 alternatives, trials, windows; up if score $\ge83$ and accuracy $\ge82$, down if $<63$ & Exact (B4) + behavioural & NE \\
+\midrule
+Continuous Performance Task & Attention & Sustained target detection (AX-type baseline)~\cite{R12} & target hit rate, false clicks, mean RT, score & Fixed baseline (60 trials); adaptive version is Go/No-Go & Exact (F) & NE \\
+Serial Addition & Attention & Serial addition (PASAT-type)~\cite{R13} & correct, omissions, RT, accuracy-based score & Levels 1--10: shorter inter-stimulus interval, trials & Exact (B1) & NE \\
+Color--Word Interference & Attention & Color--word interference~\cite{R14} & accuracy, interference score, RT, score & Levels 1--10: color set, congruency ratio, timing, trials & Exact (B3) & NE \\
+Go/No-Go & Attention & Response inhibition~\cite{R6} & go and no-go accuracy, RT, consistency, score & Levels 1--10: stimulus similarity, no-go frequency, timing, trials & Exact (B3) & NE \\
+Flanker & Attention & Flanker interference~\cite{R15} & accuracy, congruent/incongruent RT, conflict control, score & Levels 1--10: congruency ratio, spacing, timing, trials & Exact (B3) & NE \\
+Sustained-Attention Response & Attention & Frequent-go, rare-no-go vigilance~\cite{R16} & overall and no-go accuracy, RT, vigilance penalty, score & Levels 1--10: stream length, target rate, timing; up if score $\ge84$ and $\le4$ commissions, down if $<64$ & Exact (B4) + behavioural & NE \\
+\midrule
+Task Switching & Flexibility & Cued task switching~\cite{R17} & accuracy, switch cost, perseveration errors, score & Fixed baseline (40 trials); adaptive version is Rule Shift & Exact (F) & NE \\
+Alternating Trail Task & Flexibility & Alternating number--letter trail~\cite{R8} & completion time, errors, B-minus-A & Levels 1--10: node count, layout, expected time & Exact (B3) & NE \\
+Card-Sorting Rule Shift & Flexibility & Feedback-guided card sorting~\cite{R18} & categories, perseverative errors, accuracy, score & Levels 1--10: trials, rule-change frequency, feedback, category complexity & Exact (B3) & NE \\
+Dimensional Card Sort & Flexibility & Dimensional rule switching~\cite{R19} & accuracy, mean RT, switch cost, score & Levels 1--10: dimensions, trials, switch frequency, timing & Exact (B3) & NE \\
+Rule Shift & Flexibility & Cued set shifting (color, shape, count)~\cite{R17} & overall and switch accuracy, RT, perseverative errors, score & Levels 1--10: block sequence, cue time; up if score $\ge83$ and switch accuracy $\ge72$, down if $<63$ & Exact (B4) + behavioural & NE \\
+Plus--Minus Switching & Flexibility & Alternating arithmetic switching~\cite{R20} & accuracy, mean RT, switch cost, score & Levels 1--10: operand range, mixed-block frequency, items, timing & Exact (B3) & NE \\
+\midrule
+Tower Planning & Planning & Tower-type planning~\cite{R21} & problems solved, moves, planning efficiency, time, score & Levels 1--10: problem count, disks, minimum moves, time limits & Exact (B3) & NE \\
+Stockings-Style Planning & Planning & Tower-style planning with balls~\cite{R22} & problems solved, planning efficiency, mean time, score & Levels 1--10: problems, balls, minimum moves, time limits & Exact (B3) & NE \\
+Letter Fluency & Planning & Phonemic fluency~\cite{R23} & valid unique words, errors, mean words, score & Levels 1--10: letter sets, prompt count, duration & Exact (B3) & NE \\
+Category Fluency & Planning & Semantic fluency~\cite{R23} & unique valid words, duplicates, score & Levels 1--10: category pools; expected count rises with level & Exact (B4) + behavioural & NE \\
+Twenty Questions & Planning & Constraint-seeking problem solving~\cite{R24} & identification, questions used, strategy score, score & Levels 1--10: five object pools in rotation; score multiplier $1+0.05(\mathrm{level}-1)$ & Exact (B4) + behavioural & NE \\
+\midrule
+Visual Search & Visual scanning & Target search among distractors~\cite{R25} & targets found, accuracy, time per target, score & Levels 1--10: item count, distractor similarity, targets, grid & Exact (B4) + behavioural & NE \\
+Cancellation & Visual scanning & Letter or symbol cancellation~\cite{R26} & hits, omissions, commissions, time, score & Levels 1--10: 150--540 cells, target count and types & Exact (B4) + behavioural & NE \\
+Feature and Conjunction Search & Visual scanning & Feature-integration search~\cite{R25} & accuracy, search time, set-size slope & Levels 1--10: set size, similarity, conjunction load & Exact (B3) & NE \\
+Landmark Line Judgment & Visual scanning & Line-bisection judgment~\cite{R27} & accuracy, omissions, spatial bias, RT, score & Levels 1--10: offset distribution, exposure; up if score $\ge84$ and $|\mathrm{bias}|\le8$, down if $<64$ & Exact (B4) + behavioural & NE \\
+Multiple-Object Tracking & Visual scanning & Dynamic object tracking~\cite{R28} & accuracy, precision, recall, F1, score & Levels 1--10: 6--16 objects, 1--3 targets, speed, duration & Exact (B4) + behavioural & NE \\
+Central--Peripheral Attention & Visual scanning & Divided central/peripheral attention~\cite{R29} & central accuracy, peripheral localization, RT, score & Levels 1--10: presentation time, eccentricity, distractors & Exact (B2) & NE \\
+\bottomrule
+\end{longtable}
+\end{landscape}
+
+\clearpage
+\small
+\begin{thebibliography}{29}
+\bibitem{R1} W.K. Kirchner, Age differences in short-term retention of rapidly changing information, J. Exp. Psychol. 55 (1958) 352--358.
+\bibitem{R2} D. Wechsler, Wechsler Adult Intelligence Scale, fourth ed., Pearson, 2008.
+\bibitem{R3} R.P.C. Kessels et al., The Corsi Block-Tapping Task: standardization and normative data, Appl. Neuropsychol. 7 (2000) 252--258.
+\bibitem{R4} A.R.A. Conway et al., Working memory span tasks: a methodological review and user's guide, Psychon. Bull. Rev. 12 (2005) 769--786.
+\bibitem{R5} S.M. Jaeggi et al., Improving fluid intelligence with training on working memory, Proc. Natl. Acad. Sci. USA 105 (2008) 6829--6833.
+\bibitem{R6} F.C. Donders, On the speed of mental processes, Acta Psychol. 30 (1969) 412--431 (original work published 1868).
+\bibitem{R7} A. Smith, Symbol Digit Modalities Test manual, Western Psychological Services, 1982.
+\bibitem{R8} R.M. Reitan, Validity of the Trail Making Test as an indicator of organic brain damage, Percept. Mot. Skills 8 (1958) 271--276.
+\bibitem{R9} T.A. Salthouse, R.L. Babcock, Decomposing adult age differences in working memory, Dev. Psychol. 27 (1991) 763--776.
+\bibitem{R10} D. Vickers, M.D. Nettelbeck, J. Willson, Perceptual indices of performance: the measurement of inspection time and noise in the visual system, Perception 1 (1972) 263--295.
+\bibitem{R11} W.E. Hick, On the rate of gain of information, Q. J. Exp. Psychol. 4 (1952) 11--26.
+\bibitem{R12} H.E. Rosvold et al., A continuous performance test of brain damage, J. Consult. Psychol. 20 (1956) 343--350.
+\bibitem{R13} D.M.A. Gronwall, Paced auditory serial-addition task: a measure of recovery from concussion, Percept. Mot. Skills 44 (1977) 367--373.
+\bibitem{R14} J.R. Stroop, Studies of interference in serial verbal reactions, J. Exp. Psychol. 18 (1935) 643--662.
+\bibitem{R15} B.A. Eriksen, C.W. Eriksen, Effects of noise letters upon identification of a target letter, Percept. Psychophys. 16 (1974) 143--149.
+\bibitem{R16} I.H. Robertson et al., ``Oops!'': performance correlates of everyday attentional failures, Neuropsychologia 35 (1997) 747--758.
+\bibitem{R17} R.D. Rogers, S. Monsell, Costs of a predictable switch between simple cognitive tasks, J. Exp. Psychol. Gen. 124 (1995) 207--231.
+\bibitem{R18} E.A. Berg, A simple objective technique for measuring flexibility in thinking, J. Gen. Psychol. 39 (1948) 15--22.
+\bibitem{R19} P.D. Zelazo, The Dimensional Change Card Sort, Nat. Protoc. 1 (2006) 297--301.
+\bibitem{R20} A.T. Jersild, Mental set and shift, Arch. Psychol. 14 (1927) 1--81.
+\bibitem{R21} T. Shallice, Specific impairments of planning, Philos. Trans. R. Soc. Lond. B 298 (1982) 199--209.
+\bibitem{R22} A.M. Owen et al., Planning and spatial working memory following frontal lobe lesions, Neuropsychologia 28 (1990) 1021--1034.
+\bibitem{R23} A.L. Benton, Differential behavioral effects in frontal lobe disease, Neuropsychologia 6 (1968) 53--60.
+\bibitem{R24} F.A. Mosher, J.R. Hornsby, On asking questions, in: J.S. Bruner et al. (Eds.), Studies in Cognitive Growth, Wiley, 1966.
+\bibitem{R25} A.M. Treisman, G. Gelade, A feature-integration theory of attention, Cogn. Psychol. 12 (1980) 97--136.
+\bibitem{R26} S. Weintraub, M.-M. Mesulam, Mental state assessment of young and elderly adults, in: Principles of Behavioral Neurology, F.A. Davis, 1985.
+\bibitem{R27} G. Jewell, M.E. McCourt, Pseudoneglect: a review and meta-analysis, Neuropsychologia 38 (2000) 93--110.
+\bibitem{R28} Z.W. Pylyshyn, R.W. Storm, Tracking multiple independent targets, Spat. Vis. 3 (1988) 179--197.
+\bibitem{R29} K. Ball et al., Visual attention problems as a predictor of vehicle crashes in older drivers, Invest. Ophthalmol. Vis. Sci. 34 (1993) 3110--3123.
+\end{thebibliography}
+\normalsize
+
+\end{document}

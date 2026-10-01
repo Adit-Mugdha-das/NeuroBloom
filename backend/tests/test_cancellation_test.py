@@ -24,7 +24,7 @@ def test_generate_trial():
         
         print(f"  Grid size: {trial['rows']} x {trial['cols']} = {trial['total_items']} items")
         print(f"  Targets: {trial['target_items']} (count: {trial['target_count']})")
-        print(f"  Time limit: {trial['time_limit']} seconds")
+        print(f"  Suggested time: {trial['suggested_time']} seconds")
         print(f"  Instructions: {trial['instructions']}")
         
         # Verify grid contains correct number of targets
@@ -67,7 +67,7 @@ def test_scoring():
         marked_positions=all_marked,
         target_positions=target_positions,
         completion_time=30.0,
-        time_limit=75,
+        suggested_time=75,
         difficulty=5
     )
     
@@ -90,7 +90,7 @@ def test_scoring():
         marked_positions=marked_90,
         target_positions=target_positions,
         completion_time=45.0,
-        time_limit=75,
+        suggested_time=75,
         difficulty=5
     )
     
@@ -109,7 +109,7 @@ def test_scoring():
         marked_positions=marked_75,
         target_positions=target_positions,
         completion_time=60.0,
-        time_limit=75,
+        suggested_time=75,
         difficulty=5
     )
     
@@ -135,7 +135,7 @@ def test_scoring():
         marked_positions=marked_with_errors,
         target_positions=target_positions,
         completion_time=50.0,
-        time_limit=75,
+        suggested_time=75,
         difficulty=5
     )
     
@@ -164,7 +164,7 @@ def test_spatial_analysis():
         marked_positions=all_marked,
         target_positions=target_positions,
         completion_time=30.0,
-        time_limit=60,
+        suggested_time=60,
         difficulty=5
     )
     
@@ -185,7 +185,7 @@ def test_spatial_analysis():
         marked_positions=right_marked,
         target_positions=target_positions,
         completion_time=30.0,
-        time_limit=60,
+        suggested_time=60,
         difficulty=5
     )
     

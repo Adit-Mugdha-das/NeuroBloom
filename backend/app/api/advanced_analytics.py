@@ -5,7 +5,7 @@ Phase 1: MS Research Enhancement
 Provides endpoints for:
 1. Pre-task questionnaires (session context)
 2. Advanced analytics (fatigue, IIV, trends)
-3. Digital biomarkers extraction
+3. Descriptive longitudinal indicator extraction
 4. Longitudinal analysis with contextual correlations
 
 Add these to your training router by importing this module.
@@ -236,7 +236,7 @@ def get_longitudinal_analytics(
     - EWMA trends
     - Within-person variability
     - Contextual correlations
-    - Digital biomarkers (fatigue index, CV)
+    - Descriptive monitoring indicators (fatigue-related proxy, CV)
     
     Perfect for doctor portal and research analysis.
     """
@@ -329,16 +329,19 @@ def get_digital_biomarkers(
     session: Session = Depends(get_session)
 ):
     """
-    Extract digital biomarkers for MS research.
+    Return descriptive longitudinal indicators for clinician review and research.
+
+    These indicators are not clinically or psychometrically validated as
+    diagnostic, prognostic, or treatment-response biomarkers.
     
     Returns key metrics:
-    - Average fatigue index
+    - Average fatigue-related proxy
     - Average CV (coefficient of variation)
     - Trend direction (improving/declining/stable)
-    - RCI (reliable change index)
+    - Within-person standardized change score (descriptive, not an RCI)
     - Contextual correlations
     
-    For clinical research and publications.
+    Intended for exploratory research and clinician review, not clinical inference.
     """
     # Get longitudinal data
     longitudinal_data = get_longitudinal_analytics(
@@ -352,29 +355,42 @@ def get_digital_biomarkers(
     
     report = longitudinal_data['report']
     
-    # Extract key biomarkers
+    # Assemble descriptive monitoring indicators. Legacy response keys are
+    # retained for API compatibility and do not imply biomarker validation.
     biomarkers = {
         "user_id": user_id,
         "assessment_period_days": days,
         "total_sessions": report['summary']['total_sessions'],
         
-        # Primary biomarkers
-        "fatigue_index": {
-            "mean": report['biomarkers']['average_fatigue_index'],
-            "interpretation": "High" if report['biomarkers']['average_fatigue_index'] > 0.5 else 
-                            "Moderate" if report['biomarkers']['average_fatigue_index'] > 0.3 else "Low"
+        # Primary descriptive indicators
+        "fatigue_proxy": {
+            "mean": report['descriptive_indicators']['average_fatigue_proxy'],
+            "status": (
+                "available"
+                if report['descriptive_indicators']['average_fatigue_proxy'] is not None
+                else "insufficient_data"
+            ),
+            "interpretation": "descriptive engineering proxy"
         },
         
         "rt_coefficient_of_variation": {
-            "mean": report['biomarkers']['average_cv'],
-            "interpretation": "High variability" if report['biomarkers']['average_cv'] > 0.35 else
-                            "Moderate variability" if report['biomarkers']['average_cv'] > 0.25 else "Normal"
+            "mean": report['descriptive_indicators']['average_cv'],
+            "interpretation": "High variability" if report['descriptive_indicators']['average_cv'] > 0.35 else
+                            "Moderate variability" if report['descriptive_indicators']['average_cv'] > 0.25 else "Normal"
         },
         
-        "reliable_change_index": {
-            "value": report['biomarkers']['rci'],
-            "interpretation": "Significant improvement" if report['biomarkers']['rci'] > 1.96 else
-                            "Significant decline" if report['biomarkers']['rci'] < -1.96 else "Stable"
+        "within_person_standardized_change": {
+            "value": report['descriptive_indicators']['within_person_standardized_change'],
+            "status": report['descriptive_indicators']['change_status'],
+            "interpretation": (
+                "insufficient data"
+                if report['descriptive_indicators']['within_person_standardized_change'] is None
+                else "above baseline"
+                if report['descriptive_indicators']['within_person_standardized_change'] > 0
+                else "below baseline"
+                if report['descriptive_indicators']['within_person_standardized_change'] < 0
+                else "no numerical difference from baseline"
+            )
         },
         
         # Trends

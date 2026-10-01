@@ -488,12 +488,12 @@ def build_biomarker_snapshot(trials: list[dict[str, Any]], context: dict[str, An
     fatigue_level = float(context.get("fatigue_level") or 0)
     sleep_quality = float(context.get("sleep_quality") or 0)
     readiness_level = float(context.get("readiness_level") or 0)
-    fatigue_index = min(1.0, max(0.0, (fatigue_level / 10.0) * 0.45 + min(1.0, rt_cv * 2.4) * 0.35 + max(0.0, fatigue_slope / 180.0) * 0.2))
+    demo_contextual_fatigue_summary = min(1.0, max(0.0, (fatigue_level / 10.0) * 0.45 + min(1.0, rt_cv * 2.4) * 0.35 + max(0.0, fatigue_slope / 180.0) * 0.2))
     cognitive_efficiency = max(0.0, min(1.0, accuracy_ratio * 0.6 + max(0.0, 1 - (mean_rt / 1800.0)) * 0.25 + (readiness_level / 10.0) * 0.15))
     sleep_disruption_index = min(1.0, max(0.0, (1 - (sleep_quality / 10.0)) * 0.7 + max(0.0, (7.0 - float(context.get("sleep_hours") or 0.0)) / 7.0) * 0.3))
 
     return {
-        "fatigue_index": round(fatigue_index, 3),
+        "demo_contextual_fatigue_summary": round(demo_contextual_fatigue_summary, 3),
         "reaction_time_cv": round(rt_cv, 3),
         "fatigue_slope": round(fatigue_slope, 2),
         "cognitive_efficiency": round(cognitive_efficiency, 3),

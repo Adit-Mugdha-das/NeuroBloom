@@ -264,8 +264,9 @@ def _build_session_pacing_status(training_plan: TrainingPlan, session: Session, 
 
     cooldown_remaining_seconds = 0
     next_session_available_at = None
-    if latest_task and not current_session_in_progress:
-        cooldown_delta = timedelta(minutes=max(training_plan.cooldown_between_sessions_minutes, 0))
+    cooldown_minutes = max(training_plan.cooldown_between_sessions_minutes, 0)
+    if latest_task and not current_session_in_progress and cooldown_minutes > 0:
+        cooldown_delta = timedelta(minutes=cooldown_minutes)
         cooldown_remaining = cooldown_delta - (now - latest_task.created_at)
         if cooldown_remaining.total_seconds() > 0:
             cooldown_remaining_seconds = int(cooldown_remaining.total_seconds())
@@ -319,7 +320,11 @@ def enforce_session_limits(training_plan: TrainingPlan, session: Session, user_i
     if not latest_task:
         return
 
-    cooldown_delta = timedelta(minutes=max(training_plan.cooldown_between_sessions_minutes, 0))
+    cooldown_minutes = max(training_plan.cooldown_between_sessions_minutes, 0)
+    if cooldown_minutes == 0:
+        return
+
+    cooldown_delta = timedelta(minutes=cooldown_minutes)
     elapsed = now - latest_task.created_at
     if elapsed < cooldown_delta:
         remaining_seconds = int((cooldown_delta - elapsed).total_seconds())

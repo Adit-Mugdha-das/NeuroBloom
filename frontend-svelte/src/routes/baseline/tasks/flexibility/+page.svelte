@@ -8,6 +8,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { tasks, training } from '$lib/api';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
+    import { scoreTaskSwitching } from '$lib/task-scoring';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onMount } from 'svelte';
 
@@ -170,7 +171,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             if (r.isSwitch) switchRTs.push(r.rt);
             else if (i > 0) noSwitchRTs.push(r.rt);
         }
-        accuracy = responses.length > 0 ? ((responses.length - totalErrors) / responses.length) * 100 : 0;
+        accuracy = scoreTaskSwitching(responses.length, totalErrors);
         const avgSwitch   = switchRTs.length   ? switchRTs.reduce((a,b)=>a+b,0)/switchRTs.length     : 0;
         const avgNoSwitch = noSwitchRTs.length ? noSwitchRTs.reduce((a,b)=>a+b,0)/noSwitchRTs.length : 0;
         switchCostRT = avgSwitch - avgNoSwitch;

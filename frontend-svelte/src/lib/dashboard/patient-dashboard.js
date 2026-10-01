@@ -648,8 +648,8 @@ function createInsightsRail(locale, { notifications, streak, biomarkers, recentC
 					: localeText(locale, { en: 'Unlock after 3 sessions', bn: '৩টি সেশনের পর আনলক হবে' }),
 				body: hasBiomarkers
 					? locale === 'bn'
-						? `ফ্যাটিগ সূচক ${Number(biomarkers?.fatigue_index?.mean || 0).toFixed(2)} · প্রতিক্রিয়ার ধারাবাহিকতা ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
-						: `Fatigue index ${Number(biomarkers?.fatigue_index?.mean || 0).toFixed(2)} · response consistency ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
+						? `ক্লান্তি-সম্পর্কিত প্রক্সি ${Number(biomarkers?.fatigue_proxy?.mean || 0).toFixed(2)} · প্রতিক্রিয়ার ধারাবাহিকতা ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
+						: `Fatigue-related proxy ${Number(biomarkers?.fatigue_proxy?.mean || 0).toFixed(2)} · response consistency ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
 					: localeText(locale, { en: 'Keep training and this area will become more meaningful.', bn: 'ট্রেনিং চালিয়ে যান, এই অংশটি আরও অর্থবহ হবে।' }),
 				action: {
 					label: localeText(locale, { en: 'Open insights', bn: 'ইনসাইট খুলুন' }),

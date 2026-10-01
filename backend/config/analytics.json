@@ -1,0 +1,16 @@
+{
+  "fatigue_proxy": {
+    "weights": {
+      "accuracy_decline": 0.5,
+      "reaction_time_increase": 0.3,
+      "performance_slope": 0.2
+    },
+    "scales": {
+      "accuracy_percentage_points": 30.0,
+      "reaction_time_ms": 200.0,
+      "negative_slope_per_trial": 0.01
+    },
+    "minimum_trials": 8,
+    "minimum_quartile_observations": 2
+  }
+}

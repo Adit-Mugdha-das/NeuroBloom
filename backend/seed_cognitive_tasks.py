@@ -11,7 +11,7 @@ from app.core.config import engine
 from app.models.cognitive_task import CognitiveTask
 
 def get_cognitive_task_seed_data():
-    return [
+    tasks = [
         # ============================================
         # WORKING MEMORY DOMAIN
         # ============================================
@@ -561,6 +561,17 @@ def get_cognitive_task_seed_data():
             "instructions": "Identify the central target AND locate the peripheral target. Stimuli appear very briefly."
         }
     ]
+
+    # Retain the legacy database field name for compatibility, but do not imply
+    # validation or equivalence to a standardized instrument. Detailed,
+    # task-specific provenance is maintained in docs/task_inventory.csv.
+    for task in tasks:
+        task["clinical_validation"] = (
+            "Original NeuroBloom implementation inspired by a general cognitive "
+            "paradigm; clinical validation and standardized-instrument equivalence "
+            "have not been established."
+        )
+    return tasks
 
 
 def seed_cognitive_tasks(verbose: bool = True):
