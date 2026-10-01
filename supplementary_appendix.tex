@@ -12,67 +12,74 @@
 \footnotesize
 \setlength{\tabcolsep}{3pt}
 \setlength{\LTcapwidth}{22cm}
-\begin{longtable}{>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.8cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{1.3cm}}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{5.9cm}>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{1.3cm}}
 \caption{The 35 implemented tasks: domain, inspired paradigm, principal
 outputs, difficulty mechanism, software verification, and psychometric status.
-Exact (F) = hand-derived fixture in the frontend Vitest suite; Exact (B1--B4) =
-hand-derived fixture in backend pytest batch 1--4; ``+ behavioural'' = additional
-behavioural tests. NE = not established (no reliability, validity, or normative
-data). Levels are developer-specified; no patients with multiple sclerosis were
-evaluated.}\label{tab:task-inventory}\\
+Scoring fixture (F) = hand-derived numerical fixture for the task's scoring function in the
+frontend Vitest suite; Scoring fixture (B1--B4) = hand-derived numerical fixture in backend
+pytest batch 1--4; ``+ behavioural tests'' = additional tests of trial generation, response
+classification, and difficulty adjustment. A fixture checks a specific calculation, not the
+validity of the task. NE = not established (no reliability, validity, or normative data).
+Levels are developer-specified; no patients with multiple sclerosis were evaluated.}\label{tab:task-inventory}\\
 \toprule Task & Domain & Inspired paradigm & Principal outputs & Difficulty / adaptation & Software verification & Psycho-metric status \\
 \midrule
 \endfirsthead
 \toprule Task & Domain & Inspired paradigm & Principal outputs & Difficulty / adaptation & Software verification & Psycho-metric status \\
 \midrule
 \endhead
-﻿N-Back & Working memory & Visual $n$-back updating~\cite{R1} & accuracy, mean RT, misses, false alarms & Fixed baseline (20 trials, 1-back); adaptive version is Dual N-Back & Exact (F) & NE \\
-Digit Span & Working memory & Digit recall (forward, backward, mixed)~\cite{R2} & trial accuracy, span, score & Levels 1--10: length 3--9, direction; every fourth trial one level higher & Exact (B1) & NE \\
-Spatial Span & Working memory & Spatial-sequence recall (Corsi-type)~\cite{R3} & set and order accuracy, maximum span, score & Levels 1--10: sequence length, display and interval timing & Exact (B2) & NE \\
-Letter--Number Sequencing & Working memory & Ordered manipulation of mixed letters and digits~\cite{R2} & set accuracy, order accuracy, speed, score & Levels 1--10: sequence composition and length, timing & Exact (B2) & NE \\
-Operation Span & Working memory & Complex span (arithmetic check plus letter recall)~\cite{R4} & arithmetic accuracy, letter accuracy, dual-task score & Levels 1--10: set size, operation complexity, timing & Exact (B2) & NE \\
-Dual N-Back & Working memory & Dual-modality (position and letter) $n$-back~\cite{R5} & visual, auditory and dual accuracy, score & Levels 1--10: $n=1$--3, stream length, timing, target rate & Exact (B4) + behavioural & NE \\
+N-Back & Working memory & Visual $n$-back updating~\cite{R1} & accuracy, mean RT, misses, false alarms & Baseline: 20 trials at 1-back; training mode uses 1--3-back by level. Dual N-Back is a separate training task & Scoring fixture (F) & NE \\
+Digit Span & Working memory & Digit recall (forward, backward, mixed)~\cite{R2} & trial accuracy, span, score & Levels 1--10: length 3--9 and forward/backward/mixed recall; trials 4 and 7 use one level higher & Scoring fixture (B1) & NE \\
+Spatial Span & Working memory & Spatial-sequence recall (Corsi-type)~\cite{R3} & set and order accuracy, maximum span, score & Levels 1--10: sequence length, display and interval timing & Scoring fixture (B2) & NE \\
+Letter--Number Sequencing & Working memory & Ordered manipulation of mixed letters and digits~\cite{R2} & set accuracy, order accuracy, speed, score & Levels 1--10: sequence composition and length, timing & Scoring fixture (B2) & NE \\
+Operation Span & Working memory & Complex span (arithmetic check plus letter recall)~\cite{R4} & arithmetic accuracy, letter accuracy, dual-task score & Levels 1--10: set size, operation complexity, timing & Scoring fixture (B2) & NE \\
+Dual N-Back & Working memory & Dual-modality (position and letter) $n$-back~\cite{R5} & visual, auditory and dual accuracy, score & Levels 1--10: $n=1$--3, stream length, timing, target rate & Scoring fixture (B4) + behavioural tests & NE \\
 \midrule
-Simple Reaction Time & Processing speed & Simple reaction time~\cite{R6} & mean RT, RT SD, choice accuracy, combined score & Shared processing-speed workflow; levels 1--10 change delay, alternatives, timing & Exact (F) & NE \\
-Symbol--Digit Matching & Processing speed & Symbol--digit substitution~\cite{R7} & correct, incorrect, completion time, score & Levels 1--10: symbol count, item count, exposure, target & Exact (B1) & NE \\
-Numeric Trail Task & Processing speed & Sequential visual trail~\cite{R8} & completion time, errors, score & Levels 1--10: node count, layout, expected time & Exact (B2) & NE \\
-Pattern Comparison & Processing speed & Rapid same/different comparison~\cite{R9} & accuracy, RT, timeouts, score & Levels 1--10: grid size, similarity, changed cells, duration, trials & Exact (B1) & NE \\
-Inspection Time & Processing speed & Brief line discrimination with mask~\cite{R10} & accuracy, threshold duration, score & Levels 1--10: presentation time, line difference, trials & Exact (B1) & NE \\
-Choice Reaction Time & Processing speed & Stimulus--response choice RT~\cite{R11} & accuracy, mean RT, consistency, score & Levels 1--10: 2--4 alternatives, trials, windows; up if score $\ge83$ and accuracy $\ge82$, down if $<63$ & Exact (B4) + behavioural & NE \\
+Simple Reaction Time & Processing speed & Simple reaction time~\cite{R6} & mean RT, RT SD, choice accuracy, combined score & Shared processing-speed workflow; levels 1--10 change delay, alternatives, timing & Scoring fixture (F) & NE \\
+Symbol--Digit Matching & Processing speed & Symbol--digit substitution~\cite{R7} & correct, incorrect, completion time, score & Levels 1--10: symbol count, item count, exposure, target & Scoring fixture (B1) & NE \\
+Numeric Trail Task & Processing speed & Sequential visual trail~\cite{R8} & completion time, errors, score & Levels 1--10: node count, layout, expected time & Scoring fixture (B2) & NE \\
+Pattern Comparison & Processing speed & Rapid same/different comparison~\cite{R9} & accuracy, RT, timeouts, score & Levels 1--10: grid size, similarity, changed cells, duration, trials & Scoring fixture (B1) & NE \\
+Inspection Time & Processing speed & Brief line discrimination with mask~\cite{R10} & accuracy, threshold duration, score & Levels 1--10: presentation time, line difference, trials & Scoring fixture (B1) & NE \\
+Choice Reaction Time & Processing speed & Stimulus--response choice RT~\cite{R11} & accuracy, mean RT, consistency, score & Levels 1--10: 2--4 alternatives, trials, windows; up if score $\ge83$ and accuracy $\ge82$, down if $<63$ & Scoring fixture (B4) + behavioural tests & NE \\
 \midrule
-Continuous Performance Task & Attention & Sustained target detection (AX-type baseline)~\cite{R12} & target hit rate, false clicks, mean RT, score & Fixed baseline (60 trials); adaptive version is Go/No-Go & Exact (F) & NE \\
-Serial Addition & Attention & Serial addition (PASAT-type)~\cite{R13} & correct, omissions, RT, accuracy-based score & Levels 1--10: shorter inter-stimulus interval, trials & Exact (B1) & NE \\
-Color--Word Interference & Attention & Color--word interference~\cite{R14} & accuracy, interference score, RT, score & Levels 1--10: color set, congruency ratio, timing, trials & Exact (B3) & NE \\
-Go/No-Go & Attention & Response inhibition~\cite{R6} & go and no-go accuracy, RT, consistency, score & Levels 1--10: stimulus similarity, no-go frequency, timing, trials & Exact (B3) & NE \\
-Flanker & Attention & Flanker interference~\cite{R15} & accuracy, congruent/incongruent RT, conflict control, score & Levels 1--10: congruency ratio, spacing, timing, trials & Exact (B3) & NE \\
-Sustained-Attention Response & Attention & Frequent-go, rare-no-go vigilance~\cite{R16} & overall and no-go accuracy, RT, vigilance penalty, score & Levels 1--10: stream length, target rate, timing; up if score $\ge84$ and $\le4$ commissions, down if $<64$ & Exact (B4) + behavioural & NE \\
+Continuous Performance Task & Attention & Sustained target detection (AX-type baseline)~\cite{R12} & target hit rate, false clicks, mean RT, score & Baseline: 60 trials; training mode adds 10 trials per level above 3. Go/No-Go is a separate training task & Scoring fixture (F) & NE \\
+Serial Addition & Attention & Serial addition (PASAT-type)~\cite{R13} & correct, omissions, RT, accuracy-based score & Levels 1--10: shorter inter-stimulus interval, trials & Scoring fixture (B1) & NE \\
+Color--Word Interference & Attention & Color--word interference~\cite{R14} & accuracy, interference score, RT, score & Levels 1--10: color set, congruency ratio, timing, trials & Scoring fixture (B3) & NE \\
+Go/No-Go & Attention & Response inhibition~\cite{R30,R31} & go and no-go accuracy, RT, consistency, score & Levels 1--10: stimulus similarity, no-go frequency, timing, trials & Scoring fixture (B3) & NE \\
+Flanker & Attention & Flanker interference~\cite{R15} & accuracy, congruent/incongruent RT, conflict control, score & Levels 1--10: congruency ratio, spacing, timing, trials & Scoring fixture (B3) & NE \\
+Sustained-Attention Response & Attention & Frequent-go, rare-no-go vigilance~\cite{R16} & overall and no-go accuracy, RT, vigilance penalty, score & Levels 1--10: stream length, target rate, timing; up if score $\ge84$ and $\le4$ commissions, down if $<64$ & Scoring fixture (B4) + behavioural tests & NE \\
 \midrule
-Task Switching & Flexibility & Cued task switching~\cite{R17} & accuracy, switch cost, perseveration errors, score & Fixed baseline (40 trials); adaptive version is Rule Shift & Exact (F) & NE \\
-Alternating Trail Task & Flexibility & Alternating number--letter trail~\cite{R8} & completion time, errors, B-minus-A & Levels 1--10: node count, layout, expected time & Exact (B3) & NE \\
-Card-Sorting Rule Shift & Flexibility & Feedback-guided card sorting~\cite{R18} & categories, perseverative errors, accuracy, score & Levels 1--10: trials, rule-change frequency, feedback, category complexity & Exact (B3) & NE \\
-Dimensional Card Sort & Flexibility & Dimensional rule switching~\cite{R19} & accuracy, mean RT, switch cost, score & Levels 1--10: dimensions, trials, switch frequency, timing & Exact (B3) & NE \\
-Rule Shift & Flexibility & Cued set shifting (color, shape, count)~\cite{R17} & overall and switch accuracy, RT, perseverative errors, score & Levels 1--10: block sequence, cue time; up if score $\ge83$ and switch accuracy $\ge72$, down if $<63$ & Exact (B4) + behavioural & NE \\
-Plus--Minus Switching & Flexibility & Alternating arithmetic switching~\cite{R20} & accuracy, mean RT, switch cost, score & Levels 1--10: operand range, mixed-block frequency, items, timing & Exact (B3) & NE \\
+Task Switching & Flexibility & Cued task switching~\cite{R17} & accuracy, switch cost, perseveration errors, score & Baseline: 40 trials; training mode adds 10 trials per level above 4. Rule Shift is a separate training task & Scoring fixture (F) & NE \\
+Alternating Trail Task & Flexibility & Alternating number--letter trail~\cite{R8} & completion time, errors, B-minus-A & Levels 1--10: node count, layout, expected time & Scoring fixture (B3) & NE \\
+Card-Sorting Rule Shift & Flexibility & Feedback-guided card sorting~\cite{R18} & categories, perseverative errors, accuracy, score & Levels 1--10: trials, rule-change frequency, feedback, category complexity & Scoring fixture (B3) & NE \\
+Dimensional Card Sort & Flexibility & Dimensional rule switching~\cite{R19} & accuracy, mean RT, switch cost, score & Levels 1--10: dimensions, trials, switch frequency, timing & Scoring fixture (B3) & NE \\
+Rule Shift & Flexibility & Cued set shifting (color, shape, count)~\cite{R17} & overall and switch accuracy, RT, perseverative errors, score & Levels 1--10: block sequence, cue time; up if score $\ge83$, switch accuracy $\ge72$ and $\le5$ perseverative errors, down if $<63$ & Scoring fixture (B4) + behavioural tests & NE \\
+Plus--Minus Switching & Flexibility & Alternating arithmetic switching~\cite{R20} & accuracy, mean RT, switch cost, score & Levels 1--10: operand range, mixed-block frequency, items, timing & Scoring fixture (B3) & NE \\
 \midrule
-Tower Planning & Planning & Tower-type planning~\cite{R21} & problems solved, moves, planning efficiency, time, score & Levels 1--10: problem count, disks, minimum moves, time limits & Exact (B3) & NE \\
-Stockings-Style Planning & Planning & Tower-style planning with balls~\cite{R22} & problems solved, planning efficiency, mean time, score & Levels 1--10: problems, balls, minimum moves, time limits & Exact (B3) & NE \\
-Letter Fluency & Planning & Phonemic fluency~\cite{R23} & valid unique words, errors, mean words, score & Levels 1--10: letter sets, prompt count, duration & Exact (B3) & NE \\
-Category Fluency & Planning & Semantic fluency~\cite{R23} & unique valid words, duplicates, score & Levels 1--10: category pools; expected count rises with level & Exact (B4) + behavioural & NE \\
-Twenty Questions & Planning & Constraint-seeking problem solving~\cite{R24} & identification, questions used, strategy score, score & Levels 1--10: five object pools in rotation; score multiplier $1+0.05(\mathrm{level}-1)$ & Exact (B4) + behavioural & NE \\
+Tower Planning & Planning & Tower-type planning~\cite{R21} & problems solved, moves, planning efficiency, time, score & Levels 1--10: problem count, disks, minimum moves, time limits & Scoring fixture (B3) & NE \\
+Stockings-Style Planning & Planning & Tower-style planning with balls~\cite{R22} & problems solved, planning efficiency, mean time, score & Levels 1--10: problems, balls, minimum moves, time limits & Scoring fixture (B3) & NE \\
+Letter Fluency & Planning & Phonemic fluency~\cite{R23} & valid unique words, errors, mean words, score & Levels 1--10: letter sets, prompt count, duration & Scoring fixture (B3) & NE \\
+Category Fluency & Planning & Semantic fluency~\cite{R23} & unique valid words, duplicates, score & Levels 1--10: category pools; expected count rises with level & Scoring fixture (B4) + behavioural tests & NE \\
+Twenty Questions & Planning & Constraint-seeking problem solving~\cite{R24} & identification, questions used, strategy score, score & Levels 1--10: five object pools in rotation; score multiplier $1+0.05(\mathrm{level}-1)$ & Scoring fixture (B4) + behavioural tests & NE \\
 \midrule
-Visual Search & Visual scanning & Target search among distractors~\cite{R25} & targets found, accuracy, time per target, score & Levels 1--10: item count, distractor similarity, targets, grid & Exact (B4) + behavioural & NE \\
-Cancellation & Visual scanning & Letter or symbol cancellation~\cite{R26} & hits, omissions, commissions, time, score & Levels 1--10: 150--540 cells, target count and types & Exact (B4) + behavioural & NE \\
-Feature and Conjunction Search & Visual scanning & Feature-integration search~\cite{R25} & accuracy, search time, set-size slope & Levels 1--10: set size, similarity, conjunction load & Exact (B3) & NE \\
-Landmark Line Judgment & Visual scanning & Line-bisection judgment~\cite{R27} & accuracy, omissions, spatial bias, RT, score & Levels 1--10: offset distribution, exposure; up if score $\ge84$ and $|\mathrm{bias}|\le8$, down if $<64$ & Exact (B4) + behavioural & NE \\
-Multiple-Object Tracking & Visual scanning & Dynamic object tracking~\cite{R28} & accuracy, precision, recall, F1, score & Levels 1--10: 6--16 objects, 1--3 targets, speed, duration & Exact (B4) + behavioural & NE \\
-Central--Peripheral Attention & Visual scanning & Divided central/peripheral attention~\cite{R29} & central accuracy, peripheral localization, RT, score & Levels 1--10: presentation time, eccentricity, distractors & Exact (B2) & NE \\
+Visual Search & Visual scanning & Target search among distractors~\cite{R25} & targets found, accuracy, time per target, score & Levels 1--10: item count, distractor similarity, targets, grid & Scoring fixture (B4) + behavioural tests & NE \\
+Cancellation & Visual scanning & Letter or symbol cancellation~\cite{R26} & hits, omissions, commissions, time, score & Levels 1--10: 150--540 cells, target count and types & Scoring fixture (B4) + behavioural tests & NE \\
+Feature and Conjunction Search & Visual scanning & Feature-integration search~\cite{R25} & accuracy, search time, set-size slope & Levels 1--10: set size, similarity, conjunction load & Scoring fixture (B3) & NE \\
+Landmark Line Judgment & Visual scanning & Line-bisection judgment~\cite{R27} & accuracy, omissions, spatial bias, RT, score & Levels 1--10: offset distribution, exposure; up if score $\ge84$, $|\mathrm{bias}|\le8$ and $\le1$ omission, down if $<64$ & Scoring fixture (B4) + behavioural tests & NE \\
+Multiple-Object Tracking & Visual scanning & Dynamic object tracking~\cite{R28} & accuracy, precision, recall, F1, score & Levels 1--10: 6--16 objects, 1--3 targets, speed, duration & Scoring fixture (B4) + behavioural tests & NE \\
+Central--Peripheral Attention & Visual scanning & Divided central/peripheral attention~\cite{R29} & central accuracy, peripheral localization, RT, score & Levels 1--10 shorten presentation time (800 to 150 ms): levels 1--3 central only, 4--6 add a peripheral target, 7--10 add 24--47 distractors & Scoring fixture (B2) & NE \\
 \bottomrule
 \end{longtable}
+
+\vspace{0.6em}
+\begin{minipage}{0.95\linewidth}\footnotesize
+\textbf{Note.} N-Back, Continuous Performance Task, Task Switching, and Simple Reaction Time are scored client-side in the baseline workflow. Their scoring functions are extracted to a frontend module and each is covered by one Vitest fixture (F); the other 31 tasks are scored by backend services and covered by pytest fixtures (B1--B4).
+\end{minipage}
+
 \end{landscape}
 
 \clearpage
-\small
-\begin{thebibliography}{29}
+\footnotesize
+\begin{thebibliography}{31}
 \bibitem{R1} W.K. Kirchner, Age differences in short-term retention of rapidly changing information, J. Exp. Psychol. 55 (1958) 352--358.
 \bibitem{R2} D. Wechsler, Wechsler Adult Intelligence Scale, fourth ed., Pearson, 2008.
 \bibitem{R3} R.P.C. Kessels et al., The Corsi Block-Tapping Task: standardization and normative data, Appl. Neuropsychol. 7 (2000) 252--258.
@@ -102,6 +109,8 @@ Central--Peripheral Attention & Visual scanning & Divided central/peripheral att
 \bibitem{R27} G. Jewell, M.E. McCourt, Pseudoneglect: a review and meta-analysis, Neuropsychologia 38 (2000) 93--110.
 \bibitem{R28} Z.W. Pylyshyn, R.W. Storm, Tracking multiple independent targets, Spat. Vis. 3 (1988) 179--197.
 \bibitem{R29} K. Ball et al., Visual attention problems as a predictor of vehicle crashes in older drivers, Invest. Ophthalmol. Vis. Sci. 34 (1993) 3110--3123.
+\bibitem{R30} D.J. Simmonds, J.J. Pekar, S.H. Mostofsky, Meta-analysis of Go/No-go tasks demonstrating that fMRI activation associated with response inhibition is task-dependent, Neuropsychologia 46 (2008) 224--232.
+\bibitem{R31} A. Diamond, Executive functions, Annu. Rev. Psychol. 64 (2013) 135--168.
 \end{thebibliography}
 \normalsize
 

@@ -61,7 +61,7 @@ PARADIGM_REFERENCES = {
     "cpt": "Rosvold et al. (1956) [R12]",
     "pasat": "Gronwall (1977) [R13]",
     "stroop": "Stroop (1935) [R14]",
-    "go_nogo": "Donders (1868/1969) [R6]",
+    "go_nogo": "Simmonds et al. (2008) [R30]; Diamond (2013) [R31]",
     "flanker": "Eriksen and Eriksen (1974) [R15]",
     "sart": "Robertson et al. (1997) [R16]",
     "task_switching": "Rogers and Monsell (1995) [R17]",
@@ -84,10 +84,14 @@ PARADIGM_REFERENCES = {
 }
 
 DIFFICULTY_CLARIFICATIONS = {
-    "n_back": "fixed baseline: 20 trials at 1-back; adaptive training is the separately inventoried Dual N-Back task with levels 1-10",
-    "digit_span": "levels 1-10 use length/type 3/F 4/F 5/F 4/mixed 5/mixed 5/B 6/B 7/mixed 8/mixed 9/mixed; 8 trials with every fourth trial sampled one level higher",
-    "cpt": "fixed AX-CPT baseline: 60 trials; levels not applicable; adaptive inhibitory-attention training is the separately inventoried Go/No-Go task",
-    "task_switching": "fixed baseline: 40 color/parity trials; levels not applicable; adaptive flexibility training is the separately inventoried Rule Shift task",
+    "n_back": "baseline: 20 trials at 1-back; training mode uses 1-back at levels 1-2 and 2-back at levels 3-5 and 3-back at levels 6-10 with 20 trials; Dual N-Back is a separately inventoried training task",
+    "digit_span": "levels 1-10 use length/type 3/F 4/F 5/F 4/mixed 5/mixed 5/B 6/B 7/mixed 8/mixed 9/mixed; 8 trials where trials 4 and 7 are sampled one level higher",
+    "cpt": "baseline: 60 trials; training mode adds 10 trials per level above level 3 (70-130 trials at levels 4-10); Go/No-Go is a separately inventoried training task",
+    "task_switching": "baseline: 40 color/parity trials; training mode adds 10 trials per level above level 4 (up to 100 trials at level 10); Rule Shift is a separately inventoried training task",
+    "sart": "levels 1-10 change stream length target rate stimulus duration response window; advance >=84 with <=4 commission errors; regress <64",
+    "rule_shift": "levels 1-10 change rules switch interval stimuli timing and trials; advance >=83 with switch accuracy >=72 and <=5 perseverative errors; regress <63",
+    "landmark_task": "levels 1-10 change line offset distribution exposure response window and trials; advance >=84 with abs bias <=8 and <=1 omission; regress <64",
+    "useful_field_of_view": "levels 1-3 central only and levels 4-6 add a peripheral target and levels 7-10 add 24-47 distractors; presentation time falls from 800 ms at level 1 to 150 ms at level 10",
 }
 
 
