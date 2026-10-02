@@ -163,10 +163,11 @@ The clinician account shows the assigned patient's baseline, session history, tr
 ```bash
 docker compose --env-file .env.local -f compose.yaml exec backend python scripts/fatigue_proxy_sensitivity.py
 docker compose --env-file .env.local -f compose.yaml exec backend python scripts/trend_sensitivity.py
+docker compose --env-file .env.local -f compose.yaml exec backend python scripts/illustrative_case.py
 docker compose --env-file .env.local -f compose.yaml cp backend:/app/analysis/results/. backend/analysis/results
 ```
 
-Each script prints its results and writes a JSON file to `analysis/results/` (`/app/analysis/results/` in the container); the last command copies both files to `backend/analysis/results/`. Without Docker, run `python scripts/fatigue_proxy_sensitivity.py` and `python scripts/trend_sensitivity.py` from the `backend` directory, which writes to the same location.
+Each script prints its results and writes a JSON file to `analysis/results/` (`/app/analysis/results/` in the container); the last command copies the files to `backend/analysis/results/`. `illustrative_case.py` produces the synthetic longitudinal case shown in the manuscript. Without Docker, run the same scripts with `python scripts/<name>.py` from the `backend` directory, which writes to the same location.
 
 The demonstration accounts above, and the default administrator account created by `seed_initial_data.py`, use fixed passwords and are intended for local demonstration only. Do not use them in a real deployment; change or remove them first.
 

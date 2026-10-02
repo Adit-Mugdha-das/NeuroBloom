@@ -78,6 +78,12 @@ def test_committed_trend_sensitivity_results_are_current():
     assert committed == json.loads(json.dumps(module.build_payload()))
 
 
+def test_committed_illustrative_case_is_current():
+    module = load_script("illustrative_case")
+    committed = json.loads((BACKEND / "analysis" / "results" / "illustrative_case.json").read_text(encoding="utf-8"))
+    assert committed == json.loads(json.dumps(module.build_case()))
+
+
 def test_committed_fatigue_sensitivity_has_no_hard_coded_flag_result():
     committed = json.loads((BACKEND / "analysis" / "results" / "fatigue_proxy_sensitivity.json").read_text(encoding="utf-8"))
     assert all("review_flag_changes" not in result for result in committed["results"].values())

@@ -1,0 +1,103 @@
+{
+  "description": "Synthetic single-patient case; six 40-trial sessions; fixed seed.",
+  "seed": 42,
+  "baseline_score": 62,
+  "sessions": [
+    {
+      "session": 1,
+      "fatigue_rating": 3,
+      "sleep_rating": 8,
+      "difficulty_level": 4,
+      "next_difficulty_level": 5,
+      "accuracy": 100.0,
+      "mean_rt_ms": 597.7,
+      "fatigue_proxy": 0.013,
+      "rt_cv": 0.105,
+      "ewma": 100.0,
+      "trend": "stable",
+      "wpsc": null
+    },
+    {
+      "session": 2,
+      "fatigue_rating": 4,
+      "sleep_rating": 7,
+      "difficulty_level": 5,
+      "next_difficulty_level": 6,
+      "accuracy": 90.0,
+      "mean_rt_ms": 623.6,
+      "fatigue_proxy": 0.0,
+      "rt_cv": 0.118,
+      "ewma": 98.0,
+      "trend": "declining",
+      "wpsc": null
+    },
+    {
+      "session": 3,
+      "fatigue_rating": 7,
+      "sleep_rating": 4,
+      "difficulty_level": 6,
+      "next_difficulty_level": 5,
+      "accuracy": 62.5,
+      "mean_rt_ms": 721.0,
+      "fatigue_proxy": 0.89,
+      "rt_cv": 0.197,
+      "ewma": 90.9,
+      "trend": "declining",
+      "wpsc": -1.37
+    },
+    {
+      "session": 4,
+      "fatigue_rating": 3,
+      "sleep_rating": 8,
+      "difficulty_level": 5,
+      "next_difficulty_level": 6,
+      "accuracy": 92.5,
+      "mean_rt_ms": 599.7,
+      "fatigue_proxy": 0.0,
+      "rt_cv": 0.102,
+      "ewma": 91.22,
+      "trend": "declining",
+      "wpsc": -0.32
+    },
+    {
+      "session": 5,
+      "fatigue_rating": 8,
+      "sleep_rating": 3,
+      "difficulty_level": 6,
+      "next_difficulty_level": 6,
+      "accuracy": 67.5,
+      "mean_rt_ms": 716.4,
+      "fatigue_proxy": 0.2,
+      "rt_cv": 0.192,
+      "ewma": 86.48,
+      "trend": "declining",
+      "wpsc": -1.39
+    },
+    {
+      "session": 6,
+      "fatigue_rating": 4,
+      "sleep_rating": 7,
+      "difficulty_level": 6,
+      "next_difficulty_level": 7,
+      "accuracy": 97.5,
+      "mean_rt_ms": 613.2,
+      "fatigue_proxy": 0.006,
+      "rt_cv": 0.117,
+      "ewma": 88.68,
+      "trend": "declining",
+      "wpsc": -0.11
+    }
+  ],
+  "contextual_correlations": {
+    "fatigue_level": {
+      "correlation_with_score": -0.938,
+      "correlation_with_rt": 0.982,
+      "sample_size": 6
+    },
+    "sleep_quality": {
+      "correlation_with_score": 0.938,
+      "correlation_with_rt": -0.982,
+      "sample_size": 6
+    }
+  }
+}

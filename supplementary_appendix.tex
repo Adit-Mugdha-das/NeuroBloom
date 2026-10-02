@@ -17,6 +17,12 @@
 
 \begin{landscape}
 
+\begin{center}
+{\Large\bfseries Supplementary Material}\\[0.6em]
+{\normalsize\itshape NeuroBloom: An Open-Source Platform for Longitudinal Cognitive
+Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis}
+\end{center}
+
 \small
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.2}
@@ -108,6 +114,7 @@ Choice Reaction Time$^\dagger$
 & accuracy, reaction time, consistency, score
 & 10 levels: 2 to 4 choices and shorter response windows. Level increases if score is at least 83 and accuracy at least 82\%; it decreases if score is below 63. \\
 
+\newpage
 \midrule
 \multicolumn{4}{l}{\textbf{Attention}} \\
 
@@ -388,8 +395,8 @@ $\geq6.5$ (+1) or $\geq8$ (+2); completion $<60\%$ with $\geq3$ sessions
 (+1). Total $\geq4$ high, 2--3 moderate.
 & Not varied
 & Lower cut-offs would classify more patients as moderate or high risk.
-Values are fixed in the current implementation and were not included in
-the sensitivity analysis. \\
+The thresholds are fixed during normal use but can be modified by developers
+or deployers. They were not varied in the present sensitivity analysis. \\
 
 \bottomrule
 
@@ -414,9 +421,9 @@ clinically optimal settings.
 \section*{Software verification and testing}
 
 NeuroBloom is tested with two automated suites. The backend suite contains
-103 pytest tests: 31 numerical scoring fixtures, one for each backend-scored
+104 pytest tests: 31 numerical scoring fixtures, one for each backend-scored
 task; 43 behavioural tests of trial generation, response classification, and
-difficulty adjustment; 6 checks of the 35-task inventory; 7 checks of the
+difficulty adjustment; 6 checks of the 35-task inventory; 8 checks of the
 analytics parameters and sensitivity results; 15 API tests of authentication
 and clinician endpoints; and one integration test of the patient--clinician
 workflow. The frontend suite contains 20 Vitest tests covering the four
@@ -435,10 +442,13 @@ record.
 
 Both suites run on every push and pull request through GitHub Actions
 (Ubuntu, Python 3.12, Node.js 20). The backend tests use an in-memory SQLite
-database in place of PostgreSQL. At the time of revision, all 123 tests passed
-(Windows 10, Python 3.13, Node.js 22). The frontend tests target scoring and workflow modules; the Svelte page
-components are not unit-tested, and browser-level end-to-end tests are not yet
-included.
+database in place of PostgreSQL. At the time of revision, all 124 tests passed
+(Windows 10, Python 3.13, Node.js 22). Overall line coverage was approximately
+40\% for the backend application package and 13\% for the frontend source;
+coverage is higher for the core scoring and analytics logic than for the API,
+page, and user-interface layers. The frontend tests target scoring and workflow
+modules; the Svelte page components are not unit-tested, and browser-level
+end-to-end tests are not yet included.
 
 
 % ============================================================
@@ -535,7 +545,7 @@ Decomposing adult age differences in working memory,
 Dev. Psychol. 27 (1991) 763--776.
 
 \bibitem{R10}
-D. Vickers, M.D. Nettelbeck, J. Willson,
+D. Vickers, M.D. Nettelbeck, R.J. Willson,
 Perceptual indices of performance: the measurement of inspection time and
 noise in the visual system,
 Perception 1 (1972) 263--295.
