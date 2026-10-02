@@ -382,12 +382,13 @@ implementation reports insufficient data when the minimum requirements are
 not met. \\
 
 Review-flag thresholds
-& Weekly score drop $>3$ points; adherence $<60\%$; 30 days without
-activity in a domain
+& 14-day risk score: baseline $<45$ (+2); recent mean 6--12 points below
+baseline (+1) or $\geq12$ below (+2); recent mean $<50$ (+1); fatigue
+$\geq6.5$ (+1) or $\geq8$ (+2); completion $<60\%$ with $\geq3$ sessions
+(+1). Total $\geq4$ high, 2--3 moderate.
 & Not varied
-& Less strict settings (a smaller score drop, a higher adherence cut-off,
-or a shorter inactivity period) would generate more review flags. These
-thresholds are fixed in the current implementation and were not included in
+& Lower cut-offs would classify more patients as moderate or high risk.
+Values are fixed in the current implementation and were not included in
 the sensitivity analysis. \\
 
 \bottomrule
