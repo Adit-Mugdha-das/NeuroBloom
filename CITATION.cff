@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 
-title: "Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.1 – SoftwareX Archive Release"
+title: "Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.2 – SoftwareX Archive Release"
 
 message: "If you use NeuroBloom in your research, please cite this software using the metadata below."
 
@@ -23,11 +23,11 @@ authors:
     given-names: "Sk. Imran"
     orcid: "https://orcid.org/0000-0002-1869-224X"
 
-version: "v1.1"
+version: "v1.2"
 
-doi: "10.5281/zenodo.21207720"
+doi: "10.5281/zenodo.23106598"
 
-date-released: 2026-07-05
+date-released: 2026-10-02
 
 license: "MIT"
 

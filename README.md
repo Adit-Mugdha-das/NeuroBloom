@@ -1,6 +1,6 @@
 # NeuroBloom
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21207720.svg)](https://doi.org/10.5281/zenodo.21207720)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23106598.svg)](https://doi.org/10.5281/zenodo.23106598)
 
 NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at https://neurobloom-67qo.onrender.com/.
 
@@ -147,7 +147,7 @@ docker compose --env-file .env.local -f compose.yaml exec backend python seed_in
 docker compose --env-file .env.local -f compose.yaml exec backend python scripts/seed_demo_clinical_data.py
 ```
 
-The script creates 8 synthetic clinicians and 8 synthetic patients, each patient assigned to one clinician, with baseline assessments, training plans, 60 training sessions with contextual records, progress reports, prescriptions, messages, and risk alerts. It prints every account it creates. Running it again replaces the previous demonstration records. The script uses a fixed random seed to reproduce the same synthetic patient profiles and performance values; record dates are generated relative to the execution date.
+The script creates 8 synthetic clinicians and 8 synthetic patients, each patient assigned to one clinician, with baseline assessments, training plans, 60 training sessions with contextual records, progress reports, prescriptions, messages, and review flags. It prints every account it creates. Running it again replaces the previous demonstration records. The script uses a fixed random seed to reproduce the same synthetic patient profiles and performance values; record dates are generated relative to the execution date.
 
 4. Open the application at `http://localhost:8080` and sign in with the demonstration accounts, for example:
 
@@ -200,7 +200,7 @@ NeuroBloom/
 
 Patients complete baseline and training activities, submit contextual information, review progress, receive prescriptions, and communicate with clinicians.
 
-Clinicians review patient histories, monitor longitudinal trends and risk alerts, adjust rehabilitation plans, issue prescriptions, generate reports, and exchange messages with assigned patients.
+Clinicians review patient histories, monitor longitudinal trends and review flags, adjust rehabilitation plans, issue prescriptions, generate reports, and exchange messages with assigned patients.
 
 Administrators manage users, departments, assignments, notifications, audit logs, system health, and research-oriented data export.
 
@@ -232,7 +232,7 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release.
 
-> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.1 – SoftwareX Archive Release* (Version v1.1) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.21207720](https://doi.org/10.5281/zenodo.21207720)
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.2 – SoftwareX Archive Release* (Version v1.2) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.23106598](https://doi.org/10.5281/zenodo.23106598)
 
 GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
 

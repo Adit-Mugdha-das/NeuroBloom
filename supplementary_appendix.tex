@@ -252,7 +252,9 @@ $^\dagger$ also have tests covering additional task behaviour such as trial
 generation or difficulty adjustment. These tests verify implementation
 correctness but do not establish psychometric or clinical validity. The
 psychometric properties of the NeuroBloom task implementations have not yet
-been established.
+been established. The cited paradigms serve as conceptual inspirations; trial
+structure, stimuli, scoring, and difficulty progression are NeuroBloom-specific
+implementations.
 
 \end{landscape}
 
@@ -318,7 +320,9 @@ secondary-focus domains. \\
 These settings define the current engineering design of the adaptive planner.
 They provide a reproducible implementation of baseline-based initialization,
 difficulty adjustment, and focus rebalancing, and may be refined through
-future empirical evaluation.
+future empirical evaluation. Four tasks per session is a developer-selected
+design choice that allows two primary-focus and two secondary-focus domains to
+be represented in each session; it has not been empirically optimized.
 
 
 % ============================================================
@@ -389,12 +393,12 @@ implementation reports insufficient data when the minimum requirements are
 not met. \\
 
 Review-flag thresholds
-& 14-day risk score: baseline $<45$ (+2); recent mean 6--12 points below
+& 14-day review-flag score: baseline $<45$ (+2); recent mean 6--12 points below
 baseline (+1) or $\geq12$ below (+2); recent mean $<50$ (+1); fatigue
 $\geq6.5$ (+1) or $\geq8$ (+2); completion $<60\%$ with $\geq3$ sessions
-(+1). Total $\geq4$ high, 2--3 moderate.
+(+1). Total $\geq4$ high-priority, 2--3 moderate-priority review flag.
 & Not varied
-& Lower cut-offs would classify more patients as moderate or high risk.
+& Lower cut-offs would assign more patients a moderate- or high-priority review flag.
 The thresholds are fixed during normal use but can be modified by developers
 or deployers. They were not varied in the present sensitivity analysis. \\
 
@@ -466,7 +470,7 @@ cognitive-task library are initialized with \texttt{seed\_initial\_data.py}, and
 \texttt{scripts/seed\_demo\_clinical\_data.py} generates a synthetic
 demonstration dataset of eight clinicians and eight patients with baseline
 assessments, training plans, repeated training sessions with contextual
-records, progress reports, and risk alerts. The script uses a fixed random seed
+records, progress reports, and review flags. The script uses a fixed random seed
 to reproduce the same synthetic patient profiles and performance values; record
 dates are generated relative to the execution date, so dashboard contents that
 depend on recent activity differ between runs.
@@ -478,15 +482,19 @@ reviews the baseline, session history, trends, and longitudinal analytics.
 Representative analytics outputs are regenerated with
 \texttt{scripts/fatigue\_proxy\_sensitivity.py} and
 \texttt{scripts/trend\_sensitivity.py}, which reproduce the sensitivity results
-in Table~\ref{tab:sensitivity} and write them as JSON files to
+in Table~\ref{tab:sensitivity}, and \texttt{scripts/illustrative\_case.py},
+which reproduces the six-session synthetic case reported in the manuscript.
+Each script writes a JSON file to
 \texttt{analysis/results/}. The complete commands are given in the repository
 README. The demonstration accounts are intended for local use only.
 
-\noindent Tested environment: [to be filled after clean reproduction run].
+\noindent Tested environment: Windows 10 Pro (build 19045) with Docker 29.2.0
+(Docker Desktop) and Docker Compose v5.0.2; the containers used Python 3.12,
+Node.js 20, and PostgreSQL 16. The application was accessed with
+[Google Chrome 151.0.7922.138 / Microsoft Edge 154.0.4258.37].
 
-\noindent Archived release: [version and DOI of the revised archive to be
-inserted]. The procedure describes the repository version that accompanies this
-revision, which includes changes made after the v1.1 archive.
+\noindent Archived release: NeuroBloom v1.2,
+\url{https://doi.org/10.5281/zenodo.23106598}.
 
 
 % ============================================================
