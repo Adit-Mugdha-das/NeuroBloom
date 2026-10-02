@@ -345,19 +345,27 @@ def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) ->
 
 # ==================== TREND DETECTION ====================
 
-def calculate_ewma_trend(values: List[float], alpha: float = 0.2) -> Dict[str, Any]:
+def calculate_ewma_trend(
+    values: List[float],
+    alpha: float = 0.2,
+    window: int = 5,
+    relative_slope_threshold: float = 0.01,
+) -> Dict[str, Any]:
     """
     Exponentially Weighted Moving Average for trend detection.
-    
+
     EWMA gives more weight to recent observations while smoothing out noise.
     Useful for detecting subtle cognitive decline trends.
-    
+
     Args:
         values: Time-ordered performance values (scores, RTs, etc.)
         alpha: Smoothing parameter (0-1). Default 0.2 = 20% weight to new value
                Higher alpha = more responsive to recent changes
                Lower alpha = smoother, less sensitive to noise
-    
+        window: Number of most recent EWMA points used for the slope (default 5)
+        relative_slope_threshold: Slope divided by series mean above which a trend
+               is labelled improving or declining (default 0.01 = 1% per time point)
+
     Returns:
         {
             'ewma_values': List of smoothed values,
@@ -390,7 +398,7 @@ def calculate_ewma_trend(values: List[float], alpha: float = 0.2) -> Dict[str, A
         ewma_values.append(ewma)
     
     # Determine trend from recent EWMA points (last 5 or all if < 5)
-    recent_window = min(5, len(ewma_values))
+    recent_window = min(window, len(ewma_values))
     recent_ewma = ewma_values[-recent_window:]
     
     # Calculate slope of recent trend
@@ -414,10 +422,10 @@ def calculate_ewma_trend(values: List[float], alpha: float = 0.2) -> Dict[str, A
     relative_slope = (recent_slope / mean_value) if mean_value > 0 else 0
     
     # Classify trend
-    if relative_slope > 0.01:  # 1% improvement per time point
+    if relative_slope > relative_slope_threshold:  # default: 1% improvement per time point
         trend_direction = 'improving'
         trend_strength = min(1.0, abs(relative_slope) * 20)
-    elif relative_slope < -0.01:  # 1% decline per time point
+    elif relative_slope < -relative_slope_threshold:  # default: 1% decline per time point
         trend_direction = 'declining'
         trend_strength = min(1.0, abs(relative_slope) * 20)
     else:

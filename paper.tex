@@ -20,7 +20,7 @@
 
 \begin{frontmatter}
 
-\title{NeuroBloom: An open-source platform for longitudinal cognitive task monitoring and clinician-supervised rehabilitation workflows in multiple sclerosis}
+\title{NeuroBloom: An Open-Source Platform for Longitudinal Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis}
 
 \author{Adit Mugdha Das}
 
@@ -36,12 +36,13 @@
 \address{Department of Computer Science and Engineering, Khulna University of Engineering \& Technology, Khulna 9203, Bangladesh}
 
 \begin{abstract}
-Multiple sclerosis can affect several cognitive abilities, but gradual changes may be difficult to recognize through occasional clinical assessments. NeuroBloom is an open-source web platform that supports repeated cognitive task sessions and clinician-supervised rehabilitation planning. It integrates 35 tasks across six cognitive domains with pre-session contextual questions on fatigue, sleep, stress, and medication timing. The platform stores trial- and session-level results over time and provides separate interfaces for patients, clinicians, and administrators. Built with Svelte, FastAPI, SQLModel, and PostgreSQL, NeuroBloom supports Bengali and English and can be deployed using Docker Compose. Its analytics module summarizes performance change, response-time variability, longitudinal trends, and associations between contextual factors and task performance. Using synthetic demonstration data, the platform illustrates how repeated cognitive and contextual records can be transformed into descriptive longitudinal indicators and clinician-facing summaries. NeuroBloom provides an open-source and reproducible foundation for longitudinal cognitive monitoring, clinician-supervised rehabilitation workflows, and future digital-biomarker-oriented research in multiple sclerosis.
+Multiple sclerosis can affect several cognitive abilities, but gradual changes may be difficult to recognize through occasional clinical assessments. NeuroBloom is an open-source research software platform for repeated cognitive task sessions and clinician-supervised rehabilitation planning. It includes 35 tasks across six cognitive domains and collects pre-session contextual information on fatigue, sleep, stress, and medication timing. The platform stores trial- and session-level results over time and provides separate interfaces for patients, clinicians, and administrators. Built with Svelte, FastAPI, SQLModel, and PostgreSQL, NeuroBloom supports Bengali and English and can be deployed using Docker Compose. Its analytics module summarizes performance change, response-time variability, longitudinal trends, and associations between contextual factors and task performance. Using synthetic demonstration data, NeuroBloom shows how repeated cognitive and contextual records can be transformed into descriptive longitudinal indicators and clinician-facing summaries. NeuroBloom provides an open-source and reproducible foundation for research on longitudinal cognitive monitoring and clinician-supervised rehabilitation workflows in multiple sclerosis, with future clinical studies needed to establish usability and clinical validity.
 \end{abstract}
 
 
 \begin{keyword}
-multiple sclerosis \sep digital health \sep cognitive monitoring \sep cognitive rehabilitation \sep digital-biomarker-oriented research \sep clinical software
+multiple sclerosis \sep digital health \sep cognitive monitoring \sep
+cognitive rehabilitation \sep longitudinal analysis \sep research software
 \end{keyword}
 
 \end{frontmatter}
@@ -57,34 +58,34 @@ C1 & Current code version & v1.1 \\
 \hline
 
 C2 & Permanent link to archived code/repository used for this code version &
-Archived version (DOI):
-\url{https://doi.org/10.5281/zenodo.21207720}
-
-Source repository:
 \url{https://github.com/Adit-Mugdha-das/NeuroBloom} \\
 \hline
 
-C3 & Legal Code License & MIT License \\
+C3 & Permanent link to Reproducible Capsule &
+\url{https://doi.org/10.5281/zenodo.21207720} \\
 \hline
 
-C4 & Code versioning system used & git \\
+C4 & Legal Code License & MIT License \\
 \hline
 
-C5 & Software code languages, tools, and services used &
+C5 & Code versioning system used & git \\
+\hline
+
+C6 & Software code languages, tools, and services used &
 Python, FastAPI, SQLModel, PostgreSQL, JavaScript, Svelte \\
 \hline
 
-C6 & Compilation requirements, operating environments \& dependencies &
+C7 & Compilation requirements, operating environments \& dependencies &
 Python 3.10+, Node.js 18+, npm, PostgreSQL, modern web browser,
 backend dependencies including FastAPI, SQLModel, Uvicorn, and bcrypt,
 and frontend build tooling based on SvelteKit/Vite \\
 \hline
 
-C7 & If available Link to developer documentation/manual &
+C8 & If available Link to developer documentation/manual &
 \url{https://github.com/Adit-Mugdha-das/NeuroBloom/blob/main/README.md} \\
 \hline
 
-C8 & Support email for questions &
+C9 & Support email for questions &
 saeed.alam@cse.kuet.ac.bd \\
 \hline
 
@@ -114,8 +115,7 @@ clinical diagnosis, but they can provide structured records of
 performance between clinical visits.
 
 Existing clinical batteries and digital assessment tools provide
-valuable approaches for cognitive assessment in MS. In-clinic batteries
-such as BICAMS provide validated assessment \cite{benedict2012}, while
+valuable approaches for cognitive assessment in MS. In-clinic batteries provide validated assessment \cite{benedict2012}, while
 remote systems such as Floodlight and Konectom have demonstrated the
 feasibility of repeated cognitive testing outside the clinic
 \cite{montalban2022,scaramozza2024}. However, repeated cognitive tasks,
@@ -155,9 +155,9 @@ questions capture contextual factors such as fatigue, sleep, stress,
 and medication timing. The platform stores performance over time and
 derives descriptive longitudinal indicators, including response-time
 variability, fatigue-related patterns, performance trends, and
-within-person change. Clinicians can review these records and adjust
-rehabilitation plans, while administrators support user management and
-platform oversight. These monitoring indicators may also support future
+within-person change. Clinicians can review these records when planning subsequent training
+activities, while administrators support user management and platform
+oversight. The resulting longitudinal records may also support future
 digital-biomarker-oriented research.
 
 Fig.~\ref{fig:motivation_workflow} summarizes the motivation for
@@ -311,15 +311,20 @@ Cognitive task framework subsection.
 
 NeuroBloom includes 35 cognitive tasks across six domains: working memory,
 processing speed, attention, cognitive flexibility, planning, and visual
-scanning. The tasks use a common session model that records score, accuracy,
-response time, completion behavior, and difficulty progression. Before each
-cognitive task begins, NeuroBloom presents an instruction screen describing
-the task objective and required interaction. Selected tasks also include a
-short practice round before the scored task begins, allowing users to become
-familiar with the task procedure without including the practice responses in
-the recorded task result. Each task supports 10 difficulty levels, allowing
-patient performance to be followed across repeated sessions. Examples of two cognitive tasks and their corresponding result screens are
-shown in English in Fig.~\ref{fig:english_tasks} and in Bengali in
+scanning. These tasks are original NeuroBloom implementations based on
+established cognitive paradigms; their software behavior has been tested, but
+their psychometric and clinical validity has not yet been established (see
+Supplementary Table~S1). The tasks use a common session model that records
+score, accuracy, response time, completion behavior, and difficulty
+progression. Before each cognitive task begins, NeuroBloom presents an
+instruction screen describing the task objective and required interaction.
+Selected tasks also include a short practice round before the scored task
+begins, allowing users to become familiar with the task procedure without
+including the practice responses in the recorded task result. Each task
+supports 10 difficulty levels, allowing patient performance to be followed
+across repeated sessions. Examples of two cognitive tasks and their
+corresponding result screens are shown in English in
+Fig.~\ref{fig:english_tasks} and in Bengali in
 Fig.~\ref{fig:bengali_tasks}. The Bengali interfaces preserve the underlying
 task structure and scoring logic while localizing the user-facing
 presentation.
@@ -409,8 +414,12 @@ The overall process is summarized in Algorithm~1.
 \end{minipage}
 \end{center}
 
-\subsubsection{Descriptive longitudinal indicators for
-digital-biomarker-oriented research}
+The adaptation thresholds and session-planning parameters are developer-selected
+engineering heuristics rather than clinically validated values. Their current
+definitions and design rationale are provided in Supplementary Table~S2 and
+will require empirical evaluation in future studies.
+
+\subsubsection{Descriptive longitudinal indicators}
 
 Beyond individual task results, NeuroBloom derives descriptive indicators
 from accumulated trial, session, and contextual records. The current
@@ -418,9 +427,7 @@ analytics layer uses deterministic statistical calculations based on
 trial-level accuracy and reaction time, session-level scores, and contextual
 self-report variables. Four main constructs are produced: a fatigue-related
 proxy, reaction-time variability, longitudinal trend, and within-person
-change. Contextual associations are also calculated. These outputs are used
-for longitudinal monitoring and clinician review and may support future
-digital-biomarker-oriented research.
+change. Contextual associations are also calculated. These outputs are intended for descriptive longitudinal monitoring and clinician review within the research platform and may support future digital-biomarker-oriented research.
 
 \textbf{Fatigue-related proxy.}
 Within-session change is summarized by comparing performance during the
@@ -601,16 +608,6 @@ task focus, difficulty, or planned session frequency. Administrative users
 support the workflow through user and role management, system monitoring,
 audit review, and research-oriented data export.
 
-All values used in this example are synthetic and are intended only to
-demonstrate software functionality. They do not represent a real patient or
-clinical outcome. The source code and reproducibility materials are
-available in the NeuroBloom repository at
-\url{https://github.com/Adit-Mugdha-das/NeuroBloom}, and the corresponding
-archived software release is available at
-\url{https://doi.org/10.5281/zenodo.21207720}. A supplementary video further
-demonstrates the patient, clinician, and administrative workflows and
-complements the illustrative example.
-
 \section{Impact}
 
 
@@ -675,10 +672,9 @@ Finally, the open-source design makes the impact of NeuroBloom extend beyond
 its current MS-focused implementation. Researchers can introduce new task
 paradigms, rehabilitation strategies, analytical methods, languages, and
 disease-specific workflows while retaining the same patient--clinician
-infrastructure. The platform can therefore serve both as an operational
-cognitive-rehabilitation software system and as an experimental foundation
-for studying new approaches to longitudinal cognitive support. Future pilot
-and clinical studies can evaluate usability, adherence, engagement,
+infrastructure. The platform can therefore serve as an experimental software foundation
+for studying longitudinal cognitive support and supervised rehabilitation
+workflows. Future pilot and clinical studies can evaluate usability, adherence, engagement,
 cognitive outcomes, and the effectiveness of the complete
 clinician-supervised workflow in real-world settings.
 
@@ -701,7 +697,7 @@ device.
 
 \section*{CRediT authorship contribution statement}
 
-\textbf{Adit Mugdha Das:} Software, Data curation, Methodology, Validation, Visualization, Writing -- original draft. \textbf{Abhijeet Deb Nath:} Methodology, Software, Data curation. \textbf{Kazi Saeed Alam:} Conceptualization, Supervision, Resources, Validation, Writing--review and editing. \textbf{Sk. Imran Hossain:} Supervision, Writing--review and editing.
+\textbf{Adit Mugdha Das:} Software, Data curation, Methodology, Validation, Visualization, Writing -- original draft. \textbf{Abhijeet Deb Nath:} Software, Methodology, Data curation. \textbf{Kazi Saeed Alam:} Conceptualization, Supervision, Resources, Validation, Writing--review and editing. \textbf{Sk. Imran Hossain:} Supervision, Writing--review and editing.
 
 \section*{Data availability}
 
@@ -720,10 +716,14 @@ The authors would like to acknowledge the support of the Department of Computer 
 No real patient data were collected, analyzed, or reported in this manuscript. All screenshots and examples use synthetic or demonstration data; therefore, ethical approval and informed consent were not required for this software description. Any future clinical deployment of NeuroBloom will require appropriate ethical approval, informed consent, and privacy-preserving handling of patient data.
 
 \section*{Declaration of Generative AI and AI-assisted technologies in the writing process}
-During the preparation of this work the authors used AI tools in order to improve the readability and language of the manuscript. After using this service, the authors reviewed and edited the content as needed and take full responsibility for the content of the published article.
+During the preparation of this work, the authors used ChatGPT in order to improve the readability and language of the manuscript. After using this service, the authors reviewed and edited the content as needed and take full responsibility for the content of the published article.
 
 \section*{Declaration of competing interest}
 The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{Funding}
+This research received no specific grant from funding agencies in the public,
+commercial, or not-for-profit sectors, and was self-funded.
 
 \begin{thebibliography}{00}
 

@@ -9,9 +9,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+BACKEND = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND))
 
 from app.core.advanced_analytics import FATIGUE_PROXY_CONFIG, calculate_fatigue_signature
+
+OUTPUT = BACKEND / "analysis" / "results" / "fatigue_proxy_sensitivity.json"
 
 
 def make_session(name):
@@ -81,13 +84,23 @@ def main():
         result["rank_correlation_with_default"] = round(
             spearman_without_ties(default_ranks, result["ranks"]), 3
         )
-        result["review_flag_changes"] = 0
 
-    print(json.dumps({
-        "fixture_type": "synthetic sessions",
-        "note": "The fatigue proxy is not an input to the review-flag rule.",
+    payload = {
+        "fixture_type": "synthetic sessions (40 trials each)",
+        "summary": {
+            "parameter_sets": len(results),
+            "maximum_absolute_value_change": max(
+                r["maximum_absolute_value_change"] for r in results.values()
+            ),
+            "minimum_rank_correlation_with_default": min(
+                r["rank_correlation_with_default"] for r in results.values()
+            ),
+        },
         "results": results,
-    }, indent=2))
+    }
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(json.dumps(payload, indent=2))
 
 
 if __name__ == "__main__":

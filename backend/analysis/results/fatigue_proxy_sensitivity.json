@@ -1,18 +1,118 @@
 {
-  "fixture_type": "synthetic sessions",
-  "note": "The fatigue proxy is not an input to the review-flag rule.",
+  "fixture_type": "synthetic sessions (40 trials each)",
   "summary": {
     "parameter_sets": 6,
     "maximum_absolute_value_change": 0.15,
-    "minimum_rank_correlation_with_default": 1.0,
-    "review_flag_changes": 0
+    "minimum_rank_correlation_with_default": 1.0
   },
   "results": {
-    "default": {"maximum_absolute_value_change": 0.0, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
-    "equal_weights": {"maximum_absolute_value_change": 0.03, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
-    "accuracy_emphasis": {"maximum_absolute_value_change": 0.1, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
-    "rt_emphasis": {"maximum_absolute_value_change": 0.15, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
-    "scales_minus_20_percent": {"maximum_absolute_value_change": 0.037, "rank_correlation_with_default": 1.0, "review_flag_changes": 0},
-    "scales_plus_20_percent": {"maximum_absolute_value_change": 0.05, "rank_correlation_with_default": 1.0, "review_flag_changes": 0}
+    "default": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.85,
+        "rt_increase": 0.3,
+        "accuracy_decline": 0.7,
+        "combined": 1.0
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.0,
+      "rank_correlation_with_default": 1.0
+    },
+    "equal_weights": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.835,
+        "rt_increase": 0.33,
+        "accuracy_decline": 0.67,
+        "combined": 1.0
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.03,
+      "rank_correlation_with_default": 1.0
+    },
+    "accuracy_emphasis": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.9,
+        "rt_increase": 0.2,
+        "accuracy_decline": 0.8,
+        "combined": 1.0
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.1,
+      "rank_correlation_with_default": 1.0
+    },
+    "rt_emphasis": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.775,
+        "rt_increase": 0.45,
+        "accuracy_decline": 0.55,
+        "combined": 1.0
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.15,
+      "rank_correlation_with_default": 1.0
+    },
+    "scales_minus_20_percent": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.887,
+        "rt_increase": 0.3,
+        "accuracy_decline": 0.7,
+        "combined": 1.0
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.037,
+      "rank_correlation_with_default": 1.0
+    },
+    "scales_plus_20_percent": {
+      "values": {
+        "stable": 0.0,
+        "moderate": 0.825,
+        "rt_increase": 0.25,
+        "accuracy_decline": 0.7,
+        "combined": 0.95
+      },
+      "ranks": {
+        "combined": 1,
+        "moderate": 2,
+        "accuracy_decline": 3,
+        "rt_increase": 4,
+        "stable": 5
+      },
+      "maximum_absolute_value_change": 0.05,
+      "rank_correlation_with_default": 1.0
+    }
   }
 }

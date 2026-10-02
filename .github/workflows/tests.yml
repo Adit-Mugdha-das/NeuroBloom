@@ -31,8 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
 
   # ──────────────────────────────────────────────
   # Backend API tests (pytest + SQLite in-memory)
@@ -57,7 +57,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-httpx
+          pip install pytest pytest-httpx pytest-cov
 
       # No real Postgres needed — conftest.py overrides get_session with SQLite
       - name: Run tests
@@ -67,4 +67,5 @@ jobs:
           POSTGRES_DB: neurobloom_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        run: pytest tests/ -v --tb=short
+        # Includes the patient--clinician integration test (tests/test_integration_patient_clinician.py)
+        run: pytest tests/ -v --tb=short --cov=app --cov-report=term

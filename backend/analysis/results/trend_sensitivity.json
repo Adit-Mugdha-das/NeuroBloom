@@ -1,0 +1,291 @@
+{
+  "fixture_type": "deterministic synthetic score series (20 sessions each)",
+  "series_length": 20,
+  "settings": {
+    "default": {},
+    "alpha_0.1": {
+      "alpha": 0.1
+    },
+    "alpha_0.3": {
+      "alpha": 0.3
+    },
+    "alpha_0.5": {
+      "alpha": 0.5
+    },
+    "window_3": {
+      "window": 3
+    },
+    "window_7": {
+      "window": 7
+    },
+    "threshold_0.005": {
+      "relative_slope_threshold": 0.005
+    },
+    "threshold_0.02": {
+      "relative_slope_threshold": 0.02
+    }
+  },
+  "results": {
+    "default": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0046,
+        "relative_slope": -0.0001
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7835,
+        "relative_slope": -0.0108
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.7835,
+        "relative_slope": 0.0116
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0367,
+        "relative_slope": -0.0005
+      },
+      "late_step_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7821,
+        "relative_slope": -0.0112
+      },
+      "_summary": {
+        "label_changes_vs_default": 0,
+        "changed_series": []
+      }
+    },
+    "alpha_0.1": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0168,
+        "relative_slope": -0.0002
+      },
+      "gradual_decline": {
+        "direction": "stable",
+        "recent_slope": -0.6727,
+        "relative_slope": -0.0093
+      },
+      "gradual_improvement": {
+        "direction": "stable",
+        "recent_slope": 0.6727,
+        "relative_slope": 0.01
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.134,
+        "relative_slope": -0.0019
+      },
+      "late_step_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7325,
+        "relative_slope": -0.0105
+      },
+      "_summary": {
+        "label_changes_vs_default": 2,
+        "changed_series": [
+          "gradual_decline",
+          "gradual_improvement"
+        ]
+      }
+    },
+    "alpha_0.3": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0007,
+        "relative_slope": -0.0
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7983,
+        "relative_slope": -0.011
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.7983,
+        "relative_slope": 0.0118
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0059,
+        "relative_slope": -0.0001
+      },
+      "late_step_decline": {
+        "direction": "stable",
+        "recent_slope": -0.5858,
+        "relative_slope": -0.0084
+      },
+      "_summary": {
+        "label_changes_vs_default": 1,
+        "changed_series": [
+          "late_step_decline"
+        ]
+      }
+    },
+    "alpha_0.5": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0,
+        "relative_slope": -0.0
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.8,
+        "relative_slope": -0.011
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.8,
+        "relative_slope": 0.0118
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0,
+        "relative_slope": -0.0
+      },
+      "late_step_decline": {
+        "direction": "stable",
+        "recent_slope": -0.1828,
+        "relative_slope": -0.0026
+      },
+      "_summary": {
+        "label_changes_vs_default": 1,
+        "changed_series": [
+          "late_step_decline"
+        ]
+      }
+    },
+    "window_3": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0036,
+        "relative_slope": -0.0001
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.787,
+        "relative_slope": -0.0109
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.787,
+        "relative_slope": 0.0116
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0288,
+        "relative_slope": -0.0004
+      },
+      "late_step_decline": {
+        "direction": "stable",
+        "recent_slope": -0.6134,
+        "relative_slope": -0.0088
+      },
+      "_summary": {
+        "label_changes_vs_default": 1,
+        "changed_series": [
+          "late_step_decline"
+        ]
+      }
+    },
+    "window_7": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0059,
+        "relative_slope": -0.0001
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7787,
+        "relative_slope": -0.0108
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.7787,
+        "relative_slope": 0.0115
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0473,
+        "relative_slope": -0.0007
+      },
+      "late_step_decline": {
+        "direction": "declining",
+        "recent_slope": -1.0069,
+        "relative_slope": -0.0144
+      },
+      "_summary": {
+        "label_changes_vs_default": 0,
+        "changed_series": []
+      }
+    },
+    "threshold_0.005": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0046,
+        "relative_slope": -0.0001
+      },
+      "gradual_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7835,
+        "relative_slope": -0.0108
+      },
+      "gradual_improvement": {
+        "direction": "improving",
+        "recent_slope": 0.7835,
+        "relative_slope": 0.0116
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0367,
+        "relative_slope": -0.0005
+      },
+      "late_step_decline": {
+        "direction": "declining",
+        "recent_slope": -0.7821,
+        "relative_slope": -0.0112
+      },
+      "_summary": {
+        "label_changes_vs_default": 0,
+        "changed_series": []
+      }
+    },
+    "threshold_0.02": {
+      "stable": {
+        "direction": "stable",
+        "recent_slope": -0.0046,
+        "relative_slope": -0.0001
+      },
+      "gradual_decline": {
+        "direction": "stable",
+        "recent_slope": -0.7835,
+        "relative_slope": -0.0108
+      },
+      "gradual_improvement": {
+        "direction": "stable",
+        "recent_slope": 0.7835,
+        "relative_slope": 0.0116
+      },
+      "noisy_stable": {
+        "direction": "stable",
+        "recent_slope": -0.0367,
+        "relative_slope": -0.0005
+      },
+      "late_step_decline": {
+        "direction": "stable",
+        "recent_slope": -0.7821,
+        "relative_slope": -0.0112
+      },
+      "_summary": {
+        "label_changes_vs_default": 3,
+        "changed_series": [
+          "gradual_decline",
+          "gradual_improvement",
+          "late_step_decline"
+        ]
+      }
+    }
+  }
+}
