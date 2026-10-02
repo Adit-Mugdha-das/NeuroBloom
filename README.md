@@ -119,6 +119,57 @@ The frontend is available at `http://localhost:8080`, and the backend API is ava
 
 If your Docker installation uses the older standalone Compose binary, replace `docker compose` with `docker-compose`.
 
+## Reproducing the manuscript demonstration
+
+This procedure deploys NeuroBloom with Docker Compose, generates synthetic demonstration data, and regenerates the sensitivity results reported in the supplementary material. Only Docker with Compose is required on the host; the containers use Python 3.12, Node.js 20, and PostgreSQL 16. Run all commands from the repository root.
+
+1. Create the environment file and start the system.
+
+```bash
+# Windows PowerShell
+Copy-Item .env.example .env.local
+
+# macOS / Linux
+cp .env.example .env.local
+
+docker compose --env-file .env.local -f compose.yaml up --build -d
+```
+
+2. Initialize the database and the cognitive-task library (once).
+
+```bash
+docker compose --env-file .env.local -f compose.yaml exec backend python seed_initial_data.py
+```
+
+3. Generate the synthetic demonstration data.
+
+```bash
+docker compose --env-file .env.local -f compose.yaml exec backend python scripts/seed_demo_clinical_data.py
+```
+
+The script creates 8 synthetic clinicians and 8 synthetic patients, each patient assigned to one clinician, with baseline assessments, training plans, 60 training sessions with contextual records, progress reports, prescriptions, messages, and risk alerts. It prints every account it creates. Running it again replaces the previous demonstration records. The script uses a fixed random seed to reproduce the same synthetic patient profiles and performance values; record dates are generated relative to the execution date.
+
+4. Open the application at `http://localhost:8080` and sign in with the demonstration accounts, for example:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Clinician | `dr.samira.rahman@demo.neurobloom.example` | `doctor1234` |
+| Patient | `sharmin.akter@demo.neurobloom.example` | `patient1234` |
+
+The clinician account shows the assigned patient's baseline, session history, trends, and longitudinal analytics; the patient account shows the patient workflow.
+
+5. Regenerate the sensitivity results.
+
+```bash
+docker compose --env-file .env.local -f compose.yaml exec backend python scripts/fatigue_proxy_sensitivity.py
+docker compose --env-file .env.local -f compose.yaml exec backend python scripts/trend_sensitivity.py
+docker compose --env-file .env.local -f compose.yaml cp backend:/app/analysis/results/. backend/analysis/results
+```
+
+Each script prints its results and writes a JSON file to `analysis/results/` (`/app/analysis/results/` in the container); the last command copies both files to `backend/analysis/results/`. Without Docker, run `python scripts/fatigue_proxy_sensitivity.py` and `python scripts/trend_sensitivity.py` from the `backend` directory, which writes to the same location.
+
+The demonstration accounts above, and the default administrator account created by `seed_initial_data.py`, use fixed passwords and are intended for local demonstration only. Do not use them in a real deployment; change or remove them first.
+
 ## API Documentation
 
 NeuroBloom exposes an automatically generated OpenAPI (Swagger UI) interface through FastAPI for exploring and testing backend REST API endpoints.

@@ -351,9 +351,9 @@ Fatigue-proxy weights
 
 Fatigue-proxy normalization constants
 & 30 percentage points, 200 ms, 0.01 per trial
-& Each constant varied by $\pm20\%$
-& The proxy changed by at most 0.04 and 0.05. The ordering of the synthetic
-sessions remained unchanged. \\
+& All three constants scaled together by $\pm20\%$
+& The proxy changed by at most 0.04 ($-20\%$) and 0.05 ($+20\%$). The
+ordering of the synthetic sessions was unchanged. \\
 
 EWMA smoothing constant $\alpha$
 & 0.2
@@ -385,19 +385,22 @@ Review-flag thresholds
 & Weekly score drop $>3$ points; adherence $<60\%$; 30 days without
 activity in a domain
 & Not varied
-& Lower thresholds would generate more review flags and higher thresholds
-would generate fewer. These thresholds are fixed engineering settings in
-the current implementation and were not included in the sensitivity
-experiment. \\
+& Less strict settings (a smaller score drop, a higher adherence cut-off,
+or a shorter inactivity period) would generate more review flags. These
+thresholds are fixed in the current implementation and were not included in
+the sensitivity analysis. \\
 
 \bottomrule
 
 \end{longtable}
 
 \noindent\textit{Note.}
-Parameters were varied independently around their default values. This
-analysis examines how parameter choices affect the generated descriptive
-indicators and is not intended to identify clinically optimal settings.
+Each parameter group was varied separately around its default value on
+synthetic data (five 40-trial sessions for the fatigue proxy; five 20-session
+score series for the trend). Minimum data requirements and review-flag
+thresholds were not varied. This analysis examines how parameter choices
+affect the generated descriptive indicators and is not intended to identify
+clinically optimal settings.
 
 
 % ============================================================
@@ -432,11 +435,47 @@ record.
 Both suites run on every push and pull request through GitHub Actions
 (Ubuntu, Python 3.12, Node.js 20). The backend tests use an in-memory SQLite
 database in place of PostgreSQL. At the time of revision, all 123 tests passed
-(Windows 10, Python 3.13, Node.js 22). Line coverage was 39\% for the backend
-application package and statement coverage was 13\% for the frontend source.
-The frontend tests target scoring and workflow modules; the Svelte page
+(Windows 10, Python 3.13, Node.js 22). The frontend tests target scoring and workflow modules; the Svelte page
 components are not unit-tested, and browser-level end-to-end tests are not yet
 included.
+
+
+% ============================================================
+% Reproducibility procedure
+% ============================================================
+
+\section*{Reproducibility procedure}
+
+The manuscript demonstration can be reproduced from the repository with Docker
+Compose; the containers use Python 3.12, Node.js 20, and PostgreSQL 16. After
+the provided environment template (\texttt{.env.example}) is copied to
+\texttt{.env.local}, the PostgreSQL database, FastAPI backend, and Svelte
+frontend are built and started with \texttt{compose.yaml}. The database and
+cognitive-task library are initialized with \texttt{seed\_initial\_data.py}, and
+\texttt{scripts/seed\_demo\_clinical\_data.py} generates a synthetic
+demonstration dataset of eight clinicians and eight patients with baseline
+assessments, training plans, repeated training sessions with contextual
+records, progress reports, and risk alerts. The script uses a fixed random seed
+to reproduce the same synthetic patient profiles and performance values; record
+dates are generated relative to the execution date, so dashboard contents that
+depend on recent activity differ between runs.
+
+The patient--clinician workflow described in the manuscript can then be followed
+in the application at \url{http://localhost:8080} with the demonstration
+accounts: the patient completes baseline and training tasks, and the clinician
+reviews the baseline, session history, trends, and longitudinal analytics.
+Representative analytics outputs are regenerated with
+\texttt{scripts/fatigue\_proxy\_sensitivity.py} and
+\texttt{scripts/trend\_sensitivity.py}, which reproduce the sensitivity results
+in Table~\ref{tab:sensitivity} and write them as JSON files to
+\texttt{analysis/results/}. The complete commands are given in the repository
+README. The demonstration accounts are intended for local use only.
+
+\noindent Tested environment: [to be filled after clean reproduction run].
+
+\noindent Archived release: [version and DOI of the revised archive to be
+inserted]. The procedure describes the repository version that accompanies this
+revision, which includes changes made after the v1.1 archive.
 
 
 % ============================================================

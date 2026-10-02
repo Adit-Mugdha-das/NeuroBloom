@@ -54,6 +54,8 @@ cognitive rehabilitation \sep longitudinal analysis \sep research software
 \textbf{Nr.} & \textbf{Code metadata description} & \textbf{Metadata} \\
 \hline
 
+% TODO(release): after the revised release is archived, update C1 (version), C3 (DOI),
+% Section 2.1 ("archived software release"), and the Data availability statement.
 C1 & Current code version & v1.1 \\
 \hline
 
@@ -76,9 +78,12 @@ Python, FastAPI, SQLModel, PostgreSQL, JavaScript, Svelte \\
 \hline
 
 C7 & Compilation requirements, operating environments \& dependencies &
-Python 3.10+, Node.js 18+, npm, PostgreSQL, modern web browser,
-backend dependencies including FastAPI, SQLModel, Uvicorn, and bcrypt,
-and frontend build tooling based on SvelteKit/Vite \\
+Documented minimum requirements: Python 3.10+, Node.js 18+, npm,
+PostgreSQL 14+, modern web browser. Containerized deployment (Docker
+Compose) uses Python 3.12, Node.js 20, and PostgreSQL 16. Backend
+dependencies include FastAPI, SQLModel, Uvicorn, and bcrypt; the frontend
+build uses SvelteKit/Vite. Tested environment: [to be filled after clean
+reproduction run]. \\
 \hline
 
 C8 & If available Link to developer documentation/manual &
@@ -247,7 +252,9 @@ frontend dependencies are documented in the repository, and GitHub
 Actions runs the configured test suites on each commit. The repository
 includes numerical scoring fixtures for all 35 tasks, task-inventory
 checks, backend API tests, and frontend unit tests. The archived software release (v1.1) is
-publicly available through Zenodo.
+publicly available through Zenodo. A step-by-step procedure for reproducing the
+manuscript demonstration and representative analytics is provided in the
+supplementary material and repository documentation.
 
 
 \subsection{Software functionalities}

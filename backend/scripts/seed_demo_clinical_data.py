@@ -40,11 +40,27 @@ RANDOM_SEED = 42
 LEGACY_DEMO_DOCTOR_EMAILS = [
     "dr.samira.rahman@demo.neurobloom.bd",
     "dr.arefin.kabir@demo.neurobloom.bd",
+    "dr.samira.rahman@gmail.com",
+    "dr.arefin.kabir@gmail.com",
+    "dr.nusrat.jahan@gmail.com",
+    "dr.tanvir.hossain@gmail.com",
+    "dr.lamiya.sultana@gmail.com",
+    "dr.sabbir.ahmed@gmail.com",
+    "dr.mehzabin.karim@gmail.com",
+    "dr.rafid.mahmud@gmail.com",
 ]
 
 LEGACY_DEMO_PATIENT_EMAILS = [
     "sharmin.akter@demo.neurobloom.bd",
     "rashedul.islam@demo.neurobloom.bd",
+    "sharmin.akter@gmail.com",
+    "rashedul.islam@gmail.com",
+    "farhana.yasmin@gmail.com",
+    "imran.chowdhury@gmail.com",
+    "tania.mahmuda@gmail.com",
+    "naeem.hasan@gmail.com",
+    "sabina.khatun@gmail.com",
+    "mahmudul.bari@gmail.com",
 ]
 
 
@@ -73,56 +89,56 @@ class PatientSeed:
 DOCTORS = [
     DoctorSeed(
         full_name="Dr. Samira Rahman",
-        email="dr.samira.rahman@gmail.com",
+        email="dr.samira.rahman@demo.neurobloom.example",
         license_number="BD-NEU-24031",
         specialization="Neurology",
         institution="National Institute of Neurosciences & Hospital, Dhaka",
     ),
     DoctorSeed(
         full_name="Dr. Arefin Kabir",
-        email="dr.arefin.kabir@gmail.com",
+        email="dr.arefin.kabir@demo.neurobloom.example",
         license_number="BD-NPSY-18742",
         specialization="Neuropsychology",
         institution="Bangabandhu Sheikh Mujib Medical University, Shahbagh, Dhaka",
     ),
     DoctorSeed(
         full_name="Dr. Nusrat Jahan",
-        email="dr.nusrat.jahan@gmail.com",
+        email="dr.nusrat.jahan@demo.neurobloom.example",
         license_number="BD-PMR-25108",
         specialization="Physical Medicine and Rehabilitation",
         institution="Centre for the Rehabilitation of the Paralysed, Savar",
     ),
     DoctorSeed(
         full_name="Dr. Tanvir Hossain",
-        email="dr.tanvir.hossain@gmail.com",
+        email="dr.tanvir.hossain@demo.neurobloom.example",
         license_number="BD-CN-22917",
         specialization="Cognitive Neurology",
         institution="Dhaka Medical College Hospital, Dhaka",
     ),
     DoctorSeed(
         full_name="Dr. Lamiya Sultana",
-        email="dr.lamiya.sultana@gmail.com",
+        email="dr.lamiya.sultana@demo.neurobloom.example",
         license_number="BD-MS-26411",
         specialization="MS Clinical Care",
         institution="Square Hospital Neurology Centre, Dhaka",
     ),
     DoctorSeed(
         full_name="Dr. Sabbir Ahmed",
-        email="dr.sabbir.ahmed@gmail.com",
+        email="dr.sabbir.ahmed@demo.neurobloom.example",
         license_number="BD-RM-23384",
         specialization="Rehabilitation Medicine",
         institution="Evercare Hospital Dhaka, Neurology and Rehabilitation Unit",
     ),
     DoctorSeed(
         full_name="Dr. Mehzabin Karim",
-        email="dr.mehzabin.karim@gmail.com",
+        email="dr.mehzabin.karim@demo.neurobloom.example",
         license_number="BD-NR-27116",
         specialization="Neurorehabilitation",
         institution="Apollo Imperial Neurorehabilitation Clinic, Dhaka",
     ),
     DoctorSeed(
         full_name="Dr. Rafid Mahmud",
-        email="dr.rafid.mahmud@gmail.com",
+        email="dr.rafid.mahmud@demo.neurobloom.example",
         license_number="BD-BN-24607",
         specialization="Behavioral Neurology",
         institution="Chattogram Medical College Hospital, Neurology Unit",
@@ -133,7 +149,7 @@ DOCTORS = [
 PATIENTS = [
     PatientSeed(
         full_name="Sharmin Akter",
-        email="sharmin.akter@gmail.com",
+        email="sharmin.akter@demo.neurobloom.example",
         date_of_birth="1991-04-17",
         diagnosis="Relapsing-Remitting Multiple Sclerosis",
         treatment_goal="Improve processing speed and sustain gains in working memory during daily cognitive training.",
@@ -151,7 +167,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Md. Rashedul Islam",
-        email="rashedul.islam@gmail.com",
+        email="rashedul.islam@demo.neurobloom.example",
         date_of_birth="1987-09-28",
         diagnosis="Relapsing-Remitting Multiple Sclerosis with fatigue-linked cognitive variability",
         treatment_goal="Reduce attention variability and improve consistency on high-fatigue days.",
@@ -169,7 +185,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Farhana Yasmin",
-        email="farhana.yasmin@gmail.com",
+        email="farhana.yasmin@demo.neurobloom.example",
         date_of_birth="1984-02-05",
         diagnosis="Secondary Progressive Multiple Sclerosis with preserved executive planning but inconsistent home adherence",
         treatment_goal="Support adherence consistency while maintaining higher-order planning and flexibility skills.",
@@ -187,7 +203,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Imran H. Chowdhury",
-        email="imran.chowdhury@gmail.com",
+        email="imran.chowdhury@demo.neurobloom.example",
         date_of_birth="1979-11-13",
         diagnosis="Primary Progressive Multiple Sclerosis with slowed processing speed and recent improvement in structured cognitive rehab",
         treatment_goal="Recover processing speed efficiency and improve confidence with sustained multi-domain training.",
@@ -205,7 +221,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Tania Mahmuda",
-        email="tania.mahmuda@gmail.com",
+        email="tania.mahmuda@demo.neurobloom.example",
         date_of_birth="1995-06-22",
         diagnosis="Clinically Isolated Syndrome under cognitive monitoring with recent enrollment",
         treatment_goal="Establish a sustainable training routine and gather enough early data for a personalised cognitive trajectory.",
@@ -223,7 +239,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Naeem Hasan",
-        email="naeem.hasan@gmail.com",
+        email="naeem.hasan@demo.neurobloom.example",
         date_of_birth="1982-08-09",
         diagnosis="Relapsing-Remitting Multiple Sclerosis with sleep-related attention and processing-speed plateau",
         treatment_goal="Improve consistency by reducing the effect of poor sleep on next-day attention and processing speed.",
@@ -241,7 +257,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Sabina Khatun",
-        email="sabina.khatun@gmail.com",
+        email="sabina.khatun@demo.neurobloom.example",
         date_of_birth="1976-03-14",
         diagnosis="Secondary Progressive Multiple Sclerosis with long-term training adherence and gradual executive recovery",
         treatment_goal="Maintain long-term adherence while improving planning efficiency and preserving gains across multiple domains.",
@@ -259,7 +275,7 @@ PATIENTS = [
     ),
     PatientSeed(
         full_name="Mahmudul Bari",
-        email="mahmudul.bari@gmail.com",
+        email="mahmudul.bari@demo.neurobloom.example",
         date_of_birth="1989-12-02",
         diagnosis="Relapsing-Remitting Multiple Sclerosis with early gains followed by a recent processing-speed and fatigue plateau",
         treatment_goal="Break the current plateau by stabilising fatigue, reducing reaction-time variability, and restoring steady improvement in processing speed.",
