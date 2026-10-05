@@ -182,6 +182,12 @@
 	}
 
 	$: attentionPatients = analytics?.high_risk_patients || [];
+
+	// Display text for the review-priority level; the underlying value is unchanged.
+	function priorityLabel(level, locale) {
+		const labels = { high: 'High priority', medium: 'Medium priority', moderate: 'Moderate priority', low: 'Low priority' };
+		return uiText(labels[level] ?? String(level ?? ''), locale);
+	}
 	$: snapshotCards = analytics
 		? [
 				{ label: 'Total Patients', value: analytics.overview.total_patients, tone: 'neutral' },
@@ -247,7 +253,7 @@
 			{#if attentionPatients.length === 0}
 				<div class="empty-card">
 					<h3>{uiText("No urgent patient flags", $activeLocale)}</h3>
-					<p>{uiText("Your monitored cohort has no current high-risk or medium-risk patients.", $activeLocale)}</p>
+					<p>{uiText("Your monitored cohort has no current high-priority or medium-priority patients.", $activeLocale)}</p>
 				</div>
 			{:else}
 				<div class="attention-grid">
@@ -259,7 +265,7 @@
 									<h3>{getPatientDisplayName(patient, details)}</h3>
 									<p>{details?.diagnosis || patient.email}</p>
 								</div>
-								<span class="risk-badge {patient.risk_level}">{patient.risk_level}</span>
+								<span class="risk-badge {patient.risk_level}">{priorityLabel(patient.risk_level, $activeLocale)}</span>
 							</div>
 
 							<div class="attention-stats">
@@ -274,7 +280,7 @@
 							</div>
 
 							<div class="risk-factors">
-								<p>{uiText("Risk Factors", $activeLocale)}</p>
+								<p>{uiText("Review factors", $activeLocale)}</p>
 								<ul>
 									{#each patient.risk_factors as factor}
 										<li>{factor}</li>

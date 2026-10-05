@@ -32,8 +32,8 @@ export const UI_EXACT_TRANSLATIONS = {
 	'Add professional observations and recommendations.':
 		'পেশাদার পর্যবেক্ষণ ও সুপারিশ লিখুন।',
 	adherence: 'অনুসরণ',
-	'Adjust the search or risk filter to broaden the list.':
-		'তালিকা বড় করতে সার্চ বা ঝুঁকি ফিল্টার পরিবর্তন করুন।',
+	'Adjust the search or review-priority filter to broaden the list.':
+		'তালিকা বড় করতে সার্চ বা পর্যালোচনার অগ্রাধিকার ফিল্টার পরিবর্তন করুন।',
 	'Adjust training plan': 'ট্রেনিং পরিকল্পনা সামঞ্জস্য করুন',
 	'Adjust Training Plan': 'ট্রেনিং পরিকল্পনা সামঞ্জস্য করুন',
 	'Admin Actions': 'অ্যাডমিন কার্যক্রম',
@@ -48,7 +48,7 @@ export const UI_EXACT_TRANSLATIONS = {
 		'ডেটা না মুছে সব খালি অবস্থা ও লোডিং স্কেলেটন দেখুন',
 	'All exports remove direct patient identifiers and support CSV, JSON, and concise PDF research reports.':
 		'সব এক্সপোর্টে সরাসরি রোগী-পরিচয় বাদ থাকে এবং CSV, JSON ও সংক্ষিপ্ত PDF গবেষণা রিপোর্ট সমর্থিত।',
-	'All risk levels': 'সব ঝুঁকি মাত্রা',
+	'All review priorities': 'সব পর্যালোচনার অগ্রাধিকার',
 	'All Tasks Complete!': 'সব টাস্ক সম্পন্ন!',
 	'All Types': 'সব ধরন',
 	'Anonymized datasets for publication workflows':
@@ -240,7 +240,8 @@ export const UI_EXACT_TRANSLATIONS = {
 	"Here's what to expect in your next training session":
 		'পরের ট্রেনিং সেশনে যা থাকবে',
 	High: 'উচ্চ',
-	'High-Risk Patients': 'উচ্চ ঝুঁকির রোগী',
+	'High priority': 'উচ্চ অগ্রাধিকার',
+	'High-Priority Patients': 'উচ্চ অগ্রাধিকারের রোগী',
 	'Hold the recent letters in mind while new ones appear':
 		'নতুন অক্ষর আসার সময় সাম্প্রতিক অক্ষরগুলো মনে রাখুন',
 	'Hospitals often require communication logging for compliance and quality review.':
@@ -348,8 +349,8 @@ export const UI_EXACT_TRANSLATIONS = {
 	'No messages found': 'কোনো মেসেজ পাওয়া যায়নি',
 	'No notifications published yet': 'এখনো কোনো নোটিফিকেশন প্রকাশ হয়নি',
 	'No patient conversations yet.': 'এখনো কোনো রোগী কথোপকথন নেই।',
-	'No patients are currently flagged as high risk.':
-		'এখন কোনো রোগী উচ্চ ঝুঁকি হিসেবে চিহ্নিত নেই।',
+	'No patients are currently flagged as high priority.':
+		'এখন কোনো রোগী উচ্চ অগ্রাধিকার হিসেবে চিহ্নিত নেই।',
 	'No patients found': 'কোনো রোগী পাওয়া যায়নি',
 	'No patients match the current filters': 'বর্তমান ফিল্টারে কোনো রোগী মেলেনি',
 	'No pending requests right now.': 'এখন কোনো অপেক্ষমাণ অনুরোধ নেই।',
@@ -455,11 +456,15 @@ export const UI_EXACT_TRANSLATIONS = {
 		'সিস্টেমের সব রোগী অ্যাকাউন্ট পর্যালোচনা ও পরিচালনা করুন।',
 	'Review date': 'পর্যালোচনার তারিখ',
 	Reviewed: 'পর্যালোচিত',
-	Risk: 'ঝুঁকি',
-	'Risk Factors': 'ঝুঁকির কারণ',
-	'Risk Level': 'ঝুঁকির মাত্রা',
-	'Risk Monitoring': 'ঝুঁকি পর্যবেক্ষণ',
-	'Risk score': 'ঝুঁকি স্কোর',
+	'Review priority': 'পর্যালোচনার অগ্রাধিকার',
+	'Review factors': 'পর্যালোচনার কারণ',
+	'Review flag': 'পর্যালোচনা ফ্ল্যাগ',
+	'Review-flag action failed': 'পর্যালোচনা ফ্ল্যাগের কাজ ব্যর্থ হয়েছে',
+	'Low priority': 'নিম্ন অগ্রাধিকার',
+	'Medium priority': 'মাঝারি অগ্রাধিকার',
+	'Moderate priority': 'মাঝারি অগ্রাধিকার',
+	'Review-flag monitoring': 'পর্যালোচনা ফ্ল্যাগ পর্যবেক্ষণ',
+	'Review-flag score': 'পর্যালোচনা ফ্ল্যাগ স্কোর',
 	rows: 'সারি',
 	'Rows Available': 'উপলভ্য সারি',
 	Running: 'চলমান',
@@ -576,8 +581,8 @@ export const UI_EXACT_TRANSLATIONS = {
 	'View Full Progress': 'পূর্ণ অগ্রগতি দেখুন',
 	'View PDF': 'PDF দেখুন',
 	'View Profile': 'প্রোফাইল দেখুন',
-	'View system-wide metrics, high-risk patients, most-used tasks, and core trend charts.':
-		'সিস্টেমজুড়ে মেট্রিক, উচ্চ ঝুঁকির রোগী, বেশি ব্যবহৃত টাস্ক ও মূল ধারা চার্ট দেখুন।',
+	'View system-wide metrics, high-priority patients, most-used tasks, and core trend charts.':
+		'সিস্টেমজুড়ে মেট্রিক, উচ্চ অগ্রাধিকারের রোগী, বেশি ব্যবহৃত টাস্ক ও মূল ধারা চার্ট দেখুন।',
 	'View Training Plan': 'ট্রেনিং পরিকল্পনা দেখুন',
 	'Wait for the green flash': 'সবুজ ঝলকের জন্য অপেক্ষা করুন',
 	'Warm-up level - building foundations': 'ওয়ার্ম-আপ স্তর - ভিত্তি গড়া',
@@ -591,8 +596,8 @@ export const UI_EXACT_TRANSLATIONS = {
 	'You have a solid foundation with room for targeted improvement.':
 		'আপনার ভিত্তি ভালো, এখন নির্দিষ্ট উন্নতির সুযোগ আছে।',
 	'Your first announcement will appear here.': 'আপনার প্রথম ঘোষণা এখানে দেখা যাবে।',
-	'Your monitored cohort has no current high-risk or medium-risk patients.':
-		'আপনার পর্যবেক্ষণাধীন কোহর্টে এখন উচ্চ বা মাঝারি ঝুঁকির রোগী নেই।',
+	'Your monitored cohort has no current high-priority or medium-priority patients.':
+		'আপনার পর্যবেক্ষণাধীন কোহর্টে এখন উচ্চ বা মাঝারি অগ্রাধিকারের রোগী নেই।',
 	'Your scores are above average across all domains.':
 		'সব ক্ষেত্রেই আপনার স্কোর গড়ের ওপরে।',
 	"You've completed": 'আপনি সম্পন্ন করেছেন',

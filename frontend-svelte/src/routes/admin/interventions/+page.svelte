@@ -44,7 +44,7 @@
 		training_plan_adjustment: 'Plan Adjustment',
 		note: 'Clinical Note',
 		recommendation: 'Recommendation',
-		admin_risk_alert: 'Risk Alert',
+		admin_risk_alert: 'Review flag',
 		admin_escalation: 'Escalation'
 	};
 

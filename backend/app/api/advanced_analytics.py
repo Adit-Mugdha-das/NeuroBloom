@@ -354,7 +354,24 @@ def get_digital_biomarkers(
         return longitudinal_data
     
     report = longitudinal_data['report']
-    
+    indicators = report['descriptive_indicators']
+    average_cv = indicators['average_cv']
+
+    # Descriptive CV ranges apply only to a measured CV; missing data is never labelled.
+    if average_cv is None:
+        cv_interpretation = "insufficient data"
+    elif average_cv > 0.35:
+        cv_interpretation = "High variability"
+    elif average_cv > 0.25:
+        cv_interpretation = "Moderate variability"
+    else:
+        cv_interpretation = "Lower observed variability"
+
+    # For reaction time a rising slope means longer (slower) responses, so the
+    # generic improving/declining label is restated as a neutral slope direction.
+    rt_direction = report['trends']['rt_trend']['trend_direction']
+    rt_slope_direction = {"improving": "longer", "declining": "shorter"}.get(rt_direction, "stable")
+
     # Assemble descriptive monitoring indicators. Legacy response keys are
     # retained for API compatibility and do not imply biomarker validation.
     biomarkers = {
@@ -374,9 +391,10 @@ def get_digital_biomarkers(
         },
         
         "rt_coefficient_of_variation": {
-            "mean": report['descriptive_indicators']['average_cv'],
-            "interpretation": "High variability" if report['descriptive_indicators']['average_cv'] > 0.35 else
-                            "Moderate variability" if report['descriptive_indicators']['average_cv'] > 0.25 else "Normal"
+            "mean": average_cv,
+            "status": indicators['cv_status'],
+            "session_count": indicators['cv_session_count'],
+            "interpretation": cv_interpretation
         },
         
         "within_person_standardized_change": {
@@ -401,7 +419,8 @@ def get_digital_biomarkers(
         },
         
         "rt_trend": {
-            "direction": report['trends']['rt_trend']['trend_direction'],
+            "direction": rt_direction,  # legacy key: computed slope label, not a value judgement for RT
+            "response_time_change": rt_slope_direction,  # "longer", "shorter" or "stable"
             "strength": report['trends']['rt_trend']['trend_strength'],
             "current_ewma": report['trends']['rt_trend']['current_ewma']
         },

@@ -92,12 +92,18 @@
     "fatigue_level": {
       "correlation_with_score": -0.938,
       "correlation_with_rt": 0.982,
-      "sample_size": 6
+      "sample_size": 6,
+      "rt_sample_size": 6,
+      "score_status": "available",
+      "rt_status": "available"
     },
     "sleep_quality": {
       "correlation_with_score": 0.938,
       "correlation_with_rt": -0.982,
-      "sample_size": 6
+      "sample_size": 6,
+      "rt_sample_size": 6,
+      "score_status": "available",
+      "rt_status": "available"
     }
   }
 }

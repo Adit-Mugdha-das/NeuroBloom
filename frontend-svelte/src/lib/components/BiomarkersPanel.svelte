@@ -1,5 +1,6 @@
 <script>
 	import { locale, localeText, formatNumber, formatPercent } from '$lib/i18n';
+	import { correlationStrength, cvRange, isAvailable, responseTimeChange } from '$lib/analytics-display.js';
 
 	/** @type {any} */
 	export let biomarkerData = null;
@@ -78,8 +79,10 @@
 	}
 
 	function getCVLevel(cv) {
-		if (cv === null || cv === undefined) return null;
-		if (cv > 0.35) {
+		// Missing CV gets no range at all, so it is never shown as "normal".
+		const range = cvRange(cv);
+		if (range === null) return null;
+		if (range === 'high') {
 			return {
 				label: lt('High variability', 'অনেক ওঠানামা'),
 				color: '#f44336',
@@ -87,7 +90,7 @@
 				pct: Math.min(100, cv * 200)
 			};
 		}
-		if (cv > 0.25) {
+		if (range === 'moderate') {
 			return {
 				label: lt('Moderate variability', 'মাঝারি ওঠানামা'),
 				color: '#ff9800',
@@ -96,7 +99,7 @@
 			};
 		}
 		return {
-			label: lt('Normal consistency', 'স্বাভাবিক ধারাবাহিকতা'),
+			label: lt('Lower observed variability', 'তুলনামূলকভাবে কম ওঠানামা'),
 			color: '#4caf50',
 			bg: '#e8f5e9',
 			pct: Math.min(100, cv * 200)
@@ -107,7 +110,7 @@
 		if (wpsc === null || wpsc === undefined) return null;
 		if (wpsc > 0) {
 			return {
-				label: lt('Above baseline', 'বেসলাইনের উপরে'),
+				label: lt('Higher than first recorded score', 'প্রথম রেকর্ড করা স্কোরের চেয়ে বেশি'),
 				icon: '+',
 				color: '#4caf50',
 				bg: '#e8f5e9'
@@ -115,7 +118,7 @@
 		}
 		if (wpsc < 0) {
 			return {
-				label: lt('Below baseline', 'বেসলাইনের নিচে'),
+				label: lt('Lower than first recorded score', 'প্রথম রেকর্ড করা স্কোরের চেয়ে কম'),
 				icon: '-',
 				color: '#f44336',
 				bg: '#ffebee'
@@ -140,6 +143,19 @@
 		return { icon: '→', label: lt('Stable', 'স্থিতিশীল'), color: '#667eea', bg: '#f0f2ff' };
 	}
 
+	// Reaction-time trend: neutral wording and colour, because a rising RT slope
+	// means longer responses and must not be presented as improvement.
+	function getRtTrendInfo(rtTrendData) {
+		const change = responseTimeChange(rtTrendData);
+		if (change === 'longer') {
+			return { icon: '↗', label: lt('Longer response times', 'প্রতিক্রিয়ার সময় বাড়ছে'), color: '#667eea', bg: '#f0f2ff' };
+		}
+		if (change === 'shorter') {
+			return { icon: '↘', label: lt('Shorter response times', 'প্রতিক্রিয়ার সময় কমছে'), color: '#667eea', bg: '#f0f2ff' };
+		}
+		return { icon: '→', label: lt('Stable response times', 'প্রতিক্রিয়ার সময় স্থিতিশীল'), color: '#667eea', bg: '#f0f2ff' };
+	}
+
 	function trendStrength(strength) {
 		const key = String(strength || '').toLowerCase();
 		if (key === 'strong') return lt('strong', 'শক্তিশালী');
@@ -148,26 +164,36 @@
 		return '';
 	}
 
+	function insufficientData() {
+		return lt('Insufficient data', 'অপর্যাপ্ত তথ্য');
+	}
+
+	// Correlations: a missing value is shown as insufficient data; a measured 0 is shown as 0.
 	function corrBar(r) {
-		return Math.min(100, Math.abs(r || 0) * 100);
+		return isAvailable(r) ? Math.min(100, Math.abs(r) * 100) : 0;
 	}
 
 	function corrColor(r) {
-		const abs = Math.abs(r || 0);
-		if (abs >= 0.6) return '#f44336';
-		if (abs >= 0.3) return '#ff9800';
+		const strength = correlationStrength(r);
+		if (strength === null) return '#9e9e9e';
+		if (strength === 'strong') return '#f44336';
+		if (strength === 'moderate') return '#ff9800';
 		return '#4caf50';
 	}
 
+	function corrText(r) {
+		return isAvailable(r) ? `${lt('r =', 'r =')} ${fixed(r, 2)}` : insufficientData();
+	}
+
 	function corrLabel(r) {
-		if (!r) return lt('Not enough data', 'যথেষ্ট ডেটা নেই');
-		const abs = Math.abs(r);
-		if (abs >= 0.6) {
+		const strength = correlationStrength(r);
+		if (strength === null) return insufficientData();
+		if (strength === 'strong') {
 			return r < 0
 				? lt('Strong negative effect', 'শক্তিশালী নেতিবাচক প্রভাব')
 				: lt('Strong positive effect', 'শক্তিশালী ইতিবাচক প্রভাব');
 		}
-		if (abs >= 0.3) {
+		if (strength === 'moderate') {
 			return r < 0
 				? lt('Moderate negative effect', 'মাঝারি নেতিবাচক প্রভাব')
 				: lt('Moderate positive effect', 'মাঝারি ইতিবাচক প্রভাব');
@@ -204,19 +230,19 @@
 		}
 		if (wpscValue > 0) {
 			return lt(
-				'Your latest score is above your starting score. This is a descriptive comparison.',
-				'আপনার সর্বশেষ স্কোর শুরুর স্কোরের উপরে। এটি একটি বর্ণনামূলক তুলনা।'
+				'Your latest score is higher than your first recorded score. This is a descriptive comparison.',
+				'আপনার সর্বশেষ স্কোর প্রথম রেকর্ড করা স্কোরের চেয়ে বেশি। এটি একটি বর্ণনামূলক তুলনা।'
 			);
 		}
 		if (wpscValue < 0) {
 			return lt(
-				'Your latest score is below your starting score. This is a descriptive comparison.',
-				'আপনার সর্বশেষ স্কোর শুরুর স্কোরের নিচে। এটি একটি বর্ণনামূলক তুলনা।'
+				'Your latest score is lower than your first recorded score. This is a descriptive comparison.',
+				'আপনার সর্বশেষ স্কোর প্রথম রেকর্ড করা স্কোরের চেয়ে কম। এটি একটি বর্ণনামূলক তুলনা।'
 			);
 		}
 		return lt(
-			'Your latest and starting scores have no numerical difference.',
-			'আপনার সর্বশেষ এবং শুরুর স্কোরে সংখ্যাগত পার্থক্য নেই।'
+			'Your latest and first recorded scores have no numerical difference.',
+			'আপনার সর্বশেষ এবং প্রথম রেকর্ড করা স্কোরে সংখ্যাগত পার্থক্য নেই।'
 		);
 	}
 
@@ -238,7 +264,7 @@
 	$: cvInfo = getCVLevel(cv);
 	$: wpscInfo = getWPSCInfo(wpscValue);
 	$: trendInfo = trend ? getTrendInfo(trend.direction) : null;
-	$: rtTrendInfo = rtTrend ? getTrendInfo(rtTrend.direction) : null;
+	$: rtTrendInfo = rtTrend ? getRtTrendInfo(rtTrend) : null;
 	$: remainingSessions = Math.max(REQUIRED_SESSIONS - totalSessions, 0);
 	$: hasData = biomarkerData && totalSessions >= REQUIRED_SESSIONS;
 </script>
@@ -288,6 +314,12 @@
 			</p>
 		</div>
 	{:else}
+		<p class="pooled-note">
+			{lt(
+				'Unadjusted pooled-task indicators; task and difficulty changes affect interpretation.',
+				'সমন্বয়হীন, একাধিক টাস্কের সম্মিলিত সূচক; টাস্ক ও কাঠিন্যের পরিবর্তন ব্যাখ্যাকে প্রভাবিত করে।'
+			)}
+		</p>
 		<div class="metrics-grid">
 			<div class="metric-card" style="--card-bg: {fatigueInfo?.bg ?? '#f5f5f5'}">
 				<div class="metric-header">
@@ -336,7 +368,7 @@
 					<span class="bar-labels"><span>{lt('Consistent', 'ধারাবাহিক')}</span><span>{lt('Erratic', 'অনিয়মিত')}</span></span>
 				</div>
 				<div class="metric-tag" style="color: {cvInfo?.color}; background: {cvInfo?.bg}">
-					{cvInfo?.label ?? '—'}
+					{cvInfo?.label ?? insufficientData()}
 				</div>
 				<p class="metric-note">
 					{doctorView
@@ -344,7 +376,12 @@
 							'Descriptive within-person RT variability · clinical meaning is not established',
 							'ব্যক্তির প্রতিক্রিয়া-সময়ের বর্ণনামূলক পরিবর্তনশীলতা · ক্লিনিক্যাল অর্থ প্রতিষ্ঠিত নয়'
 						)
-						: (cv ?? 0) > 0.3
+						: !isAvailable(cv)
+							? lt(
+								'Not enough response-time data yet to describe consistency.',
+								'ধারাবাহিকতা বোঝাতে এখনও যথেষ্ট প্রতিক্রিয়া-সময়ের তথ্য নেই।'
+							)
+						: cv > 0.3
 							? lt(
 								'Your response times vary quite a bit. This can happen in MS.',
 								'আপনার প্রতিক্রিয়ার সময় কিছুটা ওঠানামা করছে। MS-এ এমন হতে পারে।'
@@ -370,7 +407,7 @@
 							style="left: calc(50% + {Math.min(50, Math.max(-50, (wpscValue ?? 0) * 12.75))}%); background: {wpscInfo?.color}"
 						></div>
 					</div>
-					<span class="bar-labels"><span>{lt('Below baseline', 'বেসলাইনের নিচে')}</span><span>{lt('Above baseline', 'বেসলাইনের উপরে')}</span></span>
+					<span class="bar-labels"><span>{lt('Lower than first recorded score', 'প্রথম রেকর্ড করা স্কোরের চেয়ে কম')}</span><span>{lt('Higher than first recorded score', 'প্রথম রেকর্ড করা স্কোরের চেয়ে বেশি')}</span></span>
 				</div>
 				<div class="metric-tag" style="color: {wpscInfo?.color}; background: {wpscInfo?.bg}">
 					{wpscInfo?.label ?? lt('Insufficient data', 'অপর্যাপ্ত তথ্য')}
@@ -378,8 +415,8 @@
 				<p class="metric-note">
 					{doctorView
 						? lt(
-							'Descriptive standardized difference from baseline · not a reliable change index',
-							'বেসলাইন থেকে বর্ণনামূলক মানসম্মত পার্থক্য · এটি নির্ভরযোগ্য পরিবর্তন সূচক নয়'
+							'Descriptive standardized difference from the first recorded score · not a reliable change index',
+							'প্রথম রেকর্ড করা স্কোর থেকে বর্ণনামূলক মানসম্মত পার্থক্য · এটি নির্ভরযোগ্য পরিবর্তন সূচক নয়'
 						)
 						: patientWpscNote()}
 				</p>
@@ -397,7 +434,7 @@
 							<span class="trend-strength">· {trendStrength(trend?.strength)}</span>
 						{/if}
 					</div>
-					{#if trend?.current_ewma}
+					{#if isAvailable(trend?.current_ewma)}
 						<div class="trend-ewma">
 							{lt('Current EWMA', 'বর্তমান EWMA')}: {fixed(trend.current_ewma, 1)}
 						</div>
@@ -416,7 +453,7 @@
 								<span class="trend-strength">· {trendStrength(rtTrend?.strength)}</span>
 							{/if}
 						</div>
-						{#if rtTrend?.current_ewma}
+						{#if isAvailable(rtTrend?.current_ewma)}
 							<div class="trend-ewma">
 								{lt('Current EWMA', 'বর্তমান EWMA')}: {milliseconds(rtTrend.current_ewma, 0)}
 							</div>
@@ -443,14 +480,14 @@
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(fatCorr.correlation_with_score)}%; background: {corrColor(fatCorr.correlation_with_score)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(fatCorr.correlation_with_score)}">{lt('r =', 'r =')} {fixed(fatCorr.correlation_with_score ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(fatCorr.correlation_with_score)}">{corrText(fatCorr.correlation_with_score)}</span>
 							</div>
 							<div class="corr-row">
 								<span class="corr-dim">{lt('RT impact', 'RT প্রভাব')}</span>
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(fatCorr.correlation_with_rt)}%; background: {corrColor(fatCorr.correlation_with_rt)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(fatCorr.correlation_with_rt)}">{lt('r =', 'r =')} {fixed(fatCorr.correlation_with_rt ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(fatCorr.correlation_with_rt)}">{corrText(fatCorr.correlation_with_rt)}</span>
 							</div>
 							<div class="corr-interp">{corrLabel(fatCorr.correlation_with_score)} · {correlationSampleText(fatCorr.sample_size)}</div>
 						</div>
@@ -464,14 +501,14 @@
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(sleepCorr.correlation_with_score)}%; background: {corrColor(sleepCorr.correlation_with_score)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(sleepCorr.correlation_with_score)}">{lt('r =', 'r =')} {fixed(sleepCorr.correlation_with_score ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(sleepCorr.correlation_with_score)}">{corrText(sleepCorr.correlation_with_score)}</span>
 							</div>
 							<div class="corr-row">
 								<span class="corr-dim">{lt('RT impact', 'RT প্রভাব')}</span>
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(sleepCorr.correlation_with_rt)}%; background: {corrColor(sleepCorr.correlation_with_rt)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(sleepCorr.correlation_with_rt)}">{lt('r =', 'r =')} {fixed(sleepCorr.correlation_with_rt ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(sleepCorr.correlation_with_rt)}">{corrText(sleepCorr.correlation_with_rt)}</span>
 							</div>
 							<div class="corr-interp">{corrLabel(sleepCorr.correlation_with_score)} · {correlationSampleText(sleepCorr.sample_size)}</div>
 						</div>
@@ -485,14 +522,14 @@
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(medCorr.correlation_with_score)}%; background: {corrColor(medCorr.correlation_with_score)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(medCorr.correlation_with_score)}">{lt('r =', 'r =')} {fixed(medCorr.correlation_with_score ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(medCorr.correlation_with_score)}">{corrText(medCorr.correlation_with_score)}</span>
 							</div>
 							<div class="corr-row">
 								<span class="corr-dim">{lt('RT impact', 'RT প্রভাব')}</span>
 								<div class="corr-bar-wrap">
 									<div class="corr-bar" style="width: {corrBar(medCorr.correlation_with_rt)}%; background: {corrColor(medCorr.correlation_with_rt)}"></div>
 								</div>
-								<span class="corr-r" style="color: {corrColor(medCorr.correlation_with_rt)}">{lt('r =', 'r =')} {fixed(medCorr.correlation_with_rt ?? 0, 2)}</span>
+								<span class="corr-r" style="color: {corrColor(medCorr.correlation_with_rt)}">{corrText(medCorr.correlation_with_rt)}</span>
 							</div>
 							<div class="corr-interp">{corrLabel(medCorr.correlation_with_score)} · {correlationSampleText(medCorr.sample_size)}</div>
 						</div>
@@ -503,7 +540,7 @@
 
 		{#if doctorView}
 			<div class="clinical-legend">
-				<span class="legend-item"><span class="dot green"></span> {lt('Normal / Improving', 'স্বাভাবিক / উন্নতির দিকে')}</span>
+				<span class="legend-item"><span class="dot green"></span> {lt('Lower range / Improving', 'নিম্ন পরিসর / উন্নতির দিকে')}</span>
 				<span class="legend-item"><span class="dot amber"></span> {lt('Moderate / Watch', 'মাঝারি / নজরে রাখুন')}</span>
 				<span class="legend-item"><span class="dot red"></span> {lt('High / Declining', 'বেশি / কমতির দিকে')}</span>
 				<span class="legend-sep">|</span>
@@ -576,6 +613,16 @@
 		font-size: 0.9rem;
 		color: #777;
 		margin: 0;
+	}
+
+	.pooled-note {
+		margin: 0 0 1rem;
+		padding: 0.6rem 0.9rem;
+		border-left: 3px solid #9e9e9e;
+		background: #f5f5f5;
+		border-radius: 6px;
+		font-size: 0.85rem;
+		color: #555;
 	}
 
 	.metrics-grid {

@@ -87,7 +87,7 @@
 	}
 
 	function severityLabel(severity) {
-		if (severity === 'high') return 'High Risk';
+		if (severity === 'high') return 'High priority';
 		if (severity === 'medium') return 'Review';
 		if (severity === 'low') return 'Watch';
 		return 'Clear';

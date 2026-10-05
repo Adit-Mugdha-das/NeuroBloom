@@ -1231,6 +1231,13 @@ def track_session_completion(
     if session_complete:
         # Session is complete - increment total sessions completed and reset
         training_plan.total_sessions_completed += 1
+
+        # Flush so the current task result is visible to the rebalancing query,
+        # then rebalance every fourth completed session (as the generic submit route does).
+        session.flush()
+        if training_plan.total_sessions_completed % 4 == 0:
+            rebalance_focus_areas(training_plan, session)
+
         training_plan.current_session_tasks_completed = "[]"  # Reset for next session
         training_plan.last_session_date = datetime.utcnow()
         

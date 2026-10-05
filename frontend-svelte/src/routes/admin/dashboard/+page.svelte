@@ -284,7 +284,7 @@
 					</div>
 					<div>
 						<h3>{uiText("Open System Analytics", $activeLocale)}</h3>
-						<p>{uiText("View system-wide metrics, high-risk patients, most-used tasks, and core trend charts.", $activeLocale)}</p>
+						<p>{uiText("View system-wide metrics, high-priority patients, most-used tasks, and core trend charts.", $activeLocale)}</p>
 					</div>
 				</a>
 			</section>

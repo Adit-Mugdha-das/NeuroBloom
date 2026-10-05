@@ -13,6 +13,12 @@
 	let userData;
 	let searchTerm = '';
 	let riskFilter = 'all';
+
+	// Display text for the review-priority level; the underlying value is unchanged.
+	function priorityLabel(level, locale) {
+		const labels = { high: 'High priority', medium: 'Medium priority', moderate: 'Moderate priority', low: 'Low priority' };
+		return uiText(labels[level] ?? String(level ?? ''), locale);
+	}
 	let sortBy = 'name';
 	let sortDirection = 'asc';
 
@@ -140,9 +146,9 @@
 				<input id="patientSearch" bind:value={searchTerm} placeholder={uiText("Search by patient, email, or diagnosis", $activeLocale)} />
 			</div>
 			<div class="field-group">
-				<label for="riskFilter">{uiText("Risk", $activeLocale)}</label>
+				<label for="riskFilter">{uiText("Review priority", $activeLocale)}</label>
 				<select id="riskFilter" bind:value={riskFilter}>
-					<option value="all">{uiText("All risk levels", $activeLocale)}</option>
+					<option value="all">{uiText("All review priorities", $activeLocale)}</option>
 					<option value="high">{uiText("High", $activeLocale)}</option>
 					<option value="medium">{uiText("Medium", $activeLocale)}</option>
 					<option value="low">{uiText("Low", $activeLocale)}</option>
@@ -161,7 +167,7 @@
 			{#if filteredPatients.length === 0}
 				<div class="empty-card">
 					<h3>{uiText("No patients match the current filters", $activeLocale)}</h3>
-					<p>{uiText("Adjust the search or risk filter to broaden the list.", $activeLocale)}</p>
+					<p>{uiText("Adjust the search or review-priority filter to broaden the list.", $activeLocale)}</p>
 				</div>
 			{:else}
 				<div class="table-wrap">
@@ -170,7 +176,7 @@
 							<tr>
 								<th><button on:click={() => sortPatients('name')}>{uiText("Patient", $activeLocale)}</button></th>
 								<th>{uiText("Diagnosis", $activeLocale)}</th>
-								<th><button on:click={() => sortPatients('risk_level')}>{uiText("Risk", $activeLocale)}</button></th>
+								<th><button on:click={() => sortPatients('risk_level')}>{uiText("Review priority", $activeLocale)}</button></th>
 								<th><button on:click={() => sortPatients('adherence_rate')}>{uiText("Adherence", $activeLocale)}</button></th>
 								<th><button on:click={() => sortPatients('total_sessions')}>{uiText("Sessions", $activeLocale)}</button></th>
 								<th><button on:click={() => sortPatients('avg_score')}>{uiText("Score", $activeLocale)}</button></th>
@@ -187,7 +193,7 @@
 										<div class="patient-email">{patient.email}</div>
 									</td>
 									<td>{patient.diagnosis || 'Not recorded'}</td>
-									<td><span class="risk-pill {patient.risk_level}">{patient.risk_level}</span></td>
+									<td><span class="risk-pill {patient.risk_level}">{priorityLabel(patient.risk_level, $activeLocale)}</span></td>
 									<td>{patient.adherence_rate}%</td>
 									<td>{patient.total_sessions}</td>
 									<td>{patient.avg_score}</td>

@@ -91,7 +91,7 @@
 			const alertsResponse = await api.get(`/api/admin/risk-alerts?admin_id=${admin.id}`);
 			riskAlerts = alertsResponse.data.alerts;
 		} catch (requestError) {
-			error = requestError.response?.data?.detail || 'Risk action failed';
+			error = requestError.response?.data?.detail || 'Review-flag action failed';
 		} finally {
 			riskActionLoading = { ...riskActionLoading, [key]: false };
 		}
@@ -605,15 +605,15 @@
 						<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
 					</svg>
 				</div>
-					<div class="stat-body"><p class="stat-label">{uiText("High-Risk Patients", $activeLocale)}</p><p class="stat-value">{stats.high_risk_patients}</p></div>
+					<div class="stat-body"><p class="stat-label">{uiText("High-Priority Patients", $activeLocale)}</p><p class="stat-value">{stats.high_risk_patients}</p></div>
 				</div>
 			</div>
 
 			<section class="risk-monitor-panel">
 				<div class="panel-header">
 					<div>
-						<p class="panel-kicker rose-text">{uiText("Risk Monitoring", $activeLocale)}</p>
-						<h2>{uiText("High-Risk Patients", $activeLocale)}</h2>
+						<p class="panel-kicker rose-text">{uiText("Review-flag monitoring", $activeLocale)}</p>
+						<h2>{uiText("High-Priority Patients", $activeLocale)}</h2>
 						<p class="panel-copy">{uiText("System-wide alerts are consolidated here so the admin can quickly notify the assigned doctor, escalate urgent cases, or mark alerts as reviewed without adding workflow clutter elsewhere.", $activeLocale)}</p>
 					</div>
 					<div class="panel-chip rose-chip">{riskAlerts.length} {uiText("active alerts", $activeLocale)}</div>
@@ -621,7 +621,7 @@
 
 				<div class="risk-monitor-list">
 					{#if riskAlerts.length === 0}
-						<div class="empty-risk-state">{uiText("No patients are currently flagged as high risk.", $activeLocale)}</div>
+						<div class="empty-risk-state">{uiText("No patients are currently flagged as high priority.", $activeLocale)}</div>
 					{:else}
 						{#each riskAlerts as alert}
 							<div class="risk-monitor-row">
@@ -633,7 +633,7 @@
 										</div>
 										<div class="risk-status-group">
 											<span class="status-chip {alert.alert_status}">{alert.alert_status}</span>
-											<span class="metric-chip">{uiText("Risk score", $activeLocale)} {alert.risk_score}</span>
+											<span class="metric-chip">{uiText("Review-flag score", $activeLocale)} {alert.risk_score}</span>
 										</div>
 									</div>
 

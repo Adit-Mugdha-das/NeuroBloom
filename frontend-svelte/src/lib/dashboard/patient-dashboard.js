@@ -1,4 +1,5 @@
 import { apiUrl } from '$lib/api.js';
+import { isAvailable } from '$lib/analytics-display.js';
 import {
 	getPatientBadgeCopy,
 	getPatientCopy,
@@ -41,6 +42,13 @@ const baselineModules = [
 
 function localeText(locale, variants) {
 	return locale === 'bn' ? variants.bn : variants.en;
+}
+
+// Missing indicator values are shown as insufficient data, never as 0.
+function indicatorText(locale, value) {
+	return isAvailable(value)
+		? value.toFixed(2)
+		: localeText(locale, { en: 'insufficient data', bn: 'অপর্যাপ্ত তথ্য' });
 }
 
 function numberText(locale, value, options = {}) {
@@ -648,8 +656,8 @@ function createInsightsRail(locale, { notifications, streak, biomarkers, recentC
 					: localeText(locale, { en: 'Unlock after 3 sessions', bn: '৩টি সেশনের পর আনলক হবে' }),
 				body: hasBiomarkers
 					? locale === 'bn'
-						? `ক্লান্তি-সম্পর্কিত প্রক্সি ${Number(biomarkers?.fatigue_proxy?.mean || 0).toFixed(2)} · প্রতিক্রিয়ার ধারাবাহিকতা ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
-						: `Fatigue-related proxy ${Number(biomarkers?.fatigue_proxy?.mean || 0).toFixed(2)} · response consistency ${Number(biomarkers?.rt_coefficient_of_variation?.mean || 0).toFixed(2)}`
+						? `ক্লান্তি-সম্পর্কিত প্রক্সি ${indicatorText(locale, biomarkers?.fatigue_proxy?.mean)} · প্রতিক্রিয়ার ধারাবাহিকতা ${indicatorText(locale, biomarkers?.rt_coefficient_of_variation?.mean)}`
+						: `Fatigue-related proxy ${indicatorText(locale, biomarkers?.fatigue_proxy?.mean)} · response consistency ${indicatorText(locale, biomarkers?.rt_coefficient_of_variation?.mean)}`
 					: localeText(locale, { en: 'Keep training and this area will become more meaningful.', bn: 'ট্রেনিং চালিয়ে যান, এই অংশটি আরও অর্থবহ হবে।' }),
 				action: {
 					label: localeText(locale, { en: 'Open insights', bn: 'ইনসাইট খুলুন' }),

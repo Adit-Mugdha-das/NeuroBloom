@@ -73,16 +73,16 @@ def _require_admin(admin_id: int, session: Session) -> Admin:
 
 def _summarize_risk_reasons(reasons: list[str]) -> str:
     if "declining from baseline" in reasons or "below baseline" in reasons or "low recent performance" in reasons:
-        return "Cognitive decline detected"
+        return "Performance below reference"
     if "high fatigue" in reasons:
-        return "Severe fatigue patterns"
+        return "Elevated self-reported fatigue"
     if "elevated fatigue" in reasons:
-        return "Fatigue patterns detected"
+        return "Fatigue above reference"
     if "low completion rate" in reasons:
-        return "Rapid performance drop"
+        return "Low session completion"
     if "low baseline score" in reasons:
-        return "Persistent cognitive risk detected"
-    return "Clinical risk alert detected"
+        return "Low baseline score"
+    return "Performance review flag"
 
 
 def _create_audit_log(

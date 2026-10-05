@@ -21,6 +21,15 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 
+def _finite_float(value: Any) -> Optional[float]:
+    """Return value as a finite float, or None when it is missing or not a usable number."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
 # ==================== FATIGUE-RELATED PROXY ====================
 
 _ANALYTICS_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "analytics.json"
@@ -161,7 +170,7 @@ def calculate_fatigue_signature(
 
 # ==================== IIV METRICS ====================
 
-def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] = None) -> Dict[str, float]:
+def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] = None) -> Dict[str, Any]:
     """
     Calculate comprehensive Intra-Individual Variability (IIV) metrics.
     
@@ -188,36 +197,30 @@ def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] 
     - CV is reported as a descriptive within-person variability measure.
     - Thresholds are not clinically validated and do not indicate relapse or progression.
     """
-    if not reaction_times or len(reaction_times) < 2:
-        return {
-            'rt_std': 0.0,
-            'rt_cv': 0.0,
-            'rt_mad': 0.0,
-            'rt_iqr': 0.0,
-            'rt_range': 0.0
-        }
-    
-    # Remove zeros and outliers (> 3 std from mean)
-    rts_clean = [rt for rt in reaction_times if rt > 0]
-    
+    # Keep only positive, finite reaction times; outliers are retained.
+    rts_clean = [rt for rt in (_finite_float(v) for v in reaction_times or []) if rt is not None and rt > 0]
+
+    # Fewer than two valid observations: variability is unavailable, not zero.
     if len(rts_clean) < 2:
         return {
-            'rt_std': 0.0,
-            'rt_cv': 0.0,
-            'rt_mad': 0.0,
-            'rt_iqr': 0.0,
-            'rt_range': 0.0
+            'rt_std': None,
+            'rt_cv': None,
+            'rt_mad': None,
+            'rt_iqr': None,
+            'rt_range': None,
+            'valid_rt_count': len(rts_clean),
+            'status': 'insufficient_data'
         }
-    
-    # Calculate mean
-    if mean_rt is None:
-        mean_rt = statistics.mean(rts_clean)
+
+    # Use the supplied session mean only when it is a usable positive value.
+    supplied_mean = _finite_float(mean_rt)
+    mean_rt = supplied_mean if supplied_mean is not None and supplied_mean > 0 else statistics.mean(rts_clean)
     
     # Standard deviation
     rt_std = statistics.stdev(rts_clean) if len(rts_clean) > 1 else 0.0
     
     # Coefficient of variation used as a descriptive within-person indicator.
-    rt_cv = (rt_std / mean_rt) if mean_rt > 0 else 0.0
+    rt_cv = rt_std / mean_rt  # mean_rt is positive here; identical RTs give a measured CV of 0
     
     # Median Absolute Deviation (robust measure)
     median_rt = statistics.median(rts_clean)
@@ -239,7 +242,9 @@ def calculate_iiv_metrics(reaction_times: List[float], mean_rt: Optional[float] 
         'rt_cv': round(rt_cv, 3),
         'rt_mad': round(rt_mad, 2),
         'rt_iqr': round(rt_iqr, 2),
-        'rt_range': round(rt_range, 2)
+        'rt_range': round(rt_range, 2),
+        'valid_rt_count': len(rts_clean),
+        'status': 'available'
     }
 
 
@@ -446,7 +451,7 @@ def calculate_ewma_trend(
 def calculate_contextual_correlations(
     sessions: List[Dict[str, Any]],
     context_keys: List[str] = ['fatigue_level', 'sleep_quality', 'hours_since_medication']
-) -> Dict[str, Dict[str, float]]:
+) -> Dict[str, Dict[str, Any]]:
     """
     Correlate performance metrics with contextual factors.
     
@@ -464,60 +469,77 @@ def calculate_contextual_correlations(
             'fatigue_level': {
                 'correlation_with_score': -0.65,  # negative = higher fatigue → lower score
                 'correlation_with_rt': 0.42,      # positive = higher fatigue → slower RT
-                'sample_size': 30
+                'sample_size': 30,                # valid (context, score) pairs
+                'rt_sample_size': 28,             # valid (context, positive mean RT) pairs
+                'score_status': 'available',
+                'rt_status': 'available'
             },
             ...
         }
-    
+
+    A correlation is None with status 'insufficient_data' when there are fewer
+    than three valid pairs or either variable has zero variance. A computed
+    correlation of 0 is a measured value and stays 0.
+
     Clinical Insights:
     - Strong negative correlation with fatigue: Confirms MS fatigue impact
     - Medication timing correlation: Optimize testing schedule
     - Sleep correlation: Recommend sleep interventions
     """
+    def pearson_correlation(pairs):
+        """Pearson r, or None if fewer than 3 pairs or either variable has zero variance."""
+        if len(pairs) < 3:
+            return None
+
+        x_values = [p[0] for p in pairs]
+        y_values = [p[1] for p in pairs]
+
+        mean_x = statistics.mean(x_values)
+        mean_y = statistics.mean(y_values)
+
+        numerator = sum((x - mean_x) * (y - mean_y) for x, y in pairs)
+
+        x_var = sum((x - mean_x) ** 2 for x in x_values)
+        y_var = sum((y - mean_y) ** 2 for y in y_values)
+
+        if x_var == 0 or y_var == 0:
+            return None
+
+        return numerator / (x_var * y_var) ** 0.5
+
     correlations = {}
-    
+
     for context_key in context_keys:
-        # Extract pairs of (context_value, score) and (context_value, rt)
+        # Extract valid pairs of (context_value, score) and (context_value, mean RT)
         score_pairs = []
         rt_pairs = []
-        
+
         for session in sessions:
-            context_value = session.get(context_key)
-            score = session.get('score')
-            mean_rt = session.get('mean_rt')
-            
-            if context_value is not None and score is not None:
+            context_value = _finite_float(session.get(context_key))
+            if context_value is None:
+                continue
+
+            score = _finite_float(session.get('score'))
+            if score is not None:
                 score_pairs.append((context_value, score))
-            
-            if context_value is not None and mean_rt is not None:
+
+            # A mean RT of 0 means no RT was recorded, so it is not a valid observation.
+            mean_rt = _finite_float(session.get('mean_rt'))
+            if mean_rt is not None and mean_rt > 0:
                 rt_pairs.append((context_value, mean_rt))
-        
-        # Calculate Pearson correlation coefficient
-        def pearson_correlation(pairs):
-            if len(pairs) < 3:
-                return 0.0
-            
-            x_values = [p[0] for p in pairs]
-            y_values = [p[1] for p in pairs]
-            
-            mean_x = statistics.mean(x_values)
-            mean_y = statistics.mean(y_values)
-            
-            numerator = sum((x - mean_x) * (y - mean_y) for x, y in pairs)
-            
-            x_var = sum((x - mean_x) ** 2 for x in x_values)
-            y_var = sum((y - mean_y) ** 2 for y in y_values)
-            
-            denominator = (x_var * y_var) ** 0.5
-            
-            return (numerator / denominator) if denominator > 0 else 0.0
-        
+
+        r_score = pearson_correlation(score_pairs)
+        r_rt = pearson_correlation(rt_pairs)
+
         correlations[context_key] = {
-            'correlation_with_score': round(pearson_correlation(score_pairs), 3),
-            'correlation_with_rt': round(pearson_correlation(rt_pairs), 3),
-            'sample_size': len(score_pairs)
+            'correlation_with_score': round(r_score, 3) if r_score is not None else None,
+            'correlation_with_rt': round(r_rt, 3) if r_rt is not None else None,
+            'sample_size': len(score_pairs),
+            'rt_sample_size': len(rt_pairs),
+            'score_status': 'available' if r_score is not None else 'insufficient_data',
+            'rt_status': 'available' if r_rt is not None else 'insufficient_data'
         }
-    
+
     return correlations
 
 
@@ -547,7 +569,8 @@ def analyze_session_advanced(session_data: Dict[str, Any]) -> Dict[str, Any]:
     fatigue_metrics = calculate_fatigue_signature(trials)
     
     # IIV metrics
-    reaction_times = [t.get('reaction_time', 0) for t in trials if t.get('reaction_time', 0) > 0]
+    # calculate_iiv_metrics keeps only positive, finite reaction times.
+    reaction_times = [t.get('reaction_time') for t in trials]
     iiv_metrics = calculate_iiv_metrics(reaction_times, session_data.get('mean_rt'))
     
     # Combine all metrics
@@ -582,9 +605,12 @@ def generate_longitudinal_report(
     if not sessions:
         return {'error': 'No sessions provided'}
     
-    # Extract time series data
-    scores = [s.get('score', 0) for s in sessions if s.get('score', 0) > 0]
-    mean_rts = [s.get('mean_rt', 0) for s in sessions if s.get('mean_rt', 0) > 0]
+    # Extract time series data. A score of 0 is valid poor performance, not
+    # missing data, so any finite score is kept.
+    scores = [v for v in (_finite_float(record.get("score")) for record in sessions) if v is not None]
+
+    # A mean RT of 0 means no RT was recorded, so only positive finite values are kept.
+    mean_rts = [v for v in (_finite_float(record.get("mean_rt")) for record in sessions) if v is not None and v > 0]
     
     # Trend analysis
     score_trend = calculate_ewma_trend(scores)
@@ -603,10 +629,13 @@ def generate_longitudinal_report(
             if proxy is not None:
                 fatigue_proxies.append(proxy)
         if 'iiv_metrics' in session:
-            cv_values.append(session['iiv_metrics'].get('rt_cv', 0))
-    
+            # Unavailable CV (None) is excluded; a measured CV of 0 is kept.
+            cv = _finite_float(session['iiv_metrics'].get('rt_cv'))
+            if cv is not None:
+                cv_values.append(cv)
+
     avg_fatigue_proxy = statistics.mean(fatigue_proxies) if fatigue_proxies else None
-    avg_cv = statistics.mean(cv_values) if cv_values else 0
+    avg_cv = statistics.mean(cv_values) if cv_values else None
     
     report = {
         'summary': {
@@ -616,8 +645,8 @@ def generate_longitudinal_report(
                 'last': sessions[-1].get('date', 'unknown')
             },
             'current_performance': {
-                'score': scores[-1] if scores else 0,
-                'mean_rt': mean_rts[-1] if mean_rts else 0
+                'score': scores[-1] if scores else None,
+                'mean_rt': mean_rts[-1] if mean_rts else None
             }
         },
         'trends': {
@@ -627,7 +656,9 @@ def generate_longitudinal_report(
         'variability': variability,
         'descriptive_indicators': {
             'average_fatigue_proxy': round(avg_fatigue_proxy, 3) if avg_fatigue_proxy is not None else None,
-            'average_cv': round(avg_cv, 3),
+            'average_cv': round(avg_cv, 3) if avg_cv is not None else None,
+            'cv_status': 'available' if avg_cv is not None else 'insufficient_data',
+            'cv_session_count': len(cv_values),
             'within_person_standardized_change': variability.get('within_person_standardized_change'),
             'change_status': variability.get('change_status', 'insufficient_data')
         }

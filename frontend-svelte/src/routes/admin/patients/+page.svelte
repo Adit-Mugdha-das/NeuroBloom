@@ -445,7 +445,7 @@
 							<span class="identity-name">{patientDetail.profile.full_name}</span>
 							<span class="badge {patientDetail.profile.is_active ? 'badge-blue' : 'badge-red'}">{patientDetail.profile.is_active ? 'Active' : 'Inactive'}</span>
 							{#if patientDetail.risk}
-								<span class="risk-badge risk-{patientDetail.risk.level}">{patientDetail.risk.level === 'stable' ? 'Stable' : patientDetail.risk.level.charAt(0).toUpperCase() + patientDetail.risk.level.slice(1) + ' Risk'}</span>
+								<span class="risk-badge risk-{patientDetail.risk.level}">{uiText(patientDetail.risk.level === 'stable' ? 'Stable' : patientDetail.risk.level.charAt(0).toUpperCase() + patientDetail.risk.level.slice(1) + ' priority', $activeLocale)}</span>
 							{/if}
 						</div>
 						<p class="identity-email">{patientDetail.profile.email}</p>
@@ -470,7 +470,7 @@
 						<p class="ov-sub">{uiText("total completed", $activeLocale)}</p>
 					</div>
 					<div class="ov-metric">
-						<p class="ov-label">{uiText("Risk Level", $activeLocale)}</p>
+						<p class="ov-label">{uiText("Review priority", $activeLocale)}</p>
 						<p class="ov-value ov-risk-{patientDetail.risk.level}">{patientDetail.risk.level.charAt(0).toUpperCase() + patientDetail.risk.level.slice(1)}</p>
 						<p class="ov-sub">{uiText("score:", $activeLocale)} {patientDetail.risk.score}</p>
 					</div>
