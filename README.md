@@ -1,6 +1,6 @@
 # NeuroBloom
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23106598.svg)](https://doi.org/10.5281/zenodo.23106598)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23164855.svg)](https://doi.org/10.5281/zenodo.23164855)
 
 NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at https://neurobloom-67qo.onrender.com/.
 
@@ -204,6 +204,18 @@ Clinicians review patient histories, monitor longitudinal trends and review flag
 
 Administrators manage users, departments, assignments, notifications, audit logs, system health, and research-oriented data export.
 
+## Security and Intended Use
+
+Passwords are stored using bcrypt hashing, and supplied credentials are
+checked at login. However, subsequent API requests are not currently bound
+to a server-verified authenticated session, and some endpoints rely on
+account identifiers supplied with the request.
+
+The current release is therefore intended only for isolated demonstrations
+using synthetic data. It should not be used for multi-user handling of
+sensitive clinical records without stronger authenticated access control and
+consistent authorization enforcement.
+
 ## Supplementary Video
 
 A supplementary screencast demonstrating the main NeuroBloom workflows is available at:
@@ -232,7 +244,7 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release.
 
-> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.2 – SoftwareX Archive Release* (Version v1.2) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.23106598](https://doi.org/10.5281/zenodo.23106598)
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.2.1 – SoftwareX Revision Release* (Version v1.2.1) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.23164855](https://doi.org/10.5281/zenodo.23164855)
 
 GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
 
