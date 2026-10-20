@@ -1,6 +1,6 @@
 # NeuroBloom
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23164855.svg)](https://doi.org/10.5281/zenodo.23164855)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23496185.svg)](https://doi.org/10.5281/zenodo.23496185)
 
 NeuroBloom is an open-source research software prototype for studying longitudinal cognitive-task records and clinician-supervised rehabilitation workflows in multiple sclerosis. It includes original task implementations and descriptive analytics whose psychometric and clinical validity has not been established. The current release is intended only for isolated demonstrations using synthetic data.
 
@@ -241,7 +241,7 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release.
 
-> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *Adit-Mugdha-das/NeuroBloom: NeuroBloom v1.2.1 – SoftwareX Revision Release* (Version v1.2.1) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.23164855](https://doi.org/10.5281/zenodo.23164855)
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *NeuroBloom v1.2.2 – SoftwareX Revision Release* (Version v1.2.2) [Computer software]. Zenodo. [https://doi.org/10.5281/zenodo.23496185](https://doi.org/10.5281/zenodo.23496185)
 
 GitHub also provides a **"Cite this repository"** option through the included `CITATION.cff` file.
 
