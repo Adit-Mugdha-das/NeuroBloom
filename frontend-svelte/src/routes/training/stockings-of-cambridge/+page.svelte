@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores.js';
@@ -566,10 +567,6 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 								<span>{lt('Scoring Basis', 'স্কোরিং ভিত্তি')}</span>
 								<strong>{lt('Moves used vs minimum', 'ব্যবহৃত বনাম সর্বনিম্ন')}</strong>
 							</div>
-							<div class="detail-row">
-								<span>{lt('Test Battery', 'পরীক্ষার ব্যাটারি')}</span>
-								<strong>CANTAB</strong>
-							</div>
 						</div>
 					</div>
 				</div>
@@ -577,38 +574,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Info -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('CANTAB Gold Standard Planning Test', 'CANTAB গোল্ড স্ট্যান্ডার্ড পরিকল্পনা পরীক্ষা')}</h3>
+						<div class="clinical-badge">{lt('Stockings-style planning research task', 'স্টকিংস-ধাঁচের পরিকল্পনা গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'Owen et al. (1990) introduced the Stockings of Cambridge as the CANTAB computerised version of the Tower of London. MS patients show significantly more excess moves and longer thinking times, with performance correlating with lesion load in frontal and parietal white matter. The task is included in the BICAMS cognitive battery for MS.',
-							'ওয়েন et al. (১৯৯০) টাওয়ার অব লন্ডনের CANTAB কম্পিউটারাইজড সংস্করণ হিসেবে স্টকিংস অব কেমব্রিজ প্রবর্তন করেন। এমএস রোগীরা উল্লেখযোগ্যভাবে বেশি অতিরিক্ত পদক্ষেপ করেন। পারফরম্যান্স ফ্রন্টাল এবং প্যারিটাল সাদা পদার্থে লেশন লোডের সাথে সম্পর্কিত।'
-						)}
-					</p>
-				</div>
-
-				<!-- Performance Guide -->
-				<div class="card perf-guide">
-					<h3 class="card-title">{lt('Planning Efficiency Norms', 'পরিকল্পনা দক্ষতার নির্দেশিকা')}</h3>
-					<p class="perf-subtitle">{lt('Minimum moves / moves used (higher = better)', 'সর্বনিম্ন পদক্ষেপ / ব্যবহৃত পদক্ষেপ (বেশি = ভালো)')}</p>
-					<div class="norm-bars">
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Excellent', 'উৎকৃষ্ট')}</div>
-							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-							<div class="norm-range">&gt; 80%</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Normal', 'স্বাভাবিক')}</div>
-							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-							<div class="norm-range">60–80%</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Impaired', 'দুর্বল')}</div>
-							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
-							<div class="norm-range">&lt; 60%</div>
-						</div>
-					</div>
+					<p>{localeText(paradigmInspirationNote({ en: 'Stockings of Cambridge (Owen et al., 1990)', bn: 'স্টকিংস অব কেমব্রিজ (ওয়েন ও সহকর্মীরা, ১৯৯০)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

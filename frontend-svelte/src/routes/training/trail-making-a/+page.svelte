@@ -9,6 +9,13 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import {
+		ABOUT_RESULTS_TITLE,
+		ABOUT_TASK_TITLE,
+		paradigmInspirationNote,
+		RAW_RESULTS_NOTE,
+		RESEARCH_TASK_NOTE
+	} from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -494,7 +501,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<DifficultyBadge difficulty={difficulty} domain="Processing Speed" />
 					</div>
 					<p class="subtitle">{localeText({ en: 'Connect numbered circles in order - as fast as you can', bn: 'সংখ্যাযুক্ত বৃত্তগুলো ক্রমানুসারে যুক্ত করুন - যত দ্রুত পারেন' }, $locale)}</p>
-					<div class="classic-badge">{localeText({ en: 'TMT-A - Halstead-Reitan Battery - MACFIMS Processing Speed', bn: 'TMT-A - হ্যালস্টেড-রেইটান ব্যাটারি - MACFIMS প্রসেসিং স্পিড' }, $locale)}</div>
+					<div class="classic-badge">{localeText({ en: 'Numeric trail research task', bn: 'সংখ্যাভিত্তিক ট্রেইল গবেষণা কাজ' }, $locale)}</div>
 				</div>
 
 				{#if playMode === TASK_PLAY_MODE.PRACTICE && practiceStatusMessage}
@@ -572,52 +579,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{t('Clinical Significance')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{t('Gold Standard')}</strong>
-							<span>{$locale === 'bn' ? 'Halstead-Reitan Battery-র ক্লাসিক মূল্যায়ন' : 'Classic Halstead-Reitan Battery test'}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Measures')}</strong>
-							<span>{$locale === 'bn' ? 'সাইকোমোটর গতি ও ভিজ্যুয়াল স্ক্যানিং' : 'Psychomotor speed & visual scanning'}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('MS Relevance')}</strong>
-							<span>{$locale === 'bn' ? 'এমএসের অগ্রগতিতে অত্যন্ত সংবেদনশীল' : 'Highly sensitive to MS progression'}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Real-World Impact')}</strong>
-							<span>{$locale === 'bn' ? 'ড্রাইভিং ও নেভিগেশন সক্ষমতার পূর্বাভাস দেয়' : 'Predicts driving & navigation ability'}</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="perf-guide">
-					<h4>{t('Performance Norms (MS Patients)')}</h4>
-					<div class="norm-bars">
-						<div class="norm-bar norm-excellent">
-							<span class="norm-label">{t('Excellent')}</span>
-							<span class="norm-val">{$locale === 'bn' ? '&lt;২৯ সেকেন্ড' : '<29 seconds'}</span>
-						</div>
-						<div class="norm-bar norm-good">
-							<span class="norm-label">{t('Good')}</span>
-							<span class="norm-val">{$locale === 'bn' ? '২৯–৩৯ সেকেন্ড' : '29–39 seconds'}</span>
-						</div>
-						<div class="norm-bar norm-avg">
-							<span class="norm-label">{t('Average')}</span>
-							<span class="norm-val">{$locale === 'bn' ? '৪০–৭৮ সেকেন্ড' : '40–78 seconds'}</span>
-						</div>
-						<div class="norm-bar norm-fair">
-							<span class="norm-label">{t('Fair')}</span>
-							<span class="norm-val">{$locale === 'bn' ? '৭৯–১০০ সেকেন্ড' : '79–100 seconds'}</span>
-						</div>
-						<div class="norm-bar norm-needs">
-							<span class="norm-label">{t('Needs Practice')}</span>
-							<span class="norm-val">{$locale === 'bn' ? '&gt;১০০ সেকেন্ড' : '>100 seconds'}</span>
-						</div>
-					</div>
-					<p class="norm-note">{$locale === 'bn' ? '*সময় ২৫টি বৃত্তের মানদণ্ডে সমন্বিত' : '*Times normalized to 25 circles from MS patient clinical data.'}</p>
+					<h4>{localeText(ABOUT_TASK_TITLE, $locale)}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'Trail Making Test, part A (Reitan, 1958)', bn: 'ট্রেইল মেকিং টেস্ট, পার্ট A (রেইটান, ১৯৫৮)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="button-group">
@@ -742,32 +706,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							<span class="bd-val">{pct(sessionResults.metrics.path_efficiency, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</span>
 						</div>
 						<div class="breakdown-row">
-							<span class="bd-label">{t('Performance Level')}</span>
+							<span class="bd-label">{localeText({ en: 'Software score band', bn: 'সফটওয়্যার স্কোর ব্যান্ড' }, $locale)}</span>
 							<span class="bd-val" style="color: {perfColor}">{t(sessionResults.metrics.performance_level)}</span>
 						</div>
 					</div>
 
 					<div class="clinical-note">
-						<h4>{t('Clinical Context')}</h4>
-						<p>
-							{#if sessionResults.metrics.performance_level === 'Excellent'}
-								{$locale === 'bn'
-									? 'চমৎকার পারফরম্যান্স! আপনার প্রসেসিং স্পিড ও ভিজ্যুয়াল স্ক্যানিং গড়ের চেয়ে অনেক ভালো।'
-									: 'Outstanding performance! Your processing speed and visual scanning are well above average for MS patients, indicating excellent psychomotor function.'}
-							{:else if sessionResults.metrics.performance_level === 'Good'}
-								{$locale === 'bn'
-									? 'খুব ভালো পারফরম্যান্স! আপনার প্রসেসিং স্পিড এমএস রোগীদের গড়ের চেয়ে ভালো।'
-									: 'Great performance! Your processing speed is above average for MS patients. Keep up the excellent work!'}
-							{:else if sessionResults.metrics.performance_level === 'Average'}
-								{$locale === 'bn'
-									? 'ভালো পারফরম্যান্স! আপনার সময় স্বাভাবিক সীমার মধ্যে রয়েছে।'
-									: 'Good performance! Your time is in the normal range for MS patients. Regular practice can help improve speed and efficiency.'}
-							{:else}
-								{$locale === 'bn'
-									? 'অনুশীলন চালিয়ে যান। নিয়মিত ট্রেনিংয়ে প্রসেসিং স্পিড উল্লেখযোগ্যভাবে উন্নত হতে পারে।'
-									: 'Keep practicing! Processing speed and visual scanning can improve significantly with regular training.'}
-							{/if}
-						</p>
+						<h4>{localeText(ABOUT_RESULTS_TITLE, $locale)}</h4>
+						<p>{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 					</div>
 
 					<div class="difficulty-info">

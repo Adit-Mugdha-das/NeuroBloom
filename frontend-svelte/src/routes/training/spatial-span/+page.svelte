@@ -8,7 +8,8 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { localeText, formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -362,7 +363,7 @@
 				<div class="header-content">
 					<h1>{t('Spatial Span Test')}</h1>
 					<p class="subtitle">{t('Visuospatial Working Memory Training')}</p>
-					<div class="classic-badge">{t('Corsi Block Test · WMS-IV Component')}</div>
+					<div class="classic-badge">{localeText({ en: 'Spatial span research task', bn: 'স্থানিক স্প্যান গবেষণা কাজ' }, $locale)}</div>
 				</div>
 				<div class="header-right">
 					<DifficultyBadge {difficulty} domain="Working Memory" />
@@ -422,21 +423,9 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<strong>{t('Standard:')}</strong> {t('Corsi Block Test — neuropsychological gold standard since 1972')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Measures:')}</strong> {t('Visuospatial working memory — distinct from verbal memory')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('MS Relevance:')}</strong> {t('Correlated with MS lesion load (Rao et al., 1991); WMS-IV component')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Clinical Use:')}</strong> {t('Standard in neuropsychological and rehabilitation assessments')}
-					</div>
-				</div>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'Corsi block-tapping task (Corsi, 1972)', bn: 'কর্সি ব্লক-ট্যাপিং টাস্ক (কর্সি, ১৯৭২)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

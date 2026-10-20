@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores.js';
@@ -546,10 +547,6 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 								<span>{lt('Scoring Basis', 'স্কোরিং ভিত্তি')}</span>
 								<strong>{lt('Moves used vs minimum', 'ব্যবহৃত বনাম সর্বনিম্ন')}</strong>
 							</div>
-							<div class="detail-row">
-								<span>{lt('MS Relevance', 'এমএস প্রাসঙ্গিকতা')}</span>
-								<strong>{lt('Prefrontal planning', 'প্রিফ্রন্টাল পরিকল্পনা')}</strong>
-							</div>
 						</div>
 					</div>
 				</div>
@@ -557,38 +554,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Info -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('Gold Standard Planning Paradigm', 'গোল্ড স্ট্যান্ডার্ড পরিকল্পনা প্যারাডাইম')}</h3>
+						<div class="clinical-badge">{lt('Tower planning research task', 'টাওয়ার পরিকল্পনা গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'Shallice (1982) developed the Tower of London to study frontal lobe planning. Owen et al. (1990) extended it via the CANTAB battery. MS patients make significantly more excess moves, revealing prefrontal-executive deficits that correlate with daily functioning and real-world multitasking ability.',
-							'শ্যালিস (১৯৮২) ফ্রন্টাল লোব পরিকল্পনা অধ্যয়নের জন্য টাওয়ার অব লন্ডন তৈরি করেন। গবেষণায় দেখা গেছে এমএস রোগীরা উল্লেখযোগ্যভাবে বেশি অতিরিক্ত পদক্ষেপ করেন যা দৈনন্দিন কার্যকারিতার সাথে সম্পর্কিত।'
-						)}
-					</p>
-				</div>
-
-				<!-- Performance Guide -->
-				<div class="card perf-guide">
-					<h3 class="card-title">{lt('Planning Efficiency Norms', 'পরিকল্পনা দক্ষতার নির্দেশিকা')}</h3>
-					<p class="perf-subtitle">{lt('Minimum moves / moves used (higher = better)', 'সর্বনিম্ন পদক্ষেপ / ব্যবহৃত পদক্ষেপ (বেশি = ভালো)')}</p>
-					<div class="norm-bars">
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Excellent', 'উৎকৃষ্ট')}</div>
-							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-							<div class="norm-range">&gt; 80%</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Normal', 'স্বাভাবিক')}</div>
-							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-							<div class="norm-range">60–80%</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{lt('Impaired', 'দুর্বল')}</div>
-							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
-							<div class="norm-range">&lt; 60%</div>
-						</div>
-					</div>
+					<p>{localeText(paradigmInspirationNote({ en: 'Tower of London (Shallice, 1982)', bn: 'টাওয়ার অব লন্ডন (শ্যালিস, ১৯৮২)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

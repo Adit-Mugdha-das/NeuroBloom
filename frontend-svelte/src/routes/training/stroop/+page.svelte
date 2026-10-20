@@ -8,6 +8,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -472,25 +473,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{t('Clinical Significance')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{t('History')}</strong>
-							<span>{t('Stroop, 1935 — psychology\'s most studied paradigm')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Measures')}</strong>
-							<span>{t('Selective attention, inhibitory control, cognitive flexibility')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('MS Relevance')}</strong>
-							<span>{t('Sensitive to frontal lobe changes (Parmenter et al., 2007)')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Clinical Use')}</strong>
-							<span>{t('Standard component of MS neuropsychological batteries')}</span>
-						</div>
-					</div>
+					<h4>{localeText(ABOUT_TASK_TITLE, $locale)}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'Stroop colour-word test (Stroop, 1935)', bn: 'স্ট্রুপ রং-শব্দ পরীক্ষা (স্ট্রুপ, ১৯৩৫)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="perf-guide">
@@ -786,8 +771,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<p>{t('A classic test measuring selective attention and cognitive interference, demonstrating how automatic word reading can interfere with the goal of naming ink colors.')}</p>
 			</div>
 			<div class="strategy">
-				<h3>{t('Why Used for MS?')}</h3>
-				<p>{t('Sensitive to frontal lobe and executive function changes common in MS. Measures inhibitory control — the ability to suppress an automatic response. Standard in MS neuropsychological batteries.')}</p>
+				<h3>{localeText({ en: 'What this task records', bn: 'এই কাজ কী রেকর্ড করে' }, $locale)}</h3>
+				<p>{localeText({ en: 'Accuracy and response time when the word and its colour conflict. The interference effect describes performance in this NeuroBloom task only.', bn: 'শব্দ ও তার রং না মিললে নির্ভুলতা ও প্রতিক্রিয়ার সময়। ইন্টারফারেন্স ইফেক্ট শুধু এই NeuroBloom কাজে পারফরম্যান্স বর্ণনা করে।' }, $locale)}</p>
 			</div>
 			<div class="strategy">
 				<h3>{t('Understanding Your Scores')}</h3>

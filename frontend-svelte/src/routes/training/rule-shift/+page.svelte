@@ -16,6 +16,7 @@
 		taskPhraseText,
 		taskValueText
 	} from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -367,13 +368,9 @@
 			</div>
 
 			<div class="clinical-card">
-				<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
-				<p>
-					{lt(
-						'Rule shifting helps measure executive flexibility: how quickly a person can stop using an old rule and apply a new one.',
-						'নিয়ম বদল নির্বাহী নমনীয়তা মাপতে সাহায্য করে: একজন কত দ্রুত পুরনো নিয়ম থামিয়ে নতুন নিয়ম প্রয়োগ করতে পারেন।'
-					)}
-				</p>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'cued set shifting', bn: 'সংকেতভিত্তিক নিয়ম বদল' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

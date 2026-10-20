@@ -12,10 +12,12 @@
 	  formatNumber,
 	  formatPercent,
 	  locale,
+	  localeText,
 	  localizeStimulusSequence,
 	  localizeStimulusSymbol,
 	  translateText
 	} from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -401,7 +403,7 @@
 				<div class="header-content">
 					<h1>{t('Letter-Number Sequencing')}</h1>
 					<p class="subtitle">{t('Complex Working Memory Training')}</p>
-					<div class="classic-badge">{t('WAIS-IV Subtest · MACFIMS Battery')}</div>
+					<div class="classic-badge">{localeText({ en: 'Letter-number sequencing research task', bn: 'লেটার-নাম্বার সিকোয়েন্সিং গবেষণা কাজ' }, $locale)}</div>
 				</div>
 				<div class="header-right">
 					<DifficultyBadge {difficulty} domain="Working Memory" />
@@ -480,21 +482,9 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<strong>{t('Standard:')}</strong> {t('WAIS-IV subtest — executive working memory component')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Measures:')}</strong> {t('Complex manipulation of verbal working memory contents')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('MS Relevance:')}</strong> {t('Sensitive to MS cognitive dysfunction (Parmenter et al., 2007)')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Clinical Use:')}</strong> {t('Included in MS neuropsychological assessment batteries (MACFIMS)')}
-					</div>
-				</div>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'letter-number sequencing', bn: 'লেটার-নাম্বার সিকোয়েন্সিং' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

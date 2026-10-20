@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
@@ -255,8 +256,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>The Tower of London (Shallice, 1982) is a neuropsychological staple for assessing dorsolateral prefrontal cortex function — the region responsible for goal-directed planning, working memory, and inhibitory control. Planning deficits are documented in up to 65% of MS patients and correlate with lesion load in frontoparietal white matter tracts. Two metrics are particularly informative: <em>initial planning time</em> (time before the first move) reflects forward mental simulation capacity, and <em>excess moves</em> reflect impulsivity and failure to maintain the plan during execution.</p>
+                <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                <p>{localeText(paradigmInspirationNote({ en: 'Tower of London (Shallice, 1982)', bn: 'টাওয়ার অব লন্ডন (শ্যালিস, ১৯৮২)' }), $locale)}</p>
+                <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
             </div>
 
             <TaskPracticeActions

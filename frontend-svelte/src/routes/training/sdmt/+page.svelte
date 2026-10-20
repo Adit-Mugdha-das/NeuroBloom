@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+	import { paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -329,8 +330,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<div class="header">
 				<div class="header-content">
 					<h1>{t('Symbol Digit Modalities Test')}</h1>
-					<p class="subtitle">{t('Processing Speed — Gold Standard for MS Assessment')}</p>
-					<div class="classic-badge">{t('SDMT · Smith (1973) · MACFIMS Battery')}</div>
+					<p class="subtitle">{lt('Symbol-digit matching research task', 'প্রতীক-সংখ্যা মেলানোর গবেষণা কাজ')}</p>
+					<div class="classic-badge">{lt('Inspired by the symbol-digit matching paradigm (Smith, 1973)', 'প্রতীক-সংখ্যা মেলানোর প্যারাডাইম থেকে অনুপ্রাণিত (স্মিথ, ১৯৭৩)')}</div>
 				</div>
 				<div class="header-right">
 					<DifficultyBadge {difficulty} domain="Processing Speed" />
@@ -422,25 +423,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<strong>{t('Gold Standard:')}</strong> {t('Most widely used test in MS clinical trials globally')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Measures:')}</strong> {t('Processing speed — how fast your brain retrieves and applies information')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('MS Relevance:')}</strong> {t('Detects cognitive changes earlier than any other single test; correlates with brain health')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Real-World Impact:')}</strong> {t('Predicts employment success, driving safety, and daily functioning for MS patients')}
-					</div>
-				</div>
+				<h3>{lt('About this task', 'এই কাজ সম্পর্কে')}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'Symbol Digit Modalities Test (Smith, 1973)', bn: 'সিম্বল ডিজিট মোডালিটিজ টেস্ট (স্মিথ, ১৯৭৩)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<div class="perf-guide">
-				<h3>{t('Performance Guide (MS Norms)')}</h3>
+				<h3>{lt('Software score bands (developer-selected)', 'সফটওয়্যার স্কোর ব্যান্ড (ডেভেলপার-নির্ধারিত)')}</h3>
 				<div class="norm-bars">
 					<div class="norm-bar norm-excellent"><span class="norm-label">{lt('60+ Correct', `${n(60)}+ ${t('Correct')}`)}</span><span class="norm-tag">{t('Excellent')}</span></div>
 					<div class="norm-bar norm-good"><span class="norm-label">{lt('50–60', `${n(50)}–${n(60)}`)}</span><span class="norm-tag">{t('Good')}</span></div>
@@ -593,20 +582,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-note">
-					<h3>{t('Clinical Context')}</h3>
-					<p>
-						{#if sessionResults.metrics.score >= 60}
-							{t('Excellent performance! Your processing speed is above average for MS patients, suggesting good cognitive efficiency.')}
-						{:else if sessionResults.metrics.score >= 50}
-							{t('Good performance! Your score is in the average-to-above-average range. Continue training to build on this.')}
-						{:else if sessionResults.metrics.score >= 40}
-							{t('Average performance. Regular training can improve processing speed over time.')}
-						{:else if sessionResults.metrics.score >= 30}
-							{t("Fair performance. Consistent practice with SDMT leads to significant gains in processing speed.")}
-						{:else}
-							{t('Keep going! Processing speed is trainable. Each session builds the neural pathways needed for faster cognition.')}
-						{/if}
-					</p>
+					<h3>{lt('About these results', 'এই ফলাফল সম্পর্কে')}</h3>
+					<p>{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 				</div>
 
 				<div class="difficulty-info">

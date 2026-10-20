@@ -11,9 +11,11 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 		formatNumber,
 		formatPercent,
 		locale,
+		localeText,
 		localizeStimulusSymbol,
 		translateText
 	} from '$lib/i18n';
+	import { ABOUT_RESULTS_TITLE, ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE, SCORE_BANDS_TITLE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -535,7 +537,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 			<!-- Concept card -->
 			<div class="card task-concept">
-				<div class="concept-badge">{t('Executive Function Gold Standard')}</div>
+				<div class="concept-badge">{localeText({ en: 'Alternating-trail research task', bn: 'পালাক্রমিক ট্রেইল গবেষণা কাজ' }, $locale)}</div>
 				<p class="concept-body">
 					{$locale === 'bn'
 						? 'বৃত্তগুলি সংখ্যা ও বর্ণ পর্যায়ক্রমে সংযুক্ত করুন — যেমন 1 → A → 2 → B → 3 → C। এটি কগনিটিভ ফ্লেক্সিবিলিটি, সেট-শিফটিং এবং বিভক্ত মনোযোগ মাপে।'
@@ -629,30 +631,14 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 			<!-- Clinical info -->
 			<div class="card clinical-info">
-				<h3 class="card-heading">{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<span class="ci-label">{t('Standard Test')}</span>
-						<span>{t('Halstead-Reitan Battery, widely used in neuropsychology')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('MS Relevance')}</span>
-						<span>{t('Sensitive to MS executive dysfunction and set-shifting deficits')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('Key Metric')}</span>
-						<span>{t('B-A Score = Part B time minus Part A time (pure switching cost)')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('Reference')}</span>
-						<span>{t('D Elia et al., 1996; MS executive function research')}</span>
-					</div>
-				</div>
+				<h3 class="card-heading">{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'Trail Making Test, part B (Reitan, 1958)', bn: 'ট্রেইল মেকিং টেস্ট, পার্ট B (রেইটান, ১৯৫৮)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<!-- Performance guide -->
 			<div class="card perf-guide">
-				<h3 class="card-heading">{t('Performance Guide — Completion Time')}</h3>
+				<h3 class="card-heading">{localeText(SCORE_BANDS_TITLE, $locale)}</h3>
 				<div class="norm-bars">
 					<div class="norm-bar">
 						<span class="norm-label">{t('Excellent')}</span>
@@ -933,12 +919,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 			<!-- Clinical context -->
 			<div class="card clinical-context-card">
-				<h3 class="card-heading">{t('Clinical Context')}</h3>
-				<p>
-					{$locale === 'bn'
-						? 'TMT-B সম্পূর্ণ করার সময় এবং B-A স্কোর (Part B সময় বিয়োগ Part A সময়) কগনিটিভ ফ্লেক্সিবিলিটি এবং সেট-শিফটিং ক্ষমতার মূল সূচক। MS রোগীদের ক্ষেত্রে এই পরীক্ষা এক্সিকিউটিভ ডিসফাংশন এবং মাল্টিটাস্কিং ক্ষমতার পরিবর্তন শনাক্ত করতে সহায়তা করে।'
-						: 'Trail Making Test Part B completion time and the B-A score (Part B minus Part A) are key indices of cognitive flexibility and set-shifting. In MS patients, this test detects executive dysfunction and changes in real-world multitasking ability.'}
-				</p>
+				<h3 class="card-heading">{localeText(ABOUT_RESULTS_TITLE, $locale)}</h3>
+				<p>{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 			</div>
 
 			<div class="btn-row">

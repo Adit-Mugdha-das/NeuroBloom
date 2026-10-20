@@ -8,7 +8,8 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { localeText, formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -418,7 +419,7 @@
 				<div class="header-content">
 					<h1>{t('Digit Span Test')}</h1>
 					<p class="subtitle">{t('Working Memory Training')}</p>
-					<div class="classic-badge">{t('WAIS-IV Standard · MACFIMS Battery')}</div>
+					<div class="classic-badge">{localeText({ en: 'Digit span research task', bn: 'ডিজিট স্প্যান গবেষণা কাজ' }, $locale)}</div>
 				</div>
 				<div class="header-right">
 					<DifficultyBadge difficulty={sessionData.difficulty} domain="Working Memory" />
@@ -489,21 +490,9 @@
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<strong>{t('Standard:')}</strong> {t('WAIS-IV subtest, gold standard in neuropsychology')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Measures:')}</strong> {t('Verbal working memory capacity & manipulation')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('MS Relevance:')}</strong> {t('Included in MACFIMS — sensitive to MS-related deficits (Benedict et al., 2006)')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Clinical Use:')}</strong> {t('Standard across neuropsychological assessments worldwide')}
-					</div>
-				</div>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'digit span task', bn: 'ডিজিট স্প্যান টাস্ক' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

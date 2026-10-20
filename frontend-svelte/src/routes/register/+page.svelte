@@ -106,8 +106,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">{t('Evidence-Based Tasks')}</div>
-						<div class="feature-desc">{t('Clinically validated assessments used in MS rehabilitation research')}</div>
+						<div class="feature-title">{t('Research-Inspired Tasks')}</div>
+						<div class="feature-desc">{t('Software tasks inspired by established cognitive paradigms')}</div>
 					</div>
 				</div>
 				<div class="feature-item">

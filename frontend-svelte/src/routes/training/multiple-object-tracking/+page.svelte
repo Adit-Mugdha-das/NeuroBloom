@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -408,15 +409,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Basis -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('MS Driving Safety & Dynamic Attention', 'MS ড্রাইভিং নিরাপত্তা ও ডায়নামিক মনোযোগ')}</h3>
+						<div class="clinical-badge">{lt('Multiple-object tracking research task', 'একাধিক বস্তু অনুসরণের গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'Multiple Object Tracking (Pylyshyn & Storm, 1988) directly predicts real-world divided attention performance including driving safety. MS-related deficits in sustained and divided visual attention significantly impair MOT capacity, particularly when tracking 3+ objects, making this paradigm a sensitive ecologically-valid measure of functional visual attention in everyday tasks.',
-							'মাল্টিপল অবজেক্ট ট্র্যাকিং (Pylyshyn & Storm, 1988) সরাসরি ড্রাইভিং নিরাপত্তাসহ বাস্তব জীবনের বিভক্ত মনোযোগের পূর্বাভাস দেয়। MS-সংক্রান্ত ভিজ্যুয়াল মনোযোগের ঘাটতি MOT ক্ষমতাকে উল্লেখযোগ্যভাবে ক্ষতিগ্রস্ত করে।'
-						)}
-					</p>
+					<p>{localeText(paradigmInspirationNote({ en: 'multiple-object tracking (Pylyshyn & Storm, 1988)', bn: 'একাধিক বস্তু অনুসরণ (পিলিশিন ও স্টর্ম, ১৯৮৮)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

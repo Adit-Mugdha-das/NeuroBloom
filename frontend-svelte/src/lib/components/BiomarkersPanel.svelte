@@ -381,15 +381,10 @@
 								'Not enough response-time data yet to describe consistency.',
 								'ধারাবাহিকতা বোঝাতে এখনও যথেষ্ট প্রতিক্রিয়া-সময়ের তথ্য নেই।'
 							)
-						: cv > 0.3
-							? lt(
-								'Your response times vary quite a bit. This can happen in MS.',
-								'আপনার প্রতিক্রিয়ার সময় কিছুটা ওঠানামা করছে। MS-এ এমন হতে পারে।'
-							)
-							: lt(
-								'Your responses are fairly consistent. That is a good sign.',
-								'আপনার প্রতিক্রিয়া বেশ ধারাবাহিক। এটি ভালো লক্ষণ।'
-							)}
+						: lt(
+							'This value describes the spread of recorded response times. Its clinical meaning has not been established.',
+							'এই মান রেকর্ড করা প্রতিক্রিয়া-সময়ের বিস্তার বর্ণনা করে। এর ক্লিনিক্যাল অর্থ এখনো প্রতিষ্ঠিত হয়নি।'
+						)}
 				</p>
 			</div>
 

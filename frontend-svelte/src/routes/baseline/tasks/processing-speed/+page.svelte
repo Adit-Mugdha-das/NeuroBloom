@@ -6,6 +6,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
     import { scoreProcessingSpeed } from '$lib/task-scoring';
@@ -290,8 +291,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>Reaction time is one of the most reliably slowed measures in multiple sclerosis, reflecting demyelination-related slowing of neural conduction velocity. Simple reaction time assessments have been used in MS research since the 1980s and remain a key component of the Symbol Digit Modalities Test (SDMT) battery. Slowed processing speed affects up to 70% of MS patients and is the strongest predictor of employment status, driving safety, and everyday functional limitations. Choice reaction time adds a discrimination component that engages frontal-parietal networks, making it sensitive to both subcortical and cortical pathology.</p>
+                <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                <p>{localeText(paradigmInspirationNote({ en: 'simple and choice reaction time tasks', bn: 'সরল ও পছন্দভিত্তিক প্রতিক্রিয়া-সময় টাস্ক' }), $locale)}</p>
+                <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
             </div>
 
             <TaskPracticeActions

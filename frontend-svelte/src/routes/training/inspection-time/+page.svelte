@@ -8,6 +8,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText } from '$lib/i18n';
+	import { ABOUT_RESULTS_TITLE, ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -398,25 +399,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{lt('Pure Perception', 'বিশুদ্ধ উপলব্ধি')}</strong>
-							<span>{lt('Measures basic visual processing speed — no motor component', 'মোটর অংশ ছাড়া মৌলিক ভিজ্যুয়াল প্রসেসিং স্পিড মাপে')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('MS Sensitive', 'MS-সংবেদনশীল')}</strong>
-							<span>{lt('Processing speed is one of the most affected domains in MS', 'MS-এ প্রসেসিং স্পিড সবচেয়ে বেশি প্রভাবিত ক্ষেত্রগুলোর একটি')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('No Motor Bias', 'মোটর পক্ষপাত নেই')}</strong>
-							<span>{lt("Physical limitations don't affect this measure", 'শারীরিক সীমাবদ্ধতা এই মাপে প্রভাব ফেলে না')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('Research Backed', 'গবেষণাসমর্থিত')}</strong>
-							<span>{lt('Vickers & Smith (1986), widely used in neuropsychology', 'Vickers & Smith (১৯৮৬), নিউরোসাইকোলজিতে বহুল ব্যবহৃত')}</span>
-						</div>
-					</div>
+					<h4>{localeText(ABOUT_TASK_TITLE, $locale)}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'inspection time paradigm', bn: 'ইনস্পেকশন টাইম প্যারাডাইম' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="perf-guide">
@@ -625,7 +610,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					</div>
 
 					<div class="clinical-note">
-						<h4>{lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h4>
+						<h4>{localeText(ABOUT_RESULTS_TITLE, $locale)}</h4>
 						<p>
 							{#if results.metrics.accuracy >= 90}
 								{lt("Excellent perceptual speed! You're accurately processing visual information at", 'চমৎকার উপলব্ধির গতি! আপনি ভিজ্যুয়াল তথ্য সঠিকভাবে প্রসেস করছেন')} <strong>{n(results.metrics.presentation_time_ms)}{lt('ms', 'মি.সে.')}</strong> - {lt('significantly below the average conscious perception threshold.', 'যা সচেতন উপলব্ধির গড় সীমার চেয়েও অনেক কম।')}
@@ -637,7 +622,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 								{lt("You're developing perceptual speed at this threshold. The task adapts to find your optimal level — keep practising and improvement will follow.", 'এই সীমায় আপনার উপলব্ধির গতি উন্নতির পথে। টাস্কটি আপনার উপযুক্ত স্তর খুঁজে নিতে বদলায় — অনুশীলন চালিয়ে গেলে উন্নতি আসবে।')}
 							{/if}
 						</p>
-						<p class="why-matters"><strong>{lt('Why this matters for MS:', 'MS-এর ক্ষেত্রে কেন গুরুত্বপূর্ণ:')}</strong> {lt('Processing speed deficits are among the most common cognitive changes in MS. This task measures pure visual perception speed without any motor demands, making it ideal for tracking brain efficiency over time.', 'MS-এ প্রসেসিং স্পিডের দুর্বলতা সবচেয়ে সাধারণ কগনিটিভ পরিবর্তনগুলোর একটি। এই টাস্ক মোটর চাহিদা ছাড়াই বিশুদ্ধ ভিজ্যুয়াল উপলব্ধির গতি মাপে, তাই সময়ের সঙ্গে মস্তিষ্কের দক্ষতা ট্র্যাক করতে উপযোগী।')}</p>
+						<p class="why-matters">{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 					</div>
 
 					{#if results.adaptation_reason}
@@ -689,7 +674,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 			<div class="strategy">
 				<h3>{lt('Why This Matters', 'কেন গুরুত্বপূর্ণ')}</h3>
-				<p>{lt('Inspection Time requires no complex motor responses — just a simple left/right click. This makes it a clean measure of cognitive processing speed for MS research.', 'ইনস্পেকশন টাইমে জটিল হাতের কাজ লাগে না — শুধু বাম/ডান ক্লিক। তাই MS গবেষণায় এটি প্রক্রিয়াকরণের গতি মাপার পরিষ্কার উপায়।')}</p>
+				<p>{lt('Inspection Time needs only a simple left/right click, so the response itself places little demand on movement.', 'ইনস্পেকশন টাইমে শুধু বাম/ডান ক্লিক লাগে, তাই উত্তর দিতে হাতের কাজ খুব কম লাগে।')}</p>
 			</div>
 		</div>
 	</div>

@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatMillisecondsPerItem, formatNumber, formatSeconds, formatSecondsPerItem, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -412,15 +413,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Basis -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('Validated MS Visual Attention Assessment', 'MS-এর জন্য যাচাইকৃত ভিজ্যুয়াল মনোযোগ মূল্যায়ন')}</h3>
+						<div class="clinical-badge">{lt('Visual search research task', 'ভিজ্যুয়াল সার্চ গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'The Visual Search paradigm (Treisman & Gelade, 1980) distinguishes automatic pre-attentive processing (feature search) from effortful serial attention (conjunction search). In MS, conjunction search is disproportionately impaired due to white matter lesion load reducing attentional capacity and slowing interhemispheric integration, making it a sensitive index of disease burden on visual cognition.',
-							'ভিজ্যুয়াল সার্চ প্যারাডাইম (Treisman & Gelade, 1980) স্বয়ংক্রিয় প্রি-অ্যাটেন্টিভ প্রক্রিয়াকরণ এবং প্রচেষ্টাপূর্ণ সিরিয়াল মনোযোগ পার্থক্য করে। MS-এ কনজাংশন সার্চ অসামঞ্জস্যভাবে ক্ষতিগ্রস্ত হয়।'
-						)}
-					</p>
+					<p>{localeText(paradigmInspirationNote({ en: 'visual search (Treisman & Gelade, 1980)', bn: 'ভিজ্যুয়াল সার্চ (ট্রিসম্যান ও গেলাডে, ১৯৮০)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

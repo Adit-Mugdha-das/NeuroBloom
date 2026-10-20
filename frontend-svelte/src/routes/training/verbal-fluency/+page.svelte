@@ -9,6 +9,13 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
+	import {
+		ABOUT_RESULTS_TITLE,
+		ABOUT_TASK_TITLE,
+		paradigmInspirationNote,
+		RAW_RESULTS_NOTE,
+		RESEARCH_TASK_NOTE
+	} from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -89,13 +96,6 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 		return labels[value] || value;
 	}
 
-	function comparisonStatusLabel(value) {
-		if (taskLocale() === 'bn') {
-			return value === 'above_average' ? 'গড়ের চেয়ে ভালো' : 'গড়ের নিচে';
-		}
-		return value === 'above_average' ? 'Above Average' : 'Below Average';
-	}
-
 	function averageWordsValue(value) {
 		const numericValue = Number(value ?? 0);
 		return n(numericValue, Number.isInteger(numericValue)
@@ -110,9 +110,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	function detailsSummary() {
 		if (!sessionData) return '';
 		if (taskLocale() === 'bn') {
-			return `${n(sessionData.min_words_target)}+ মোট শব্দ (এমএস রোগীর গড়: প্রতি অক্ষরে ১০-১৩টি শব্দ)`;
+			return `${n(sessionData.min_words_target)}+ মোট শব্দ`;
 		}
-		return `${sessionData.min_words_target}+ total words (MS average: 10-13 per letter)`;
+		return `${sessionData.min_words_target}+ total words`;
 	}
 
 	function validationMessage(reasonKey, extra = {}) {
@@ -507,49 +507,18 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 								<span>{t('Scoring Basis', taskLocale())}</span>
 								<strong>{t('Unique valid words', taskLocale())}</strong>
 							</div>
-							<div class="detail-row">
-								<span>{t('Test Battery', taskLocale())}</span>
-								<strong>MACFIMS / BICAMS</strong>
-							</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- Clinical Info -->
+				<!-- Research task note -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{t('Clinical Basis', taskLocale())}</div>
-						<h3>{t('Validated MS Executive Function Assessment', taskLocale())}</h3>
+						<div class="clinical-badge">{localeText({ en: 'Letter fluency research task', bn: 'অক্ষরভিত্তিক শব্দ বলার গবেষণা কাজ' }, $locale)}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{t(
-							'The Controlled Oral Word Association Test (Benton & Hamsher, 1989) is included in the MACFIMS and BICAMS batteries for MS. Verbal fluency deficits affect up to 40% of MS patients and reflect impaired initiation, strategy, and prefrontal executive control. Phonemic fluency (letter-based) taxes executive function more than semantic fluency.',
-							$locale
-						)}
-					</p>
-				</div>
-
-				<!-- Performance Guide -->
-				<div class="card perf-guide">
-					<h3 class="card-title">{t('Performance Norms (per letter, 60s)', taskLocale())}</h3>
-					<p class="perf-subtitle">{t('Unique valid words per letter', taskLocale())}</p>
-					<div class="norm-bars">
-						<div class="norm-bar">
-							<div class="norm-label">{t('Excellent', taskLocale())}</div>
-							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-							<div class="norm-range">&gt; 14</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{t('Normal (MS)', taskLocale())}</div>
-							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-							<div class="norm-range">10–14</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{t('Impaired', taskLocale())}</div>
-							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
-							<div class="norm-range">&lt; 10</div>
-						</div>
-					</div>
+					<p>{localeText(paradigmInspirationNote({ en: 'phonemic (letter) fluency, Controlled Oral Word Association Test (Benton & Hamsher, 1989)', bn: 'অক্ষরভিত্তিক শব্দ বলা, কন্ট্রোলড ওরাল ওয়ার্ড অ্যাসোসিয়েশন টেস্ট (বেন্টন ও হ্যামশার, ১৯৮৯)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions
@@ -702,27 +671,24 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						class:metric-good={results.performance === 'good'}
 						class:metric-below={results.performance === 'below_average' || results.performance === 'average'}>
 						<div class="metric-value">{performanceLabel(results.performance)}</div>
-						<div class="metric-label">{t('Performance', taskLocale())}</div>
+						<div class="metric-label">{localeText({ en: 'Software score band', bn: 'সফটওয়্যার স্কোর ব্যান্ড' }, $locale)}</div>
 					</div>
 				</div>
 
-				<!-- MS Comparison -->
+				<!-- Raw result note -->
 				<div class="ms-comparison-card">
 					<div class="ms-comparison-header">
-						<div class="ms-badge">{t('MS Patient Comparison', taskLocale())}</div>
+						<div class="ms-badge">{localeText(ABOUT_RESULTS_TITLE, $locale)}</div>
 					</div>
-					<p class="ms-desc">{results.ms_comparison.description}</p>
-					<div class="ms-stats-row">
-						<span>
-							{taskLocale() === 'bn' ? 'আপনার গড়:' : 'Your average:'}
-							<strong>{averageWordsValue(results.ms_comparison.user_avg)} {taskLocale() === 'bn' ? 'শব্দ/অক্ষর' : 'words/letter'}</strong>
-						</span>
-						<span class="ms-status-tag"
-							class:ms-above={results.ms_comparison.status === 'above_average'}
-							class:ms-below={results.ms_comparison.status !== 'above_average'}>
-							{comparisonStatusLabel(results.ms_comparison.status)}
-						</span>
-					</div>
+					<p class="ms-desc">{localeText(RAW_RESULTS_NOTE, $locale)}</p>
+					{#if results.ms_comparison?.user_avg != null}
+						<div class="ms-stats-row">
+							<span>
+								{taskLocale() === 'bn' ? 'আপনার গড়:' : 'Your average:'}
+								<strong>{averageWordsValue(results.ms_comparison.user_avg)} {taskLocale() === 'bn' ? 'শব্দ/অক্ষর' : 'words/letter'}</strong>
+							</span>
+						</div>
+					{/if}
 				</div>
 
 				<!-- Letter Breakdown -->

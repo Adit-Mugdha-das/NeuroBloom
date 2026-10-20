@@ -16,6 +16,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	  localizeStimulusSymbol,
 	  translateText
 	} from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onDestroy, onMount } from 'svelte';
@@ -447,7 +448,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<div class="header-content">
 					<h1>{t('Operation Span (OSPAN)')}</h1>
 					<p class="subtitle">{t('Dual-Task Executive Working Memory Training')}</p>
-					<div class="classic-badge">{t('OSPAN · Turner & Engle (1989) · MACFIMS Battery')}</div>
+					<div class="classic-badge">{localeText({ en: 'Operation span research task', bn: 'অপারেশন স্প্যান গবেষণা কাজ' }, $locale)}</div>
 				</div>
 				<div class="header-right">
 					<DifficultyBadge {difficulty} domain="Working Memory" />
@@ -519,21 +520,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 
 			<div class="clinical-info">
-				<h3>{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<strong>{t('Standard:')}</strong> {t('OSPAN — Turner & Engle (1989); the most cited complex span task')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Measures:')}</strong> {t('Executive working memory — simultaneous storage and processing')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('MS Relevance:')}</strong> {t('Highly sensitive to MS cognitive impairment (Rao et al., 1991); included in MACFIMS')}
-					</div>
-					<div class="clinical-item">
-						<strong>{t('Clinical Use:')}</strong> {t('Gold standard for assessing executive working memory in neuropsychology')}
-					</div>
-				</div>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'operation span (Turner & Engle, 1989)', bn: 'অপারেশন স্প্যান (টার্নার ও এঙ্গল, ১৯৮৯)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<div class="button-group">

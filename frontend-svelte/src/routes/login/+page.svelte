@@ -96,7 +96,7 @@
 					</div>
 					<div>
 						<div class="feature-title">{t('Personalised Assessments')}</div>
-						<div class="feature-desc">{t('Validated baseline tasks across 6 cognitive domains')}</div>
+						<div class="feature-desc">{t('Baseline tasks across 6 cognitive domains')}</div>
 					</div>
 				</div>
 				<div class="feature-item">

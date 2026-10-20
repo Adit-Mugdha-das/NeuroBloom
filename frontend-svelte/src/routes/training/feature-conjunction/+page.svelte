@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatMillisecondsPerItem, formatNumber, formatSeconds, formatSecondsPerItem, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -398,15 +399,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Basis -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('MS-Sensitive Serial Visual Attention', 'MS-সংবেদনশীল সিরিয়াল ভিজ্যুয়াল মনোযোগ')}</h3>
+						<div class="clinical-badge">{lt('Feature and conjunction search research task', 'ফিচার ও কনজাংশন সার্চ গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'Conjunction search is disproportionately impaired in MS compared to feature search (Treisman & Gelade, 1980). White matter lesion load reduces attentional capacity and slows interhemispheric integration, extending search slopes beyond healthy norms. Tracking conjunction search slope across sessions provides a sensitive index of MS burden on visual cognition.',
-							'কনজাংশন সার্চ MS-এ ফিচার সার্চের তুলনায় অসামঞ্জস্যভাবে ক্ষতিগ্রস্ত হয়। শ্বেত পদার্থের ক্ষত মনোযোগ ক্ষমতা হ্রাস করে এবং ইন্টারহেমিস্ফেরিক ইন্টিগ্রেশন ধীর করে।'
-						)}
-					</p>
+					<p>{localeText(paradigmInspirationNote({ en: 'feature-integration search (Treisman & Gelade, 1980)', bn: 'ফিচার-ইন্টিগ্রেশন সার্চ (ট্রিসম্যান ও গেলাডে, ১৯৮০)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

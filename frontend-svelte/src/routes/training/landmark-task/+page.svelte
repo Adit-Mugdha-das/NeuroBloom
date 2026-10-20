@@ -8,6 +8,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { locale, localeText, formatNumber, formatPercent, taskPhraseText, taskValueText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -337,13 +338,9 @@
 			</div>
 
 			<div class="clinical-card">
-				<h3>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
-				<p>
-					{lt(
-						'The Landmark Task helps track spatial attention balance without requiring drawing or hand control.',
-						'ল্যান্ডমার্ক টাস্ক আঁকা বা হাতের নিয়ন্ত্রণ ছাড়াই স্থানিক মনোযোগের ভারসাম্য বুঝতে সাহায্য করে।'
-					)}
-				</p>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'line bisection (landmark) task', bn: 'লাইন বাইসেকশন (ল্যান্ডমার্ক) টাস্ক' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

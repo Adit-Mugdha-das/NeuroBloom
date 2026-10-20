@@ -296,7 +296,7 @@
 
 <DoctorWorkspaceShell
 	title={patientName}
-	subtitle={uiText("Patient-specific clinical overview with adherence, focus areas, biomarker access, progress monitoring, and recent activity in one calmer workspace.", $activeLocale)}
+	subtitle={uiText("Patient-specific clinical overview with adherence, focus areas, descriptive indicator access, progress monitoring, and recent activity in one calmer workspace.", $activeLocale)}
 	eyebrow="Doctor Patient Workspace"
 	maxWidth="1360px"
 >

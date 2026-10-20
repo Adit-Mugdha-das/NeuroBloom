@@ -182,8 +182,7 @@ class VerbalFluencyTask:
                     "একই শব্দের কাছাকাছি রূপ একবারই গণনা হবে",
                     "প্রতিটি শব্দ লিখে Enter বা Space চাপুন"
                 ],
-                "details_title": "সেশনের বিবরণ",
-                "comparison": "এমএস রোগীদের গড়: প্রতি অক্ষরে ১০-১৩টি শব্দ"
+                "details_title": "সেশনের বিবরণ"
             }
 
         return {
@@ -196,8 +195,7 @@ class VerbalFluencyTask:
                 "No variants (run, running, runs = 1 word)",
                 "Press Enter or Space to submit each word"
             ],
-            "details_title": "Session Details",
-            "comparison": "MS patient average: 10-13 words per letter"
+            "details_title": "Session Details"
         }
 
     @staticmethod
@@ -489,12 +487,7 @@ class VerbalFluencyTask:
             "difficulty": difficulty,
             "completed": True,
             "ms_comparison": {
-                "description": VerbalFluencyTask.localized_instruction_copy(
-                    locale,
-                    session_data.get("time_per_letter_seconds", 60)
-                )["comparison"],
-                "user_avg": round(avg_words_per_letter, 1),
-                "status": "above_average" if avg_words_per_letter >= 10 else "below_average"
+                "user_avg": round(avg_words_per_letter, 1)
             }
         }
         

@@ -9,6 +9,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
     import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, formatPercent, locale, localeText, localizeStimulusSymbol, translateText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
     import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
     import { onDestroy, onMount } from 'svelte';
@@ -434,8 +435,9 @@
                 {/if}
 
                 <div class="clinical-card">
-                    <h3>{lt('Clinical Basis', 'ক্লিনিক্যাল ভিত্তি')}</h3>
-                    <p>{lt('Dual N-Back is one of the few cognitive training tasks with strong evidence for transfer to real-world working memory capacity. In multiple sclerosis, working memory deficits affect approximately 40-65% of patients and correlate with lesion burden in frontal and parietal white matter. Regular N-Back training has been shown to increase prefrontal cortex activation and improve performance on untrained working memory measures. The dual-task format (simultaneous visual and auditory streams) places maximal load on the central executive component of working memory, targeting the very system most vulnerable to MS-related neurodegeneration.', 'ডুয়াল N-Back এমন কয়েকটি কগনিটিভ ট্রেনিং টাস্কের একটি, যার বাস্তব জীবনের ওয়ার্কিং মেমরি ক্ষমতায় প্রভাবের ভালো প্রমাণ আছে। MS-এ ওয়ার্কিং মেমরির সমস্যা প্রায় ৪০-৬৫% রোগীর ক্ষেত্রে দেখা যায় এবং ফ্রন্টাল ও প্যারিয়েটাল হোয়াইট ম্যাটারের লেশন-লোডের সঙ্গে সম্পর্কিত। নিয়মিত N-Back ট্রেনিং প্রিফ্রন্টাল কর্টেক্স সক্রিয়তা বাড়াতে এবং আলাদা ওয়ার্কিং মেমরি মাপে পারফরম্যান্স উন্নত করতে দেখা গেছে। একই সঙ্গে ভিজ্যুয়াল ও অডিও সংকেত থাকায় এই ফরম্যাট ওয়ার্কিং মেমরির কেন্দ্রীয় নির্বাহী অংশকে বেশি চ্যালেঞ্জ করে, যা MS-সম্পর্কিত নিউরোডিজেনারেশনে বেশি ঝুঁকিতে থাকে।')}</p>
+                    <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                    <p>{localeText(paradigmInspirationNote({ en: 'dual n-back (Jaeggi et al., 2008)', bn: 'ডুয়াল N-ব্যাক (জেগি ও সহকর্মীরা, ২০০৮)' }), $locale)}</p>
+                    <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
                 </div>
 
                 <TaskPracticeActions

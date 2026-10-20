@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -336,15 +337,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Basis -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('Validated MS Visual Attention Assessment', 'MS-এর জন্য যাচাইকৃত ভিজ্যুয়াল অ্যাটেনশন মূল্যায়ন')}</h3>
+						<div class="clinical-badge">{lt('Cancellation research task', 'ক্যান্সেলেশন গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'The Cancellation Test (Mesulam, 1985) measures sustained visual attention and unilateral spatial neglect. In MS, asymmetric target detection — more misses on one side — may indicate hemispatial attention deficits correlated with white matter lesion location. Scanning efficiency predicts reading speed and performance of daily functional tasks requiring visual vigilance.',
-							'ক্যান্সেলেশন টেস্ট (Mesulam, 1985) টেকসই ভিজ্যুয়াল মনোযোগ এবং একতরফা স্থানিক অবহেলা পরিমাপ করে। MS-এ একটি পাশে বেশি লক্ষ্য বাদ পড়লে সেটি হেমিস্পেশিয়াল অ্যাটেনশন ঘাটতি নির্দেশ করতে পারে।'
-						)}
-					</p>
+					<p>{localeText(paradigmInspirationNote({ en: 'cancellation test (Mesulam, 1985)', bn: 'ক্যান্সেলেশন টেস্ট (মেসুলাম, ১৯৮৫)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

@@ -2,7 +2,9 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23164855.svg)](https://doi.org/10.5281/zenodo.23164855)
 
-NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive monitoring and clinician-guided rehabilitation in multiple sclerosis (MS). It is designed for patients, clinicians, and administrators who need structured cognitive follow-up between formal clinical encounters, particularly in settings where repeated specialist assessment may be difficult to access. The project is associated with a SoftwareX journal publication and provides a reproducible software framework for digital rehabilitation research and pilot deployment. A deployed version is available at https://neurobloom-67qo.onrender.com/.
+NeuroBloom is an open-source research software prototype for studying longitudinal cognitive-task records and clinician-supervised rehabilitation workflows in multiple sclerosis. It includes original task implementations and descriptive analytics whose psychometric and clinical validity has not been established. The current release is intended only for isolated demonstrations using synthetic data.
+
+A synthetic-data demonstration instance is available at https://neurobloom-67qo.onrender.com/. Do not enter real patient data; see [Security and Intended Use](#security-and-intended-use).
 
 ## Key Features
 
@@ -11,7 +13,7 @@ NeuroBloom is a free-of-cost, modular web platform for longitudinal cognitive mo
 - Descriptive longitudinal indicators supporting future digital-biomarker-oriented research
 - Three-role architecture for patients, clinicians, and administrators
 - Bilingual support in Bengali and English
-- Configurable review flags for clinician interpretation and bidirectional messaging
+- Rule-based review flags for clinician interpretation and bidirectional messaging
 - Free-of-cost and open source under the MIT License
 
 ## System Requirements
@@ -189,7 +191,6 @@ NeuroBloom/
 |-- backend/                 # FastAPI backend, SQLModel models, APIs, services, seed scripts
 |-- frontend-svelte/         # SvelteKit frontend application
 |-- Paper_Materials/         # SoftwareX manuscript, figures, and publication materials
-|-- demo/                    # Supplementary demo video
 |-- compose.yaml             # Docker Compose configuration
 |-- .env.example             # Environment variable template
 |-- LICENSE                  # MIT License
@@ -206,23 +207,19 @@ Administrators manage users, departments, assignments, notifications, audit logs
 
 ## Security and Intended Use
 
-Passwords are stored using bcrypt hashing, and supplied credentials are
-checked at login. However, subsequent API requests are not currently bound
-to a server-verified authenticated session, and some endpoints rely on
-account identifiers supplied with the request.
+Passwords are stored using bcrypt hashing and checked at login, but
+subsequent API requests are not bound to a server-verified authenticated
+session. Some endpoints trust caller-supplied account identifiers, and consent
+revocation is not enforced consistently.
 
-The current release is therefore intended only for isolated demonstrations
-using synthetic data. It should not be used for multi-user handling of
-sensitive clinical records without stronger authenticated access control and
-consistent authorization enforcement.
+Use this release only for isolated synthetic-data demonstrations. Do not enter
+real patient data or use it for sensitive multi-user records. Authenticated
+access control and consistent authorization enforcement are required before
+such use.
 
-## Supplementary Video
-
-A supplementary screencast demonstrating the main NeuroBloom workflows is available at:
-
-```text
-demo/NeuroBloom_demo.mp4
-```
+The cognitive tasks are NeuroBloom-specific implementations inspired by
+published paradigms. They are not the standardized clinical instruments, and
+their psychometric and clinical validity has not been established.
 
 ## Tech Stack
 

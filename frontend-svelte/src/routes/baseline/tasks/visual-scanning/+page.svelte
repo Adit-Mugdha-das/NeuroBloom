@@ -6,6 +6,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, locale, localeText, translateText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -251,8 +252,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>Visual scanning deficits are among the most common cognitive complaints in MS, with roughly 40–50% of patients showing slowed visual search times even in early relapsing-remitting disease. The task is sensitive to posterior cortical and white matter changes affecting the dorsal visual stream (occipitoparietal). Slowed scan speed often co-occurs with processing speed deficits, but is partially dissociable — some patients show normal simple reaction times yet significantly impaired visual search, pointing to difficulties with spatial attention rather than motor speed.</p>
+                <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                <p>{localeText(paradigmInspirationNote({ en: 'visual search', bn: 'ভিজ্যুয়াল সার্চ' }), $locale)}</p>
+                <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
             </div>
 
             <TaskPracticeActions

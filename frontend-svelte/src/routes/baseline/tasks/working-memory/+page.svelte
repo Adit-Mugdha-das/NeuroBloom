@@ -10,8 +10,10 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 		formatPercent,
 		localizeStimulusSymbol,
 		locale,
+		localeText,
 		translateText
 	} from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy } from '$lib/task-practice';
 import { scoreNBack } from '$lib/task-scoring';
@@ -470,8 +472,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			</div>
 
 			<div class="clinical-card">
-				<h3>{t('Clinical Basis')}</h3>
-				<p>{t('N-back performance reflects working memory updating, attention control, and the ability to keep relevant information active while new stimuli compete for focus. In multiple sclerosis, weaker accuracy or slower responses can reflect disruption in the fronto-parietal networks that support online information maintenance.')}</p>
+				<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'N-back task (Kirchner, 1958)', bn: 'N-ব্যাক টাস্ক (কিরশনার, ১৯৫৮)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

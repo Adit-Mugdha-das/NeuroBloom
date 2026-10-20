@@ -8,6 +8,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 	import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import { ABOUT_RESULTS_TITLE, ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 	import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -578,25 +579,9 @@
 
 			<!-- Clinical info -->
 			<div class="card clinical-info">
-				<h3 class="card-heading">{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<span class="ci-label">{lt('Standard Test', 'মানক পরীক্ষা')}</span>
-						<span>{lt('Attention Networks Test (Eriksen & Eriksen, 1974)', 'মনোযোগ নেটওয়ার্ক পরীক্ষা (Eriksen & Eriksen, 1974)')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{lt('Brain Regions', 'মস্তিষ্কের অঞ্চল')}</span>
-						<span>{lt('Anterior cingulate cortex & executive control networks', 'অ্যান্টেরিয়র সিংগুলেট কর্টেক্স ও নির্বাহী নিয়ন্ত্রণ নেটওয়ার্ক')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{lt('MS Relevance', 'MS-এ গুরুত্ব')}</span>
-						<span>{lt('Detects selective attention deficits common in MS', 'MS-এ সাধারণ নির্বাচিত মনোযোগ ঘাটতি শনাক্ত করে')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{lt('Key Metric', 'মূল সূচক')}</span>
-						<span>{lt('Conflict Effect = Incongruent RT minus Congruent RT', 'কনফ্লিক্ট ইফেক্ট = অসঙ্গত RT বিয়োগ সঙ্গত RT')}</span>
-					</div>
-				</div>
+				<h3 class="card-heading">{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'Eriksen flanker task (Eriksen & Eriksen, 1974)', bn: 'এরিকসেন ফ্ল্যাঙ্কার টাস্ক (এরিকসেন ও এরিকসেন, ১৯৭৪)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<!-- Performance guide -->
@@ -887,13 +872,14 @@
 
 			<!-- Clinical context -->
 			<div class="card clinical-context-card">
-				<h3 class="card-heading">{lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h3>
+				<h3 class="card-heading">{localeText(ABOUT_RESULTS_TITLE, $locale)}</h3>
 				<p>
 					{@html lt(
-						'The <strong>Conflict Effect</strong> (incongruent RT minus congruent RT) is the key index of selective attention. Research demonstrates this reflects anterior cingulate cortex function and executive control. Reducing your conflict effect through training indicates improved ability to ignore distractions and focus on relevant information.',
-						'<strong>কনফ্লিক্ট ইফেক্ট</strong> (অসঙ্গত RT বিয়োগ সঙ্গত RT) হলো নির্বাচিত মনোযোগের মূল সূচক। গবেষণায় দেখা যায়, এটি অ্যান্টেরিয়র সিংগুলেট কর্টেক্স ও নির্বাহী নিয়ন্ত্রণ নেটওয়ার্কের কার্যকারিতা প্রতিফলিত করে।'
+						'The <strong>Conflict Effect</strong> is the incongruent response time minus the congruent response time in this task.',
+						'<strong>কনফ্লিক্ট ইফেক্ট</strong> হলো এই কাজে অসঙ্গত ট্রায়ালের প্রতিক্রিয়ার সময় বিয়োগ সঙ্গত ট্রায়ালের প্রতিক্রিয়ার সময়।'
 					)}
 				</p>
+				<p>{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 			</div>
 
 			<div class="btn-row">

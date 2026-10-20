@@ -5,6 +5,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, locale, localeText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import { tasks, training } from '$lib/api';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
@@ -316,8 +317,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>Cognitive flexibility is among the most commonly impaired executive functions in MS, reflecting damage to prefrontal-basal ganglia circuits involved in rule representation and task-set reconfiguration. Switch cost — the slowdown on rule-change trials — is a particularly sensitive marker: it scales with white matter lesion burden and is predictive of vocational and instrumental daily living difficulties. Perseveration errors (applying the last rule instead of the new one) indicate failed inhibition of dominant response sets, a signature of frontal lobe pathology.</p>
+                <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                <p>{localeText(paradigmInspirationNote({ en: 'cued task switching', bn: 'সংকেতভিত্তিক কাজ বদল' }), $locale)}</p>
+                <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
             </div>
 
             <TaskPracticeActions

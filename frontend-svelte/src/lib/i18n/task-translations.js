@@ -1,7 +1,6 @@
 export const TASK_EXACT_TRANSLATIONS = {
 	'Trail Making Test': 'ট্রেইল মেকিং টেস্ট',
 	'Part B — Cognitive Flexibility & Set-Shifting': 'পার্ট B — মানসিক নমনীয়তা ও নিয়ম বদল',
-	'Executive Function Gold Standard': 'নির্বাহী কাজের স্বীকৃত মান',
 	'Always alternate number → letter → number': 'সবসময় সংখ্যা → অক্ষর → সংখ্যা ক্রমে এগোন',
 	'Click each circle in the correct order. A line draws as you connect them.':
 		'সঠিক ক্রমে প্রতিটি বৃত্তে ক্লিক করুন। সংযোগ করার সঙ্গে সঙ্গে রেখা আঁকা হবে।',
@@ -19,7 +18,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Standard Test': 'স্বীকৃত পরীক্ষা',
 	'Halstead-Reitan Battery, widely used in neuropsychology':
 		'নিউরোসাইকোলজিতে বহুল ব্যবহৃত একটি টেস্ট ব্যাটারি',
-	'MS Relevance': 'MS-এ প্রাসঙ্গিকতা',
 	'Sensitive to MS executive dysfunction and set-shifting deficits':
 		'MS-সম্পর্কিত নির্বাহী কাজ ও নিয়ম বদলের দুর্বলতা ধরতে সংবেদনশীল',
 	'Key Metric': 'মূল মেট্রিক',
@@ -173,7 +171,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'What is the Stroop Test?': 'স্ট্রুপ পরীক্ষা কী?',
 	'A classic test measuring selective attention and cognitive interference, demonstrating how automatic word reading can interfere with the goal of naming ink colors.':
 		'নির্বাচিত মনোযোগ ও মানসিক দ্বন্দ্ব মাপার একটি ক্লাসিক পরীক্ষা; এতে দেখা যায় শব্দ পড়ার স্বয়ংক্রিয় প্রবণতা কীভাবে কালির রং বলার কাজে বাধা দেয়।',
-	'Why Used for MS?': 'MS-এ কেন ব্যবহার করা হয়?',
 	'Sensitive to frontal lobe and executive function changes common in MS. Measures inhibitory control — the ability to suppress an automatic response. Standard in MS neuropsychological batteries.':
 		'MS-এ দেখা যায় এমন ফ্রন্টাল লোব ও নির্বাহী কাজের পরিবর্তনের প্রতি সংবেদনশীল। এটি স্বয়ংক্রিয় প্রতিক্রিয়া দমন করার ক্ষমতা মাপে।',
 	'Understanding Your Scores': 'আপনার স্কোর বোঝা',
@@ -191,8 +188,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Historical Note': 'ঐতিহাসিক নোট',
 	'John Ridley Stroop published this paradigm in 1935. It remains one of the most cited experiments in all of psychology, used in thousands of clinical and research studies worldwide.':
 		'জন রিডলি স্ট্রুপ ১৯৩৫ সালে এই পদ্ধতি প্রকাশ করেন। এটি মনোবিজ্ঞানের সবচেয়ে বেশি উদ্ধৃত পরীক্ষাগুলোর একটি।',
-	'Paced Auditory Serial Addition Test · MS Gold Standard': 'পেসড অডিটরি সিরিয়াল অ্যাডিশন টেস্ট · MS-এর স্বীকৃত মান',
-	'CLINICAL GOLD STANDARD FOR MS': 'MS মূল্যায়নের ক্লিনিক্যাল স্বীকৃত মান',
 	'The Golden Rule': 'সবচেয়ে জরুরি নিয়ম',
 	'Add each NEW digit to the PREVIOUS digit — not to your running total. This is the key rule!':
 		'প্রতিটি নতুন সংখ্যাকে আগের দেখা সংখ্যার সঙ্গে যোগ করুন — চলমান মোটের সঙ্গে নয়। এটাই মূল নিয়ম!',
@@ -216,13 +211,11 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Version': 'সংস্করণ',
 	'Input': 'ইনপুট',
 	'Keyboard / number pad': 'কিবোর্ড / নম্বর প্যাড',
-	'MS Gold Standard': 'MS-এর স্বীকৃত মান',
 	'Most widely used MS cognitive test in clinical trials':
 		'ক্লিনিক্যাল ট্রায়ালে সবচেয়ে বেশি ব্যবহৃত MS কগনিটিভ পরীক্ষা',
 	'Tracks attention maintenance over the whole session': 'পুরো সেশনে মনোযোগ ধরে রাখা ট্র্যাক করে',
 	'Lesion Correlation': 'লেশন-সম্পর্ক',
 	'Gronwall, 1977': 'গ্রনওয়াল, ১৯৭৭',
-	'Extensively validated in MS populations worldwide': 'বিশ্বজুড়ে MS জনগোষ্ঠীতে বিস্তৃতভাবে যাচাইকৃত',
 	'Performance Reference': 'পারফরম্যান্স রেফারেন্স',
 	'Scores depend on pace — faster intervals = harder task':
 		'স্কোর ছন্দের ওপর নির্ভর করে — বিরতি যত কম, কাজ তত কঠিন',
@@ -236,8 +229,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Total Digits': 'মোট সংখ্যা',
 	'Correct Answers': 'সঠিক উত্তর',
 	'Fatigue Effect': 'ক্লান্তির প্রভাব',
-	'PASAT scores correlate with brain lesion burden and predict real-world cognitive functioning. It is included in MACFIMS and BRB-N — the two main MS cognitive batteries.':
-		'এই স্কোর মস্তিষ্কের লেশন-চাপের সঙ্গে সম্পর্কিত এবং দৈনন্দিন কগনিটিভ কাজের ইঙ্গিত দেয়। এটি প্রধান MS কগনিটিভ ব্যাটারিগুলোর অংশ।',
 	'Forget Your Answer': 'নিজের উত্তর ভুলে যান',
 	'After you submit, immediately forget your answer. The only thing that matters is the digit you currently see — it becomes the new "previous" for the next addition.':
 		'উত্তর দেওয়ার পর সঙ্গে সঙ্গে সেটি ভুলে যান। এখন যে সংখ্যাটি দেখছেন সেটিই গুরুত্বপূর্ণ — পরের যোগের জন্য সেটিই নতুন “আগের” সংখ্যা।',
@@ -253,11 +244,7 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'4-second intervals (easier)': '৪ সেকেন্ড বিরতি (সহজ)',
 	'3-second intervals (standard)': '৩ সেকেন্ড বিরতি (মানক)',
 	'2-second intervals (very hard)': '২ সেকেন্ড বিরতি (খুব কঠিন)',
-	'PASAT is included in every major MS cognitive battery (MACFIMS, BRB-N). Improving on it demonstrates real gains in sustained attention — one of the most affected domains in MS.':
-		'এটি প্রায় সব বড় MS কগনিটিভ ব্যাটারিতে থাকে। এতে উন্নতি হলে দীর্ঘসময় মনোযোগ ধরে রাখার বাস্তব উন্নতির ইঙ্গিত মেলে — যা MS-এ বেশি প্রভাবিত ক্ষেত্রগুলোর একটি।',
 	'Symbol Digit Modalities Test': 'সিম্বল-ডিজিট মডালিটিজ টেস্ট',
-	'Processing Speed — Gold Standard for MS Assessment': 'প্রক্রিয়াকরণের গতি — MS মূল্যায়নের স্বীকৃত মান',
-	'SDMT · Smith (1973) · MACFIMS Battery': 'SDMT · স্মিথ (১৯৭৩) · কগনিটিভ ব্যাটারি',
 	'Your Task: Match Symbols to Numbers': 'আপনার কাজ: প্রতীককে সংখ্যার সঙ্গে মিলান',
 	'Example Symbol–Digit Key': 'উদাহরণ প্রতীক–সংখ্যা কী',
 	'Your actual key will be shown before the test begins. Study it carefully!':
@@ -286,15 +273,12 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'If unsure, make a quick guess and keep going': 'নিশ্চিত না হলে দ্রুত অনুমান করে এগিয়ে যান',
 	'Seconds': 'সেকেন্ড',
 	'Adapts after each session': 'প্রতিটি সেশনের পর মানিয়ে নেয়',
-	'Gold Standard:': 'স্বীকৃত মান:',
 	'Most widely used test in MS clinical trials globally':
 		'বিশ্বজুড়ে MS ক্লিনিক্যাল ট্রায়ালে সবচেয়ে বেশি ব্যবহৃত পরীক্ষা',
 	'Processing speed — how fast your brain retrieves and applies information':
 		'প্রক্রিয়াকরণের গতি — মস্তিষ্ক কত দ্রুত তথ্য মনে এনে ব্যবহার করে',
 	'Detects cognitive changes earlier than any other single test; correlates with brain health':
 		'অনেক একক পরীক্ষার আগেই কগনিটিভ পরিবর্তন ধরতে পারে; মস্তিষ্কের স্বাস্থ্যের সঙ্গে সম্পর্কিত',
-	'Predicts employment success, driving safety, and daily functioning for MS patients':
-		'MS রোগীর কাজ, চলাচল-নিরাপত্তা ও দৈনন্দিন কার্যক্ষমতার ইঙ্গিত দেয়',
 	'Performance Guide (MS Norms)': 'পারফরম্যান্স গাইড (MS মানদণ্ড)',
 	'Study the Reference Key': 'রেফারেন্স কী দেখে নিন',
 	'Memorise these symbol–digit pairs before the test begins':
@@ -302,8 +286,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Reference Key': 'রেফারেন্স কী',
 	'Responses / min': 'প্রতি মিনিটে উত্তর',
 	'Total Attempted': 'মোট চেষ্টা',
-	'Excellent performance! Your processing speed is above average for MS patients, suggesting good cognitive efficiency.':
-		'চমৎকার পারফরম্যান্স! MS রোগীদের গড়ের তুলনায় আপনার প্রক্রিয়াকরণের গতি ভালো, যা ভালো কগনিটিভ দক্ষতার ইঙ্গিত দেয়।',
 	'Good performance! Your score is in the average-to-above-average range. Continue training to build on this.':
 		'ভালো পারফরম্যান্স! আপনার স্কোর গড় থেকে গড়ের ওপরে। এই উন্নতি ধরে রাখতে ট্রেনিং চালিয়ে যান।',
 	'Average performance. Regular training can improve processing speed over time.':
@@ -338,7 +320,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Adapting to new task demands': 'নতুন কাজের চাহিদায় মানিয়ে নেওয়া',
 	'Suppressing the previously rewarded response': 'আগের সঠিক প্রতিক্রিয়া আটকে রাখা',
 	'Reaction time penalty when the rule changes': 'নিয়ম বদলালে প্রতিক্রিয়ার সময় বাড়া',
-	'Validated By': 'যে গবেষণায় যাচাইকৃত',
 	'developmental and clinical research': 'বিকাশগত ও ক্লিনিক্যাল গবেষণা',
 	'Zelazo 2006 developmental and clinical research': 'জেলাজো ২০০৬; বিকাশগত ও ক্লিনিক্যাল গবেষণা',
 	'Sensitive to MS-related executive and frontal lobe dysfunction':
@@ -355,7 +336,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Avg RT': 'গড় RT',
 	'Correct responses across all phases': 'সব ধাপে সঠিক উত্তর',
 	'What Your Results Mean': 'আপনার ফলাফলের অর্থ',
-	'WAIS-IV Standard · MACFIMS Battery': 'মানভিত্তিক কর্মস্মৃতি পরীক্ষা · কগনিটিভ ব্যাটারির অংশ',
 	'Your Task: Remember & Reproduce Digit Sequences': 'আপনার কাজ: সংখ্যার ক্রম মনে রেখে লিখুন',
 	"You'll see digits appear on screen one at a time. Remember the sequence, then type it back — either in the same order or reversed. The sequence length adapts to your performance.":
 		'স্ক্রিনে একটির পর একটি সংখ্যা দেখা যাবে। ক্রমটি মনে রেখে পরে লিখুন — একই ক্রমে বা উল্টো ক্রমে। আপনার পারফরম্যান্স অনুযায়ী ক্রমের দৈর্ঘ্য বদলাবে।',
@@ -373,8 +353,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Type each digit • Backspace to correct • auto-submits on last digit':
 		'প্রতিটি সংখ্যা লিখুন • ঠিক করতে Backspace • শেষ সংখ্যা দিলে নিজে জমা হবে',
 	'Verbal working memory capacity & manipulation': 'মৌখিক কর্মস্মৃতির ধারণক্ষমতা ও মানসিক বদল',
-	'Included in MACFIMS — sensitive to MS-related deficits (Benedict et al., 2006)':
-		'কগনিটিভ ব্যাটারির অংশ — MS-সম্পর্কিত দুর্বলতা ধরতে সংবেদনশীল',
 	'Clinical Use:': 'ক্লিনিক্যাল ব্যবহার:',
 	'Standard across neuropsychological assessments worldwide':
 		'বিশ্বজুড়ে নিউরোসাইকোলজিক্যাল মূল্যায়নে ব্যবহৃত মানদণ্ড',
@@ -392,7 +370,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	"This test adapts automatically to your level — don't worry about mistakes!":
 		'এই পরীক্ষা আপনার লেভেল অনুযায়ী নিজে থেকে মানিয়ে নেয় — ভুল নিয়ে চিন্তা করবেন না!',
 	'Dual-Task Executive Working Memory Training': 'দ্বৈত-কাজ নির্বাহী কর্মস্মৃতি অনুশীলন',
-	'OSPAN · Turner & Engle (1989) · MACFIMS Battery': 'OSPAN · টার্নার ও এঙ্গল (১৯৮৯) · কগনিটিভ ব্যাটারি',
 	'Your Task: Juggle Math and Memory': 'আপনার কাজ: গণিত ও স্মৃতি একসঙ্গে সামলানো',
 	'Step 1 — Verify Equation': 'ধাপ ১ — সমীকরণ যাচাই করুন',
 	'Is each equation correct or incorrect?': 'প্রতিটি সমীকরণ সঠিক নাকি ভুল?',
@@ -410,8 +387,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 		'OSPAN — টার্নার ও এঙ্গল (১৯৮৯); বহুল উদ্ধৃত জটিল স্প্যান টাস্ক',
 	'Executive working memory — simultaneous storage and processing':
 		'নির্বাহী কর্মস্মৃতি — একই সঙ্গে সংরক্ষণ ও প্রক্রিয়াকরণ',
-	'Highly sensitive to MS cognitive impairment (Rao et al., 1991); included in MACFIMS':
-		'MS কগনিটিভ দুর্বলতা ধরতে অত্যন্ত সংবেদনশীল; প্রধান কগনিটিভ ব্যাটারির অংশ',
 	'Gold standard for assessing executive working memory in neuropsychology':
 		'নিউরোসাইকোলজিতে নির্বাহী কর্মস্মৃতি মূল্যায়নের স্বীকৃত মান',
 	'Semantic Fluency · Planning / Executive Function': 'সেমান্টিক ফ্লুয়েন্সি · পরিকল্পনা / নির্বাহী কাজ',
@@ -427,11 +402,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Semantic memory': 'অর্থভিত্তিক স্মৃতি',
 	'Subcategory Strategy': 'উপ-ক্যাটাগরি কৌশল',
 	'Clinical Basis': 'ক্লিনিক্যাল ভিত্তি',
-	'Validated MS Semantic Memory Assessment': 'MS অর্থভিত্তিক স্মৃতি মূল্যায়নে যাচাইকৃত',
-	'Performance Norms (unique words / 60s)': 'পারফরম্যান্স মানদণ্ড (৬০ সেকেন্ডে ভিন্ন শব্দ)',
-	'Based on MS patient reference data': 'MS রোগীর রেফারেন্স ডেটাভিত্তিক',
-	'Normal (MS)': 'স্বাভাবিক (MS)',
-	'Impaired': 'দুর্বল',
 	'Add': 'যোগ করুন',
 	'Tip: Press Enter to add words quickly': 'টিপ: দ্রুত শব্দ যোগ করতে Enter চাপুন',
 	'No words yet — start typing!': 'এখনও শব্দ নেই — লেখা শুরু করুন!',
@@ -448,10 +418,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Scoring Basis': 'স্কোরিং ভিত্তি',
 	'Unique valid words': 'ভিন্ন বৈধ শব্দ',
 	'Test Battery': 'টেস্ট ব্যাটারি',
-	'Validated MS Executive Function Assessment': 'MS নির্বাহী কাজের যাচাইকৃত মূল্যায়ন',
-	'The Controlled Oral Word Association Test (Benton & Hamsher, 1989) is included in the MACFIMS and BICAMS batteries for MS. Verbal fluency deficits affect up to 40% of MS patients and reflect impaired initiation, strategy, and prefrontal executive control. Phonemic fluency (letter-based) taxes executive function more than semantic fluency.':
-		'নিয়ন্ত্রিত মৌখিক শব্দ সংযোগ পরীক্ষা MS মূল্যায়নের প্রধান ব্যাটারিগুলোর অংশ। ভাষাগত ফ্লুয়েন্সির দুর্বলতা শুরু করা, কৌশল নেওয়া এবং প্রিফ্রন্টাল নির্বাহী নিয়ন্ত্রণের সমস্যার ইঙ্গিত দিতে পারে।',
-	'Performance Norms (per letter, 60s)': 'পারফরম্যান্স মানদণ্ড (প্রতি অক্ষর, ৬০ সেকেন্ড)',
 	'Unique valid words per letter': 'প্রতি অক্ষরে ভিন্ন বৈধ শব্দ',
 	'Well done!': 'ভালো হয়েছে!',
 	'Verbal Fluency Complete': 'ভাষাগত ফ্লুয়েন্সি শেষ',
@@ -471,14 +437,11 @@ export const TASK_EXACT_TRANSLATIONS = {
 		'করসি ব্লক পরীক্ষা — ১৯৭২ সাল থেকে নিউরোসাইকোলজির স্বীকৃত মান',
 	'Visuospatial working memory — distinct from verbal memory':
 		'দৃশ্য-স্থানিক কর্মস্মৃতি — ভাষাভিত্তিক স্মৃতি থেকে আলাদা',
-	'Correlated with MS lesion load (Rao et al., 1991); WMS-IV component':
-		'MS লেশন-চাপের সঙ্গে সম্পর্কিত; কর্মস্মৃতি মূল্যায়নের অংশ',
 	'Standard in neuropsychological and rehabilitation assessments':
 		'নিউরোসাইকোলজিক্যাল ও পুনর্বাসন মূল্যায়নে ব্যবহৃত মানদণ্ড',
 	'Great work on your Spatial Span training': 'স্থানিক স্প্যান অনুশীলনে দারুণ করেছেন',
 	'blocks': 'ব্লক',
 	'Complex Working Memory Training': 'জটিল কর্মস্মৃতি অনুশীলন',
-	'WAIS-IV Subtest · MACFIMS Battery': 'কর্মস্মৃতি উপপরীক্ষা · কগনিটিভ ব্যাটারির অংশ',
 	'Your Task: Sort Mixed Sequences': 'আপনার কাজ: মিশ্র ক্রম সাজানো',
 	"You'll see a mixed sequence of numbers and letters appear one at a time. Memorize them, then reorder — all numbers ascending first, then all letters alphabetically.":
 		'সংখ্যা ও অক্ষরের মিশ্র ক্রম একে একে দেখা যাবে। মনে রেখে পরে আগে সংখ্যাগুলো ছোট থেকে বড়, তারপর অক্ষরগুলো বর্ণক্রমে সাজান।',
@@ -495,15 +458,12 @@ export const TASK_EXACT_TRANSLATIONS = {
 		'ভাষাভিত্তিক কর্মস্মৃতির বিষয়বস্তু জটিলভাবে সাজানো',
 	'Sensitive to MS cognitive dysfunction (Parmenter et al., 2007)':
 		'MS-সম্পর্কিত কগনিটিভ দুর্বলতা ধরতে সংবেদনশীল',
-	'Included in MS neuropsychological assessment batteries (MACFIMS)':
-		'MS নিউরোসাইকোলজিক্যাল মূল্যায়ন ব্যাটারির অংশ',
 	'Skip Trial': 'ট্রায়াল বাদ দিন',
 	'Direct lines:': 'সরাসরি রেখা:',
 	'Spot clusters:': 'গুচ্ছ খুঁজুন:',
 	'numbered': 'সংখ্যাযুক্ত',
 	'No time limit': 'সময় সীমা নেই',
 	'finish all circles': 'সব বৃত্ত শেষ করুন',
-	'Gold Standard': 'স্বীকৃত মান',
 	'Real-World Impact': 'দৈনন্দিন প্রভাব',
 	'Total Clicks': 'মোট ক্লিক',
 	'Errors Made': 'ভুলের সংখ্যা',
@@ -541,15 +501,12 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Focus Areas': 'ফোকাস ক্ষেত্র',
 	'Loading Symbol Digit Modalities Test...': 'সিম্বল ডিজিট মডালিটিজ টেস্ট লোড হচ্ছে...',
 	'⚡ Symbol Digit Modalities Test (SDMT)': '⚡ সিম্বল ডিজিট মডালিটিজ টেস্ট (SDMT)',
-	'⭐ GOLD STANDARD for MS Assessment ⭐': '⭐ এমএস মূল্যায়নের স্বর্ণমান ⭐',
 	'About This Test': 'এই পরীক্ষাটি সম্পর্কে',
 	'The SDMT is the most sensitive and widely used test for detecting cognitive changes in Multiple Sclerosis. It measures processing speed - how quickly your brain can match symbols to numbers.':
 		'SDMT হলো মাল্টিপল স্ক্লেরোসিসে কগনিটিভ পরিবর্তন শনাক্ত করার সবচেয়ে সংবেদনশীল ও বহুল ব্যবহৃত পরীক্ষা। এটি প্রসেসিং স্পিড মাপে, অর্থাৎ আপনার মস্তিষ্ক কত দ্রুত প্রতীককে সংখ্যার সঙ্গে মেলাতে পারে।',
 	'📊 Clinical Significance': '📊 ক্লিনিক্যাল গুরুত্ব',
 	'Most used in MS clinical trials': 'এমএস ক্লিনিক্যাল ট্রায়ালে সবচেয়ে বেশি ব্যবহৃত',
 	'worldwide': 'বিশ্বব্যাপী',
-	'Predicts employment success and daily functioning':
-		'কর্মজীবনের সফলতা ও দৈনন্দিন কার্যক্ষমতার ইঙ্গিত দেয়',
 	'Correlates with brain health and disease progression':
 		'মস্তিষ্কের স্বাস্থ্য ও রোগের অগ্রগতির সঙ্গে সম্পর্কিত',
 	'Detects cognitive changes earlier than other tests':
@@ -602,12 +559,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Total Attempted:': 'মোট চেষ্টা:',
 	'Consistency:': 'সামঞ্জস্য:',
 	'🏥 Clinical Context': '🏥 ক্লিনিক্যাল প্রেক্ষাপট',
-	'Excellent performance! Your processing speed is above average for MS patients. This suggests good cognitive function and neural efficiency.':
-		'চমৎকার পারফরম্যান্স! এমএস রোগীদের তুলনায় আপনার প্রসেসিং স্পিড গড়ের উপরে। এটি ভালো কগনিটিভ কার্যকারিতা ও স্নায়বিক দক্ষতার ইঙ্গিত দেয়।',
-	'Good performance! Your score is in the average to above-average range for MS patients. Continue training to maintain and improve this level.':
-		'ভালো পারফরম্যান্স! এমএস রোগীদের জন্য আপনার স্কোর গড় থেকে গড়ের উপরের পর্যায়ে রয়েছে। এই স্তর বজায় রাখতে ও উন্নত করতে অনুশীলন চালিয়ে যান।',
-	'Average performance. Your score is in the typical range for MS patients. Regular training can help improve processing speed over time.':
-		'গড় মানের পারফরম্যান্স। এমএস রোগীদের জন্য আপনার স্কোর সাধারণ সীমার মধ্যে রয়েছে। নিয়মিত অনুশীলন সময়ের সঙ্গে প্রসেসিং স্পিড উন্নত করতে পারে।',
 	"Fair performance. There's room for improvement in processing speed. Consistent practice with SDMT can lead to significant gains.":
 		'মোটামুটি পারফরম্যান্স। প্রসেসিং স্পিডে উন্নতির সুযোগ আছে। SDMT-তে নিয়মিত অনুশীলন উল্লেখযোগ্য উন্নতি আনতে পারে।',
 	'Keep practicing! Processing speed can be trained and improved with regular practice. The SDMT is challenging but very effective for building cognitive efficiency.':
@@ -921,8 +872,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Multiple Object Tracking': 'মাল্টিপল অবজেক্ট ট্র্যাকিং',
 	'Dynamic Visual Attention • Pylyshyn & Storm (2006)':
 		'ডায়নামিক ভিজ্যুয়াল অ্যাটেনশন • Pylyshyn & Storm (২০০৬)',
-	'Measures sustained visual attention and dynamic tracking ability, relevant for driving safety and real-world multitasking in MS patients.':
-		'এটি স্থায়ী ভিজ্যুয়াল মনোযোগ ও গতিশীল ট্র্যাকিংয়ের ক্ষমতা মাপে, যা MS রোগীদের ড্রাইভিং নিরাপত্তা ও বাস্তব জীবনের মাল্টিটাস্কিংয়ের জন্য গুরুত্বপূর্ণ।',
 	'Watch the Targets': 'লক্ষ্যগুলোর দিকে তাকিয়ে থাকুন',
 	'Several circles will flash yellow — these are your targets to track':
 		'কয়েকটি বৃত্ত হলুদ হয়ে ঝলক দেবে - এগুলোই আপনার ট্র্যাক করার লক্ষ্য।',
@@ -1005,7 +954,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 		'বৈশিষ্ট্য খোঁজা: <10 ms = চমৎকার (সমান্তরাল), যৌথ বৈশিষ্ট্য খোঁজা: <30 ms = চমৎকার (ক্রমিক)',
 	'Set Size:': 'সেট সাইজ:',
 	'Useful Field of View (UFOV)': 'Useful Field of View (UFOV)',
-	'- Predicts driving safety and crash risk': '- ড্রাইভিং নিরাপত্তা ও দুর্ঘটনার ঝুঁকির ইঙ্গিত দেয়',
 	'to finish this session': 'এই সেশন শেষ করতে',
 	'Display time:': 'প্রদর্শনের সময়:',
 	'Where was the ?': 'টি কোথায় ছিল?',
@@ -1018,12 +966,9 @@ export const TASK_EXACT_TRANSLATIONS = {
 	'Pattern Comparison is from the': 'প্যাটার্ন তুলনা এসেছে',
 	', a comprehensive battery used in neuropsychological assessment. It measures':
 		'থেকে, যা নিউরোসাইকোলজিক্যাল মূল্যায়নে ব্যবহৃত একটি বিস্তৃত ব্যাটারি। এটি মাপে',
-	'with minimal motor requirements - making it ideal for MS patients.':
-		'খুব কম মোটর চাহিদাসহ - যা এটিকে MS রোগীদের জন্য আদর্শ করে।',
 	'(no complex motor skills needed)': '(কোনো জটিল মোটর দক্ষতা প্রয়োজন নেই)',
 	'- perfect for MS assessment': '- MS মূল্যায়নের জন্য আদর্শ',
 	'cognitive processing efficiency': 'কগনিটিভ প্রক্রিয়াকরণের দক্ষতা',
-	'Validated across': 'বৈধতা প্রমাণিত হয়েছে',
 	'adult populations': 'প্রাপ্তবয়স্ক জনগোষ্ঠীতে',
 	'Are these patterns': 'এই প্যাটার্নগুলো কি',
 	'DIFFERENT': 'ভিন্ন',
@@ -1059,7 +1004,6 @@ export const TASK_EXACT_TRANSLATIONS = {
 		'গড়ের উপরে, যা শক্তিশালী প্যাটার্ন শনাক্তকরণ ও দ্রুত সিদ্ধান্ত নেওয়ার ইঙ্গিত দেয়। ভালো কাজ! আপনার',
 	'is in the normal range. Regular practice can help improve your pattern recognition speed. Keep practicing! Processing speed improves significantly with regular training. Pattern comparison tasks are excellent for building quick visual processing and decision-making skills.':
 		'সাধারণ সীমার মধ্যে। নিয়মিত অনুশীলন প্যাটার্ন শনাক্তকরণের গতি উন্নত করতে সাহায্য করতে পারে। অনুশীলন চালিয়ে যান! নিয়মিত ট্রেনিংয়ে প্রসেসিং স্পিড উল্লেখযোগ্যভাবে বাড়ে। প্যাটার্ন তুলনার টাস্ক দ্রুত ভিজ্যুয়াল প্রক্রিয়াকরণ ও সিদ্ধান্ত নেওয়ার দক্ষতা গড়তে খুব কার্যকর।',
-	'Why this matters for MS:': 'MS-এর জন্য কেন এটি গুরুত্বপূর্ণ:',
 	'Pattern comparison has minimal motor requirements (just clicking), making it an excellent measure of pure cognitive processing speed without physical limitations affecting your score.':
 		'প্যাটার্ন তুলনায় মোটর চাহিদা খুব কম (শুধু ক্লিক করতে হয়), তাই শারীরিক সীমাবদ্ধতা স্কোরকে প্রভাবিত না করে এটি বিশুদ্ধ কগনিটিভ প্রক্রিয়াকরণের গতি মাপতে সাহায্য করে।',
 	'👁️ Quick Visual Scan': '👁️ দ্রুত ভিজ্যুয়াল স্ক্যান',
@@ -1191,11 +1135,8 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'📈 Performance Guide (MS Norms)': '📈 পারফরম্যান্স গাইড (MS মানদণ্ড)',
 	'Completed:': 'সম্পন্ন:',
 	'Excellent performance! Your processing speed is': 'চমৎকার পারফরম্যান্স! আপনার প্রক্রিয়াকরণের গতি',
-	'for MS patients. This suggests good cognitive function and neural efficiency.': 'এমএস রোগীদের তুলনায় এই স্তরে রয়েছে। এটি ভালো কগনিটিভ কার্যকারিতা ও স্নায়বিক দক্ষতার ইঙ্গিত দেয়।',
 	'Good performance! Your score is in the': 'ভালো পারফরম্যান্স! আপনার স্কোর রয়েছে',
-	'for MS patients. Continue training to maintain and improve this level.': 'এমএস রোগীদের জন্য এই সীমায়। এই স্তর ধরে রাখতে ও উন্নত করতে অনুশীলন চালিয়ে যান।',
 	'Average performance. Your score is in the': 'গড় মানের পারফরম্যান্স। আপনার স্কোর রয়েছে',
-	'for MS patients. Regular training can help improve processing speed over time.': 'এমএস রোগীদের জন্য এই সীমায়। নিয়মিত অনুশীলন সময়ের সঙ্গে প্রক্রিয়াকরণের গতি বাড়াতে পারে।',
 	'Fair performance. There\'s': 'মোটামুটি পারফরম্যান্স। রয়েছে',
 	'in processing speed. Consistent practice with SDMT can lead to significant gains.': 'প্রক্রিয়াকরণের গতিতে উন্নতির সুযোগ। SDMT-তে নিয়মিত অনুশীলন উল্লেখযোগ্য উন্নতি আনতে পারে।',
 	'Based on your planning baseline:': 'আপনার পরিকল্পনার বেসলাইনের ভিত্তিতে:',
@@ -1401,7 +1342,6 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'Perfect!': 'দারুণ!',
 	'PASAT (Paced Auditory Serial Addition Test)':
 		'PASAT (পেসড অডিটরি সিরিয়াল অ্যাডিশন টেস্ট)',
-	'MS Gold Standard Attention Assessment': 'MS-এর স্বর্ণমান মনোযোগ মূল্যায়ন',
 	'PASAT is the most widely used cognitive test in MS research and clinical trials. It measures sustained attention, working memory, and processing speed under time pressure.':
 		'PASAT হলো MS গবেষণা ও ক্লিনিক্যাল ট্রায়ালে সবচেয়ে বেশি ব্যবহৃত কগনিটিভ পরীক্ষা। এটি সময়চাপের মধ্যে স্থায়ী মনোযোগ, ওয়ার্কিং মেমোরি এবং প্রসেসিং স্পিড মাপে।',
 	'Why PASAT is Critical for MS': 'MS-এর জন্য PASAT কেন গুরুত্বপূর্ণ',
@@ -1409,11 +1349,8 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'Used in MS trials for decades': 'দশকের পর দশক ধরে MS ট্রায়ালে ব্যবহৃত',
 	'Tracks attention over extended periods': 'দীর্ঘ সময়জুড়ে মনোযোগের ধারাবাহিকতা মাপে',
 	'Lesion Correlation:': 'ক্ষত-সম্পর্ক:',
-	'Performance correlates with brain lesion burden': 'পারফরম্যান্স মস্তিষ্কের ক্ষতের পরিমাণের সঙ্গে সম্পর্কিত',
 	'Functional Predictor:': 'কার্যক্ষমতার পূর্বাভাস:',
 	'Relates to real-world cognitive abilities': 'বাস্তব জীবনের কগনিটিভ সক্ষমতার সঙ্গে সম্পর্কিত',
-	'Gronwall, 1977 - Paced Auditory Serial-Addition Task. Extensively validated in MS populations worldwide.':
-		'গ্রনওয়াল, ১৯৭৭ - পেসড অডিটরি সিরিয়াল-অ্যাডিশন টাস্ক। বিশ্বজুড়ে MS রোগীদের মধ্যে এটি ব্যাপকভাবে যাচাই করা হয়েছে।',
 	'Answer:': 'উত্তর:',
 	'KEY RULE:': 'মূল নিয়ম:',
 	'A single digit (1-9) appears on screen': 'স্ক্রিনে একটি একক অঙ্ক (১-৯) দেখানো হবে',
@@ -1433,7 +1370,6 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'Add to the previous digit (remember it!)': 'আগের অঙ্কের সঙ্গে যোগ করুন (ওটিই মনে রাখুন!)',
 	'Next digit coming...': 'পরের অঙ্ক আসছে...',
 	'Submit (Enter)': 'জমা দিন (এন্টার)',
-	'Gold Standard Test:': 'স্বর্ণমান পরীক্ষা:',
 	'Most widely used MS cognitive assessment': 'MS-এ সবচেয়ে বেশি ব্যবহৃত কগনিটিভ মূল্যায়ন',
 	'Dual Task:': 'দ্বৈত কাজ:',
 	'Requires both working memory and sustained attention':
@@ -1447,14 +1383,11 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'What is PASAT?': 'PASAT কী?',
 	'The Paced Auditory Serial Addition Test is the most widely used cognitive measure in MS clinical trials and research. It assesses sustained attention, working memory, and information processing speed simultaneously.':
 		'পেসড অডিটরি সিরিয়াল অ্যাডিশন টেস্ট হলো MS ক্লিনিক্যাল ট্রায়াল ও গবেষণায় সবচেয়ে বেশি ব্যবহৃত কগনিটিভ পরিমাপ। এটি একই সঙ্গে স্থায়ী মনোযোগ, ওয়ার্কিং মেমোরি এবং তথ্য প্রক্রিয়াকরণের গতি মূল্যায়ন করে।',
-	'Why is it the MS Gold Standard?': 'এটি MS-এর স্বর্ণমান কেন?',
 	'Historical Use:': 'ঐতিহাসিক ব্যবহার:',
 	'Decades of MS research and clinical trials': 'দশকের পর দশক MS গবেষণা ও ক্লিনিক্যাল ট্রায়ালে ব্যবহৃত',
 	'Sensitivity:': 'সংবেদনশীলতা:',
 	'Detects subtle cognitive changes in MS': 'MS-এ সূক্ষ্ম কগনিটিভ পরিবর্তন শনাক্ত করতে পারে',
 	'Correlation:': 'সম্পর্ক:',
-	'Scores relate to brain lesion burden and disability':
-		'স্কোর মস্তিষ্কের ক্ষতের পরিমাণ ও প্রতিবন্ধিতার সঙ্গে সম্পর্কিত',
 	'Predictive Value:': 'পূর্বাভাসমূল্য:',
 	'Standardized:': 'মানকৃত:',
 	'Confusion:': 'বিভ্রান্তি:',
@@ -1484,8 +1417,6 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'2-second intervals (very challenging)': '২-সেকেন্ড বিরতি (খুব চ্যালেঞ্জিং)',
 	'Numbers shown visually (less stressful than audio-only)':
 		'সংখ্যা দৃশ্যমানভাবে দেখানো হয় (শুধু অডিওর চেয়ে কম চাপের)',
-	'PASAT is included in major MS cognitive batteries (MACFIMS, BRB-N) and has been used in thousands of clinical trials to measure cognitive outcomes and treatment effects.':
-		'PASAT বড় এমএস কগনিটিভ ব্যাটারি (ম্যাকফিমস, বিআরবি-এন)-এর অংশ এবং কগনিটিভ ফলাফল ও চিকিৎসার প্রভাব মাপতে হাজারো ক্লিনিক্যাল ট্রায়ালে ব্যবহৃত হয়েছে।',
 	'Loading Spatial Span Task...': 'স্পেশিয়াল স্প্যান টাস্ক লোড হচ্ছে...',
 	'Spatial Span Test (Corsi Blocks)': 'স্পেশিয়াল স্প্যান টেস্ট (কর্সি ব্লকস)',
 	'Visualize the path:': 'পথটি কল্পনা করুন:',
@@ -1510,7 +1441,6 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'Click center:': 'মাঝখানে ক্লিক করুন:',
 	'Smooth movements:': 'মসৃণভাবে নড়াচড়া করুন:',
 	'No rush mistakes:': 'তাড়াহুড়ার ভুল নয়:',
-	'Performance Norms (MS Patients)': 'পারফরম্যান্সের মানদণ্ড (MS রোগী)',
 	'Start Trail Making Test': 'ট্রেইল মেকিং টেস্ট শুরু করুন',
 	'Click the circles in numerical order: 1 → 2 → 3 → ...':
 		'বৃত্তগুলো সংখ্যার ক্রমে ক্লিক করুন: ১ → ২ → ৩ → ...',
@@ -1602,7 +1532,6 @@ Object.assign(TASK_EXACT_TRANSLATIONS, {
 	'- Trains your brain!': '- এটি আপনার মস্তিষ্ককে প্রশিক্ষণ দেয়!',
 	"Stroop, 1935 - Psychology's most famous experiment": 'স্ট্রুপ, ১৯৩৫ - মনোবিজ্ঞানের সবচেয়ে বিখ্যাত পরীক্ষাগুলোর একটি',
 	'Attention, inhibition, cognitive control': 'মনোযোগ, নিবৃত্তিমূলক নিয়ন্ত্রণ, কগনিটিভ নিয়ন্ত্রণ',
-	'🏥 MS Relevance:': '🏥 MS-এ গুরুত্ব:',
 	'Sensitive to frontal lobe changes (Parmenter et al., 2007)':
 		'ফ্রন্টাল লোবের পরিবর্তনের প্রতি সংবেদনশীল (পারমেন্টার প্রমুখ, ২০০৭)',
 	'🌍 Clinical Use:': '🌍 ক্লিনিক্যাল ব্যবহার:',

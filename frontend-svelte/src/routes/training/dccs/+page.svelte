@@ -8,7 +8,8 @@
 	import PracticeModeBanner from '$lib/components/PracticeModeBanner.svelte';
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
-	import { formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { localeText, formatNumber, formatPercent, locale, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -570,25 +571,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 
 			<!-- Clinical info -->
 			<div class="card clinical-info">
-				<h3 class="card-heading">{t('Clinical Significance')}</h3>
-				<div class="clinical-grid">
-					<div class="clinical-item">
-						<span class="ci-label">{t('Validated By')}</span>
-						<span>{t('Zelazo 2006 developmental and clinical research')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('MS Relevance')}</span>
-						<span>{t('Sensitive to MS-related executive and frontal lobe dysfunction')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('Key Metric')}</span>
-						<span>{t('Switch Cost = extra reaction time when rule changes; Perseverative errors = stuck on old rule')}</span>
-					</div>
-					<div class="clinical-item">
-						<span class="ci-label">{t('Advantage')}</span>
-						<span>{t('Simpler and less frustrating than WCST; clear rule-switching paradigm')}</span>
-					</div>
-				</div>
+				<h3 class="card-heading">{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+				<p>{localeText(paradigmInspirationNote({ en: 'Dimensional Change Card Sort (Zelazo, 2006)', bn: 'ডাইমেনশনাল চেঞ্জ কার্ড সর্ট (জেলাজো, ২০০৬)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<!-- Performance guide -->
@@ -807,9 +792,10 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<h3 class="card-heading">{t('What Your Results Mean')}</h3>
 				<p>
 					{$locale === 'bn'
-						? 'DCCS-এ কম সুইচ কস্ট এবং কম পার্সেভারেটিভ ত্রুটি ভালো কগনিটিভ ফ্লেক্সিবিলিটি নির্দেশ করে। MS রোগীদের ক্ষেত্রে উচ্চ সুইচ কস্ট বা বেশি পার্সেভারেটিভ ত্রুটি ফ্রন্টাল লোব কার্যক্রমে পরিবর্তন নির্দেশ করতে পারে।'
-						: 'A lower switch cost and fewer perseverative errors indicate strong cognitive flexibility. In MS patients, higher switch costs or more perseverative errors may reflect changes in frontal lobe function and real-world multitasking ability.'}
+						? 'এই কাজে কম সুইচ কস্ট এবং কম পার্সেভারেটিভ ত্রুটি মানে নিয়ম বদলের সময় ভালো পারফরম্যান্স।'
+						: 'In this task, a lower switch cost and fewer perseverative errors mean better performance when the rule changes.'}
 				</p>
+				<p>{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 			</div>
 
 			<div class="btn-row">

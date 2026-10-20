@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText } from '$lib/i18n';
+	import { ABOUT_RESULTS_TITLE, ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { onMount } from 'svelte';
@@ -341,25 +342,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{lt('Pure Speed', 'শুধু গতি')}</strong>
-							<span>{lt('Measures processing speed with minimal motor demands', 'খুব কম মোটর চাহিদায় প্রসেসিং স্পিড মাপে')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('MS Friendly', 'MS-বান্ধব')}</strong>
-							<span>{lt('Low motor requirements - ideal for MS assessment', 'মোটর চাহিদা কম - MS মূল্যায়নের জন্য উপযোগী')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('Validated', 'যাচাইকৃত')}</strong>
-							<span>{lt('Woodcock-Johnson Tests of Cognitive Abilities', 'উডকক-জনসন কগনিটিভ অ্যাবিলিটিজ টেস্ট')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('Research Based', 'গবেষণাভিত্তিক')}</strong>
-							<span>{lt('Sensitive to cognitive processing efficiency (Salthouse, 1996)', 'কগনিটিভ প্রসেসিং দক্ষতার পরিবর্তন ধরতে সংবেদনশীল (সালথাউস, ১৯৯৬)')}</span>
-						</div>
-					</div>
+					<h4>{localeText(ABOUT_TASK_TITLE, $locale)}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'pattern comparison task', bn: 'প্যাটার্ন তুলনা টাস্ক' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="perf-guide">
@@ -559,7 +544,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					</div>
 
 					<div class="clinical-note">
-						<h4>{lt('Clinical Context', 'ক্লিনিক্যাল প্রেক্ষাপট')}</h4>
+						<h4>{localeText(ABOUT_RESULTS_TITLE, $locale)}</h4>
 						<p>
 							{#if sessionResults.metrics.performance_level === 'Excellent'}
 								{lt('Outstanding processing speed! Your performance of', 'অসাধারণ প্রসেসিং স্পিড! আপনার পারফরম্যান্স')} <strong>{n(sessionResults.metrics.processing_speed)} {lt('correct/min', 'সঠিক/মিনিট')}</strong> {lt('is well above average, indicating excellent cognitive efficiency and visual processing.', 'গড়ের অনেক ওপরে, যা চমৎকার কগনিটিভ দক্ষতা ও ভিজ্যুয়াল প্রসেসিং বোঝায়।')}
@@ -571,7 +556,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 								{lt('Keep practicing! Processing speed improves significantly with regular training. Pattern comparison builds quick visual processing and decision-making skills.', 'অনুশীলন চালিয়ে যান! নিয়মিত ট্রেনিংয়ে প্রসেসিং স্পিড উল্লেখযোগ্যভাবে উন্নত হয়। প্যাটার্ন তুলনা দ্রুত ভিজ্যুয়াল প্রসেসিং ও সিদ্ধান্ত নেওয়ার দক্ষতা গড়ে তোলে।')}
 							{/if}
 						</p>
-						<p class="why-matters"><strong>{lt('Why this matters for MS:', 'MS-এর ক্ষেত্রে কেন গুরুত্বপূর্ণ:')}</strong> {lt('Pattern comparison requires minimal motor skill - just clicking - making it an excellent measure of pure cognitive processing speed unaffected by physical limitations.', 'প্যাটার্ন তুলনায় খুব কম মোটর দক্ষতা লাগে - শুধু ক্লিক করা - তাই শারীরিক সীমাবদ্ধতার প্রভাব ছাড়াই কগনিটিভ প্রসেসিং স্পিড মাপার ভালো উপায়।')}</p>
+						<p class="why-matters">{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 					</div>
 
 					<div class="difficulty-info">

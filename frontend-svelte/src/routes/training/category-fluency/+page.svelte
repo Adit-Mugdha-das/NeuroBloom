@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -406,37 +407,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Info -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{t('Clinical Basis')}</div>
-						<h3>{t('Validated MS Semantic Memory Assessment')}</h3>
+						<div class="clinical-badge">{localeText({ en: 'Semantic fluency research task', bn: 'বিভাগভিত্তিক শব্দ বলার গবেষণা কাজ' }, $locale)}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{t(
-							'Category Fluency (Henry & Crawford, 2004) measures semantic memory access and executive retrieval strategy. Semantic fluency deficits in MS reflect reduced processing speed and working memory capacity. Benchmarks such as Animals (< 14/min) and Vegetables (< 10/min) are sensitive MS screening markers included in the MACFIMS and BICAMS batteries.'
-						)}
-					</p>
-				</div>
-
-				<!-- Performance Guide -->
-				<div class="card perf-guide">
-					<h3 class="card-title">{localeText({ en: 'Performance Norms (unique words / 60s)', bn: `পারফরম্যান্স মানদণ্ড (ভিন্ন শব্দ / ${compactSeconds(60)})` }, $locale)}</h3>
-					<p class="perf-subtitle">{t('Based on MS patient reference data')}</p>
-					<div class="norm-bars">
-						<div class="norm-bar">
-							<div class="norm-label">{t('Excellent')}</div>
-							<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-							<div class="norm-range">&gt; {n(18)}</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{t('Normal (MS)')}</div>
-							<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-							<div class="norm-range">{n(12)}-{n(18)}</div>
-						</div>
-						<div class="norm-bar">
-							<div class="norm-label">{t('Impaired')}</div>
-							<div class="norm-track"><div class="norm-fill norm-impaired"></div></div>
-							<div class="norm-range">&lt; {n(12)}</div>
-						</div>
-					</div>
+					<p>{localeText(paradigmInspirationNote({ en: 'semantic (category) fluency (Henry & Crawford, 2004)', bn: 'বিভাগভিত্তিক শব্দ বলা (হেনরি ও ক্রফোর্ড, ২০০৪)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions
@@ -572,7 +547,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							results.performance_rating === 'average'}
 					>
 						<div class="metric-value">{performanceLabel(results.performance_rating)}</div>
-						<div class="metric-label">{t('Performance')}</div>
+						<div class="metric-label">{localeText({ en: 'Software score band', bn: 'সফটওয়্যার স্কোর ব্যান্ড' }, $locale)}</div>
 					</div>
 				</div>
 
@@ -580,6 +555,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<div class="card">
 					<h3 class="card-title">{t('Feedback')}</h3>
 					<p class="feedback-text">{performanceFeedback()}</p>
+					<p class="feedback-text">{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 
 					{#if results.unique_words && results.unique_words.length > 0}
 						<div class="words-result-section">

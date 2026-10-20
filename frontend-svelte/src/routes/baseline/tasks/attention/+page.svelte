@@ -6,6 +6,7 @@
     import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
     import { formatNumber, locale, localeText } from '$lib/i18n';
+    import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
     import { user } from '$lib/stores';
     import { getPracticeCopy } from '$lib/task-practice';
     import { scoreContinuousPerformance } from '$lib/task-scoring';
@@ -281,8 +282,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
             </div>
 
             <div class="clinical-card">
-                <h3>Clinical Basis</h3>
-                <p>Sustained attention deficits affect over 50% of people with MS, even in early stages. The CPT (AX variant) is sensitive to fronto-parietal white matter disruption. Two key metrics — hit rate and false alarm rate — can be combined into a d' (d-prime) sensitivity index, which is used in the Brief International Cognitive Assessment for MS (BICAMS) and other MS-specific batteries. Vigilance decrement (performance drop in the second half) reflects fatigue-driven attention failure, a distinctive feature of MS cognitive impairment.</p>
+                <h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
+                <p>{localeText(paradigmInspirationNote({ en: 'continuous performance test (AX variant)', bn: 'কন্টিনিউয়াস পারফরম্যান্স টেস্ট (AX রূপ)' }), $locale)}</p>
+                <p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
             </div>
 
             <TaskPracticeActions

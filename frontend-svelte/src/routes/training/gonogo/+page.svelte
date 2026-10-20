@@ -8,6 +8,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatPercent, locale, localeText, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { getGoNoGoStimulus, getGoNoGoStimulusPair } from '$lib/i18n/task-ui.js';
 	import { user } from '$lib/stores';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
@@ -669,25 +670,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{lt('Clinical Significance', 'ক্লিনিক্যাল গুরুত্ব')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{lt('Standard Use', 'মানক ব্যবহার')}</strong>
-							<span>{lt('ADHD, frontal lobe, and MS neuropsychological assessment', 'ADHD, ফ্রন্টাল লোব এবং MS মূল্যায়নে মানক পরীক্ষা')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('Brain Region', 'মস্তিষ্কের অংশ')}</strong>
-							<span>{lt('Prefrontal cortex — inhibitory control circuits', 'প্রিফ্রন্টাল কর্টেক্স — নিয়ন্ত্রণমূলক সার্কিট')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('MS Relevance', 'MS-এ প্রাসঙ্গিকতা')}</strong>
-							<span>{lt('Sensitive to attention deficits and executive dysfunction', 'মনোযোগ ঘাটতি ও নির্বাহী কার্যকারিতার সমস্যায় সংবেদনশীল')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{lt('Training Benefits', 'অনুশীলনের উপকার')}</strong>
-							<span>{lt('Strengthens real-world impulse control and decision-making', 'বাস্তব জীবনের আবেগ সংযম ও সিদ্ধান্ত নেওয়া জোরদার করে')}</span>
-						</div>
-					</div>
+					<h4>{localeText(ABOUT_TASK_TITLE, $locale)}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'go/no-go task', bn: 'গো/নো-গো টাস্ক' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="perf-guide">
@@ -949,8 +934,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<p>{lt('A widely-used test of response inhibition and impulse control. Measures your ability to suppress automatic responses when appropriate.', 'প্রতিক্রিয়া নিয়ন্ত্রণ ও আবেগ সংযমের বহুল ব্যবহৃত পরীক্ষা। উপযুক্ত সময়ে স্বয়ংক্রিয় প্রতিক্রিয়া দমনের সক্ষমতা মাপে।')}</p>
 			</div>
 			<div class="strategy">
-				<h3>{lt('Why Used for MS?', 'MS-এ কেন ব্যবহার করা হয়?')}</h3>
-				<p>{lt('Tests executive function and frontal lobe integrity. Measures sustained attention and vigilance. Sensitive to cognitive slowing and inhibition deficits common in MS.', 'নির্বাহী কার্যকারিতা ও ফ্রন্টাল লোবের সক্ষমতা যাচাই করে। টেকসই মনোযোগ ও সতর্কতা মাপে। MS-এ সাধারণ জ্ঞানগত ধীরগতি ও নিয়ন্ত্রণ ঘাটতির প্রতি সংবেদনশীল।')}</p>
+				<h3>{lt('What this task records', 'এই কাজ কী রেকর্ড করে')}</h3>
+				<p>{lt('Correct responses on go trials, withheld responses on no-go trials, and response time. These values describe performance in this NeuroBloom task only.', 'গো ট্রায়ালে সঠিক উত্তর, নো-গো ট্রায়ালে উত্তর না দেওয়া এবং প্রতিক্রিয়ার সময়। এই মানগুলো শুধু এই NeuroBloom কাজে পারফরম্যান্স বর্ণনা করে।')}</p>
 			</div>
 			<div class="strategy">
 				<h3>{lt('Understanding Your Metrics', 'আপনার সূচকগুলো বোঝা')}</h3>

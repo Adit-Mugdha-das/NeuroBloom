@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, locale, localeText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -393,15 +394,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				<!-- Clinical Basis -->
 				<div class="clinical-info">
 					<div class="clinical-header">
-						<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-						<h3>{lt('Validated MS Strategic Reasoning Assessment', 'MS-এর জন্য যাচাইকৃত কৌশলগত যুক্তি মূল্যায়ন')}</h3>
+						<div class="clinical-badge">{lt('Strategic questioning research task', 'কৌশলগত প্রশ্ন করার গবেষণা কাজ')}</div>
+						<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 					</div>
-					<p>
-						{lt(
-							'The Twenty Questions Task (Mosher & Hornsby, 1966) assesses hypothesis-testing strategy and executive planning. In MS, deficits in constraint-seeking behaviour reflect impaired prefrontal-mediated top-down control and reduced cognitive flexibility. Inefficient questioning strategies predict everyday problem-solving difficulties and are sensitive to cognitive load imposed by MS-related fatigue.',
-							'টুয়েন্টি কোয়েশ্চেন্স টাস্ক (Mosher & Hornsby, 1966) হাইপোথিসিস-পরীক্ষা কৌশল এবং কার্যনির্বাহী পরিকল্পনা মূল্যায়ন করে। MS-এ সীমানির্ধারণকারী আচরণে ঘাটতি প্রিফ্রন্টাল-মধ্যস্থ টপ-ডাউন নিয়ন্ত্রণ দুর্বলতা প্রতিফলিত করে।'
-						)}
-					</p>
+					<p>{localeText(paradigmInspirationNote({ en: 'Twenty Questions task (Mosher & Hornsby, 1966)', bn: 'টুয়েন্টি কোয়েশ্চেন্স টাস্ক (মোশার ও হর্নসবি, ১৯৬৬)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<TaskPracticeActions

@@ -9,6 +9,7 @@
 	import TaskPracticeActions from '$lib/components/TaskPracticeActions.svelte';
 import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	import { formatNumber, formatSeconds, locale, localeText, translateText } from '$lib/i18n';
+	import { ABOUT_TASK_TITLE, paradigmInspirationNote, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { buildPracticePayload, getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	import { user } from '$lib/stores';
@@ -544,10 +545,6 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 							<span>{lt('Switch Measure', 'স্যুইচ পরিমাপ')}</span>
 							<strong>{lt('Block C minus baseline avg', 'ব্লক C বিয়োগ গড় বেসলাইন')}</strong>
 						</div>
-						<div class="detail-row">
-							<span>{lt('MS Relevance', 'এমএস প্রাসঙ্গিকতা')}</span>
-							<strong>{lt('Executive function marker', 'এক্সিকিউটিভ ফাংশন চিহ্নক')}</strong>
-						</div>
 					</div>
 				</div>
 			</div>
@@ -555,38 +552,11 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			<!-- Clinical Info -->
 			<div class="clinical-info">
 				<div class="clinical-header">
-					<div class="clinical-badge">{lt('Clinical Basis', 'ক্লিনিকাল ভিত্তি')}</div>
-					<h3>{lt('Validated Switching Paradigm', 'যাচাইকৃত স্যুইচিং প্যারাডাইম')}</h3>
+					<div class="clinical-badge">{lt('Switching research task', 'স্যুইচিং গবেষণা কাজ')}</div>
+					<h3>{localeText(ABOUT_TASK_TITLE, $locale)}</h3>
 				</div>
-				<p>
-					{lt(
-						'Jersild (1927) first described task-switching costs, and Miyake et al. (2000) confirmed cognitive shifting as a separable executive function. This paradigm isolates pure switching cost with minimal working memory demands, making it ideal for assessing cognitive flexibility impairment in multiple sclerosis.',
-						'জার্সিল্ড (১৯২৭) প্রথম টাস্ক-স্যুইচিং কস্টের বর্ণনা দেন, এবং মিয়াকে এবং অন্যান্য (২০০০) জ্ঞানীয় শিফটিংকে একটি আলাদা এক্সিকিউটিভ ফাংশন হিসেবে নিশ্চিত করেন। এই প্যারাডাইমটি মাল্টিপল স্ক্লেরোসিসে জ্ঞানীয় নমনীয়তার দুর্বলতা মূল্যায়নের জন্য আদর্শ।'
-					)}
-				</p>
-			</div>
-
-			<!-- Performance Guide -->
-			<div class="card perf-guide">
-				<h3 class="card-title">{lt('Switching Cost Norms', 'স্যুইচিং কস্ট নির্দেশিকা')}</h3>
-				<p class="perf-subtitle">{lt('Block C RT minus average of Blocks A and B', 'ব্লক C RT বিয়োগ ব্লক A এবং B-এর গড়')}</p>
-				<div class="norm-bars">
-					<div class="norm-bar">
-						<div class="norm-label">{lt('Excellent', 'উৎকৃষ্ট')}</div>
-						<div class="norm-track"><div class="norm-fill norm-excellent"></div></div>
-						<div class="norm-range">&lt; 100 ms</div>
-					</div>
-					<div class="norm-bar">
-						<div class="norm-label">{lt('Normal', 'স্বাভাবিক')}</div>
-						<div class="norm-track"><div class="norm-fill norm-normal"></div></div>
-						<div class="norm-range">100–200 ms</div>
-					</div>
-					<div class="norm-bar">
-						<div class="norm-label">{lt('Elevated', 'উচ্চ')}</div>
-						<div class="norm-track"><div class="norm-fill norm-elevated"></div></div>
-						<div class="norm-range">&gt; 200 ms</div>
-					</div>
-				</div>
+				<p>{localeText(paradigmInspirationNote({ en: 'Jersild plus-minus switching task (Jersild, 1927)', bn: 'জার্সিল্ড প্লাস-মাইনাস স্যুইচিং টাস্ক (জার্সিল্ড, ১৯২৭)' }), $locale)}</p>
+				<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 			</div>
 
 			<TaskPracticeActions

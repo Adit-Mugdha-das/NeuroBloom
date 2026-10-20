@@ -17,6 +17,7 @@ import TaskReturnButton from '$lib/components/TaskReturnButton.svelte';
 	  translateText
 	} from '$lib/i18n';
 	import { getTaskDifficultyDescription } from '$lib/i18n/task-ui.js';
+	import { ABOUT_RESULTS_TITLE, paradigmInspirationNote, RAW_RESULTS_NOTE, RESEARCH_TASK_NOTE } from '$lib/i18n/research-task-copy.js';
 	import { user } from '$lib/stores.js';
 	import { getPracticeCopy, TASK_PLAY_MODE } from '$lib/task-practice';
 import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
@@ -482,8 +483,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 						<h1>{t('PASAT')}</h1>
 						<DifficultyBadge difficulty={sessionData?.difficulty || 5} domain="Attention" />
 					</div>
-					<p class="subtitle">{t('Paced Auditory Serial Addition Test · MS Gold Standard')}</p>
-					<div class="gold-badge">⭐⭐⭐⭐⭐ {t('CLINICAL GOLD STANDARD FOR MS')}</div>
+					<p class="subtitle">{lt('Inspired by the paced serial-addition paradigm', 'পেসড সিরিয়াল-যোগ প্যারাডাইম থেকে অনুপ্রাণিত')}</p>
+					<div class="gold-badge">{lt('Serial-addition research task', 'সিরিয়াল-যোগ গবেষণা কাজ')}</div>
 				</div>
 
 				{#if practiceStatusMessage}
@@ -591,29 +592,13 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</div>
 
 				<div class="clinical-info">
-					<h4>{t('Clinical Significance')}</h4>
-					<div class="clinical-grid">
-						<div class="clinical-item">
-							<strong>{t('MS Gold Standard')}</strong>
-							<span>{t('Most widely used MS cognitive test in clinical trials')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Sustained Attention')}</strong>
-							<span>{t('Tracks attention maintenance over the whole session')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Lesion Correlation')}</strong>
-							<span>{t('Performance correlates with brain lesion burden')}</span>
-						</div>
-						<div class="clinical-item">
-							<strong>{t('Gronwall, 1977')}</strong>
-							<span>{t('Extensively validated in MS populations worldwide')}</span>
-						</div>
-					</div>
+					<h4>{lt('About this task', 'এই কাজ সম্পর্কে')}</h4>
+					<p>{localeText(paradigmInspirationNote({ en: 'Paced Auditory Serial Addition Test (Gronwall, 1977)', bn: 'পেসড অডিটরি সিরিয়াল অ্যাডিশন টেস্ট (গ্রনওয়াল, ১৯৭৭)' }), $locale)}</p>
+					<p>{localeText(RESEARCH_TASK_NOTE, $locale)}</p>
 				</div>
 
 				<div class="perf-guide">
-					<h4>{t('Performance Reference')}</h4>
+					<h4>{lt('Software score bands (developer-selected)', 'সফটওয়্যার স্কোর ব্যান্ড (ডেভেলপার-নির্ধারিত)')}</h4>
 					<div class="norm-bars">
 						<div class="norm-bar norm-excellent">
 							<span class="norm-label">{t('Excellent')}</span>
@@ -843,9 +828,9 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 					{/if}
 
 					<div class="clinical-note">
-						<h4>{t('Clinical Context')}</h4>
+						<h4>{localeText(ABOUT_RESULTS_TITLE, $locale)}</h4>
 						<p>{interpretationText()}</p>
-						<p class="why-matters"><strong>{t('Why this matters for MS:')}</strong> {t('PASAT scores correlate with brain lesion burden and predict real-world cognitive functioning. It is included in MACFIMS and BRB-N — the two main MS cognitive batteries.')}</p>
+						<p class="why-matters">{localeText(RAW_RESULTS_NOTE, $locale)}</p>
 					</div>
 
 					{#if results.adaptation_reason}
@@ -900,8 +885,8 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				</p>
 			</div>
 			<div class="strategy">
-				<h3>{t('Why This Matters')}</h3>
-				<p>{t('PASAT is included in every major MS cognitive battery (MACFIMS, BRB-N). Improving on it demonstrates real gains in sustained attention — one of the most affected domains in MS.')}</p>
+				<h3>{lt('What the score shows', 'স্কোর কী দেখায়')}</h3>
+				<p>{lt('A higher score shows better performance on this NeuroBloom serial-addition task. Improvement may reflect practice or changes in task difficulty and testing conditions; transfer to everyday cognition or clinical benefit has not been established.', 'বেশি স্কোর মানে এই NeuroBloom সিরিয়াল-যোগ কাজে ভালো পারফরম্যান্স। উন্নতি অনুশীলন বা কাজের কঠিনতা ও পরীক্ষার পরিবেশের পরিবর্তনের কারণেও হতে পারে; দৈনন্দিন কগনিশনে এর প্রভাব বা ক্লিনিক্যাল উপকার প্রতিষ্ঠিত হয়নি।')}</p>
 			</div>
 		</div>
 	</div>

@@ -16,7 +16,7 @@
 	const copy = {
 		banglaShort: { en: 'BN', bn: 'বাংলা' },
 		backgroundAlt: { en: 'NeuroBloom background', bn: 'NeuroBloom পটভূমি' },
-		badge: { en: 'Clinically Validated · MS Cognitive Care', bn: 'ক্লিনিক্যালভাবে যাচাইকৃত · MS কগনিটিভ কেয়ার' },
+		badge: { en: 'Research software · MS cognitive care', bn: 'গবেষণা সফটওয়্যার · MS কগনিটিভ কেয়ার' },
 		subtitle: {
 			en: 'A professional platform for cognitive rehabilitation, patient monitoring, and multiple sclerosis support.',
 			bn: 'কগনিটিভ পুনর্বাসন, রোগী পর্যবেক্ষণ এবং মাল্টিপল স্ক্লেরোসিস সহায়তার জন্য পেশাদার প্ল্যাটফর্ম।'
