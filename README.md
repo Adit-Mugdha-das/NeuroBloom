@@ -259,22 +259,23 @@ The generated results demonstrate numerical software behaviour using synthetic d
 
 ### Tested Deployment Environment
 
-The demonstration was tested using:
+Two records apply. The October 2026 record is the authors' manual reproduction of the demonstration workflow. The 25 November 2026 record is a clean installation that followed only the steps above, with the automated tests run against the running containers.
 
-| Component | Tested environment |
-|---|---|
-| Host operating system | Windows 10 Pro, build 19045 |
-| Docker | Docker Desktop, Docker 29.2.0 |
-| Docker Compose | v5.0.2 |
-| Backend container | Python 3.12 |
-| Frontend container | Node.js 20 |
-| Database container | PostgreSQL 16 |
-| Browser | Google Chrome 151.0.7922.138 |
-| Browser | Microsoft Edge 154.0.4258.37 |
+| Component | Manual reproduction (October 2026, authors' record) | Clean installation and automated tests (25 November 2026) |
+|---|---|---|
+| Host operating system | Windows 10 Pro, build 19045 | Windows 10 Pro, build 19045 |
+| Docker | Docker Desktop, Docker 29.2.0 | Docker Desktop, Docker 29.2.0 |
+| Docker Compose | v5.0.2 | v5.0.2 |
+| Backend container | Python 3.12 | Python 3.12 (`python:3.12-slim`) |
+| Frontend container | Node.js 20 | Node.js 20 build (`node:20-alpine`), served by nginx 1.27 |
+| Database container | PostgreSQL 16 | PostgreSQL 16 (`postgres:16-alpine`) |
+| Browser | Google Chrome 151.0.7922.138 and Microsoft Edge 154.0.4258.37, used manually | Chromium 131.0.6778.33 (Playwright 1.49.1, headless), automated tests only |
 
-Other operating systems and supported dependency versions may work but are not covered by this specific reproduction record.
+In the November check the synthetic dataset was generated as described (8 clinicians, 8 patients, 60 training sessions with contextual records, 8 progress reports, 4 prescriptions), the three analysis scripts reproduced `backend/analysis/results/` byte for byte, and the 14 browser end-to-end tests passed against the running containers. The only deviation was the frontend host port (8081 instead of 8080, with the matching CORS origin), because port 8080 was occupied by another service on that machine.
 
-A clean installation was repeated on 25 November 2026 on the same host (Docker 29.2.0, Compose v5.0.2), using a fresh copy of the repository without any local configuration and following only the steps above. The synthetic dataset was generated as described (8 clinicians, 8 patients, 60 training sessions with contextual records, 8 progress reports, 4 prescriptions), the three analysis scripts reproduced `backend/analysis/results/` byte for byte, and the browser end-to-end tests passed against the running containers. The only deviation was the frontend host port (8081 instead of 8080, with the matching CORS origin), because port 8080 was occupied by another service on that machine.
+The automated suites also run in GitHub Actions on Ubuntu (`ubuntu-latest`) with Python 3.12, Node.js 20, PostgreSQL 16 and Playwright Chromium; all four jobs passed for the revision containing the authentication changes. Local test runs used Python 3.13 and Node.js 22.
+
+Not tested: macOS and Linux hosts for the Docker deployment, Firefox and Safari, current Chrome and Edge releases other than those listed, mobile browsers, and the hosted demonstration instance. Other operating systems and dependency versions may work but are not covered by these records.
 
 ## Software Testing and Continuous Integration
 
@@ -484,6 +485,9 @@ The software has not undergone a formal security audit or penetration test, and 
 - Research-export pseudonyms are derived from the account id and email with a fixed text and no secret key, so anyone who knows a patient's id and email can link that patient to the export. The exports are pseudonymised, not anonymised.
 - The developer tools (`/api/training/dev/*`, used by the in-app development panel) let a signed-in patient generate or clear synthetic sessions in their own record; they should be disabled in any non-demonstration deployment.
 - The demonstration accounts and the default administrator account use fixed, published passwords for local testing. They must not be used in production.
+- The httpOnly cookie prevents page scripts from reading the token, but a script injected into the page (cross-site scripting) could still send requests with the user's session while the page is open. No dedicated cross-site scripting review or Content Security Policy is in place.
+- The access-control rules are verified by the automated tests described above, not by an independent review.
+- The public demonstration instance linked at the top of this README is deployed separately. Until it is redeployed from this version with the settings under [Deployment settings](#deployment-settings), it may not include these controls.
 
 The cognitive tasks are NeuroBloom-specific implementations inspired by established cognitive paradigms. They are not equivalent to standardized clinical instruments, and their psychometric and clinical validity has not been established.
 
