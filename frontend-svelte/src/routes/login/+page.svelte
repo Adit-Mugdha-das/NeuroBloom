@@ -124,7 +124,7 @@
 					</div>
 					<div>
 						<div class="feature-title">{t('Adaptive Training')}</div>
-						<div class="feature-desc">{t('AI-driven exercises that adjust to your performance')}</div>
+						<div class="feature-desc">{t('Task difficulty adjusts to your recent results using fixed rules')}</div>
 					</div>
 				</div>
 			</div>

@@ -20,7 +20,6 @@ export const DIGIT_MAP = {
 
 export const EXACT_TRANSLATIONS = {
 	'Clinical-Grade Cognitive Assessment Platform': 'ক্লিনিক্যাল মানের কগনিটিভ মূল্যায়ন প্ল্যাটফর্ম',
-	'Personalized cognitive training with adaptive AI': 'অ্যাডাপটিভ এআই-চালিত ব্যক্তিগত কগনিটিভ ট্রেনিং',
 	'MS-specific features • Weekly progress tracking': 'এমএস-উপযোগী ফিচার • সাপ্তাহিক অগ্রগতি ট্র্যাকিং',
 	'Welcome Back': 'আবার স্বাগতম',
 	"Don't have an account?": 'অ্যাকাউন্ট নেই?',
@@ -717,7 +716,6 @@ export const PHRASE_TRANSLATIONS = {
 	'Progress Analytics': 'অগ্রগতির বিশ্লেষণ',
 	'Track cognitive trends over time with clinical insights': 'ক্লিনিক্যাল অন্তর্দৃষ্টিসহ সময়ের সাথে কগনিটিভ প্রবণতা ট্র্যাক করুন',
 	'Adaptive Training': 'অভিযোজিত ট্রেনিং',
-	'AI-driven exercises that adjust to your performance': 'আপনার পারফরম্যান্স অনুযায়ী সামঞ্জস্যকারী এআই-চালিত অনুশীলন',
 	'Designed for MS cognitive care': 'এমএস কগনিটিভ সেবার জন্য ডিজাইন করা হয়েছে',
 	'Sign in to continue your cognitive journey': 'আপনার কগনিটিভ যাত্রা চালিয়ে যেতে সাইন ইন করুন',
 	'Email address': 'ইমেইল ঠিকানা',
@@ -725,6 +723,7 @@ export const PHRASE_TRANSLATIONS = {
 	'Sign in as Clinician': 'ক্লিনিশিয়ান হিসেবে সাইন ইন করুন',
 	'Sign in as Admin': 'অ্যাডমিন হিসেবে সাইন ইন করুন',
 	'Signing in…': 'সাইন ইন করা হচ্ছে…',
+	'Task difficulty adjusts to your recent results using fixed rules': 'নির্ধারিত নিয়ম অনুযায়ী আপনার সাম্প্রতিক ফলাফল দেখে টাস্কের কঠিনতা বদলায়',
 	'Your session has ended. Please sign in again.': 'আপনার সেশন শেষ হয়েছে। অনুগ্রহ করে আবার সাইন ইন করুন।',
 	'Create one': 'এখানে তৈরি করুন',
 

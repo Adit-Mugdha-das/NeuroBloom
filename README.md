@@ -75,6 +75,14 @@ cp .env.example .env.local
 
 Edit `.env.local` with the local PostgreSQL database name, username, password, host, port, and allowed frontend origins.
 
+Set `JWT_SECRET_KEY` in `.env.local` to a long random value (at least 32 characters) so that sign-in sessions survive a backend restart:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+
+If it is not set, the backend generates a temporary key at start-up and every session ends when the backend restarts. See [Security and Intended Use](#security-and-intended-use) for the session and cookie settings.
+
 For local development without Docker, ensure PostgreSQL is running and the configured database exists before starting the backend. Leave `DATABASE_URL` commented unless you intentionally want to override the individual PostgreSQL settings.
 
 If necessary, create the database:
@@ -266,32 +274,50 @@ The demonstration was tested using:
 
 Other operating systems and supported dependency versions may work but are not covered by this specific reproduction record.
 
+A clean installation was repeated on 25 November 2026 on the same host (Docker 29.2.0, Compose v5.0.2), using a fresh copy of the repository without any local configuration and following only the steps above. The synthetic dataset was generated as described (8 clinicians, 8 patients, 60 training sessions with contextual records, 8 progress reports, 4 prescriptions), the three analysis scripts reproduced `backend/analysis/results/` byte for byte, and the browser end-to-end tests passed against the running containers. The only deviation was the frontend host port (8081 instead of 8080, with the matching CORS origin), because port 8080 was occupied by another service on that machine.
+
 ## Software Testing and Continuous Integration
 
-NeuroBloom includes automated backend and frontend tests to check software functionality and the consistency of its recorded outputs.
+NeuroBloom includes automated backend, frontend and browser tests. They check software behaviour, access control and the consistency of recorded outputs; they do not establish the psychometric or clinical validity of the cognitive tasks.
 
-### Test Coverage
+### Test suites
 
-The backend suite contains **118 pytest tests**, covering numerical scoring, trial generation, response classification, difficulty adjustment, task inventory, analytics, API endpoints, and patient–clinician interactions.
+| Suite | Tool | Tests | Database |
+|---|---|---|---|
+| Backend unit and API tests | pytest | 346 collected (340 run, 6 skipped) | In-memory SQLite by default; PostgreSQL 16 in CI |
+| Frontend unit tests | Vitest | 36 | — |
+| Browser end-to-end tests | Playwright (Chromium) | 14 | PostgreSQL 16 |
 
-The frontend suite contains **26 Vitest tests**, covering scoring functions, task navigation, the baseline workflow, progress summaries, and analytics display behaviour.
+**Backend.** 118 tests cover numerical scoring, trial generation, response classification, difficulty adjustment, the task inventory, analytics, API endpoints, focus rebalancing and missing-data handling, including an API-level patient–clinician integration test. The authentication and authorization suite (`backend/tests/test_security_access_control.py`) adds 228 tests:
 
-An API-level integration test covers patient registration, clinician assignment, baseline completion, training-plan generation, completion of a four-task session, difficulty adaptation, and clinician access to patient records. It also verifies that a clinician without an approved assignment cannot retrieve another patient's records.
+- 189 parametrised checks, one per API route and method, that requests without a valid session are refused (the 6 public routes — registration, sign-in and sign-out — are skipped);
+- 39 scenario tests covering login tokens and the httpOnly cookie, `/api/auth/me` and logout, expired, forged and malformed tokens, password resets, deactivated and suspended accounts, the cross-site request forgery header, role separation (including colliding patient, clinician and administrator ids), binding of every user, patient, clinician and administrator identifier to the signed-in account, ownership of messages, prescriptions, reports, assignment requests, training sessions, session contexts and training plans, consent withdrawal and restoration, consent being changed only by the patient (a clinician's approval cannot turn it back on), immediate loss of access when an assignment ends, separation of the administrator role, and authenticated session completion with result persistence.
 
-At the time of the reported revision verification:
+The integration test now signs in each actor through the real login endpoints and confirms that an unassigned clinician, signed in with its own session, is refused — including when it supplies the assigned clinician's identifier.
+
+**Browser end-to-end tests** (`frontend-svelte/e2e/`) run against a PostgreSQL-backed backend loaded with the synthetic demonstration data:
+
+- sign-in, the httpOnly session cookie (no token visible to page scripts or stored in the browser), logout, wrong passwords, expired or tampered sessions, and redirection of visitors without a session;
+- a patient cannot read another patient's records, even after editing the profile saved in the browser; patient sessions cannot use clinician or administrator endpoints; clinicians cannot open patients assigned to someone else;
+- a patient completes a task (Pattern Comparison) in the browser, and the stored result appears in the patient's history and in the assigned clinician's session list;
+- a clinician reviews an assigned patient, loses access while the patient's consent is withdrawn, and regains it when consent is restored;
+- administrators can only use admin data as themselves;
+- every patient page — including the 31 training task pages and the 6 baseline task pages, which together host all 35 tasks — and every clinician and administrator page loads without any refused (401/403) or failed (5xx) API call. (Four baseline tasks — Simple Reaction Time, N-Back, Continuous Performance and Task Switching — share their training page with Choice Reaction Time, Dual N-Back, Go/No-Go and Rule Shift; see `docs/task_inventory.csv`.)
+
+### Results at the time of revision (25 November 2026)
 
 | Metric | Result |
 |---|---|
-| Backend tests | 118 |
-| Frontend tests | 26 |
-| Total tests | 144 |
-| Test status | All 144 passed |
-| Backend line coverage | Approximately 40% |
-| Frontend line coverage | Approximately 13% |
+| Backend tests, SQLite | 340 passed, 6 skipped |
+| Backend tests, PostgreSQL 16 | 340 passed, 6 skipped |
+| Frontend unit tests | 36 passed |
+| Browser end-to-end tests | 14 passed |
+| Backend line coverage (application package) | 49% (about 40% before this revision) |
+| Frontend unit-test line coverage | 13.75% |
 
-These coverage figures describe the reported revision run, not a new measurement from every subsequent commit.
+The backend coverage of the access-control module (`app/core/access_control.py`) is 94%. Coverage figures describe this run, not a measurement of every later commit.
 
-### Running Backend Tests
+### Running backend tests
 
 From the repository root:
 
@@ -304,11 +330,15 @@ pip install pytest pytest-httpx pytest-cov
 pytest tests/ -v --tb=short --cov=app --cov-report=term
 ```
 
-The backend tests use an isolated in-memory SQLite database instead of PostgreSQL, so a running PostgreSQL server is not required for the test suite.
+By default each test uses an isolated in-memory SQLite database, so no PostgreSQL server is needed. To run the same suite against PostgreSQL, point `TEST_DATABASE_URL` at an empty test database (it is emptied before every test):
 
-### Running Frontend Tests
+```bash
+docker run -d --name neurobloom-test-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=neurobloom_test -p 5433:5432 postgres:16-alpine
 
-From the repository root:
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/neurobloom_test pytest tests/ -v --tb=short
+```
+
+### Running frontend unit tests
 
 ```bash
 cd frontend-svelte
@@ -317,36 +347,45 @@ npm ci
 npm run test:coverage
 ```
 
-The command executes the Vitest suite and produces a coverage summary.
+### Running browser end-to-end tests
+
+The browser tests need a backend with the synthetic demonstration data and a frontend build that points at it. Use a dedicated database: the tests sign in as demonstration accounts and add task results.
+
+```bash
+# 1. Backend (from backend/), with an empty PostgreSQL database
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5434/neurobloom_e2e
+export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(64))")
+export CORS_ALLOWED_ORIGINS=http://localhost:5173
+uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+python seed_initial_data.py
+python scripts/seed_demo_clinical_data.py
+
+# 2. Frontend (from frontend-svelte/)
+npx playwright install chromium
+VITE_API_BASE_URL=http://localhost:8000 npm run build
+npm run test:e2e
+```
+
+Playwright serves the built frontend at `http://localhost:5173` and uses the API at `E2E_API_URL` (default `http://localhost:8000`).
 
 ### GitHub Actions
 
-Continuous integration is configured in:
+Continuous integration is configured in `.github/workflows/tests.yml` and runs on pushes and pull requests to `main` or `master`:
 
-`.github/workflows/tests.yml`
+| Job | What it runs |
+|---|---|
+| Frontend Unit Tests | Vitest with coverage (Node.js 20) |
+| Backend API Tests | pytest with coverage on in-memory SQLite (Python 3.12) |
+| Backend API Tests (PostgreSQL) | the same pytest suite against a PostgreSQL 16 service |
+| Browser End-to-End Tests | Playwright (Chromium) against the backend on PostgreSQL 16, loaded with the synthetic demonstration data |
 
-GitHub Actions runs the automated suites for pushes and pull requests targeting the `main` or `master` branches.
+### Testing limitations
 
-The CI environment uses:
-
-- Ubuntu runners
-- Python 3.12 for backend tests
-- Node.js 20 for frontend tests
-- pytest and Vitest for testing
-- Coverage reporting for both suites
-
-The automated tests check implementation behaviour but do not establish the psychometric or clinical validity of NeuroBloom's cognitive tasks.
-
-### Testing Limitations
-
-The current test suite has several limitations:
-
-- Backend API tests use SQLite rather than production PostgreSQL.
-- Frontend tests focus on scoring and workflow logic rather than Svelte page components.
-- Browser-level end-to-end tests are not yet included.
-- Coverage is incomplete, particularly for API, page, and user-interface code.
-
-Further testing will be needed before the software can be considered for sensitive multi-user or clinical deployment.
+- Frontend unit tests cover scoring and workflow modules; Svelte page components are exercised by the browser tests rather than by unit tests, so frontend unit-test line coverage remains low.
+- The browser tests complete one task (Pattern Comparison) end to end; the other task pages are opened and loaded but not completed in the browser. Completion of a full four-task session is verified at the API level.
+- Browser tests run in Chromium only.
+- Coverage of the large training and clinician routers remains partial.
+- No load testing, penetration testing or formal security audit has been carried out.
 
 ## API Documentation
 
@@ -384,13 +423,67 @@ NeuroBloom/
 
 ## Security and Intended Use
 
-NeuroBloom is a research software prototype intended for isolated demonstrations using synthetic data.
+NeuroBloom is a research software prototype intended for isolated demonstrations using synthetic data. Do not enter real patient information. The sign-in and registration pages show this notice.
 
-Passwords are protected using bcrypt hashing and checked at login. However, subsequent API requests are not bound to server-verified authenticated sessions. Some endpoints rely on caller-supplied account identifiers, and consent revocation is not consistently enforced across all relevant endpoints.
+### Implemented security controls
 
-These limitations mean the current software should not be used with real patient data or sensitive multi-user records. Stronger authentication, consistent authorization, security testing, and appropriate data protection measures are required before such deployment.
+- **Passwords** are stored as bcrypt hashes.
+- **Authentication.** Patient, clinician and administrator sign-in issues a signed JSON Web Token (HS256, PyJWT) that expires after 8 hours by default (`ACCESS_TOKEN_EXPIRE_MINUTES`). The token names the account and its role and carries a fingerprint of the stored password hash, so changing or resetting a password ends existing sessions. On every request the server loads the account again: deactivated patients and administrators, and suspended or unverified clinicians, are refused immediately.
+- **Token storage in the browser.** The token is delivered only as an httpOnly cookie (`neurobloom_session`, `SameSite=Lax` by default, `Secure` when configured), so page scripts cannot read it. localStorage and sessionStorage were rejected because any injected script can read them, and in-memory storage because every page refresh would sign the user out. The browser keeps only a non-secret display profile (id, role, name); the server never trusts it and resynchronises it from `/api/auth/me`. API clients may send the same token as `Authorization: Bearer`.
+- **Cross-site request forgery.** Requests that change data and are authenticated by the cookie must carry the header `X-Requested-With: NeuroBloom`; other sites cannot add it because CORS only admits the configured origins.
+- **Role-based authorization on the server.** Every API endpoint except registration, sign-in and sign-out requires a valid session. Every user, patient, clinician or administrator identifier in a request must belong to the signed-in account of the matching role; patients act only on their own records, clinicians only as themselves, administrators only through the admin endpoints and only as themselves.
+- **Resource ownership.** Messages, prescriptions, progress reports, assignment requests, training sessions, session contexts and training plans are checked against their owner, not only against the identifier in the URL. Patients can message only their assigned clinician and clinicians only their assigned patients. A clinician can add a patient directly only if that patient has requested that clinician.
+- **Consent.** Consent to share data with clinicians is a single setting per patient, changed only by the patient: it is turned on when the patient requests a clinician (the request form says so) and can be switched off or on at any time in Settings. A clinician's approval never changes it, so a withdrawal made while a request is pending stays in force. A clinician sees or acts on a patient's data — overview, sessions, trends, progress monitoring, the patient's analytics, interventions, prescriptions, reports, training-plan and focus changes — only while the assignment is active **and** the patient consents. Withdrawing consent or ending the assignment takes effect on the next request, including for sessions that are already signed in. Without consent the assigned patient stays in the clinician's patient list (name, email, diagnosis and treatment goal from the assignment) without activity or baseline status, and is excluded from the clinician's cohort analytics and prescription directory. Messaging between the patient and the assigned clinician, and unassignment, remain available because they do not disclose training data.
+- **Logging.** Sign-in no longer writes email addresses or account lists to the server log. Selected administrative actions and research-data exports are recorded in the audit log.
 
-The demonstration accounts and default administrator account use fixed passwords for local testing. They must not be used in production.
+These controls are covered by the authentication and authorization tests described under [Software Testing and Continuous Integration](#software-testing-and-continuous-integration).
+
+### Administrator permissions
+
+Administrators sign in separately and can use only the admin endpoints, and only as themselves; an administrator session is refused on patient and clinician endpoints. Through the admin endpoints an administrator can:
+
+- view platform statistics, review flags, system health and the audit log;
+- list patients and clinicians with identifying details (name, email, date of birth, diagnosis, consent status), and open a patient's overview with the assigned clinician, training summary, review priority, recent sessions and progress reports;
+- read the full text of patient–clinician messages (message audit) and the list of clinician interventions;
+- approve, suspend and reactivate clinicians, deactivate and reactivate patients, reset patient and clinician passwords, and transfer a patient to another clinician;
+- manage departments and platform notifications;
+- export research datasets in which patients are identified by a pseudonym.
+
+These administrator permissions do not depend on the patient's consent setting, which governs clinician access only. A transfer assigns a new clinician without a request from the patient; that clinician can see the patient's data only if the patient's consent is on. A password reset lets the administrator sign in as that account. Selected administrator actions are written to the audit log; clinician and patient data access is not.
+
+### Session tokens: when they stop working
+
+| Event | Effect on existing sessions |
+|---|---|
+| Token reaches its expiry time (default 8 hours after sign-in) | Refused |
+| Password changed or reset | Refused immediately |
+| Account deactivated (patient or administrator) or clinician suspended | Refused immediately, for as long as the account stays deactivated |
+| Account reactivated before the token's expiry | The earlier token works again |
+| Signing key (`JWT_SECRET_KEY`) changed, or backend restarted without a fixed key | All sessions refused |
+| Sign-out | The browser's cookie is cleared; a copy of the token taken earlier remains valid until it expires |
+| Consent withdrawn or assignment ended | The session stays valid, but the clinician's access to that patient is refused on the next request |
+
+### Deployment settings
+
+| Setting | Purpose |
+|---|---|
+| `JWT_SECRET_KEY` | Token signing key, at least 32 characters. Required for any shared deployment; if unset, a temporary key is generated and sessions end on restart. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Session lifetime (default 480). |
+| `AUTH_COOKIE_SECURE` | Set to `true` whenever the application is served over HTTPS. |
+| `AUTH_COOKIE_SAMESITE` | `lax` (default) when the frontend and API share a site, e.g. `localhost:8080` and `localhost:8000`. Use `none` (requires `AUTH_COOKIE_SECURE=true`) only when they are on different sites; browsers that block third-party cookies may then refuse the session, so serving both from the same site is preferred. |
+| `CORS_ALLOWED_ORIGINS` | Must list the exact origin of the frontend. |
+
+### Remaining limitations
+
+The software has not undergone a formal security audit or penetration test, and it must not be used with real patient data or sensitive multi-user records. In particular:
+
+- Tokens are stateless (see the table above). There is no server-side revocation list, so a copied token cannot be cancelled individually before it expires; only a password change, deactivation or a new signing key stops it. There is no refresh-token mechanism.
+- There is no rate limiting or lockout after repeated failed sign-ins, no multi-factor authentication and no password-strength policy.
+- Stored records have no additional field-level encryption; protection in transit depends on HTTPS configured at deployment.
+- Administrators have broad access to identifiable records and message content independent of patient consent (see above), and access by clinicians and patients is not audit-logged.
+- Research-export pseudonyms are derived from the account id and email with a fixed text and no secret key, so anyone who knows a patient's id and email can link that patient to the export. The exports are pseudonymised, not anonymised.
+- The developer tools (`/api/training/dev/*`, used by the in-app development panel) let a signed-in patient generate or clear synthetic sessions in their own record; they should be disabled in any non-demonstration deployment.
+- The demonstration accounts and the default administrator account use fixed, published passwords for local testing. They must not be used in production.
 
 The cognitive tasks are NeuroBloom-specific implementations inspired by established cognitive paradigms. They are not equivalent to standardized clinical instruments, and their psychometric and clinical validity has not been established.
 
