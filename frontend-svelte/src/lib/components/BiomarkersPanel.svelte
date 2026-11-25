@@ -140,6 +140,9 @@
 		if (key === 'declining') {
 			return { icon: '↘', label: lt('Declining', 'কমতির দিকে'), color: '#f44336', bg: '#ffebee' };
 		}
+		if (key === 'insufficient_data') {
+			return { icon: '–', label: insufficientData(), color: '#757575', bg: '#f5f5f5' };
+		}
 		return { icon: '→', label: lt('Stable', 'স্থিতিশীল'), color: '#667eea', bg: '#f0f2ff' };
 	}
 
@@ -152,6 +155,9 @@
 		}
 		if (change === 'shorter') {
 			return { icon: '↘', label: lt('Shorter response times', 'প্রতিক্রিয়ার সময় কমছে'), color: '#667eea', bg: '#f0f2ff' };
+		}
+		if (change === 'insufficient_data') {
+			return { icon: '–', label: insufficientData(), color: '#757575', bg: '#f5f5f5' };
 		}
 		return { icon: '→', label: lt('Stable response times', 'প্রতিক্রিয়ার সময় স্থিতিশীল'), color: '#667eea', bg: '#f0f2ff' };
 	}

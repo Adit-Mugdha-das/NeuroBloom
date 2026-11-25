@@ -28,16 +28,18 @@ export function correlationStrength(r) {
 }
 
 /**
- * Reaction-time trend as a neutral description: 'longer', 'shorter' or 'stable'.
+ * Reaction-time trend as a neutral description: 'longer', 'shorter', 'stable',
+ * or 'insufficient_data' when too few sessions exist for a trend to be classified.
  * The generic trend label calls a rising slope "improving", but for reaction
  * time a rising slope means longer responses, so it is never shown as improvement.
  */
 export function responseTimeChange(rtTrend) {
 	const explicit = rtTrend?.response_time_change;
-	if (explicit === 'longer' || explicit === 'shorter' || explicit === 'stable') return explicit;
+	if (['longer', 'shorter', 'stable', 'insufficient_data'].includes(explicit)) return explicit;
 
 	const direction = String(rtTrend?.direction || '').toLowerCase();
 	if (direction === 'improving') return 'longer';
 	if (direction === 'declining') return 'shorter';
+	if (direction === 'insufficient_data') return 'insufficient_data';
 	return 'stable';
 }

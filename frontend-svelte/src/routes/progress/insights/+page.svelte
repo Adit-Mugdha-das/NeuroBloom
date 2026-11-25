@@ -130,6 +130,7 @@
 		if (key === 'improving') return lt('Improving', 'উন্নতির দিকে');
 		if (key === 'declining') return lt('Declining', 'কমতির দিকে');
 		if (key === 'stable') return lt('Stable', 'স্থিতিশীল');
+		if (key === 'insufficient_data') return lt('Insufficient data', 'অপর্যাপ্ত তথ্য');
 		return lt('Unavailable', 'পাওয়া যায়নি');
 	}
 

@@ -36,18 +36,31 @@ def test_fatigue_proxy_configuration_matches_documented_values():
 
 
 def test_ewma_defaults_and_hand_derived_values():
-    # alpha=0.2: EWMA = [10, 0.2*20+0.8*10] = [10, 12]; slope 2 over two points;
-    # series mean 15 -> relative slope 0.1333 > 0.01 -> improving; strength min(1, 0.1333*20)=1.
-    result = calculate_ewma_trend([10, 20])
-    assert result["ewma_values"] == [10, 12]
-    assert result["recent_slope"] == 2.0
+    # alpha=0.2: EWMA = [10, 0.2*20+0.8*10, 0.2*30+0.8*12] = [10, 12, 15.6];
+    # least-squares slope over x=0,1,2 is 2.8; series mean 20 -> relative slope 0.14 > 0.01
+    # -> improving; strength min(1, 0.14*20) = 1.
+    result = calculate_ewma_trend([10, 20, 30])
+    assert result["ewma_values"] == [10, 12, 15.6]
+    assert result["recent_slope"] == 2.8
     assert result["trend_direction"] == "improving"
     assert result["trend_strength"] == 1.0
 
 
+def test_ewma_needs_three_observations_for_a_trend_label():
+    # Fewer than three values: EWMA values are still returned, but no trend is classified.
+    assert calculate_ewma_trend([])["trend_direction"] == "insufficient_data"
+    single = calculate_ewma_trend([70])
+    assert single["ewma_values"] == [70] and single["current_ewma"] == 70
+    assert single["trend_direction"] == "insufficient_data"
+    two = calculate_ewma_trend([10, 20])
+    assert two["ewma_values"] == [10, 12] and two["current_ewma"] == 12
+    assert two["trend_direction"] == "insufficient_data"
+    assert two["trend_strength"] == 0.0
+
+
 def test_ewma_threshold_parameter_changes_the_label():
-    # Relative slope is 0.1333, so a threshold above that leaves the series stable.
-    assert calculate_ewma_trend([10, 20], relative_slope_threshold=0.2)["trend_direction"] == "stable"
+    # Relative slope is 0.14, so a threshold above that leaves the series stable.
+    assert calculate_ewma_trend([10, 20, 30], relative_slope_threshold=0.2)["trend_direction"] == "stable"
 
 
 def test_ewma_window_parameter_limits_the_points_used():

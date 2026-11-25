@@ -179,4 +179,5 @@ def test_api_reports_constant_context_correlation_as_insufficient_data(api, sess
     # With valid trial RTs the CV is a measured value.
     assert data["rt_coefficient_of_variation"]["status"] == "available"
     assert data["rt_coefficient_of_variation"]["mean"] is not None
-    assert data["rt_trend"]["response_time_change"] in {"longer", "shorter", "stable"}
+    # No session-level mean RT was recorded (average_reaction_time=0), so no RT trend is classified.
+    assert data["rt_trend"]["response_time_change"] == "insufficient_data"

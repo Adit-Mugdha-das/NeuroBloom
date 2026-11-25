@@ -15,6 +15,8 @@ import app.api.training as training_api
 from app.core.security import hash_password
 from app.main import app
 from app.models.baseline_assessment import BaselineAssessment
+from app.models.doctor import Doctor
+from app.models.patient_assignment import PatientAssignment
 from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
 from app.models.user import User
@@ -134,3 +136,68 @@ def test_generic_route_still_rebalances_once_after_fourth_session(api, session, 
         assert len(rebalance_spy) == (1 if session_number == 4 else 0)
 
     assert rebalance_spy[0]["completed_sessions"] == 4
+
+
+def _add_results(session, plan, scores_by_domain, repeats=3):
+    for _ in range(repeats):
+        for domain, score in scores_by_domain.items():
+            session.add(TrainingSession(
+                user_id=plan.user_id, training_plan_id=plan.id, domain=domain, task_type=domain,
+                score=score, accuracy=score, average_reaction_time=600, consistency=0, errors=0,
+                difficulty_before=4, difficulty_after=4, duration=60, completed=True,
+            ))
+    session.commit()
+
+
+def test_rebalancing_keeps_all_six_domains_and_uses_baseline_for_untrained_ones(session, plan):
+    # Sessions train only primary and secondary domains, so the 12 most recent results
+    # cover four domains. Planning (70) and visual scanning (75) keep their baseline scores.
+    _add_results(session, plan, {"processing_speed": 90, "attention": 85, "working_memory": 80, "flexibility": 40})
+
+    training_api.rebalance_focus_areas(plan, session)
+
+    # Ranking: flexibility 40, planning 70, visual_scanning 75, working_memory 80, attention 85, processing_speed 90.
+    assert plan.get_primary_focus() == ["flexibility", "planning"]
+    assert plan.get_secondary_focus() == ["visual_scanning", "working_memory"]
+    assert plan.get_maintenance() == ["attention", "processing_speed"]
+
+
+def test_rebalancing_keeps_clinician_selected_focus_areas(api, session, plan, rebalance_spy, auth_headers):
+    patient = session.get(User, plan.user_id)
+    patient.consent_to_share = True
+    doctor = Doctor(email="clinician@example.org", password_hash=hash_password("pass"),
+                    full_name="Synthetic clinician", is_verified=True)
+    session.add_all([patient, doctor])
+    session.commit()
+    session.refresh(doctor)
+    session.add(PatientAssignment(doctor_id=doctor.id, patient_id=patient.id, is_active=True))
+    session.commit()
+
+    chosen = {
+        "primary_focus": ["planning", "visual_scanning"],
+        "secondary_focus": ["attention", "flexibility"],
+        "maintenance": ["working_memory", "processing_speed"],
+    }
+    resp = api.patch(f"/api/doctor/{doctor.id}/patient/{patient.id}/focus-areas",
+                     params={key: json.dumps(value) for key, value in chosen.items()},
+                     headers=auth_headers(doctor, "doctor"))
+    assert resp.status_code == 200, resp.text
+
+    # Four sessions whose scores would reorder the domains if rebalancing applied.
+    api.headers.update(auth_headers(patient, "patient"))
+    scores = {"planning": 95, "visual_scanning": 90, "attention": 40, "flexibility": 45}
+    for _ in range(SESSIONS):
+        for slot, (domain, score) in enumerate(scores.items()):
+            resp = api.post("/api/training/training-session/submit", params={
+                "user_id": patient.id, "training_plan_id": plan.id, "domain": domain,
+                "task_type": domain, "task_id": f"{domain}_{slot}",
+                "score": score, "accuracy": score, "average_reaction_time": 600, "duration": 60,
+            }, json={})
+            assert resp.status_code == 200, resp.text
+
+    session.refresh(plan)
+    assert plan.total_sessions_completed == SESSIONS
+    assert len(rebalance_spy) == 1  # the fourth session still reaches the rebalancing step
+    assert plan.get_primary_focus() == chosen["primary_focus"]
+    assert plan.get_secondary_focus() == chosen["secondary_focus"]
+    assert plan.get_maintenance() == chosen["maintenance"]

@@ -14,7 +14,7 @@
       "fatigue_proxy": 0.013,
       "rt_cv": 0.105,
       "ewma": 100.0,
-      "trend": "stable",
+      "trend": "insufficient_data",
       "wpsc": null
     },
     {
@@ -28,7 +28,7 @@
       "fatigue_proxy": 0.0,
       "rt_cv": 0.118,
       "ewma": 98.0,
-      "trend": "declining",
+      "trend": "insufficient_data",
       "wpsc": null
     },
     {

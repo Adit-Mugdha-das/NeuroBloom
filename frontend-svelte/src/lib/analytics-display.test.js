@@ -32,6 +32,9 @@ describe('reaction-time trend wording', () => {
 		expect(responseTimeChange({ direction: 'improving' })).toBe('longer');
 		expect(responseTimeChange({ direction: 'declining' })).toBe('shorter');
 		expect(responseTimeChange({ direction: 'stable' })).toBe('stable');
+		// Fewer than three sessions: no trend is classified.
+		expect(responseTimeChange({ direction: 'insufficient_data' })).toBe('insufficient_data');
+		expect(responseTimeChange({ response_time_change: 'insufficient_data' })).toBe('insufficient_data');
 	});
 
 	it('prefers the explicit API field when present', () => {

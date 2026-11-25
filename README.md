@@ -277,6 +277,33 @@ The automated suites also run in GitHub Actions on Ubuntu (`ubuntu-latest`) with
 
 Not tested: macOS and Linux hosts for the Docker deployment, Firefox and Safari, current Chrome and Edge releases other than those listed, mobile browsers, and the hosted demonstration instance. Other operating systems and dependency versions may work but are not covered by these records.
 
+## Training Plan and Analytics Rules
+
+These are developer-chosen rules. They have not been empirically optimised or clinically validated.
+
+### Focus areas and rebalancing
+
+- **New plan.** A training plan is created from the baseline assessment. The six domains are ranked by baseline score: the two weakest become primary focus, the next two secondary focus and the two strongest maintenance. Each session has four tasks, one from each primary and secondary domain; maintenance domains are not trained in sessions.
+- **Automatic rebalancing.** After every fourth completed session (a session is complete when all four of its tasks are submitted) all six domains are ranked again, weakest first. A domain's value is the mean score of its results among the plan's 12 most recent task results; a domain with no result in that window (normally a maintenance domain) keeps its baseline score. The two weakest become primary, the next two secondary and the two strongest maintenance, so a maintenance domain can return to focus and every domain always has a role. Ties keep the order working memory, attention, flexibility, planning, processing speed, visual scanning. Every submitted task result counts, including a repeated attempt at the same task slot.
+- **Clinician-selected focus areas.** When an assigned clinician (with the patient's consent) sets the focus areas, automatic rebalancing stops for that training plan and the clinician's selection is kept until the clinician changes it. A new training plan, created from a new baseline assessment, starts again from the baseline ranking with automatic rebalancing.
+
+### Difficulty adjustment
+
+- **Initial level** (per domain, from the baseline score): below 50, level 2; 50–69, level 4; 70–84, level 7; 85 or above, level 9.
+- **Generic submission route** (`/api/training/training-session/submit`): when a session is completed, each of its four results changes the level of its domain by accuracy alone: at least 85% raises it by one, below 65% lowers it by one, otherwise it is unchanged.
+- **Task-specific routes** (`/api/training/tasks/<task>/submit/...`): the level changes after each task, using that task's own measures and thresholds (for example accuracy, span or composite scores, error counts or false alarms). Most tasks change by at most one level; Stroop, Flanker, Go/No-Go, Cancellation Test, Category Fluency and Twenty Questions can change by two.
+- Levels always stay within 1–10.
+
+### Trend labels
+
+The score and reaction-time trends use an exponentially weighted moving average (α = 0.2) and the slope of its five most recent points, relative to the series mean (±1% threshold). A trend label (improving, declining or stable) is assigned only when at least **three** valid session values are available; with fewer, the API returns `insufficient_data` and the interface shows "Insufficient data", while the EWMA value itself is still shown.
+
+### Analytics configuration
+
+- `backend/config/analytics.json` holds the fatigue-proxy parameters: component weights, normalisation scales, the minimum number of trials and the minimum observations per quartile. The EWMA smoothing constant, window, threshold and three-value minimum are defaults in `backend/app/core/advanced_analytics.py`.
+- The longitudinal indicators (fatigue proxy, reaction-time CV, EWMA trends, within-person standardized change and contextual correlations) are not stored. Each request recalculates them from the stored trial and session records with the configuration in place at that moment, so after a configuration change all indicators, including those for earlier sessions, are recalculated with the new values.
+- Indicator outputs do not record which configuration produced them. Keep a copy of `analytics.json` with any exported or reported indicator values. Saved progress reports store summary scores and domain statistics, not these indicators.
+
 ## Software Testing and Continuous Integration
 
 NeuroBloom includes automated backend, frontend and browser tests. They check software behaviour, access control and the consistency of recorded outputs; they do not establish the psychometric or clinical validity of the cognitive tasks.
@@ -285,11 +312,11 @@ NeuroBloom includes automated backend, frontend and browser tests. They check so
 
 | Suite | Tool | Tests | Database |
 |---|---|---|---|
-| Backend unit and API tests | pytest | 346 collected (340 run, 6 skipped) | In-memory SQLite by default; PostgreSQL 16 in CI |
+| Backend unit and API tests | pytest | 349 collected (343 run, 6 skipped) | In-memory SQLite by default; PostgreSQL 16 in CI |
 | Frontend unit tests | Vitest | 36 | — |
 | Browser end-to-end tests | Playwright (Chromium) | 14 | PostgreSQL 16 |
 
-**Backend.** 118 tests cover numerical scoring, trial generation, response classification, difficulty adjustment, the task inventory, analytics, API endpoints, focus rebalancing and missing-data handling, including an API-level patient–clinician integration test. The authentication and authorization suite (`backend/tests/test_security_access_control.py`) adds 228 tests:
+**Backend.** 121 tests cover numerical scoring, trial generation, response classification, difficulty adjustment, the task inventory, analytics, API endpoints, focus rebalancing (including maintenance domains and clinician-selected focus areas), the three-session minimum for trend labels and missing-data handling, including an API-level patient–clinician integration test. The authentication and authorization suite (`backend/tests/test_security_access_control.py`) adds 228 tests:
 
 - 189 parametrised checks, one per API route and method, that requests without a valid session are refused (the 6 public routes — registration, sign-in and sign-out — are skipped);
 - 39 scenario tests covering login tokens and the httpOnly cookie, `/api/auth/me` and logout, expired, forged and malformed tokens, password resets, deactivated and suspended accounts, the cross-site request forgery header, role separation (including colliding patient, clinician and administrator ids), binding of every user, patient, clinician and administrator identifier to the signed-in account, ownership of messages, prescriptions, reports, assignment requests, training sessions, session contexts and training plans, consent withdrawal and restoration, consent being changed only by the patient (a clinician's approval cannot turn it back on), immediate loss of access when an assignment ends, separation of the administrator role, and authenticated session completion with result persistence.
@@ -309,12 +336,12 @@ The integration test now signs in each actor through the real login endpoints an
 
 | Metric | Result |
 |---|---|
-| Backend tests, SQLite | 340 passed, 6 skipped |
-| Backend tests, PostgreSQL 16 | 340 passed, 6 skipped |
+| Backend tests, SQLite | 343 passed, 6 skipped |
+| Backend tests, PostgreSQL 16 | 343 passed, 6 skipped |
 | Frontend unit tests | 36 passed |
 | Browser end-to-end tests | 14 passed |
 | Backend line coverage (application package) | 49% (about 40% before this revision) |
-| Frontend unit-test line coverage | 13.75% |
+| Frontend unit-test line coverage | 14.5% of the application source (`src/`) |
 
 The backend coverage of the access-control module (`app/core/access_control.py`) is 94%. Coverage figures describe this run, not a measurement of every later commit.
 

@@ -380,7 +380,11 @@ def get_digital_biomarkers(
     # For reaction time a rising slope means longer (slower) responses, so the
     # generic improving/declining label is restated as a neutral slope direction.
     rt_direction = report['trends']['rt_trend']['trend_direction']
-    rt_slope_direction = {"improving": "longer", "declining": "shorter"}.get(rt_direction, "stable")
+    rt_slope_direction = {
+        "improving": "longer",
+        "declining": "shorter",
+        "insufficient_data": "insufficient_data",
+    }.get(rt_direction, "stable")
 
     # Assemble descriptive monitoring indicators. Legacy response keys are
     # retained for API compatibility and do not imply biomarker validation.
@@ -430,7 +434,7 @@ def get_digital_biomarkers(
         
         "rt_trend": {
             "direction": rt_direction,  # legacy key: computed slope label, not a value judgement for RT
-            "response_time_change": rt_slope_direction,  # "longer", "shorter" or "stable"
+            "response_time_change": rt_slope_direction,  # "longer", "shorter", "stable" or "insufficient_data"
             "strength": report['trends']['rt_trend']['trend_strength'],
             "current_ewma": report['trends']['rt_trend']['current_ewma']
         },

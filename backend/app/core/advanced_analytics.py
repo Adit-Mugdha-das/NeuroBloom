@@ -350,6 +350,9 @@ def calculate_within_person_variability(session_scores: List[Dict[str, Any]]) ->
 
 # ==================== TREND DETECTION ====================
 
+# Fewest valid session values for which an EWMA trend is classified.
+MIN_TREND_OBSERVATIONS = 3
+
 def calculate_ewma_trend(
     values: List[float],
     alpha: float = 0.2,
@@ -375,7 +378,7 @@ def calculate_ewma_trend(
         {
             'ewma_values': List of smoothed values,
             'current_ewma': Most recent EWMA value,
-            'trend_direction': 'improving', 'declining', or 'stable',
+            'trend_direction': 'improving', 'declining', 'stable' or 'insufficient_data',
             'trend_strength': 0-1 (how strong the trend is),
             'recent_slope': Slope of last 5 EWMA points
         }
@@ -383,12 +386,17 @@ def calculate_ewma_trend(
     Interpretation boundary:
     - Trend labels are descriptive interface summaries.
     - They do not establish relapse, treatment response, or disease control.
+
+    Minimum data:
+    - With fewer than MIN_TREND_OBSERVATIONS valid values no trend is classified:
+      trend_direction is 'insufficient_data' and trend_strength is 0.0. The
+      EWMA values themselves are still returned.
     """
-    if not values or len(values) < 2:
+    if not values:
         return {
-            'ewma_values': values,
-            'current_ewma': values[0] if values else 0,
-            'trend_direction': 'stable',
+            'ewma_values': [],
+            'current_ewma': 0,
+            'trend_direction': 'insufficient_data',
             'trend_strength': 0.0,
             'recent_slope': 0.0
         }
@@ -426,8 +434,11 @@ def calculate_ewma_trend(
     mean_value = statistics.mean(values)
     relative_slope = (recent_slope / mean_value) if mean_value > 0 else 0
     
-    # Classify trend
-    if relative_slope > relative_slope_threshold:  # default: 1% improvement per time point
+    # Classify trend (only when there are enough observations)
+    if len(values) < MIN_TREND_OBSERVATIONS:
+        trend_direction = 'insufficient_data'
+        trend_strength = 0.0
+    elif relative_slope > relative_slope_threshold:  # default: 1% improvement per time point
         trend_direction = 'improving'
         trend_strength = min(1.0, abs(relative_slope) * 20)
     elif relative_slope < -relative_slope_threshold:  # default: 1% decline per time point

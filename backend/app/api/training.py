@@ -10,6 +10,7 @@ from app.models.training_plan import TrainingPlan
 from app.models.training_session import TrainingSession
 from app.models.baseline_assessment import BaselineAssessment
 from app.models.badge import UserBadge, BadgeDefinition
+from app.models.doctor_intervention import DoctorIntervention
 from app.models.user import User
 from app.services.badge_service import BadgeService
 from app.services.patient_journey import get_real_baseline, get_reference_data_status
@@ -1042,59 +1043,64 @@ def update_streak(plan: TrainingPlan):
     
     plan.last_session_date = now
 
+def clinician_set_focus_areas(plan: TrainingPlan, db_session: Session) -> bool:
+    """True when a clinician has adjusted the focus areas of this plan since it was created."""
+    adjustment = db_session.exec(
+        select(DoctorIntervention)
+        .where(DoctorIntervention.patient_id == plan.user_id)
+        .where(DoctorIntervention.intervention_type == "focus_area_adjustment")
+        .where(DoctorIntervention.created_at >= plan.created_at)
+    ).first()
+    return adjustment is not None
+
+
 def rebalance_focus_areas(plan: TrainingPlan, db_session: Session):
     """
-    Rebalance focus areas based on recent training performance.
-    Called every 4 sessions to update primary/secondary/maintenance focus.
+    Rebalance focus areas after every fourth completed session.
+
+    All six domains are ranked, weakest first. A domain's value is the mean score
+    of its results among the plan's 12 most recent task results; a domain with no
+    result in that window (normally a maintenance domain, which sessions do not
+    train) keeps its baseline score. Ties keep the fixed domain order of
+    DOMAIN_TASK_MAPPING. The two weakest become primary focus, the next two
+    secondary focus and the two strongest maintenance, so no domain is dropped.
+
+    Focus areas that a clinician has set for this plan are never changed here.
     """
-    # Get recent training sessions (last 12 sessions = 3 full cycles of 4)
+    if clinician_set_focus_areas(plan, db_session):
+        return  # Clinician-selected focus areas take precedence
+
     recent_sessions = db_session.exec(
         select(TrainingSession)
         .where(TrainingSession.training_plan_id == plan.id)
         .order_by(desc(TrainingSession.created_at))
         .limit(12)
     ).all()
-    
     if not recent_sessions:
         return  # No sessions yet, keep current focus
-    
-    # Calculate average score per domain from recent sessions
-    domain_scores = {}
-    domain_counts = {}
-    
-    for ts in recent_sessions:
-        if ts.domain not in domain_scores:
-            domain_scores[ts.domain] = 0
-            domain_counts[ts.domain] = 0
-        domain_scores[ts.domain] += ts.score
-        domain_counts[ts.domain] += 1
-    
-    # Calculate averages
-    domain_averages = {
-        domain: domain_scores[domain] / domain_counts[domain]
-        for domain in domain_scores.keys()
+
+    baseline = db_session.get(BaselineAssessment, plan.baseline_assessment_id)
+    if baseline is None:
+        return  # No reference scores, keep current focus
+
+    # Start from the baseline score of every domain ...
+    domain_values = {
+        domain: getattr(baseline, f"{domain}_score") for domain in DOMAIN_TASK_MAPPING
     }
-    
-    # Sort domains by current performance (weakest first)
-    sorted_domains = sorted(domain_averages.items(), key=lambda x: x[1])
-    
-    # Update focus areas based on current performance
-    if len(sorted_domains) >= 6:
-        new_primary = [sorted_domains[0][0], sorted_domains[1][0]]
-        new_secondary = [sorted_domains[2][0], sorted_domains[3][0]]
-        new_maintenance = [sorted_domains[4][0], sorted_domains[5][0]]
-    elif len(sorted_domains) >= 4:
-        new_primary = [sorted_domains[0][0], sorted_domains[1][0]]
-        new_secondary = [sorted_domains[2][0], sorted_domains[3][0]]
-        new_maintenance = []
-    else:
-        return  # Not enough data, keep current focus
-    
-    # Update the plan
-    plan.primary_focus = json.dumps(new_primary)
-    plan.secondary_focus = json.dumps(new_secondary)
-    plan.maintenance = json.dumps(new_maintenance)
-    
+    # ... and replace it with the recent mean where the domain has recent results.
+    recent_scores: Dict[str, List[float]] = {}
+    for ts in recent_sessions:
+        if ts.domain in domain_values:
+            recent_scores.setdefault(ts.domain, []).append(ts.score)
+    for domain, scores in recent_scores.items():
+        domain_values[domain] = sum(scores) / len(scores)
+
+    ranked = [domain for domain, _ in sorted(domain_values.items(), key=lambda item: item[1])]
+
+    plan.primary_focus = json.dumps(ranked[0:2])
+    plan.secondary_focus = json.dumps(ranked[2:4])
+    plan.maintenance = json.dumps(ranked[4:6])
+
     db_session.add(plan)
 
 @router.get("/training-session/performance-comparison/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
