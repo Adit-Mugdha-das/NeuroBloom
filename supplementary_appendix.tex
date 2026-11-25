@@ -17,8 +17,8 @@
 
 \begin{center}
 {\Large\bfseries Supplementary Material}\\[0.6em]
-{\normalsize\itshape NeuroBloom: An Open-Source Platform for Longitudinal Cognitive
-Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis}
+{\normalsize\itshape NeuroBloom: An Open-Source Research Platform for Longitudinal
+Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis}
 \end{center}
 
 \small
@@ -289,6 +289,10 @@ Initial difficulty
 score: $<50$, level 2; 50--69, level 4; 70--84, level 7;
 $\geq85$, level 9. \\
 
+Generic submission pathway: timing
+& Applied once all four tasks of a session are completed, using task accuracy
+only. \\
+
 Generic submission pathway: difficulty increase
 & Increased by one level, up to level 10, when task accuracy in a completed
 session is at least 85\%. \\
@@ -297,11 +301,22 @@ Generic submission pathway: difficulty decrease
 & Decreased by one level, down to level 1, when task accuracy is below 65\%.
 The level remains unchanged for accuracy from 65\% to below 85\%. \\
 
+Task-specific modules
+& Applied after each task, using that task's own performance measures and
+thresholds. Difficulty may increase or decrease by one or two levels,
+within the range of 1--10. \\
+
 Focus rebalancing
-& Reconsidered after every fourth completed session. Domains are ranked using
-their mean scores from the 12 most recent task results. The two
-lowest-performing domains become primary focus areas and the next two become
-secondary focus areas. \\
+& Reconsidered after every fourth completed session. All six domains are
+ranked using each domain's mean score among the 12 most recent task results,
+or its baseline score when it has no recent result. The two lowest-ranked
+domains become primary focus areas, the next two secondary focus areas and
+the two highest maintenance domains. \\
+
+Clinician-selected focus areas
+& Kept unchanged; automatic rebalancing does not overwrite focus areas set by
+a clinician for the current training plan. Automatic rebalancing resumes when
+a new training plan is created from a new baseline. \\
 
 Tasks per session
 & Four tasks are selected: two from primary-focus domains and two from
@@ -314,7 +329,11 @@ secondary-focus domains. \\
 \noindent\textit{Note.}
 All values were chosen by the developers and have not been empirically
 optimized. Four tasks per session allows two primary-focus and two
-secondary-focus domains in each session.
+secondary-focus domains in each session. Partially completed sessions do not
+count toward rebalancing. If recent tasks cannot be excluded, selection falls
+back to the full domain task pool and tasks may repeat. Tied domain scores
+follow a fixed order: working memory, attention, cognitive flexibility,
+planning, processing speed, and visual scanning.
 
 
 % ============================================================
@@ -383,10 +402,11 @@ Trend classification threshold
 Gradual trends near the decision boundary were most affected. \\
 
 Minimum data requirements
-& 8 valid trials for the fatigue proxy; 3 valid scores for WPSC
+& 8 valid trials for the fatigue proxy; 3 valid scores for WPSC; 3 valid
+observations for EWMA trend classification
 & Not varied
-& When the minimum is not met, the indicator is reported as insufficient
-data. \\
+& Insufficient data is reported when the corresponding minimum is not met.
+Available EWMA values are retained without a trend label. \\
 
 Review-flag thresholds
 & 14-day review-flag score: baseline $<45$ (+2); recent mean 6--12 points below
@@ -408,6 +428,12 @@ proxy (0.3, 0.5) and CV (0.25, 0.35) are not clinical thresholds; missing
 indicators are not assigned a band.
 
 
+% ============================================================
+% Software verification and testing
+% ============================================================
+
+\clearpage
+\small
 
 % ============================================================
 % References

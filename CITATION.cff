@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 
-title: "NeuroBloom v1.2.2 – SoftwareX Revision Release"
+title: "NeuroBloom: An Open-Source Research Platform for Longitudinal Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis"
 
 message: "If you use NeuroBloom in your research, please cite this software using the metadata below."
 
@@ -23,17 +23,15 @@ authors:
     given-names: "Sk. Imran"
     orcid: "https://orcid.org/0000-0002-1869-224X"
 
-version: "v1.2.2"
+version: "1.2.3"
 
-doi: "10.5281/zenodo.23496185"
-
-date-released: 2026-10-20
+date-released: 2026-11-25
 
 license: "MIT"
 
 repository-code: "https://github.com/Adit-Mugdha-das/NeuroBloom"
 
-url: "https://github.com/Adit-Mugdha-das/NeuroBloom/tree/v1.2.2"
+url: "https://github.com/Adit-Mugdha-das/NeuroBloom/tree/v1.2.3"
 
 abstract: >
   NeuroBloom is an open-source research software prototype for studying

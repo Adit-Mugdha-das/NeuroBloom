@@ -1,7 +1,7 @@
 
 # NeuroBloom
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23496185.svg)](https://doi.org/10.5281/zenodo.23496185)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21207719.svg)](https://doi.org/10.5281/zenodo.21207719)
 
 NeuroBloom is an open-source research software prototype for studying longitudinal cognitive-task records and clinician-supervised rehabilitation workflows in multiple sclerosis. It includes original task implementations and descriptive analytics whose psychometric and clinical validity has not been established. The current release is intended only for isolated demonstrations using synthetic data.
 
@@ -41,7 +41,7 @@ cd NeuroBloom
 To reproduce the software version cited in the manuscript, check out the archived release:
 
 ```bash
-git checkout v1.2.2
+git checkout v1.2.3
 ```
 
 ### 2. Set up the backend
@@ -159,7 +159,7 @@ The following procedure reproduces the synthetic-data demonstration, sensitivity
 
 The deployment uses Docker Compose with Python 3.12, Node.js 20, and PostgreSQL 16 inside the containers. Only Docker and Docker Compose are required on the host.
 
-Run the commands from the repository root using the version-specific source code (`v1.2.2`).
+Run the commands from the repository root using the version-specific source code (`v1.2.3`).
 
 ### 1. Start the application
 
@@ -259,7 +259,7 @@ The generated results demonstrate numerical software behaviour using synthetic d
 
 ### Tested Deployment Environment
 
-Two records apply. The October 2026 record is the authors' manual reproduction of the demonstration workflow. The 25 November 2026 record is a clean installation that followed only the steps above, with the automated tests run against the running containers.
+Two records apply. The October 2026 record is the authors' manual reproduction of the demonstration workflow. The 25 November 2026 record is a clean installation that followed only the steps above, with the automated tests run against the running containers; it was made before the planner and trend-label corrections included in v1.2.3.
 
 | Component | Manual reproduction (October 2026, authors' record) | Clean installation and automated tests (25 November 2026) |
 |---|---|---|
@@ -271,9 +271,9 @@ Two records apply. The October 2026 record is the authors' manual reproduction o
 | Database container | PostgreSQL 16 | PostgreSQL 16 (`postgres:16-alpine`) |
 | Browser | Google Chrome 151.0.7922.138 and Microsoft Edge 154.0.4258.37, used manually | Chromium 131.0.6778.33 (Playwright 1.49.1, headless), automated tests only |
 
-In the November check the synthetic dataset was generated as described (8 clinicians, 8 patients, 60 training sessions with contextual records, 8 progress reports, 4 prescriptions), the three analysis scripts reproduced `backend/analysis/results/` byte for byte, and the 14 browser end-to-end tests passed against the running containers. The only deviation was the frontend host port (8081 instead of 8080, with the matching CORS origin), because port 8080 was occupied by another service on that machine.
+In the November check, made before the planner and trend-label corrections, the synthetic dataset was generated as described (8 clinicians, 8 patients, 60 training sessions with contextual records, 8 progress reports, 4 prescriptions), the three analysis scripts reproduced `backend/analysis/results/` byte for byte, and the 14 browser end-to-end tests passed against the running containers. The only deviation was the frontend host port (8081 instead of 8080, with the matching CORS origin), because port 8080 was occupied by another service on that machine. The later corrections changed only the trend labels of sessions 1 and 2 in `illustrative_case.json`; that file was regenerated with the corrected code, and the two sensitivity result files were unchanged.
 
-The automated suites also run in GitHub Actions on Ubuntu (`ubuntu-latest`) with Python 3.12, Node.js 20, PostgreSQL 16 and Playwright Chromium; all four jobs passed for the revision containing the authentication changes. Local test runs used Python 3.13 and Node.js 22.
+The automated suites also run in GitHub Actions on Ubuntu (`ubuntu-latest`) with Python 3.12, Node.js 20, PostgreSQL 16 and Playwright Chromium; all four jobs passed for commit `5eb879d`, which contains the authentication changes and the planner and trend-label corrections. Local test runs used Python 3.13 and Node.js 22.
 
 Not tested: macOS and Linux hosts for the Docker deployment, Firefox and Safari, current Chrome and Edge releases other than those listed, mobile browsers, and the hosted demonstration instance. Other operating systems and dependency versions may work but are not covered by these records.
 
@@ -284,6 +284,7 @@ These are developer-chosen rules. They have not been empirically optimised or cl
 ### Focus areas and rebalancing
 
 - **New plan.** A training plan is created from the baseline assessment. The six domains are ranked by baseline score: the two weakest become primary focus, the next two secondary focus and the two strongest maintenance. Each session has four tasks, one from each primary and secondary domain; maintenance domains are not trained in sessions.
+- **Task rotation.** Within each domain, recently used tasks are avoided where possible. If they cannot be excluded, selection falls back to the full domain task pool and a task may repeat.
 - **Automatic rebalancing.** After every fourth completed session (a session is complete when all four of its tasks are submitted) all six domains are ranked again, weakest first. A domain's value is the mean score of its results among the plan's 12 most recent task results; a domain with no result in that window (normally a maintenance domain) keeps its baseline score. The two weakest become primary, the next two secondary and the two strongest maintenance, so a maintenance domain can return to focus and every domain always has a role. Ties keep the order working memory, attention, flexibility, planning, processing speed, visual scanning. Every submitted task result counts, including a repeated attempt at the same task slot.
 - **Clinician-selected focus areas.** When an assigned clinician (with the patient's consent) sets the focus areas, automatic rebalancing stops for that training plan and the clinician's selection is kept until the clinician changes it. A new training plan, created from a new baseline assessment, starts again from the baseline ranking with automatic rebalancing.
 
@@ -296,7 +297,7 @@ These are developer-chosen rules. They have not been empirically optimised or cl
 
 ### Trend labels
 
-The score and reaction-time trends use an exponentially weighted moving average (α = 0.2) and the slope of its five most recent points, relative to the series mean (±1% threshold). A trend label (improving, declining or stable) is assigned only when at least **three** valid session values are available; with fewer, the API returns `insufficient_data` and the interface shows "Insufficient data", while the EWMA value itself is still shown.
+The score and reaction-time trends use an exponentially weighted moving average (α = 0.2) and the slope of up to five most recent EWMA points, relative to the series mean (±1% threshold). Performance trends are classified as improving, stable or declining; reaction-time trends are described as longer, shorter or stable response times. A trend is classified only when at least **three** valid session values are available; with fewer, the API returns `insufficient_data` and the interface shows "Insufficient data", while the EWMA value itself is still shown.
 
 ### Analytics configuration
 
@@ -432,7 +433,6 @@ These interfaces document the available API endpoints, request parameters, and r
 NeuroBloom/
 |-- backend/                 # FastAPI backend, models, APIs, services, and scripts
 |-- frontend-svelte/         # SvelteKit frontend
-|-- Paper_Materials/         # SoftwareX manuscript and publication materials
 |-- .github/workflows/       # Continuous integration workflows
 |-- compose.yaml             # Docker Compose configuration
 |-- .env.example             # Environment variable template
@@ -542,13 +542,13 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release:
 
-> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *NeuroBloom v1.2.2 – SoftwareX Revision Release* (Version v1.2.2) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.23496185
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *NeuroBloom: An Open-Source Research Platform for Longitudinal Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis* (Version v1.2.3) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21207719
 
-**Version:** v1.2.2
+**Version:** v1.2.3
 
-**Archived release:** https://doi.org/10.5281/zenodo.23496185
+**Archived releases (concept DOI, resolves to the latest version):** https://doi.org/10.5281/zenodo.21207719. Zenodo assigns the version-specific DOI for v1.2.3 when the release is archived.
 
-**Version-specific source:** https://github.com/Adit-Mugdha-das/NeuroBloom/tree/v1.2.2
+**Version-specific source:** https://github.com/Adit-Mugdha-das/NeuroBloom/tree/v1.2.3
 
 GitHub also provides a **Cite this repository** option using the included `CITATION.cff` file.
 
