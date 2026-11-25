@@ -542,11 +542,13 @@ NeuroBloom is released under the MIT License. See [LICENSE](LICENSE) for details
 
 If you use NeuroBloom in your research, please cite the archived software release:
 
-> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *NeuroBloom: An Open-Source Research Platform for Longitudinal Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis* (Version v1.2.3) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21207719
+> Das, A. M., Deb Nath, A., Alam, K. S., & Hossain, S. I. (2026). *NeuroBloom: An Open-Source Research Platform for Longitudinal Cognitive Monitoring and Clinician-Supervised Rehabilitation in Multiple Sclerosis* (Version v1.2.3) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.24536160
 
 **Version:** v1.2.3
 
-**Archived releases (concept DOI, resolves to the latest version):** https://doi.org/10.5281/zenodo.21207719. Zenodo assigns the version-specific DOI for v1.2.3 when the release is archived.
+**Archived release (v1.2.3):** https://doi.org/10.5281/zenodo.24536160
+
+**All versions (concept DOI, resolves to the latest version):** https://doi.org/10.5281/zenodo.21207719
 
 **Version-specific source:** https://github.com/Adit-Mugdha-das/NeuroBloom/tree/v1.2.3
 
