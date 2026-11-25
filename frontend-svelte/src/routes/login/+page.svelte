@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import DemoDataNotice from '$lib/components/DemoDataNotice.svelte';
 	import { page } from '$app/stores';
 	import api from '$lib/api.js';
 	import { locale, translateText, locale as activeLocale, uiText } from '$lib/i18n';
@@ -15,8 +16,12 @@
 	let showPassword = false;
 
 	onMount(() => {
-		if (get(page).url.searchParams.get('reset') === '1') {
+		const params = get(page).url.searchParams;
+		if (params.get('reset') === '1') {
 			clearUser();
+		}
+		if (params.get('session') === 'expired') {
+			error = translateText('Your session has ended. Please sign in again.', get(locale));
 		}
 	});
 
@@ -144,6 +149,8 @@
 				<h2>{t('Welcome back')}</h2>
 				<p>{t('Sign in to continue your cognitive journey')}</p>
 			</div>
+
+			<DemoDataNotice />
 
 			<!-- Role selector -->
 			<div class="role-selector">

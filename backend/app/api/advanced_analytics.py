@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from app.models.training_session import TrainingSession
 from app.models.session_context import SessionContext
 from app.core.config import engine
+from app.core.access_control import Principal, forbidden, patient_data_reader_by_user_id, require_patient
 from app.core.advanced_analytics import (
     analyze_session_advanced,
     generate_longitudinal_report
@@ -53,10 +54,11 @@ class SessionContextCreate(BaseModel):
     location: Optional[str] = None
 
 
-@router.post("/session-context")
+@router.post("/session-context", dependencies=[Depends(require_patient)])
 def create_session_context(
     body: SessionContextCreate,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    principal: Principal = Depends(require_patient),
 ):
     """
     Store pre-task questionnaire data for MS research.
@@ -66,6 +68,9 @@ def create_session_context(
     
     Returns the context_id to link with subsequent training session.
     """
+    if body.user_id != principal.id:
+        raise forbidden()
+
     time_of_day = body.time_of_day
     # Determine time_of_day if not provided
     if not time_of_day:
@@ -106,7 +111,7 @@ def create_session_context(
     }
 
 
-@router.get("/session-context/{user_id}/recent")
+@router.get("/session-context/{user_id}/recent", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_recent_context(
     user_id: int,
     limit: int = 10,
@@ -143,20 +148,25 @@ def get_recent_context(
     }
 
 
-@router.patch("/training-session/{session_id}/link-context")
+@router.patch("/training-session/{session_id}/link-context", dependencies=[Depends(require_patient)])
 def link_context_to_session(
     session_id: int,
     context_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    principal: Principal = Depends(require_patient),
 ):
     """Link a session context to a completed training session"""
     training_session = session.get(TrainingSession, session_id)
     if not training_session:
         raise HTTPException(status_code=404, detail="Training session not found")
-    
+
     context = session.get(SessionContext, context_id)
     if not context:
         raise HTTPException(status_code=404, detail="Context not found")
+
+    # Both records must belong to the signed-in patient.
+    if training_session.user_id != principal.id or context.user_id != principal.id:
+        raise forbidden()
     
     # Link them
     context.training_session_id = session_id
@@ -168,7 +178,7 @@ def link_context_to_session(
 
 # ==================== ADVANCED ANALYTICS ENDPOINTS ====================
 
-@router.get("/advanced-analytics/{user_id}/session/{session_id}")
+@router.get("/advanced-analytics/{user_id}/session/{session_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_session_advanced_analytics(
     user_id: int,
     session_id: int,
@@ -224,7 +234,7 @@ def get_session_advanced_analytics(
     }
 
 
-@router.get("/advanced-analytics/{user_id}/longitudinal")
+@router.get("/advanced-analytics/{user_id}/longitudinal", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_longitudinal_analytics(
     user_id: int,
     days: int = 30,
@@ -322,7 +332,7 @@ def get_longitudinal_analytics(
     }
 
 
-@router.get("/advanced-analytics/{user_id}/biomarkers")
+@router.get("/advanced-analytics/{user_id}/biomarkers", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_digital_biomarkers(
     user_id: int,
     days: int = 30,

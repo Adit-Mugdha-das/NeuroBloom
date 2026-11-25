@@ -725,12 +725,14 @@ export const PHRASE_TRANSLATIONS = {
 	'Sign in as Clinician': 'ক্লিনিশিয়ান হিসেবে সাইন ইন করুন',
 	'Sign in as Admin': 'অ্যাডমিন হিসেবে সাইন ইন করুন',
 	'Signing in…': 'সাইন ইন করা হচ্ছে…',
+	'Your session has ended. Please sign in again.': 'আপনার সেশন শেষ হয়েছে। অনুগ্রহ করে আবার সাইন ইন করুন।',
 	'Create one': 'এখানে তৈরি করুন',
 
 	// ── Register page ────────────────────────────────────────────────────────
 	'Start your cognitive care journey today': 'আজই আপনার কগনিটিভ সেবার যাত্রা শুরু করুন',
 	'Secure & Private': 'নিরাপদ ও ব্যক্তিগত',
-	'Your health data is encrypted and never shared without consent': 'আপনার স্বাস্থ্য তথ্য এনক্রিপ্টেড এবং সম্মতি ছাড়া কখনো শেয়ার করা হয় না',
+	'Clinicians see your results only with your consent': 'আপনার সম্মতি ছাড়া চিকিৎসকরা আপনার ফলাফল দেখতে পারেন না',
+	'Consent-Based Sharing': 'সম্মতিভিত্তিক তথ্য শেয়ার',
 	'Evidence-Based Tasks': 'প্রমাণ-ভিত্তিক টাস্ক',
 	'Research-Inspired Tasks': 'গবেষণা-অনুপ্রাণিত টাস্ক',
 	'Software tasks inspired by established cognitive paradigms': 'প্রতিষ্ঠিত কগনিটিভ প্যারাডাইম থেকে অনুপ্রাণিত সফটওয়্যার টাস্ক',

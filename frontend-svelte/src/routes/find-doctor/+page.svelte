@@ -227,6 +227,9 @@
 				<p class="modal-info">
 					{lt('Send a request to be assigned to this doctor for professional monitoring of your cognitive training.', 'আপনার কগনিটিভ ট্রেনিংয়ের পেশাদার পর্যবেক্ষণের জন্য এই চিকিৎসকের কাছে যুক্ত হওয়ার অনুরোধ পাঠান।')}
 				</p>
+				<p class="modal-info">
+					{lt('Sending this request turns on sharing of your training results with your assigned clinician once they accept. You can turn sharing off at any time in Settings.', 'এই অনুরোধ পাঠালে চিকিৎসক গ্রহণ করার পর আপনার ট্রেনিংয়ের ফলাফল তাঁর সঙ্গে শেয়ার করা চালু হবে। সেটিংস থেকে যেকোনো সময় শেয়ার করা বন্ধ করতে পারবেন।')}
+				</p>
 				
 				<div class="form-group">
 					<label for="reason">{lt('Reason for Request *', 'অনুরোধের কারণ *')}</label>

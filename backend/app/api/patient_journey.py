@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.core.config import engine
+from app.core.access_control import patient_data_reader_by_user_id
 from app.services.patient_journey import build_patient_journey
 
 router = APIRouter()
@@ -12,7 +13,7 @@ def get_session():
         yield session
 
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_patient_journey(user_id: int, session: Session = Depends(get_session)):
     journey = build_patient_journey(session, user_id)
     if not journey.get("user_exists"):

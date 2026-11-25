@@ -6,6 +6,7 @@ from app.models.baseline_assessment import BaselineAssessment
 from app.models.test_result import TestResult
 from app.schemas.baseline_assessment import BaselineAssessmentCreate, BaselineAssessmentRead
 from app.core.config import engine
+from app.core.access_control import patient_data_reader_by_user_id, patient_self_by_user_id
 from app.services.patient_journey import BASELINE_DOMAINS, get_real_baseline
 from app.core.scoring import (
     calculate_working_memory_score,
@@ -24,7 +25,7 @@ def get_session():
         yield session
 
 
-@router.post("/calculate", response_model=BaselineAssessmentRead)
+@router.post("/calculate", response_model=BaselineAssessmentRead, dependencies=[Depends(patient_self_by_user_id)])
 def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
     """
     Calculate baseline assessment from test results
@@ -156,7 +157,7 @@ def calculate_baseline(user_id: int, session: Session = Depends(get_session)):
         return baseline
 
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_baseline(user_id: int, session: Session = Depends(get_session)):
     """Get user's baseline assessment"""
     baseline = get_real_baseline(session, user_id)

@@ -16,6 +16,7 @@ from app.models.progress_report import ProgressReport
 from app.models.notification import Notification
 from app.schemas.doctor import PatientAssignmentCreate, DoctorInterventionCreate, MessageCreate, MessageRead, PrescriptionCreate, PrescriptionStatusUpdate
 from app.core.config import engine
+from app.core.access_control import consented_patient_ids, doctor_patient_contact, doctor_patient_data_access, doctor_self, ensure_doctor_patient_data_access, patient_self_by_patient_id, require_authenticated
 from app.core.prescriptions import (
     build_prescription_verification_id,
     generate_prescription_pdf_bytes,
@@ -185,7 +186,7 @@ def _create_prescription_message(
     )
 
 # ========== PATIENT MANAGEMENT ==========
-@router.get("/{doctor_id}/patients")
+@router.get("/{doctor_id}/patients", dependencies=[Depends(doctor_self)])
 def get_doctor_patients(doctor_id: int, session: Session = Depends(get_session)):
     """Get list of all patients assigned to this doctor"""
     try:
@@ -206,20 +207,24 @@ def get_doctor_patients(doctor_id: int, session: Session = Depends(get_session))
             patient = session.get(User, assignment.patient_id)
             if not patient:
                 continue
-            
-            # Get latest training session
-            latest_session = session.exec(
-                select(TrainingSession)
-                .where(TrainingSession.user_id == patient.id)
-                .order_by(col(TrainingSession.created_at).desc())
-            ).first()
-            
-            # Get baseline assessment
-            baseline = session.exec(
-                select(BaselineAssessment)
-                .where(BaselineAssessment.user_id == patient.id)
-            ).first()
-            
+
+            # Without current consent the assignment is listed, but no performance data.
+            latest_session = None
+            baseline = None
+            if patient.consent_to_share:
+                # Get latest training session
+                latest_session = session.exec(
+                    select(TrainingSession)
+                    .where(TrainingSession.user_id == patient.id)
+                    .order_by(col(TrainingSession.created_at).desc())
+                ).first()
+
+                # Get baseline assessment
+                baseline = session.exec(
+                    select(BaselineAssessment)
+                    .where(BaselineAssessment.user_id == patient.id)
+                ).first()
+
             patients_data.append({
                 "patient_id": patient.id,
                 "email": patient.email,
@@ -228,7 +233,8 @@ def get_doctor_patients(doctor_id: int, session: Session = Depends(get_session))
                 "assigned_at": assignment.assigned_at,
                 "last_activity": latest_session.created_at if latest_session else None,
                 "baseline_completed": baseline is not None,
-                "treatment_goal": assignment.treatment_goal
+                "treatment_goal": assignment.treatment_goal,
+                "consent_to_share": patient.consent_to_share
             })
         
         return {"patients": patients_data, "total": len(patients_data)}
@@ -239,7 +245,7 @@ def get_doctor_patients(doctor_id: int, session: Session = Depends(get_session))
         print(f"ERROR in get_doctor_patients: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{doctor_id}/assign-patient")
+@router.post("/{doctor_id}/assign-patient", dependencies=[Depends(doctor_self)])
 def assign_patient(
     doctor_id: int,
     assignment_data: PatientAssignmentCreate,
@@ -262,6 +268,20 @@ def assign_patient(
             raise HTTPException(
                 status_code=403,
                 detail="Patient has not consented to data sharing with healthcare providers"
+            )
+
+        # Consent is not specific to one clinician, so direct assignment also
+        # requires that the patient has asked for this clinician.
+        pending_request = session.exec(
+            select(AssignmentRequest)
+            .where(AssignmentRequest.patient_id == patient.id)
+            .where(AssignmentRequest.doctor_id == doctor_id)
+            .where(AssignmentRequest.status == RequestStatus.PENDING.value)
+        ).first()
+        if not pending_request:
+            raise HTTPException(
+                status_code=403,
+                detail="The patient has not requested this clinician"
             )
         
         # Check if already assigned
@@ -287,6 +307,9 @@ def assign_patient(
             treatment_goal=assignment_data.treatment_goal
         )
         session.add(assignment)
+        pending_request.status = RequestStatus.APPROVED.value
+        pending_request.responded_at = datetime.now(timezone.utc)
+        session.add(pending_request)
         session.commit()
         session.refresh(assignment)
         
@@ -303,7 +326,7 @@ def assign_patient(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== PATIENT ANALYTICS ==========
-@router.get("/{doctor_id}/patient/{patient_id}/overview")
+@router.get("/{doctor_id}/patient/{patient_id}/overview", dependencies=[Depends(doctor_patient_data_access)])
 def get_patient_overview(
     doctor_id: int,
     patient_id: int,
@@ -418,7 +441,7 @@ def get_patient_overview(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/patient/{patient_id}/trends")
+@router.get("/{doctor_id}/patient/{patient_id}/trends", dependencies=[Depends(doctor_patient_data_access)])
 def get_doctor_patient_trends(
     doctor_id: int,
     patient_id: int,
@@ -512,7 +535,7 @@ def get_doctor_patient_trends(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/patient/{patient_id}/sessions")
+@router.get("/{doctor_id}/patient/{patient_id}/sessions", dependencies=[Depends(doctor_patient_data_access)])
 def get_patient_sessions(
     doctor_id: int,
     patient_id: int,
@@ -561,7 +584,7 @@ def get_patient_sessions(
         print(f"ERROR in get_patient_sessions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/patient/{patient_id}/progress-monitoring")
+@router.get("/{doctor_id}/patient/{patient_id}/progress-monitoring", dependencies=[Depends(doctor_patient_data_access)])
 def get_progress_monitoring(
     doctor_id: int,
     patient_id: int,
@@ -762,7 +785,7 @@ def get_progress_monitoring(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== CLINICAL INTERVENTIONS ==========
-@router.post("/{doctor_id}/patient/{patient_id}/intervention")
+@router.post("/{doctor_id}/patient/{patient_id}/intervention", dependencies=[Depends(doctor_patient_data_access)])
 def add_intervention(
     doctor_id: int,
     patient_id: int,
@@ -805,7 +828,7 @@ def add_intervention(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== PATIENT ENDPOINTS (for patients to view their doctor) ==========
-@router.get("/patient/{patient_id}/assigned-doctor")
+@router.get("/patient/{patient_id}/assigned-doctor", dependencies=[Depends(patient_self_by_patient_id)])
 def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)):
     """Get the doctor assigned to this patient"""
     try:
@@ -861,7 +884,7 @@ def get_assigned_doctor(patient_id: int, session: Session = Depends(get_session)
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== DOCTOR BROWSING & REQUESTS ==========
-@router.get("/available-doctors")
+@router.get("/available-doctors", dependencies=[Depends(require_authenticated)])
 def get_available_doctors(session: Session = Depends(get_session)):
     """Get list of all verified, active doctors (public endpoint)"""
     try:
@@ -885,7 +908,7 @@ def get_available_doctors(session: Session = Depends(get_session)):
         print(f"ERROR in get_available_doctors: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/request-assignment")
+@router.post("/request-assignment", dependencies=[Depends(patient_self_by_patient_id)])
 def request_assignment(
     patient_id: int,
     doctor_id: int,
@@ -938,6 +961,10 @@ def request_assignment(
             status=RequestStatus.PENDING.value
         )
         session.add(request)
+        # Asking a clinician for care is the patient's consent to share data with
+        # clinicians; it can be withdrawn at any time in Settings.
+        patient.consent_to_share = True
+        session.add(patient)
         session.commit()
         session.refresh(request)
         
@@ -953,7 +980,7 @@ def request_assignment(
         print(f"ERROR in request_assignment: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/pending-requests")
+@router.get("/{doctor_id}/pending-requests", dependencies=[Depends(doctor_self)])
 def get_pending_requests(doctor_id: int, session: Session = Depends(get_session)):
     """Get all pending assignment requests for a doctor"""
     try:
@@ -993,7 +1020,7 @@ def get_pending_requests(doctor_id: int, session: Session = Depends(get_session)
         print(f"ERROR in get_pending_requests: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/request/{request_id}/approve")
+@router.post("/request/{request_id}/approve", dependencies=[Depends(doctor_self)])
 def approve_request(
     request_id: int,
     doctor_id: int,
@@ -1027,13 +1054,10 @@ def approve_request(
             treatment_goal=treatment_goal or "Improve cognitive function",
             is_active=True
         )
-        
-        # Enable patient consent
-        patient = session.get(User, request.patient_id)
-        if patient:
-            patient.consent_to_share = True
-            session.add(patient)
-        
+
+        # Consent is the patient's decision (given when requesting, or in Settings);
+        # approval never changes it, so a withdrawal made while the request was
+        # pending stays in force.
         session.add(request)
         session.add(assignment)
         session.commit()
@@ -1046,7 +1070,7 @@ def approve_request(
         print(f"ERROR in approve_request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/request/{request_id}/reject")
+@router.post("/request/{request_id}/reject", dependencies=[Depends(doctor_self)])
 def reject_request(
     request_id: int,
     doctor_id: int,
@@ -1082,7 +1106,7 @@ def reject_request(
         print(f"ERROR in reject_request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/patient/{patient_id}/requests")
+@router.get("/patient/{patient_id}/requests", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_requests(patient_id: int, session: Session = Depends(get_session)):
     """Get all assignment requests made by a patient"""
     try:
@@ -1116,7 +1140,7 @@ def get_patient_requests(patient_id: int, session: Session = Depends(get_session
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== PATIENT ASSIGNMENT MANAGEMENT ==========
-@router.post("/{doctor_id}/unassign/{patient_id}")
+@router.post("/{doctor_id}/unassign/{patient_id}", dependencies=[Depends(doctor_patient_contact)])
 def unassign_patient(
     doctor_id: int,
     patient_id: int,
@@ -1158,7 +1182,7 @@ def unassign_patient(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== INTERVENTIONS & RECOMMENDATIONS ==========
-@router.post("/{doctor_id}/patient/{patient_id}/intervention")
+@router.post("/{doctor_id}/patient/{patient_id}/intervention", dependencies=[Depends(doctor_patient_data_access)])
 def create_intervention(
     doctor_id: int,
     patient_id: int,
@@ -1209,7 +1233,7 @@ def create_intervention(
         print(f"ERROR in create_intervention: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/patient/{patient_id}/interventions")
+@router.get("/{doctor_id}/patient/{patient_id}/interventions", dependencies=[Depends(doctor_patient_data_access)])
 def get_patient_interventions(
     doctor_id: int,
     patient_id: int,
@@ -1258,7 +1282,7 @@ def get_patient_interventions(
         print(f"ERROR in get_patient_interventions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/prescriptions")
+@router.get("/{doctor_id}/prescriptions", dependencies=[Depends(doctor_self)])
 def get_doctor_prescription_directory(
     doctor_id: int,
     session: Session = Depends(get_session)
@@ -1283,6 +1307,8 @@ def get_doctor_prescription_directory(
             patient = session.get(User, assignment.patient_id)
             if not patient:
                 continue
+            if not patient.consent_to_share:
+                continue  # consent withdrawn: the record is not shown
 
             prescriptions = session.exec(
                 select(DoctorIntervention)
@@ -1333,7 +1359,7 @@ def get_doctor_prescription_directory(
         print(f"ERROR in get_doctor_prescription_directory: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/patient/{patient_id}/prescriptions")
+@router.get("/{doctor_id}/patient/{patient_id}/prescriptions", dependencies=[Depends(doctor_patient_data_access)])
 def get_patient_prescriptions(
     doctor_id: int,
     patient_id: int,
@@ -1384,7 +1410,7 @@ def get_patient_prescriptions(
         print(f"ERROR in get_patient_prescriptions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{doctor_id}/patient/{patient_id}/prescriptions")
+@router.post("/{doctor_id}/patient/{patient_id}/prescriptions", dependencies=[Depends(doctor_patient_data_access)])
 def create_digital_prescription(
     doctor_id: int,
     patient_id: int,
@@ -1445,7 +1471,7 @@ def create_digital_prescription(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}")
+@router.put("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}", dependencies=[Depends(doctor_patient_data_access)])
 def revise_digital_prescription(
     doctor_id: int,
     patient_id: int,
@@ -1518,7 +1544,7 @@ def revise_digital_prescription(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/pdf")
+@router.get("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/pdf", dependencies=[Depends(doctor_patient_data_access)])
 def download_prescription_pdf(
     doctor_id: int,
     patient_id: int,
@@ -1569,7 +1595,7 @@ def download_prescription_pdf(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/status")
+@router.patch("/{doctor_id}/patient/{patient_id}/prescriptions/{prescription_id}/status", dependencies=[Depends(doctor_patient_data_access)])
 def update_prescription_status(
     doctor_id: int,
     patient_id: int,
@@ -1633,7 +1659,7 @@ def update_prescription_status(
         print(f"ERROR in update_prescription_status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/{doctor_id}/patient/{patient_id}/training-plan")
+@router.patch("/{doctor_id}/patient/{patient_id}/training-plan", dependencies=[Depends(doctor_patient_data_access)])
 def update_training_plan(
     doctor_id: int,
     patient_id: int,
@@ -1734,7 +1760,7 @@ def update_training_plan(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/{doctor_id}/patient/{patient_id}/focus-areas")
+@router.patch("/{doctor_id}/patient/{patient_id}/focus-areas", dependencies=[Depends(doctor_patient_data_access)])
 def update_focus_areas(
     doctor_id: int,
     patient_id: int,
@@ -1812,7 +1838,7 @@ def update_focus_areas(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== SECURE MESSAGING ==========
-@router.post("/{doctor_id}/messages/send")
+@router.post("/{doctor_id}/messages/send", dependencies=[Depends(doctor_self)])
 def send_message(
     doctor_id: int,
     message_data: MessageCreate,
@@ -1825,23 +1851,23 @@ def send_message(
         if not doctor:
             raise HTTPException(status_code=404, detail="Doctor not found")
 
-        if message_data.recipient_type not in {"doctor", "patient"}:
-            raise HTTPException(status_code=400, detail="recipient_type must be doctor or patient")
+        # Clinicians may only message their assigned patients.
+        if message_data.recipient_type != "patient":
+            raise HTTPException(status_code=403, detail="Clinicians can only message assigned patients")
 
         if not _participant_exists(session, message_data.recipient_id, message_data.recipient_type):
             raise HTTPException(status_code=404, detail="Recipient not found")
-        
+
         # Verify the doctor has access to this patient
-        if message_data.recipient_type == "patient":
-            assignment = session.exec(
-                select(PatientAssignment)
-                .where(PatientAssignment.doctor_id == doctor_id)
-                .where(PatientAssignment.patient_id == message_data.recipient_id)
-                .where(PatientAssignment.is_active == True)
-            ).first()
-            
-            if not assignment:
-                raise HTTPException(status_code=403, detail="No access to this patient")
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.doctor_id == doctor_id)
+            .where(PatientAssignment.patient_id == message_data.recipient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No access to this patient")
         
         # Create message
         message = Message(
@@ -1869,7 +1895,7 @@ def send_message(
         print(f"ERROR in send_message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/messages")
+@router.get("/{doctor_id}/messages", dependencies=[Depends(doctor_self)])
 def get_doctor_messages(
     doctor_id: int,
     patient_id: Optional[int] = None,
@@ -1970,7 +1996,7 @@ def get_doctor_messages(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/notifications")
+@router.get("/{doctor_id}/notifications", dependencies=[Depends(doctor_self)])
 def get_doctor_notifications(doctor_id: int, session: Session = Depends(get_session)):
     """Get active admin notifications for a doctor."""
     doctor = session.get(Doctor, doctor_id)
@@ -1997,7 +2023,7 @@ def get_doctor_notifications(doctor_id: int, session: Session = Depends(get_sess
         ]
     }
 
-@router.post("/{doctor_id}/messages/{message_id}/mark-read")
+@router.post("/{doctor_id}/messages/{message_id}/mark-read", dependencies=[Depends(doctor_self)])
 def mark_message_read(
     doctor_id: int,
     message_id: int,
@@ -2028,7 +2054,7 @@ def mark_message_read(
         print(f"ERROR in mark_message_read: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{doctor_id}/messages/conversation/{patient_id}")
+@router.get("/{doctor_id}/messages/conversation/{patient_id}", dependencies=[Depends(doctor_patient_contact)])
 def get_conversation(
     doctor_id: int,
     patient_id: int,
@@ -2094,7 +2120,7 @@ def get_conversation(
 
 # ============= PATIENT MESSAGING ENDPOINTS =============
 
-@router.post("/patient/{patient_id}/messages/send")
+@router.post("/patient/{patient_id}/messages/send", dependencies=[Depends(patient_self_by_patient_id)])
 def send_patient_message(
     patient_id: int,
     message_data: MessageCreate,
@@ -2145,7 +2171,7 @@ def send_patient_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/patient/{patient_id}/messages")
+@router.get("/patient/{patient_id}/messages", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_messages(
     patient_id: int,
     limit: int = 50,
@@ -2223,7 +2249,7 @@ def get_patient_messages(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/patient/{patient_id}/messages/{message_id}/mark-read")
+@router.post("/patient/{patient_id}/messages/{message_id}/mark-read", dependencies=[Depends(patient_self_by_patient_id)])
 def mark_patient_message_read(
     patient_id: int,
     message_id: int,
@@ -2252,7 +2278,7 @@ def mark_patient_message_read(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/patient/{patient_id}/messages/with-doctor")
+@router.get("/patient/{patient_id}/messages/with-doctor", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_conversation_with_doctor(
     patient_id: int,
     session: Session = Depends(get_session)
@@ -2336,7 +2362,7 @@ def get_patient_conversation_with_doctor(
 
 
 # ========== PROGRESS REPORTS ==========
-@router.post("/{doctor_id}/patients/{patient_id}/generate-report")
+@router.post("/{doctor_id}/patients/{patient_id}/generate-report", dependencies=[Depends(doctor_patient_data_access)])
 def generate_progress_report(
     doctor_id: int,
     patient_id: int,
@@ -2594,7 +2620,7 @@ def generate_progress_report(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/patients/{patient_id}/reports")
+@router.get("/{doctor_id}/patients/{patient_id}/reports", dependencies=[Depends(doctor_patient_data_access)])
 def get_patient_reports(
     doctor_id: int,
     patient_id: int,
@@ -2655,7 +2681,7 @@ def get_patient_reports(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/{doctor_id}/reports/{report_id}/commentary")
+@router.patch("/{doctor_id}/reports/{report_id}/commentary", dependencies=[Depends(doctor_self)])
 def update_report_commentary(
     doctor_id: int,
     report_id: int,
@@ -2677,7 +2703,10 @@ def update_report_commentary(
         # Verify report belongs to this doctor
         if report.doctor_id != doctor_id:
             raise HTTPException(status_code=403, detail="This report does not belong to you")
-        
+
+        # The report concerns one patient: assignment and current consent are required.
+        ensure_doctor_patient_data_access(session, doctor_id, report.patient_id)
+
         # Update commentary
         report.doctor_commentary = commentary
         report.updated_at = datetime.now(timezone.utc)
@@ -2700,7 +2729,7 @@ def update_report_commentary(
 
 
 # ========== ANALYTICS DASHBOARD ==========
-@router.get("/{doctor_id}/analytics")
+@router.get("/{doctor_id}/analytics", dependencies=[Depends(doctor_self)])
 def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)):
     """Get comprehensive analytics for all patients assigned to this doctor"""
     try:
@@ -2715,6 +2744,10 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
             .where(PatientAssignment.doctor_id == doctor_id)
             .where(PatientAssignment.is_active == True)
         ).all()
+
+        # Only patients who currently consent to data sharing contribute.
+        allowed_ids = set(consented_patient_ids(session, doctor_id, [a.patient_id for a in assignments]))
+        assignments = [a for a in assignments if a.patient_id in allowed_ids]
         
         total_patients = len(assignments)
         
@@ -2956,7 +2989,7 @@ def get_doctor_analytics(doctor_id: int, session: Session = Depends(get_session)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/analytics/domains")
+@router.get("/{doctor_id}/analytics/domains", dependencies=[Depends(doctor_self)])
 def get_domain_analytics(doctor_id: int, session: Session = Depends(get_session)):
     """Get domain-specific performance analytics across all patients"""
     try:
@@ -2972,7 +3005,8 @@ def get_domain_analytics(doctor_id: int, session: Session = Depends(get_session)
             .where(PatientAssignment.is_active == True)
         ).all()
         
-        patient_ids = [a.patient_id for a in assignments]
+        # Only patients who currently consent to data sharing contribute.
+        patient_ids = consented_patient_ids(session, doctor_id, [a.patient_id for a in assignments])
         
         if not patient_ids:
             return {"domains": {}}
@@ -3036,7 +3070,7 @@ def get_domain_analytics(doctor_id: int, session: Session = Depends(get_session)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{doctor_id}/analytics/trends")
+@router.get("/{doctor_id}/analytics/trends", dependencies=[Depends(doctor_self)])
 def get_cohort_trends(doctor_id: int, days: int = 30, session: Session = Depends(get_session)):
     """Get performance trends over time for the entire patient cohort"""
     try:
@@ -3052,7 +3086,8 @@ def get_cohort_trends(doctor_id: int, days: int = 30, session: Session = Depends
             .where(PatientAssignment.is_active == True)
         ).all()
         
-        patient_ids = [a.patient_id for a in assignments]
+        # Only patients who currently consent to data sharing contribute.
+        patient_ids = consented_patient_ids(session, doctor_id, [a.patient_id for a in assignments])
         
         if not patient_ids:
             return {"trends": [], "summary": {}}

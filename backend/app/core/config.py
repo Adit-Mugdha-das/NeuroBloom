@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import time
 from pathlib import Path
 from typing import Annotated
@@ -57,6 +58,27 @@ class Settings(BaseSettings):
     DB_STARTUP_MAX_ATTEMPTS: int = 20
     DB_STARTUP_RETRY_SECONDS: float = 2.0
 
+    # Authentication (signed JWT access tokens, see app/core/access_control.py).
+    # JWT_SECRET_KEY must be set for any shared deployment; without it a random
+    # per-process key is generated and every token becomes invalid on restart.
+    JWT_SECRET_KEY: str | None = None
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    # The browser receives the token only as an httpOnly cookie.
+    AUTH_COOKIE_NAME: str = "neurobloom_session"
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
+
+    @field_validator("AUTH_COOKIE_SAMESITE", mode="before")
+    @classmethod
+    def normalize_cookie_samesite(cls, value: object) -> object:
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized not in {"lax", "strict", "none"}:
+                raise ValueError("AUTH_COOKIE_SAMESITE must be lax, strict or none")
+            return normalized
+        return value
+
     @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_cors_allowed_origins(cls, value: object) -> object:
@@ -98,10 +120,22 @@ class Settings(BaseSettings):
                 f"postgresql://{user}:{password}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{database}"
             )
 
+        if self.AUTH_COOKIE_SAMESITE == "none" and not self.AUTH_COOKIE_SECURE:
+            raise ValueError("AUTH_COOKIE_SAMESITE=none requires AUTH_COOKIE_SECURE=true")
+
         return self
 
 
 settings = Settings()
+
+if not settings.JWT_SECRET_KEY:
+    settings.JWT_SECRET_KEY = secrets.token_urlsafe(64)
+    print(
+        "WARNING: JWT_SECRET_KEY is not set. A temporary signing key was generated; "
+        "all login sessions end when the backend restarts. Set JWT_SECRET_KEY in .env."
+    )
+elif len(settings.JWT_SECRET_KEY) < 32:
+    raise RuntimeError("JWT_SECRET_KEY must be at least 32 characters long")
 
 if not settings.DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not configured")

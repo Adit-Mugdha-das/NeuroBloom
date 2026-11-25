@@ -148,10 +148,11 @@ def _patient_with_sessions(session, fatigue_levels, trials):
     return user.id
 
 
-def test_api_reports_missing_cv_and_correlation_as_insufficient_data(api, session):
+def test_api_reports_missing_cv_and_correlation_as_insufficient_data(api, session, auth_headers):
     # Three sessions without reaction-time trials and without any context records.
     user_id = _patient_with_sessions(session, [None, None, None], trials=[])
-    data = api.get(f"/api/training/advanced-analytics/{user_id}/biomarkers").json()
+    headers = auth_headers(session.get(User, user_id), "patient")
+    data = api.get(f"/api/training/advanced-analytics/{user_id}/biomarkers", headers=headers).json()
 
     cv = data["rt_coefficient_of_variation"]
     assert cv["mean"] is None
@@ -164,10 +165,11 @@ def test_api_reports_missing_cv_and_correlation_as_insufficient_data(api, sessio
     assert fatigue["correlation_with_rt"] is None
 
 
-def test_api_reports_constant_context_correlation_as_insufficient_data(api, session):
+def test_api_reports_constant_context_correlation_as_insufficient_data(api, session, auth_headers):
     trials = [{"trial_num": i, "correct": True, "reaction_time": 500 + 10 * i} for i in range(10)]
     user_id = _patient_with_sessions(session, [5, 5, 5], trials=trials)
-    data = api.get(f"/api/training/advanced-analytics/{user_id}/biomarkers").json()
+    headers = auth_headers(session.get(User, user_id), "patient")
+    data = api.get(f"/api/training/advanced-analytics/{user_id}/biomarkers", headers=headers).json()
 
     fatigue = data["fatigue_correlation"]
     assert fatigue["sample_size"] == 3

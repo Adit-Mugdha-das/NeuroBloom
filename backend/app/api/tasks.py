@@ -8,6 +8,7 @@ from datetime import datetime
 from app.models.test_result import TestResult
 from app.schemas.test_result import TestResultCreate, TestResultRead
 from app.core.config import engine
+from app.core.access_control import patient_data_reader_by_user_id, patient_self_by_user_id, require_authenticated
 from app.services.patient_journey import get_baseline_status as build_baseline_status
 from app.services.dccs_task import dccs_task_service
 from app.services.plus_minus_task import plus_minus_task_service
@@ -29,7 +30,7 @@ WORD_LISTS = {
     "hard": ["symphony", "telescope", "hurricane", "cathedral", "butterfly", "chemistry", "peninsula", "atmosphere", "democracy"]
 }
 
-@router.get("/memory/start")
+@router.get("/memory/start", dependencies=[Depends(require_authenticated)])
 def start_memory_test(difficulty: str = "medium"):
     """Generate a random word list for memory test"""
     if difficulty not in WORD_LISTS:
@@ -44,7 +45,7 @@ def start_memory_test(difficulty: str = "medium"):
         "time_limit": 10  # seconds to memorize
     }
 
-@router.post("/results", response_model=TestResultRead)
+@router.post("/results", response_model=TestResultRead, dependencies=[Depends(patient_self_by_user_id)])
 def submit_result(
     result: TestResultCreate, 
     user_id: int,
@@ -64,7 +65,7 @@ def submit_result(
     
     return test_result
 
-@router.get("/results/{user_id}", response_model=List[TestResultRead])
+@router.get("/results/{user_id}", response_model=List[TestResultRead], dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_user_results(user_id: int, session: Session = Depends(get_session)):
     """Get all test results for a user"""
     results = session.exec(
@@ -75,7 +76,7 @@ def get_user_results(user_id: int, session: Session = Depends(get_session)):
     
     return results
 
-@router.get("/results/{user_id}/stats")
+@router.get("/results/{user_id}/stats", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_user_stats(user_id: int, session: Session = Depends(get_session)):
     """Get user statistics"""
     results = session.exec(
@@ -118,14 +119,14 @@ def get_user_stats(user_id: int, session: Session = Depends(get_session)):
         "recent_scores": recent_scores
     }
 
-@router.get("/results/{user_id}/baseline-status")
+@router.get("/results/{user_id}/baseline-status", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_baseline_status(user_id: int, session: Session = Depends(get_session)):
     """Get baseline task completion status for a user"""
     return build_baseline_status(session, user_id)
 
 
 # DCCS Task endpoints
-@router.post("/dccs/generate")
+@router.post("/dccs/generate", dependencies=[Depends(require_authenticated)])
 def generate_dccs_session(difficulty: int = 1):
     """
     Generate a new DCCS session
@@ -143,7 +144,7 @@ def generate_dccs_session(difficulty: int = 1):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/dccs/score")
+@router.post("/dccs/score", dependencies=[Depends(require_authenticated)])
 def score_dccs_session(
     session_data: dict,
     user_responses: List[dict]
@@ -166,7 +167,7 @@ def score_dccs_session(
 
 
 # Plus-Minus Task endpoints
-@router.post("/plus-minus/generate")
+@router.post("/plus-minus/generate", dependencies=[Depends(require_authenticated)])
 def generate_plus_minus_session(difficulty: int = 1):
     """
     Generate a new Plus-Minus session
@@ -184,7 +185,7 @@ def generate_plus_minus_session(difficulty: int = 1):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/plus-minus/score")
+@router.post("/plus-minus/score", dependencies=[Depends(require_authenticated)])
 def score_plus_minus_session(
     session_data: dict,
     user_responses: List[dict]
@@ -206,7 +207,7 @@ def score_plus_minus_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/tol/generate")
+@router.post("/tol/generate", dependencies=[Depends(require_authenticated)])
 def generate_tol_session(difficulty: int = 1):
     """
     Generate a Tower of London session
@@ -224,7 +225,7 @@ def generate_tol_session(difficulty: int = 1):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/tol/score")
+@router.post("/tol/score", dependencies=[Depends(require_authenticated)])
 def score_tol_session(
     session_data: dict,
     user_solutions: List[dict]
@@ -246,7 +247,7 @@ def score_tol_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/soc/generate")
+@router.post("/soc/generate", dependencies=[Depends(require_authenticated)])
 def generate_soc_session(request: dict = Body(...)):
     """
     Generate a Stockings of Cambridge session
@@ -265,7 +266,7 @@ def generate_soc_session(request: dict = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/soc/score")
+@router.post("/soc/score", dependencies=[Depends(require_authenticated)])
 def score_soc_session(
     session_data: dict,
     user_solutions: List[dict]
@@ -287,7 +288,7 @@ def score_soc_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/verbal-fluency/generate")
+@router.post("/verbal-fluency/generate", dependencies=[Depends(require_authenticated)])
 def generate_verbal_fluency_session(
     request: dict = Body(...)
 ):
@@ -316,7 +317,7 @@ def generate_verbal_fluency_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/verbal-fluency/score")
+@router.post("/verbal-fluency/score", dependencies=[Depends(require_authenticated)])
 def score_verbal_fluency_session(
     request: dict = Body(...)
 ):
@@ -345,7 +346,7 @@ def score_verbal_fluency_session(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/category-fluency/generate")
+@router.post("/category-fluency/generate", dependencies=[Depends(require_authenticated)])
 def generate_category_fluency_trial(
     request: dict = Body(...)
 ):
@@ -367,7 +368,7 @@ def generate_category_fluency_trial(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/category-fluency/score")
+@router.post("/category-fluency/score", dependencies=[Depends(require_authenticated)])
 def score_category_fluency_trial(
     request: dict = Body(...)
 ):

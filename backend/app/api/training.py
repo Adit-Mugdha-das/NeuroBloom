@@ -16,6 +16,7 @@ from app.services.patient_journey import get_real_baseline, get_reference_data_s
 from app.services.task_keys import normalize_task_key
 from app.services.task_rotation import TaskRotationService
 from app.core.config import engine
+from app.core.access_control import patient_data_reader_by_user_id, patient_self_by_user_id
 
 router = APIRouter()
 
@@ -337,7 +338,7 @@ def enforce_session_limits(training_plan: TrainingPlan, session: Session, user_i
             ),
         )
 
-@router.post("/training-plan/generate/{user_id}")
+@router.post("/training-plan/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_training_plan(user_id: int, session: Session = Depends(get_session)):
     """
     Generate personalized training plan from user's baseline assessment.
@@ -445,7 +446,7 @@ def generate_training_plan(user_id: int, session: Session = Depends(get_session)
         },
     }
 
-@router.get("/training-plan/{user_id}")
+@router.get("/training-plan/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_training_plan(user_id: int, session: Session = Depends(get_session)):
     """Get active training plan for user"""
     
@@ -480,7 +481,7 @@ def get_training_plan(user_id: int, session: Session = Depends(get_session)):
         "session_pacing": session_pacing,
     }
 
-@router.get("/training-plan/{user_id}/streak")
+@router.get("/training-plan/{user_id}/streak", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_streak_info(user_id: int, session: Session = Depends(get_session)):
     """
     Get streak and consistency statistics.
@@ -542,7 +543,7 @@ def get_streak_info(user_id: int, session: Session = Depends(get_session)):
         "last_streak_reset": plan.last_streak_reset.isoformat() if plan.last_streak_reset else None
     }
 
-@router.get("/training-plan/{user_id}/next-tasks")
+@router.get("/training-plan/{user_id}/next-tasks", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_next_training_tasks(user_id: int, session: Session = Depends(get_session)):
     """
     Get recommended tasks for current training session with smart rotation.
@@ -651,7 +652,7 @@ def get_next_training_tasks(user_id: int, session: Session = Depends(get_session
         "rotation_info": "Tasks selected using smart rotation to prevent repetition"
     }
 
-@router.post("/training-session/submit")
+@router.post("/training-session/submit", dependencies=[Depends(patient_self_by_user_id)])
 def submit_training_session(
     user_id: int,
     training_plan_id: int,
@@ -696,10 +697,14 @@ def submit_training_session(
     plan = session.exec(
         select(TrainingPlan).where(TrainingPlan.id == training_plan_id)
     ).first()
-    
+
     if not plan:
         raise HTTPException(status_code=404, detail="Training plan not found")
-    
+
+    # The plan must belong to the patient submitting the result.
+    if plan.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this resource")
+
     # Get current difficulty for this domain
     current_difficulty_map = plan.get_current_difficulty()
     current_difficulty = current_difficulty_map.get(domain, 5)
@@ -856,7 +861,7 @@ def submit_training_session(
         "created_at": training_session.created_at.isoformat()
     }
 
-@router.get("/training-session/history/{user_id}")
+@router.get("/training-session/history/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_training_history(
     user_id: int, 
     limit: int = 50,
@@ -889,7 +894,7 @@ def get_training_history(
         for s in sessions
     ]
 
-@router.get("/training-session/metrics/{user_id}")
+@router.get("/training-session/metrics/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_performance_metrics(user_id: int, session: Session = Depends(get_session)):
     """
     Get comprehensive performance metrics for a user.
@@ -1092,7 +1097,7 @@ def rebalance_focus_areas(plan: TrainingPlan, db_session: Session):
     
     db_session.add(plan)
 
-@router.get("/training-session/performance-comparison/{user_id}")
+@router.get("/training-session/performance-comparison/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_performance_comparison(user_id: int, session: Session = Depends(get_session)):
     """
     Compare baseline scores vs current training performance.
@@ -1258,7 +1263,7 @@ def track_session_completion(
 # TASK-SPECIFIC ENDPOINTS - Individual task implementations
 # ============================================================================
 
-@router.post("/tasks/digit-span/generate/{user_id}")
+@router.post("/tasks/digit-span/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_digit_span_session(
     user_id: int,
     difficulty: int = 5,
@@ -1308,7 +1313,7 @@ def generate_digit_span_session(
         }
     }
 
-@router.post("/tasks/digit-span/submit/{user_id}")
+@router.post("/tasks/digit-span/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_digit_span_session(
     user_id: int,
     session_data: dict,
@@ -1446,7 +1451,7 @@ def submit_digit_span_session(
         }
     }
 
-@router.post("/tasks/spatial-span/generate/{user_id}")
+@router.post("/tasks/spatial-span/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_spatial_span_session(
     user_id: int, 
     difficulty: int = 5,
@@ -1496,7 +1501,7 @@ def generate_spatial_span_session(
         }
     }
 
-@router.post("/tasks/spatial-span/submit/{user_id}")
+@router.post("/tasks/spatial-span/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_spatial_span_session(
     user_id: int,
     session_data: dict,
@@ -1634,7 +1639,7 @@ def submit_spatial_span_session(
         }
     }
 
-@router.post("/tasks/letter-number-sequencing/generate/{user_id}")
+@router.post("/tasks/letter-number-sequencing/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_letter_number_sequencing_session(
     user_id: int, 
     difficulty: int = 5,
@@ -1684,7 +1689,7 @@ def generate_letter_number_sequencing_session(
         }
     }
 
-@router.post("/tasks/letter-number-sequencing/submit/{user_id}")
+@router.post("/tasks/letter-number-sequencing/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_letter_number_sequencing_session(
     user_id: int,
     session_data: dict,
@@ -1831,7 +1836,7 @@ def submit_letter_number_sequencing_session(
         }
     }
 
-@router.post("/tasks/operation-span/generate/{user_id}")
+@router.post("/tasks/operation-span/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_operation_span_session(
     user_id: int,
     difficulty: int = 5,
@@ -1882,7 +1887,7 @@ def generate_operation_span_session(
         }
     }
 
-@router.post("/tasks/operation-span/submit/{user_id}")
+@router.post("/tasks/operation-span/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_operation_span_session(
     user_id: int,
     session_data: dict,
@@ -2026,7 +2031,7 @@ def submit_operation_span_session(
 # Dual N-Back - Dual-modality working memory training
 # ============================================================================
 
-@router.post("/tasks/dual-n-back/generate/{user_id}")
+@router.post("/tasks/dual-n-back/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_dual_n_back_session(
     user_id: int,
     difficulty: int = 5,
@@ -2080,7 +2085,7 @@ def generate_dual_n_back_session(
     }
 
 
-@router.post("/tasks/dual-n-back/submit/{user_id}")
+@router.post("/tasks/dual-n-back/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_dual_n_back_session(
     user_id: int,
     session_data: dict,
@@ -2193,7 +2198,7 @@ def submit_dual_n_back_session(
 # SDMT (Symbol Digit Modalities Test) - GOLD STANDARD for MS
 # ============================================================================
 
-@router.post("/tasks/sdmt/generate/{user_id}")
+@router.post("/tasks/sdmt/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_sdmt_task(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -2241,7 +2246,7 @@ def generate_sdmt_task(
     }
 
 
-@router.post("/tasks/sdmt/submit/{user_id}")
+@router.post("/tasks/sdmt/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_sdmt_task(
     user_id: int,
     request: dict,
@@ -2359,7 +2364,7 @@ def submit_sdmt_task(
 # Trail Making Test Part A (TMT-A) - Classic Neuropsych Test
 # ============================================================================
 
-@router.post("/tasks/trail-making-a/generate/{user_id}")
+@router.post("/tasks/trail-making-a/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_trail_making_a_task(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -2398,7 +2403,7 @@ def generate_trail_making_a_task(
     }
 
 
-@router.post("/tasks/trail-making-a/submit/{user_id}")
+@router.post("/tasks/trail-making-a/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_trail_making_a_task(
     user_id: int,
     request: dict,
@@ -2517,7 +2522,7 @@ def submit_trail_making_a_task(
 # Pattern Comparison Task (Task 2.3 - Processing Speed)
 # ============================================================================
 
-@router.post("/tasks/pattern-comparison/generate/{user_id}")
+@router.post("/tasks/pattern-comparison/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_pattern_comparison_session(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -2561,7 +2566,7 @@ def generate_pattern_comparison_session(
     }
 
 
-@router.post("/tasks/pattern-comparison/submit/{user_id}")
+@router.post("/tasks/pattern-comparison/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_pattern_comparison_session(
     user_id: int,
     request_data: dict,
@@ -2688,7 +2693,7 @@ def submit_pattern_comparison_session(
 # INSPECTION TIME TASK - Processing Speed
 # ============================================================================
 
-@router.post("/tasks/inspection-time/generate/{user_id}")
+@router.post("/tasks/inspection-time/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_inspection_time_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -2724,7 +2729,7 @@ def generate_inspection_time_session(
     }
 
 
-@router.post("/tasks/inspection-time/submit/{user_id}")
+@router.post("/tasks/inspection-time/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_inspection_time_session(
     user_id: int,
     request_data: dict,
@@ -2848,7 +2853,7 @@ def submit_inspection_time_session(
 # CHOICE REACTION TIME - Processing Speed (Decision speed)
 # ============================================================================
 
-@router.post("/tasks/choice-reaction-time/generate/{user_id}")
+@router.post("/tasks/choice-reaction-time/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_choice_reaction_time_session(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -2886,7 +2891,7 @@ def generate_choice_reaction_time_session(
     }
 
 
-@router.post("/tasks/choice-reaction-time/submit/{user_id}")
+@router.post("/tasks/choice-reaction-time/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_choice_reaction_time_session(
     user_id: int,
     request_data: dict,
@@ -2980,7 +2985,7 @@ def submit_choice_reaction_time_session(
 # STROOP COLOR-WORD TEST - Attention (Classic Inhibitory Control)
 # ============================================================================
 
-@router.post("/tasks/stroop/generate/{user_id}")
+@router.post("/tasks/stroop/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_stroop_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -3015,7 +3020,7 @@ def generate_stroop_session(
     }
 
 
-@router.post("/tasks/stroop/submit/{user_id}")
+@router.post("/tasks/stroop/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_stroop_session(
     user_id: int,
     request_data: dict,
@@ -3145,7 +3150,7 @@ def submit_stroop_session(
 # GO/NO-GO TASK - Attention (Response Inhibition)
 # ============================================================================
 
-@router.post("/tasks/gonogo/generate/{user_id}")
+@router.post("/tasks/gonogo/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_gonogo_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -3189,7 +3194,7 @@ class GoNoGoSubmitRequest(BaseModel):
     responses: List[dict]
 
 
-@router.post("/tasks/gonogo/submit/{user_id}")
+@router.post("/tasks/gonogo/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_gonogo_session(
     user_id: int,
     request: GoNoGoSubmitRequest,
@@ -3307,7 +3312,7 @@ def submit_gonogo_session(
 # SART - Sustained Attention to Response Task
 # ============================================================================
 
-@router.post("/tasks/sart/generate/{user_id}")
+@router.post("/tasks/sart/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_sart_session(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -3345,7 +3350,7 @@ def generate_sart_session(
     }
 
 
-@router.post("/tasks/sart/submit/{user_id}")
+@router.post("/tasks/sart/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_sart_session(
     user_id: int,
     request_data: dict,
@@ -3447,7 +3452,7 @@ class FlankerSubmitRequest(BaseModel):
     task_id: Optional[str] = None
 
 
-@router.post("/tasks/flanker/generate/{user_id}")
+@router.post("/tasks/flanker/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_flanker_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -3485,7 +3490,7 @@ def generate_flanker_session(
     }
 
 
-@router.post("/tasks/flanker/submit/{user_id}")
+@router.post("/tasks/flanker/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_flanker_session(
     user_id: int,
     request: FlankerSubmitRequest,
@@ -3604,7 +3609,7 @@ def submit_flanker_session(
 # PASAT TASK - Attention (MS Gold Standard)
 # ============================================================================
 
-@router.post("/tasks/pasat/generate/{user_id}")
+@router.post("/tasks/pasat/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_pasat_session(
     user_id: int,
     visual_mode: bool = True,
@@ -3641,7 +3646,7 @@ def generate_pasat_session(
     }
 
 
-@router.post("/tasks/pasat/submit/{user_id}")
+@router.post("/tasks/pasat/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_pasat_session(
     user_id: int,
     request_data: dict,
@@ -3768,7 +3773,7 @@ def submit_pasat_session(
 # DEV/TESTING ENDPOINTS - For quick testing during development
 # ============================================================================
 
-@router.post("/dev/complete-session/{user_id}")
+@router.post("/dev/complete-session/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
     """
     DEV TOOL: Instantly complete the current session with auto-generated data.
@@ -3851,7 +3856,7 @@ def dev_complete_session(user_id: int, session: Session = Depends(get_session)):
         "current_streak": plan.current_streak
     }
 
-@router.post("/dev/complete-single-session/{user_id}")
+@router.post("/dev/complete-single-session/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_complete_single_session(user_id: int, session: Session = Depends(get_session)):
     """
     DEV TOOL: Complete a single session with realistic, adaptive data.
@@ -3924,7 +3929,7 @@ def dev_complete_single_session(user_id: int, session: Session = Depends(get_ses
         "current_streak": plan.current_streak
     }
 
-@router.post("/dev/generate-sessions/{user_id}")
+@router.post("/dev/generate-sessions/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session = Depends(get_session)):
     """
     DEV TOOL: Generate multiple completed sessions with realistic data.
@@ -3999,7 +4004,7 @@ def dev_generate_sessions(user_id: int, num_sessions: int = 2, session: Session 
         "message": f"Generated {sessions_created} sessions with {sessions_created * 4} tasks"
     }
 
-@router.post("/dev/set-streak/{user_id}")
+@router.post("/dev/set-streak/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_set_streak(user_id: int, days: int, session: Session = Depends(get_session)):
     """
     DEV TOOL: Set streak to specific number of days.
@@ -4020,7 +4025,7 @@ def dev_set_streak(user_id: int, days: int, session: Session = Depends(get_sessi
         "message": f"Streak set to {days} days 🔥"
     }
 
-@router.post("/dev/set-domain-difficulty/{user_id}")
+@router.post("/dev/set-domain-difficulty/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: Session = Depends(get_session)):
     """
     DEV TOOL: Set difficulty for a specific cognitive domain.
@@ -4081,7 +4086,7 @@ def dev_set_domain_difficulty(user_id: int, request: dict = Body(...), session: 
             "message": f"Added {domain} with difficulty {difficulty}"
         }
 
-@router.delete("/dev/clear-sessions/{user_id}")
+@router.delete("/dev/clear-sessions/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
     """
     DEV TOOL: Clear all training sessions and reset plan.
@@ -4129,7 +4134,7 @@ def dev_clear_sessions(user_id: int, session: Session = Depends(get_session)):
 # BADGE ENDPOINTS
 # ============================================================================
 
-@router.get("/badges/{user_id}")
+@router.get("/badges/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_user_badges(user_id: int, session: Session = Depends(get_session)):
     """
     Get all badges earned by the user.
@@ -4142,7 +4147,7 @@ def get_user_badges(user_id: int, session: Session = Depends(get_session)):
         "badges": badges
     }
 
-@router.get("/badges/available/{user_id}")
+@router.get("/badges/available/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_available_badges(user_id: int, session: Session = Depends(get_session)):
     """
     Get all available badges with earned/locked status.
@@ -4150,7 +4155,7 @@ def get_available_badges(user_id: int, session: Session = Depends(get_session)):
     """
     return BadgeService.get_available_badges(session, user_id)
 
-@router.get("/badges/recent/{user_id}")
+@router.get("/badges/recent/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_recent_badges(user_id: int, limit: int = 5, session: Session = Depends(get_session)):
     """
     Get recently earned badges.
@@ -4165,7 +4170,7 @@ def get_recent_badges(user_id: int, limit: int = 5, session: Session = Depends(g
         "badges": recent
     }
 
-@router.post("/dev/check-badges/{user_id}")
+@router.post("/dev/check-badges/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
     """
     DEV TOOL: Check what badges would be earned and award them.
@@ -4205,7 +4210,7 @@ def dev_check_badges(user_id: int, session: Session = Depends(get_session)):
 # PERFORMANCE TRENDS ENDPOINTS
 # ============================================================================
 
-@router.get("/trends/{user_id}")
+@router.get("/trends/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_performance_trends(
     user_id: int, 
     days: int = 30,
@@ -4298,7 +4303,7 @@ def get_performance_trends(
 # WEEKLY SUMMARY
 # ============================================================================
 
-@router.get("/weekly-summary/{user_id}")
+@router.get("/weekly-summary/{user_id}", dependencies=[Depends(patient_data_reader_by_user_id)])
 def get_weekly_summary(
     user_id: int,
     session: Session = Depends(get_session)
@@ -4426,7 +4431,7 @@ def get_weekly_summary(
 
 from app.services.trail_making_b_task import TrailMakingBTask
 
-@router.post("/tasks/trail-making-b/generate/{user_id}")
+@router.post("/tasks/trail-making-b/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_trail_making_b_session(user_id: int, session: Session = Depends(get_session)):
     """
     Generate a Trail Making Test - Part B session.
@@ -4485,7 +4490,7 @@ class TrailMakingBSubmission(BaseModel):
     completed: bool
 
 
-@router.post("/tasks/trail-making-b/submit/{user_id}")
+@router.post("/tasks/trail-making-b/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_trail_making_b_session(
     user_id: int, 
     submission: TrailMakingBSubmission,
@@ -4594,7 +4599,7 @@ def submit_trail_making_b_session(
 
 # ==================== Wisconsin Card Sorting Test (WCST) ====================
 
-@router.post("/tasks/wcst/generate/{user_id}")
+@router.post("/tasks/wcst/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_wcst_session(user_id: int, session: Session = Depends(get_session)):
     """
     Generate Wisconsin Card Sorting Test (WCST) session
@@ -4666,7 +4671,7 @@ class WCSTSubmission(BaseModel):
     total_time: int
 
 
-@router.post("/tasks/wcst/submit/{user_id}")
+@router.post("/tasks/wcst/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_wcst_session(
     user_id: int,
     submission: WCSTSubmission,
@@ -4810,7 +4815,7 @@ def submit_wcst_session(
 # STOCKINGS OF CAMBRIDGE (SOC) - Planning Task
 # ============================================================================
 
-@router.post("/tasks/soc/generate/{user_id}")
+@router.post("/tasks/soc/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_soc_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -4845,7 +4850,7 @@ def generate_soc_session(
     }
 
 
-@router.post("/tasks/soc/submit/{user_id}")
+@router.post("/tasks/soc/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_soc_session(
     user_id: int,
     request_data: dict = Body(...),
@@ -4969,7 +4974,7 @@ def submit_soc_session(
 # VERBAL FLUENCY (COWAT) - Planning/Executive Function
 # ============================================================================
 
-@router.post("/tasks/verbal-fluency/generate/{user_id}")
+@router.post("/tasks/verbal-fluency/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_verbal_fluency_session(
     user_id: int,
     locale: str = "en",
@@ -5005,7 +5010,7 @@ def generate_verbal_fluency_session(
     }
 
 
-@router.post("/tasks/verbal-fluency/submit/{user_id}")
+@router.post("/tasks/verbal-fluency/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_verbal_fluency_session(
     user_id: int,
     request_data: dict = Body(...),
@@ -5127,7 +5132,7 @@ def submit_verbal_fluency_session(
 # DCCS - Cognitive Flexibility
 # ============================================================================
 
-@router.post("/tasks/dccs/generate/{user_id}")
+@router.post("/tasks/dccs/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_dccs_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -5162,7 +5167,7 @@ def generate_dccs_session(
     }
 
 
-@router.post("/tasks/dccs/submit/{user_id}")
+@router.post("/tasks/dccs/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_dccs_session(
     user_id: int,
     request_data: dict = Body(...),
@@ -5274,7 +5279,7 @@ def submit_dccs_session(
 # RULE SHIFT TASK - Cognitive Flexibility
 # ============================================================================
 
-@router.post("/tasks/rule-shift/generate/{user_id}")
+@router.post("/tasks/rule-shift/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_rule_shift_session(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -5314,7 +5319,7 @@ def generate_rule_shift_session(
     }
 
 
-@router.post("/tasks/rule-shift/submit/{user_id}")
+@router.post("/tasks/rule-shift/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_rule_shift_session(
     user_id: int,
     request_data: dict,
@@ -5412,7 +5417,7 @@ def submit_rule_shift_session(
 # PLUS-MINUS TASK - Cognitive Flexibility
 # ============================================================================
 
-@router.post("/tasks/plus-minus/generate/{user_id}")
+@router.post("/tasks/plus-minus/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_plus_minus_session(
     user_id: int,
     session: Session = Depends(get_session)
@@ -5447,7 +5452,7 @@ def generate_plus_minus_session(
     }
 
 
-@router.post("/tasks/plus-minus/submit/{user_id}")
+@router.post("/tasks/plus-minus/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_plus_minus_session(
     user_id: int,
     request_data: dict = Body(...),
@@ -5566,7 +5571,7 @@ def submit_plus_minus_session(
 # CATEGORY FLUENCY (Semantic Fluency) - Planning/Executive Function
 # ============================================================================
 
-@router.post("/tasks/category-fluency/generate/{user_id}")
+@router.post("/tasks/category-fluency/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_category_fluency_trial(
     user_id: int,
     session: Session = Depends(get_session)
@@ -5601,7 +5606,7 @@ def generate_category_fluency_trial(
     }
 
 
-@router.post("/tasks/category-fluency/submit/{user_id}")
+@router.post("/tasks/category-fluency/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_category_fluency_trial(
     user_id: int,
     request_data: dict = Body(...),
@@ -5738,7 +5743,7 @@ def submit_category_fluency_trial(
 # TWENTY QUESTIONS - Planning/Executive Function (Strategic Problem-Solving)
 # ============================================================================
 
-@router.post("/tasks/twenty-questions/generate/{user_id}")
+@router.post("/tasks/twenty-questions/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_twenty_questions_game(
     user_id: int,
     session: Session = Depends(get_session)
@@ -5773,7 +5778,7 @@ def generate_twenty_questions_game(
     }
 
 
-@router.post("/tasks/twenty-questions/ask/{user_id}")
+@router.post("/tasks/twenty-questions/ask/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def ask_question_twenty_questions(
     user_id: int,
     request_data: dict = Body(...),
@@ -5805,7 +5810,7 @@ def ask_question_twenty_questions(
     }
 
 
-@router.post("/tasks/twenty-questions/submit/{user_id}")
+@router.post("/tasks/twenty-questions/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_twenty_questions_game(
     user_id: int,
     request_data: dict = Body(...),
@@ -5949,7 +5954,7 @@ def submit_twenty_questions_game(
 # LANDMARK TASK ENDPOINTS
 # ============================================================================
 
-@router.post("/tasks/landmark-task/generate/{user_id}")
+@router.post("/tasks/landmark-task/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_landmark_task_session(
     user_id: int,
     difficulty: Optional[int] = None,
@@ -5988,7 +5993,7 @@ def generate_landmark_task_session(
     }
 
 
-@router.post("/tasks/landmark-task/submit/{user_id}")
+@router.post("/tasks/landmark-task/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_landmark_task_session(
     user_id: int,
     request_data: dict = Body(...),
@@ -6088,7 +6093,7 @@ def submit_landmark_task_session(
 # CANCELLATION TEST ENDPOINTS
 # ============================================================================
 
-@router.post("/tasks/cancellation-test/generate/{user_id}")
+@router.post("/tasks/cancellation-test/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_cancellation_test(
     user_id: int,
     session: Session = Depends(get_session)
@@ -6126,7 +6131,7 @@ def generate_cancellation_test(
     }
 
 
-@router.post("/tasks/cancellation-test/submit/{user_id}")
+@router.post("/tasks/cancellation-test/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_cancellation_test(
     user_id: int,
     request_data: dict = Body(...),
@@ -6260,7 +6265,7 @@ def submit_cancellation_test(
     }
 
 
-@router.get("/tasks/visual-search/generate/{user_id}")
+@router.get("/tasks/visual-search/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_visual_search_trial(user_id: int, session: Session = Depends(get_session)):
     """
     Generate Visual Search trial (Feature vs. Conjunction Search).
@@ -6295,7 +6300,7 @@ def generate_visual_search_trial(user_id: int, session: Session = Depends(get_se
     }
 
 
-@router.post("/tasks/visual-search/submit/{user_id}")
+@router.post("/tasks/visual-search/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_visual_search_response(
     user_id: int,
     request_data: dict = Body(...),
@@ -6436,7 +6441,7 @@ def submit_visual_search_response(
     }
 
 
-@router.get("/tasks/multiple-object-tracking/generate/{user_id}")
+@router.get("/tasks/multiple-object-tracking/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_mot_trial(user_id: int, session: Session = Depends(get_session)):
     """
     Generate Multiple Object Tracking (MOT) trial.
@@ -6471,7 +6476,7 @@ def generate_mot_trial(user_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.post("/tasks/multiple-object-tracking/submit/{user_id}")
+@router.post("/tasks/multiple-object-tracking/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_mot_response(
     user_id: int,
     request_data: dict = Body(...),
@@ -6626,7 +6631,7 @@ def submit_mot_response(
 # USEFUL FIELD OF VIEW (UFOV) TASK ENDPOINTS
 # ============================================================================
 
-@router.get("/tasks/useful-field-of-view/generate/{user_id}")
+@router.get("/tasks/useful-field-of-view/generate/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def generate_ufov_trial(user_id: int, session: Session = Depends(get_session)):
     """
     Generate a Useful Field of View (UFOV) trial
@@ -6666,7 +6671,7 @@ def generate_ufov_trial(user_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.post("/tasks/useful-field-of-view/submit/{user_id}")
+@router.post("/tasks/useful-field-of-view/submit/{user_id}", dependencies=[Depends(patient_self_by_user_id)])
 def submit_ufov_response(
     user_id: int,
     central_response: str = Body(..., description="User's answer for central target (car or truck)"),

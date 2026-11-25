@@ -68,4 +68,136 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         # Includes the patient--clinician integration test (tests/test_integration_patient_clinician.py)
+        # and the authentication/authorization suite (tests/test_security_access_control.py)
         run: pytest tests/ -v --tb=short --cov=app --cov-report=term
+
+  # ──────────────────────────────────────────────
+  # Backend API tests on PostgreSQL 16 (the production database)
+  # ──────────────────────────────────────────────
+  backend-tests-postgres:
+    name: Backend API Tests (PostgreSQL)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: neurobloom_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d neurobloom_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-httpx pytest-cov
+
+      - name: Run tests against PostgreSQL
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/neurobloom_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/neurobloom_test
+        run: pytest tests/ -v --tb=short --cov=app --cov-report=term
+
+  # ──────────────────────────────────────────────
+  # Browser end-to-end tests (Playwright) on a PostgreSQL-backed stack
+  # ──────────────────────────────────────────────
+  e2e-tests:
+    name: Browser End-to-End Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: neurobloom_e2e
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d neurobloom_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/neurobloom_e2e
+      JWT_SECRET_KEY: ci-e2e-signing-key-not-for-production-0123456789
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      VITE_API_BASE_URL: http://localhost:8000
+      E2E_API_URL: http://localhost:8000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend-svelte/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:8000/ > /dev/null && exit 0; sleep 2; done
+          cat backend.log; exit 1
+
+      - name: Load synthetic demonstration data
+        working-directory: backend
+        run: |
+          python seed_initial_data.py
+          python scripts/seed_demo_clinical_data.py
+
+      - name: Install frontend dependencies and browser
+        working-directory: frontend-svelte
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: frontend-svelte
+        run: npm run build
+
+      - name: Run browser tests
+        working-directory: frontend-svelte
+        run: npm run test:e2e
+
+      - name: Upload Playwright traces and backend log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            frontend-svelte/test-results/
+            backend/backend.log

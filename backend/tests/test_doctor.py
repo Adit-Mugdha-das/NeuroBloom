@@ -52,57 +52,65 @@ def _assign(session, doctor, patient, diagnosis="Relapsing-Remitting MS"):
 
 # ── patients list ──────────────────────────────────────────────────────────────
 
-def test_get_patients_empty(client, session):
+def test_get_patients_empty(client, session, auth_headers):
     doctor = _make_doctor(session)
-    resp = client.get(f"/api/doctor/{doctor.id}/patients")
+    resp = client.get(f"/api/doctor/{doctor.id}/patients", headers=auth_headers(doctor, "doctor"))
     assert resp.status_code == 200
     data = resp.json()
     assert data["patients"] == []
     assert data["total"] == 0
 
 
-def test_get_patients_with_assignment(client, session):
+def test_get_patients_with_assignment(client, session, auth_headers):
     doctor = _make_doctor(session)
     patient = _make_patient(session)
     _assign(session, doctor, patient)
 
-    resp = client.get(f"/api/doctor/{doctor.id}/patients")
+    resp = client.get(f"/api/doctor/{doctor.id}/patients", headers=auth_headers(doctor, "doctor"))
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
     assert data["patients"][0]["email"] == "patient@test.com"
 
 
-def test_get_patients_unknown_doctor(client, session):
-    resp = client.get("/api/doctor/99999/patients")
-    assert resp.status_code == 404
+def test_get_patients_unknown_doctor(client, session, auth_headers):
+    # The signed-in clinician is checked before any lookup, so another (or unknown)
+    # clinician id is refused without revealing whether that account exists.
+    doctor = _make_doctor(session)
+    assert client.get("/api/doctor/99999/patients").status_code == 401
+    resp = client.get("/api/doctor/99999/patients", headers=auth_headers(doctor, "doctor"))
+    assert resp.status_code == 403
 
 
 # ── analytics ─────────────────────────────────────────────────────────────────
 
-def test_analytics_no_patients(client, session):
+def test_analytics_no_patients(client, session, auth_headers):
     doctor = _make_doctor(session)
-    resp = client.get(f"/api/doctor/{doctor.id}/analytics")
+    resp = client.get(f"/api/doctor/{doctor.id}/analytics", headers=auth_headers(doctor, "doctor"))
     assert resp.status_code == 200
     data = resp.json()
     assert data["overview"]["total_patients"] == 0
     assert data["overview"]["active_patients"] == 0
 
 
-def test_analytics_unknown_doctor(client, session):
-    resp = client.get("/api/doctor/99999/analytics")
-    assert resp.status_code == 404
+def test_analytics_unknown_doctor(client, session, auth_headers):
+    doctor = _make_doctor(session)
+    assert client.get("/api/doctor/99999/analytics").status_code == 401
+    resp = client.get("/api/doctor/99999/analytics", headers=auth_headers(doctor, "doctor"))
+    assert resp.status_code == 403
 
 
 # ── notifications ─────────────────────────────────────────────────────────────
 
-def test_notifications_empty(client, session):
+def test_notifications_empty(client, session, auth_headers):
     doctor = _make_doctor(session)
-    resp = client.get(f"/api/doctor/{doctor.id}/notifications")
+    resp = client.get(f"/api/doctor/{doctor.id}/notifications", headers=auth_headers(doctor, "doctor"))
     assert resp.status_code == 200
     assert resp.json()["notifications"] == []
 
 
-def test_notifications_unknown_doctor(client, session):
-    resp = client.get("/api/doctor/99999/notifications")
-    assert resp.status_code == 404
+def test_notifications_unknown_doctor(client, session, auth_headers):
+    doctor = _make_doctor(session)
+    assert client.get("/api/doctor/99999/notifications").status_code == 401
+    resp = client.get("/api/doctor/99999/notifications", headers=auth_headers(doctor, "doctor"))
+    assert resp.status_code == 403

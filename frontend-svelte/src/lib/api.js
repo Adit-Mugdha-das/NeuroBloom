@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { CSRF_HEADER, CSRF_HEADER_VALUE, isSafeMethod, isSessionEndpoint } from './auth-session.js';
 
 const normalizeApiBaseUrl = (value = '') => value.trim().replace(/\/+$/, '');
 
@@ -13,11 +14,28 @@ export const apiUrl = (path = '') => {
 	return `${API_BASE_URL}${normalizedPath}`;
 };
 
+let unauthorizedHandler = null;
+
+// Registered by hooks.client.js; called when a request reports an expired session.
+export const setUnauthorizedHandler = (handler) => {
+	unauthorizedHandler = handler;
+};
+
 const api = axios.create({
 	baseURL: API_BASE_URL,
+	// Send the httpOnly session cookie (and accept it from login responses).
+	withCredentials: true,
 	headers: {
 		'Content-Type': 'application/json'
 	}
+});
+
+api.interceptors.request.use((config) => {
+	if (!isSafeMethod(config.method)) {
+		config.headers = config.headers || {};
+		config.headers[CSRF_HEADER] = CSRF_HEADER_VALUE;
+	}
+	return config;
 });
 
 api.interceptors.response.use(
@@ -25,6 +43,11 @@ api.interceptors.response.use(
 		return response;
 	},
 	(error) => {
+		const requestUrl = apiUrl(error.config?.url || '');
+		const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin;
+		if (error.response?.status === 401 && !isSessionEndpoint(requestUrl, origin)) {
+			unauthorizedHandler?.();
+		}
 		return Promise.reject(error);
 	}
 );

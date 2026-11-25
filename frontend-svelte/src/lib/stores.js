@@ -1,21 +1,38 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
+import { apiUrl } from './api.js';
+import { CSRF_HEADER, CSRF_HEADER_VALUE } from './auth-session.js';
 
-// Get initial user from localStorage
+// Profile shown in the interface (id, role, name). It is not a credential: the
+// session itself is the httpOnly cookie, which the server checks on every request.
 const initialUser = browser ? JSON.parse(localStorage.getItem('user') || 'null') : null;
 
 // User store
 export const user = writable(initialUser);
 export const authReady = writable(false);
 
+// Ask the server to clear the session cookie (page scripts cannot remove it).
+function endServerSession() {
+	fetch(apiUrl('/api/auth/logout'), {
+		method: 'POST',
+		credentials: 'include',
+		headers: { [CSRF_HEADER]: CSRF_HEADER_VALUE }
+	}).catch(() => {});
+}
+
 // Subscribe to user changes and update localStorage
 if (browser) {
+	let previousUser = initialUser;
 	user.subscribe(value => {
 		if (value) {
 			localStorage.setItem('user', JSON.stringify(value));
 		} else {
 			localStorage.removeItem('user');
+			if (previousUser) {
+				endServerSession();
+			}
 		}
+		previousUser = value;
 	});
 }
 

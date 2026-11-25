@@ -144,7 +144,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			if (isDevTool && urlDifficulty) {
 				difficulty = parseInt(urlDifficulty);
 			} else {
-				const baselineRes = await fetch(`/api/baseline/${userId}`);
+				const baselineRes = await fetch(`${API_BASE_URL}/api/baseline/${userId}`);
 				if (baselineRes.ok) {
 					const baseline = await baselineRes.json();
 					baselineScore = baseline.planning_score || 0;
@@ -160,7 +160,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				}
 			}
 
-			const response = await fetch('/api/tasks/soc/generate', {
+			const response = await fetch(`${API_BASE_URL}/api/tasks/soc/generate`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ difficulty })
@@ -369,7 +369,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			return;
 		}
 		try {
-			const scoreResponse = await fetch('/api/tasks/soc/score', {
+			const scoreResponse = await fetch(`${API_BASE_URL}/api/tasks/soc/score`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ session_data: sessionData, user_solutions: userSolutions })

@@ -137,7 +137,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 	async function loadSession() {
 		try {
 			loading = true;
-			const baselineRes = await fetch(`/api/baseline/${userId}`);
+			const baselineRes = await fetch(`${API_BASE_URL}/api/baseline/${userId}`);
 			if (baselineRes.ok) {
 				const baseline = await baselineRes.json();
 				baselineScore = baseline.planning_score || 0;
@@ -151,7 +151,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 				else if (baselineScore >= 20) difficulty = 2;
 				else difficulty = 1;
 			}
-			const response = await fetch('/api/tasks/tol/generate', {
+			const response = await fetch(`${API_BASE_URL}/api/tasks/tol/generate`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ difficulty })
@@ -351,7 +351,7 @@ import { TASK_RETURN_CONTEXT } from '$lib/task-navigation';
 			return;
 		}
 		try {
-			const scoreResponse = await fetch('/api/tasks/tol/score', {
+			const scoreResponse = await fetch(`${API_BASE_URL}/api/tasks/tol/score`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ session_data: sessionData, user_solutions: userSolutions })

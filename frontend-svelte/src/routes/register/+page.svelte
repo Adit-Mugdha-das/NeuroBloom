@@ -1,5 +1,6 @@
 <script>
 	import { goto } from '$app/navigation';
+	import DemoDataNotice from '$lib/components/DemoDataNotice.svelte';
 	import api from '$lib/api.js';
 	import { locale, translateText, locale as activeLocale, uiText } from '$lib/i18n';
 
@@ -95,8 +96,8 @@
 						</svg>
 					</div>
 					<div>
-						<div class="feature-title">{t('Secure & Private')}</div>
-						<div class="feature-desc">{t('Your health data is encrypted and never shared without consent')}</div>
+						<div class="feature-title">{t('Consent-Based Sharing')}</div>
+						<div class="feature-desc">{t('Clinicians see your results only with your consent')}</div>
 					</div>
 				</div>
 				<div class="feature-item">
@@ -143,6 +144,8 @@
 			</div>
 
 			<!-- Role selector -->
+			<DemoDataNotice />
+
 			<div class="role-selector">
 				<button
 					type="button"

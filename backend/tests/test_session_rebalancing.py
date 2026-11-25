@@ -91,7 +91,8 @@ DIGIT_SPAN_TRIAL = {"sequence": [3, 7, 2, 9], "span_type": "forward", "length": 
                     "user_response": [3, 7, 2, 9], "reaction_time": 3500}
 
 
-def test_task_specific_route_rebalances_once_after_fourth_session(api, session, plan, rebalance_spy):
+def test_task_specific_route_rebalances_once_after_fourth_session(api, session, plan, rebalance_spy, auth_headers):
+    api.headers.update(auth_headers(session.get(User, plan.user_id), "patient"))
     last_session_id = None
     for session_number in range(1, SESSIONS + 1):
         for slot in range(TASKS_PER_SESSION):
@@ -116,7 +117,8 @@ def test_task_specific_route_rebalances_once_after_fourth_session(api, session, 
     assert len(call["visible_ids"]) == 12
 
 
-def test_generic_route_still_rebalances_once_after_fourth_session(api, session, plan, rebalance_spy):
+def test_generic_route_still_rebalances_once_after_fourth_session(api, session, plan, rebalance_spy, auth_headers):
+    api.headers.update(auth_headers(session.get(User, plan.user_id), "patient"))
     domains = ["processing_speed", "attention", "working_memory", "flexibility"]
     for session_number in range(1, SESSIONS + 1):
         for slot, domain in enumerate(domains):

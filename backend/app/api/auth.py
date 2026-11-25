@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, col
 from typing import Optional
@@ -13,6 +13,16 @@ from app.schemas.doctor import DoctorCreate, DoctorLogin, DoctorRead, MessageCre
 from app.core.config import engine
 from app.core.prescriptions import generate_prescription_pdf_bytes, parse_prescription_data, serialize_prescription_intervention
 from app.core.security import hash_password, verify_password
+from app.core.access_control import (
+    ROLE_DOCTOR,
+    ROLE_PATIENT,
+    Principal,
+    clear_auth_cookie,
+    forbidden,
+    get_current_principal,
+    issue_login,
+    patient_self_by_patient_id,
+)
 from datetime import datetime
 import json
 import io
@@ -59,34 +69,23 @@ def register(user: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/login")
-def login(user: UserLogin, session: Session = Depends(get_session)):
+def login(user: UserLogin, response: Response, session: Session = Depends(get_session)):
     try:
-        # Debug: Check all users in database
-        all_users = session.exec(select(User)).all()
-        print(f"DEBUG: Total users in DB: {len(all_users)}")
-        print(f"DEBUG: Login attempt for: {user.email}")
-        
         user_db = session.exec(select(User).where(User.email == user.email)).first()
-        
-        if not user_db:
-            print(f"DEBUG: User not found: {user.email}")
-            print(f"DEBUG: Available emails: {[u.email for u in all_users]}")
+
+        if not user_db or not verify_password(user.password, user_db.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        print(f"DEBUG: User found: {user_db.email}, ID: {user_db.id}")
-        
-        if not verify_password(user.password, user_db.password_hash):
-            print(f"DEBUG: Password verification failed for {user.email}")
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        print(f"DEBUG: Login successful for {user.email}")
-        return {
+
+        if not user_db.is_active:
+            raise HTTPException(status_code=403, detail="Account deactivated")
+
+        return issue_login(response, ROLE_PATIENT, user_db, {
             "message": "Login successful",
             "email": user_db.email,
             "id": user_db.id,
-            "role": "patient",
+            "role": ROLE_PATIENT,
             "full_name": user_db.full_name
-        }
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -130,7 +129,7 @@ def register_doctor(doctor: DoctorCreate, session: Session = Depends(get_session
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/doctor/login")
-def login_doctor(doctor: DoctorLogin, session: Session = Depends(get_session)):
+def login_doctor(doctor: DoctorLogin, response: Response, session: Session = Depends(get_session)):
     """Doctor login endpoint"""
     try:
         doctor_db = session.exec(select(Doctor).where(Doctor.email == doctor.email)).first()
@@ -152,14 +151,14 @@ def login_doctor(doctor: DoctorLogin, session: Session = Depends(get_session)):
         session.add(doctor_db)
         session.commit()
         
-        return {
+        return issue_login(response, ROLE_DOCTOR, doctor_db, {
             "message": "Login successful",
             "email": doctor_db.email,
             "id": doctor_db.id,
-            "role": "doctor",
+            "role": ROLE_DOCTOR,
             "full_name": doctor_db.full_name,
             "is_verified": doctor_db.is_verified
-        }
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -167,8 +166,28 @@ def login_doctor(doctor: DoctorLogin, session: Session = Depends(get_session)):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
+# ========== SESSION ==========
+@router.get("/me")
+def get_current_account(principal: Principal = Depends(get_current_principal)):
+    """Return the account bound to the current session token."""
+    account = principal.account
+    return {
+        "id": principal.id,
+        "role": principal.role,
+        "email": account.email,
+        "full_name": getattr(account, "full_name", None),
+    }
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Clear the session cookie. Tokens are stateless and otherwise expire on their own."""
+    clear_auth_cookie(response)
+    return {"message": "Logged out"}
+
+
 # ========== PATIENT PROFILE & CONSENT ==========
-@router.patch("/patient/{patient_id}/consent")
+@router.patch("/patient/{patient_id}/consent", dependencies=[Depends(patient_self_by_patient_id)])
 def update_patient_consent(
     patient_id: int,
     consent: bool,
@@ -195,7 +214,7 @@ def update_patient_consent(
         print(f"ERROR in update_patient_consent: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/patient/{patient_id}/profile")
+@router.get("/patient/{patient_id}/profile", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_profile(patient_id: int, session: Session = Depends(get_session)):
     """Get patient profile information"""
     try:
@@ -217,7 +236,7 @@ def get_patient_profile(patient_id: int, session: Session = Depends(get_session)
         print(f"ERROR in get_patient_profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/patient/{patient_id}/profile")
+@router.patch("/patient/{patient_id}/profile", dependencies=[Depends(patient_self_by_patient_id)])
 def update_patient_profile(
     patient_id: int,
     full_name: Optional[str] = None,
@@ -255,7 +274,7 @@ def update_patient_profile(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ========== PATIENT MESSAGING ==========
-@router.post("/patient/{patient_id}/messages/send")
+@router.post("/patient/{patient_id}/messages/send", dependencies=[Depends(patient_self_by_patient_id)])
 def send_patient_message(
     patient_id: int,
     message_data: MessageCreate,
@@ -268,23 +287,23 @@ def send_patient_message(
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        if message_data.recipient_type not in {"doctor", "patient"}:
-            raise HTTPException(status_code=400, detail="recipient_type must be doctor or patient")
+        # Patients may only message their assigned clinician.
+        if message_data.recipient_type != "doctor":
+            raise forbidden("Patients can only message their assigned clinician")
 
         if not _participant_exists(session, message_data.recipient_id, message_data.recipient_type):
             raise HTTPException(status_code=404, detail="Recipient not found")
-        
+
         # Verify patient is assigned to this doctor
-        if message_data.recipient_type == "doctor":
-            assignment = session.exec(
-                select(PatientAssignment)
-                .where(PatientAssignment.patient_id == patient_id)
-                .where(PatientAssignment.doctor_id == message_data.recipient_id)
-                .where(PatientAssignment.is_active == True)
-            ).first()
-            
-            if not assignment:
-                raise HTTPException(status_code=403, detail="You are not assigned to this doctor")
+        assignment = session.exec(
+            select(PatientAssignment)
+            .where(PatientAssignment.patient_id == patient_id)
+            .where(PatientAssignment.doctor_id == message_data.recipient_id)
+            .where(PatientAssignment.is_active == True)
+        ).first()
+
+        if not assignment:
+            raise HTTPException(status_code=403, detail="You are not assigned to this doctor")
         
         # Create message
         message = Message(
@@ -312,7 +331,7 @@ def send_patient_message(
         print(f"ERROR in send_patient_message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/patient/{patient_id}/messages")
+@router.get("/patient/{patient_id}/messages", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_messages(
     patient_id: int,
     unread_only: bool = False,
@@ -402,7 +421,7 @@ def get_patient_messages(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/patient/{patient_id}/notifications")
+@router.get("/patient/{patient_id}/notifications", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_notifications(patient_id: int, session: Session = Depends(get_session)):
     """Get active admin notifications for a patient."""
     patient = session.get(User, patient_id)
@@ -429,7 +448,7 @@ def get_patient_notifications(patient_id: int, session: Session = Depends(get_se
         ]
     }
 
-@router.get("/patient/{patient_id}/prescriptions")
+@router.get("/patient/{patient_id}/prescriptions", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_prescriptions(patient_id: int, session: Session = Depends(get_session)):
     """Get digital prescriptions issued by the patient's assigned doctor."""
     try:
@@ -491,7 +510,7 @@ def get_patient_prescriptions(patient_id: int, session: Session = Depends(get_se
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/patient/{patient_id}/prescriptions/{prescription_id}/pdf")
+@router.get("/patient/{patient_id}/prescriptions/{prescription_id}/pdf", dependencies=[Depends(patient_self_by_patient_id)])
 def download_patient_prescription_pdf(
     patient_id: int,
     prescription_id: int,
@@ -541,7 +560,7 @@ def download_patient_prescription_pdf(
         print(f"ERROR in download_patient_prescription_pdf: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/patient/{patient_id}/messages/{message_id}/mark-read")
+@router.post("/patient/{patient_id}/messages/{message_id}/mark-read", dependencies=[Depends(patient_self_by_patient_id)])
 def mark_patient_message_read(
     patient_id: int,
     message_id: int,
@@ -569,7 +588,7 @@ def mark_patient_message_read(
         print(f"ERROR in mark_patient_message_read: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/patient/{patient_id}/messages/with-doctor")
+@router.get("/patient/{patient_id}/messages/with-doctor", dependencies=[Depends(patient_self_by_patient_id)])
 def get_patient_conversation_with_doctor(
     patient_id: int,
     session: Session = Depends(get_session)

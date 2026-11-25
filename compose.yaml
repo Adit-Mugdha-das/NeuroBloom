@@ -23,6 +23,9 @@ services:
       POSTGRES_PORT: 5432
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-neurobloom_db}
       CORS_ALLOWED_ORIGINS: http://localhost:5174,http://127.0.0.1:5174,http://localhost:8080,http://127.0.0.1:8080
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
     depends_on:
       db:
         condition: service_healthy

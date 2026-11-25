@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, col
 from typing import List, Sequence, Literal
@@ -24,6 +24,7 @@ from app.models.notification import Notification
 from app.schemas.admin import AdminLogin, AdminRead
 from app.core.config import engine
 from app.core.security import verify_password, hash_password
+from app.core.access_control import ROLE_ADMIN, admin_self, issue_login
 from pydantic import BaseModel
 import json
 import traceback
@@ -608,7 +609,7 @@ def _get_current_risk_alert(session: Session, patient_id: int):
 # ─────────────────────────────────────────────
 
 @router.post("/login")
-def admin_login(credentials: AdminLogin, session: Session = Depends(get_session)):
+def admin_login(credentials: AdminLogin, response: Response, session: Session = Depends(get_session)):
     """Authenticate hospital administrator."""
     try:
         admin = session.exec(select(Admin).where(Admin.email == credentials.email)).first()
@@ -621,13 +622,13 @@ def admin_login(credentials: AdminLogin, session: Session = Depends(get_session)
         session.add(admin)
         session.commit()
 
-        return {
+        return issue_login(response, ROLE_ADMIN, admin, {
             "message": "Login successful",
             "id": admin.id,
             "email": admin.email,
             "full_name": admin.full_name,
-            "role": "admin",
-        }
+            "role": ROLE_ADMIN,
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -639,7 +640,7 @@ def admin_login(credentials: AdminLogin, session: Session = Depends(get_session)
 # DASHBOARD STATS
 # ─────────────────────────────────────────────
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(admin_self)])
 def get_stats(admin_id: int, session: Session = Depends(get_session)):
     """Overview numbers for the admin dashboard."""
     _require_admin(admin_id, session)
@@ -832,7 +833,7 @@ def get_stats(admin_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.get("/risk-alerts")
+@router.get("/risk-alerts", dependencies=[Depends(admin_self)])
 def list_risk_alerts(admin_id: int, session: Session = Depends(get_session)):
     _require_admin(admin_id, session)
 
@@ -864,7 +865,7 @@ def list_risk_alerts(admin_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.post("/risk-alerts/{patient_id}/notify-doctor")
+@router.post("/risk-alerts/{patient_id}/notify-doctor", dependencies=[Depends(admin_self)])
 def notify_risk_alert_doctor(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     admin = _require_admin(admin_id, session)
     alert, risk_patient = _get_current_risk_alert(session, patient_id)
@@ -898,7 +899,7 @@ def notify_risk_alert_doctor(patient_id: int, admin_id: int, session: Session = 
     return {"message": f"Dr. {doctor.full_name or doctor.email} has been notified", "patient_id": patient_id}
 
 
-@router.post("/risk-alerts/{patient_id}/escalate")
+@router.post("/risk-alerts/{patient_id}/escalate", dependencies=[Depends(admin_self)])
 def escalate_risk_alert(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     admin = _require_admin(admin_id, session)
     alert, risk_patient = _get_current_risk_alert(session, patient_id)
@@ -932,7 +933,7 @@ def escalate_risk_alert(patient_id: int, admin_id: int, session: Session = Depen
     return {"message": "Risk case escalated", "patient_id": patient_id}
 
 
-@router.post("/risk-alerts/{patient_id}/mark-reviewed")
+@router.post("/risk-alerts/{patient_id}/mark-reviewed", dependencies=[Depends(admin_self)])
 def mark_risk_alert_reviewed(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     _require_admin(admin_id, session)
     alert, _ = _get_current_risk_alert(session, patient_id)
@@ -952,7 +953,7 @@ def mark_risk_alert_reviewed(patient_id: int, admin_id: int, session: Session = 
 # DOCTOR MANAGEMENT
 # ─────────────────────────────────────────────
 
-@router.get("/doctors")
+@router.get("/doctors", dependencies=[Depends(admin_self)])
 def list_doctors(admin_id: int, session: Session = Depends(get_session)):
     """List all doctors with their current status."""
     _require_admin(admin_id, session)
@@ -983,7 +984,7 @@ def list_doctors(admin_id: int, session: Session = Depends(get_session)):
 # DEPARTMENT MANAGEMENT
 # ─────────────────────────────────────────────
 
-@router.get("/departments")
+@router.get("/departments", dependencies=[Depends(admin_self)])
 def list_departments(admin_id: int, session: Session = Depends(get_session)):
     """List departments with doctor and patient counts."""
     _require_admin(admin_id, session)
@@ -1010,7 +1011,7 @@ def list_departments(admin_id: int, session: Session = Depends(get_session)):
     return {"departments": department_rows, "total": len(department_rows)}
 
 
-@router.post("/departments")
+@router.post("/departments", dependencies=[Depends(admin_self)])
 def create_department(body: CreateDepartmentBody, admin_id: int, session: Session = Depends(get_session)):
     """Create a new hospital department."""
     _require_admin(admin_id, session)
@@ -1040,7 +1041,7 @@ def create_department(body: CreateDepartmentBody, admin_id: int, session: Sessio
     }
 
 
-@router.patch("/doctors/{doctor_id}/department")
+@router.patch("/doctors/{doctor_id}/department", dependencies=[Depends(admin_self)])
 def assign_doctor_department(doctor_id: int, body: AssignDoctorDepartmentBody, admin_id: int, session: Session = Depends(get_session)):
     """Assign or clear a doctor's department."""
     _require_admin(admin_id, session)
@@ -1080,7 +1081,7 @@ def assign_doctor_department(doctor_id: int, body: AssignDoctorDepartmentBody, a
     }
 
 
-@router.patch("/doctors/{doctor_id}/approve")
+@router.patch("/doctors/{doctor_id}/approve", dependencies=[Depends(admin_self)])
 def approve_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get_session)):
     """Approve a doctor's registration so they can log in."""
     _require_admin(admin_id, session)
@@ -1097,7 +1098,7 @@ def approve_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get
     return {"message": f"Doctor {doctor.full_name} has been approved", "doctor_id": doctor_id}
 
 
-@router.patch("/doctors/{doctor_id}/suspend")
+@router.patch("/doctors/{doctor_id}/suspend", dependencies=[Depends(admin_self)])
 def suspend_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get_session)):
     """Suspend a doctor account (sets is_active=False)."""
     _require_admin(admin_id, session)
@@ -1113,7 +1114,7 @@ def suspend_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get
     return {"message": f"Doctor {doctor.full_name} has been suspended", "doctor_id": doctor_id}
 
 
-@router.patch("/doctors/{doctor_id}/activate")
+@router.patch("/doctors/{doctor_id}/activate", dependencies=[Depends(admin_self)])
 def activate_doctor(doctor_id: int, admin_id: int, session: Session = Depends(get_session)):
     """Re-activate a previously suspended doctor."""
     _require_admin(admin_id, session)
@@ -1133,7 +1134,7 @@ def activate_doctor(doctor_id: int, admin_id: int, session: Session = Depends(ge
 # PATIENT MANAGEMENT
 # ─────────────────────────────────────────────
 
-@router.get("/patients")
+@router.get("/patients", dependencies=[Depends(admin_self)])
 def list_patients(admin_id: int, session: Session = Depends(get_session)):
     """List all patient accounts."""
     _require_admin(admin_id, session)
@@ -1155,7 +1156,7 @@ def list_patients(admin_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.patch("/patients/{patient_id}/deactivate")
+@router.patch("/patients/{patient_id}/deactivate", dependencies=[Depends(admin_self)])
 def deactivate_patient(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     """Deactivate a patient account."""
     _require_admin(admin_id, session)
@@ -1171,7 +1172,7 @@ def deactivate_patient(patient_id: int, admin_id: int, session: Session = Depend
     return {"message": f"Patient account deactivated", "patient_id": patient_id}
 
 
-@router.patch("/patients/{patient_id}/activate")
+@router.patch("/patients/{patient_id}/activate", dependencies=[Depends(admin_self)])
 def activate_patient(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     """Re-activate a patient account."""
     _require_admin(admin_id, session)
@@ -1191,7 +1192,7 @@ def activate_patient(patient_id: int, admin_id: int, session: Session = Depends(
 # RESET PASSWORDS
 # ─────────────────────────────────────────────
 
-@router.post("/doctors/{doctor_id}/reset-password")
+@router.post("/doctors/{doctor_id}/reset-password", dependencies=[Depends(admin_self)])
 def reset_doctor_password(doctor_id: int, admin_id: int, body: ResetPasswordBody, session: Session = Depends(get_session)):
     """Reset a doctor's password."""
     _require_admin(admin_id, session)
@@ -1208,7 +1209,7 @@ def reset_doctor_password(doctor_id: int, admin_id: int, body: ResetPasswordBody
     return {"message": f"Password reset for Dr. {doctor.full_name}", "doctor_id": doctor_id}
 
 
-@router.post("/patients/{patient_id}/reset-password")
+@router.post("/patients/{patient_id}/reset-password", dependencies=[Depends(admin_self)])
 def reset_patient_password(patient_id: int, admin_id: int, body: ResetPasswordBody, session: Session = Depends(get_session)):
     """Reset a patient's password."""
     _require_admin(admin_id, session)
@@ -1229,7 +1230,7 @@ def reset_patient_password(patient_id: int, admin_id: int, body: ResetPasswordBo
 # TRANSFER PATIENT TO ANOTHER DOCTOR
 # ─────────────────────────────────────────────
 
-@router.post("/patients/{patient_id}/transfer")
+@router.post("/patients/{patient_id}/transfer", dependencies=[Depends(admin_self)])
 def transfer_patient(patient_id: int, admin_id: int, body: TransferPatientBody, session: Session = Depends(get_session)):
     """Transfer a patient's active assignment to a different doctor."""
     _require_admin(admin_id, session)
@@ -1290,7 +1291,7 @@ def transfer_patient(patient_id: int, admin_id: int, body: TransferPatientBody, 
 # PATIENT OVERSIGHT (READ-ONLY PROFILE)
 # ─────────────────────────────────────────────
 
-@router.get("/patients/{patient_id}/overview")
+@router.get("/patients/{patient_id}/overview", dependencies=[Depends(admin_self)])
 def get_patient_overview_admin(patient_id: int, admin_id: int, session: Session = Depends(get_session)):
     """
     Read-only patient overview for admin oversight.
@@ -1446,7 +1447,7 @@ def get_patient_overview_admin(patient_id: int, admin_id: int, session: Session 
 # INTERVENTION MONITORING
 # ─────────────────────────────────────────────
 
-@router.get("/interventions")
+@router.get("/interventions", dependencies=[Depends(admin_self)])
 def list_interventions(admin_id: int, days: int = 0, session: Session = Depends(get_session)):
     """
     List all doctor interventions for admin clinical quality oversight.
@@ -1551,7 +1552,7 @@ def _audit_message_content(subject: str | None, body: str):
     }
 
 
-@router.get("/messages/audit")
+@router.get("/messages/audit", dependencies=[Depends(admin_self)])
 def audit_messages(
     admin_id: int,
     days: int = 0,
@@ -1637,7 +1638,7 @@ def audit_messages(
     }
 
 
-@router.get("/audit-logs")
+@router.get("/audit-logs", dependencies=[Depends(admin_self)])
 def get_audit_logs(
     admin_id: int,
     days: int = 30,
@@ -1793,7 +1794,7 @@ def get_audit_logs(
     }
 
 
-@router.get("/system-health")
+@router.get("/system-health", dependencies=[Depends(admin_self)])
 def get_system_health(admin_id: int, session: Session = Depends(get_session)):
     """Enterprise-style health snapshot for admin monitoring."""
     _require_admin(admin_id, session)
@@ -1860,7 +1861,7 @@ def get_system_health(admin_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.get("/notifications")
+@router.get("/notifications", dependencies=[Depends(admin_self)])
 def list_notifications(admin_id: int, session: Session = Depends(get_session)):
     """List admin notifications and summary metrics."""
     _require_admin(admin_id, session)
@@ -1895,7 +1896,7 @@ def list_notifications(admin_id: int, session: Session = Depends(get_session)):
     }
 
 
-@router.post("/notifications")
+@router.post("/notifications", dependencies=[Depends(admin_self)])
 def create_notification(admin_id: int, body: NotificationCreateBody, session: Session = Depends(get_session)):
     """Publish a new admin notification."""
     admin = _require_admin(admin_id, session)
@@ -1940,7 +1941,7 @@ def create_notification(admin_id: int, body: NotificationCreateBody, session: Se
     }
 
 
-@router.get("/research-exports/summary")
+@router.get("/research-exports/summary", dependencies=[Depends(admin_self)])
 def get_research_export_summary(admin_id: int, session: Session = Depends(get_session)):
     _require_admin(admin_id, session)
 
@@ -1975,7 +1976,7 @@ def get_research_export_summary(admin_id: int, session: Session = Depends(get_se
     }
 
 
-@router.get("/research-exports/download")
+@router.get("/research-exports/download", dependencies=[Depends(admin_self)])
 def download_research_export(
     admin_id: int,
     dataset: Literal["cognitive_performance", "fatigue", "reaction_time", "anonymized_patients"],

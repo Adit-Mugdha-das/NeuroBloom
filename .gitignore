@@ -20,6 +20,8 @@ frontend-svelte/.svelte-kit/
 frontend-svelte/build/
 frontend-svelte/dist/
 frontend-svelte/coverage/
+frontend-svelte/test-results/
+frontend-svelte/playwright-report/
 
 # OS and editor noise
 .DS_Store

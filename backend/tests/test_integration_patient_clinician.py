@@ -10,7 +10,8 @@ shared in-memory database, in the order a real deployment uses them:
   -> patient completes the six baseline tasks; baseline and training plan are created
   -> patient completes one four-task training session; difficulty is adapted
   -> clinician reviews overview, session history and trends
-  -> an unassigned clinician is still refused access
+  -> an unassigned clinician, signed in with its own token, is refused access,
+     including when it supplies the assigned clinician's identifier
 """
 import json
 
@@ -56,6 +57,7 @@ def test_patient_clinician_workflow(api, session):
     patient_id = resp.json()["id"]
     resp = api.post("/api/auth/login", json={"email": "patient@example.org", "password": "patient-pass"})
     assert resp.status_code == 200 and resp.json()["role"] == "patient"
+    patient = {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
     # ── 2. Clinician account requires administrator approval ─────────────────
     resp = api.post("/api/auth/doctor/register", json={
@@ -71,39 +73,43 @@ def test_patient_clinician_workflow(api, session):
     session.add(admin)
     session.commit()
     session.refresh(admin)
-    resp = api.patch(f"/api/admin/doctors/{doctor_id}/approve", params={"admin_id": admin.id})
+    resp = api.post("/api/admin/login", json={"email": "admin@example.org", "password": "admin-pass"})
+    assert resp.status_code == 200
+    admin_auth = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+    resp = api.patch(f"/api/admin/doctors/{doctor_id}/approve", params={"admin_id": admin.id}, headers=admin_auth)
     assert resp.status_code == 200
     resp = api.post("/api/auth/doctor/login", json=login)
     assert resp.status_code == 200 and resp.json()["role"] == "doctor"
+    clinician = {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
     # ── 3. Patient--clinician association ─────────────────────────────────────
-    available = api.get("/api/doctor/available-doctors").json()["doctors"]
+    available = api.get("/api/doctor/available-doctors", headers=patient).json()["doctors"]
     assert doctor_id in [d["id"] for d in available]
     resp = api.post("/api/doctor/request-assignment", params={
         "patient_id": patient_id, "doctor_id": doctor_id, "diagnosis": "Relapsing-remitting MS",
-    })
+    }, headers=patient)
     assert resp.status_code == 200
     request_id = resp.json()["request_id"]
 
     # Access is refused while the request is pending.
-    assert api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/overview").status_code == 403
+    assert api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/overview", headers=clinician).status_code == 403
 
-    pending = api.get(f"/api/doctor/{doctor_id}/pending-requests").json()["requests"]
+    pending = api.get(f"/api/doctor/{doctor_id}/pending-requests", headers=clinician).json()["requests"]
     assert [r["patient_id"] for r in pending] == [patient_id]
-    resp = api.post(f"/api/doctor/request/{request_id}/approve", params={"doctor_id": doctor_id})
+    resp = api.post(f"/api/doctor/request/{request_id}/approve", params={"doctor_id": doctor_id}, headers=clinician)
     assert resp.status_code == 200
-    patients = api.get(f"/api/doctor/{doctor_id}/patients").json()
+    patients = api.get(f"/api/doctor/{doctor_id}/patients", headers=clinician).json()
     assert patients["total"] == 1
 
     # ── 4. Baseline assessment and training plan ─────────────────────────────
     for domain, metrics in BASELINE_RESULTS.items():
         resp = api.post("/api/tasks/results", params={"user_id": patient_id}, json={
             "task_type": domain, "score": 0, "details": json.dumps(metrics),
-        })
+        }, headers=patient)
         assert resp.status_code == 200
-    resp = api.post("/api/baseline/calculate", params={"user_id": patient_id})
+    resp = api.post("/api/baseline/calculate", params={"user_id": patient_id}, headers=patient)
     assert resp.status_code == 200
-    resp = api.post(f"/api/training/training-plan/generate/{patient_id}")
+    resp = api.post(f"/api/training/training-plan/generate/{patient_id}", headers=patient)
     assert resp.status_code == 200
     plan = resp.json()
     session_domains = plan["primary_focus"] + plan["secondary_focus"]
@@ -117,11 +123,11 @@ def test_patient_clinician_workflow(api, session):
             "user_id": patient_id, "training_plan_id": plan["id"], "domain": domain,
             "task_type": domain, "task_id": f"{domain}_{index}",
             "score": accuracy, "accuracy": accuracy, "average_reaction_time": 600, "duration": 120,
-        }, json={})
+        }, json={}, headers=patient)
         assert resp.status_code == 200, resp.text
 
     # ── 6. Clinician review of the stored data ───────────────────────────────
-    overview = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/overview")
+    overview = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/overview", headers=clinician)
     assert overview.status_code == 200
     overview = overview.json()
     assert overview["baseline"]["completed"] is True
@@ -134,11 +140,11 @@ def test_patient_clinician_workflow(api, session):
         expected[domain] = min(start + 1, 10) if accuracy >= 85 else max(start - 1, 1) if accuracy < 65 else start
     assert {d: overview["current_difficulty"][d] for d in session_domains} == expected
 
-    history = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/sessions").json()
+    history = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/sessions", headers=clinician).json()
     assert history["total"] == 4
     assert sorted(s["accuracy"] for s in history["sessions"]) == sorted(accuracies)
 
-    trends = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/trends")
+    trends = api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/trends", headers=clinician)
     assert trends.status_code == 200 and trends.json()["total_sessions"] == 4
 
     # ── 7. An unassigned clinician cannot read the record ────────────────────
@@ -147,6 +153,12 @@ def test_patient_clinician_workflow(api, session):
         "license_number": "TEST-002", "specialization": "Neurology", "institution": "Other Clinic",
     })
     other_id = resp.json()["id"]
-    api.patch(f"/api/admin/doctors/{other_id}/approve", params={"admin_id": admin.id})
-    assert api.get(f"/api/doctor/{other_id}/patient/{patient_id}/overview").status_code == 403
-    assert api.get(f"/api/doctor/{other_id}/patient/{patient_id}/sessions").status_code == 403
+    api.patch(f"/api/admin/doctors/{other_id}/approve", params={"admin_id": admin.id}, headers=admin_auth)
+    resp = api.post("/api/auth/doctor/login", json={"email": "other@example.org", "password": "other-pass"})
+    other = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+    # Signed in as itself, the unassigned clinician is refused...
+    assert api.get(f"/api/doctor/{other_id}/patient/{patient_id}/overview", headers=other).status_code == 403
+    assert api.get(f"/api/doctor/{other_id}/patient/{patient_id}/sessions", headers=other).status_code == 403
+    # ...and cannot borrow the assigned clinician's identifier.
+    assert api.get(f"/api/doctor/{doctor_id}/patient/{patient_id}/overview", headers=other).status_code == 403
+    assert api.get(f"/api/training/training-session/history/{patient_id}", headers=other).status_code == 403

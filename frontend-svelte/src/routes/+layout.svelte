@@ -1,10 +1,10 @@
 <script>
 	import { page } from '$app/stores';
-	import { training } from '$lib/api';
+	import api, { training } from '$lib/api';
 	import PublicLanguageSwitcher from '$lib/components/PublicLanguageSwitcher.svelte';
 	import { initializeLocale } from '$lib/i18n/runtime.js';
 	import { PUBLIC_LANGUAGE_ROUTES } from '$lib/i18n/route-localization.js';
-	import { authReady, markAuthReady, user } from '$lib/stores.js';
+	import { authReady, markAuthReady, setUser, user } from '$lib/stores.js';
 	import { onMount } from 'svelte';
 	import '../app.css';
 
@@ -19,6 +19,18 @@
 
 		initializeLocale();
 		markAuthReady();
+
+		// The saved profile is only a display hint; the server session is authoritative.
+		// An expired session answers 401 and the hooks.client.js handler signs the user out.
+		if (currentUser) {
+			api.get('/api/auth/me')
+				.then(({ data }) => {
+					if (data.id !== currentUser?.id || data.role !== currentUser?.role) {
+						setUser({ ...currentUser, id: data.id, role: data.role, email: data.email, fullName: data.full_name ?? null });
+					}
+				})
+				.catch(() => {});
+		}
 
 		const originalFetch = window.fetch.bind(window);
 		const submitUrlPattern = /\/api\/training\/tasks\/[^/]+\/submit\//i;
